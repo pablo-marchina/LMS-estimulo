@@ -1,0 +1,111 @@
+schema_version: 1
+journey_definition:
+  code: ai_for_small_business
+  title: Capacitação em IA para pequenos negócios
+  program_code: credit_training
+  owner_organization: estimulo
+  editorial_partner: openai
+journey_version:
+  version: 0.1.0-draft
+  status: draft
+  locale: pt-BR
+  base_completion_terminal: true
+  entry_rule:
+    all:
+      - participation.status_in: [assigned, available]
+  paths:
+    - code: default
+      title: Caminho padrão
+      steps:
+        - code: welcome
+          activity_group: welcome_ai_potential
+          required: true
+          transitions:
+            - to: hub
+              when: { group_completed: welcome_ai_potential }
+        - code: hub
+          type: choice
+          options: [chatgpt_foundations, marketing_sales_ai, business_management_ai]
+        - code: chatgpt_foundations
+          activity_group: chatgpt_foundations
+          required: false
+          transitions:
+            - to: hub
+              when: { group_completed_or_exited: chatgpt_foundations }
+        - code: marketing_sales_ai
+          activity_group: marketing_sales_ai
+          required_for: base_certificate
+          transitions:
+            - to: hub
+              when: { badge_awarded: marketing_sales }
+        - code: business_management_ai
+          activity_group: business_management_ai
+          required_for: base_certificate
+          transitions:
+            - to: hub
+              when: { badge_awarded: management_ai }
+        - code: base_exam
+          activity_ref: base_final_exam
+          available_when:
+            all:
+              - badge_awarded: marketing_sales
+              - badge_awarded: management_ai
+          transitions:
+            - to: base_completed
+              when: { assessment_passed: base_final_exam }
+        - code: base_completed
+          type: milestone
+          credential: base_certificate
+          transitions:
+            - to: advanced_codex
+              when: { credential_active: base_certificate }
+        - code: advanced_codex
+          activity_group: advanced_codex_systems
+          required: false
+          transitions:
+            - to: advanced_exam
+              when: { group_completed: advanced_codex_systems }
+        - code: advanced_exam
+          activity_ref: advanced_final_exam
+          transitions:
+            - to: fully_completed
+              when: { assessment_passed: advanced_final_exam }
+        - code: fully_completed
+          type: milestone
+          credential: advanced_certificate
+  activity_groups:
+    - code: welcome_ai_potential
+      required: true
+      recognition: ai_potential_badge
+      source_codes: ["0.1", "0.2", "0.3", "0.4", "0.5"]
+    - code: chatgpt_foundations
+      required: false
+      recognition: ai_base_badge
+      source_codes: ["B0", "B1", "B3"]
+    - code: marketing_sales_ai
+      required: true
+      recognition: marketing_sales_badge
+      source_codes: ["1.1", "1.2", "1.4", "1.5"]
+      optional_practice: marketing_sales_practice
+      gate_assessment: marketing_sales_exam
+    - code: business_management_ai
+      required: true
+      recognition: management_ai_badge
+      source_codes: ["2.1", "2.2", "2.3", "2.4", "2.5"]
+      optional_practice: management_ai_practice
+      gate_assessment: management_ai_exam
+    - code: advanced_codex_systems
+      required: false
+      recognition: development_ai_badge
+      source_codes: ["3.1", "3.2", "3.3", "3.4", "3.5"]
+      optional_practice: codex_advanced_practice
+      gate_assessment: advanced_final_exam
+  unresolved_parameters:
+    - video_completion_threshold
+    - assessment_passing_scores
+    - assessment_attempt_policies
+    - practice_requirements
+    - enrollment_expiration
+    - credential_expiration
+    - lesson_numbering_gaps
+    - reconciled_durations

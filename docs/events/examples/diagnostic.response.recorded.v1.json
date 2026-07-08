@@ -1,0 +1,32 @@
+{
+  "specversion": "1.0",
+  "id": "0190f2df-1e3a-76a3-9a2a-e04ac8732c10",
+  "source": "urn:estimulo:service:diagnostics",
+  "type": "org.estimulo.diagnostic.response.recorded",
+  "subject": "urn:estimulo:diagnostic-session:dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  "time": "2026-07-08T14:35:00Z",
+  "datacontenttype": "application/json",
+  "dataschema": "https://schemas.estimulo.org/events/diagnostic/response-recorded/1.0.0.json",
+  "tenantid": "22222222-2222-4222-8222-222222222222",
+  "correlationid": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  "causationid": null,
+  "traceparent": null,
+  "partitionkey": "diagnostic-session:dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  "aggregateid": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  "aggregateversion": 3,
+  "privacyclass": "restricted",
+  "producer": "diagnostics",
+  "clienteventid": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+  "correctionof": null,
+  "data": {
+    "diagnostic_session_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    "item_version_id": "12121212-1212-4212-8212-121212121212",
+    "response_value": 4,
+    "response_sequence": 3,
+    "answered_at": "2026-07-08T14:34:58Z",
+    "response_time_ms": 8200,
+    "actor": {
+      "entrepreneur_id": "88888888-8888-4888-8888-888888888888"
+    }
+  }
+}

@@ -1,0 +1,2448 @@
+catalog_version: 0.1.0
+canonical_envelope: CloudEvents 1.0 compatible / Estimulo extensions v1
+schema_dialect: https://json-schema.org/draft/2020-12/schema
+generated_at: '2026-07-08'
+events:
+- alias: identity.invitation.created
+  type: org.estimulo.identity.invitation.created
+  class: domain
+  bounded_context: identity
+  aggregate: invitation
+  producer: identity
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - invitation_id
+  - entrepreneur_id
+  - purpose
+  - expires_at
+  optional_data:
+  - business_id
+  - program_id
+  - journey_version_id
+  consumers:
+  - notification_orchestrator
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: identity.invitation.sent
+  type: org.estimulo.identity.invitation.sent
+  class: integration
+  bounded_context: identity
+  aggregate: invitation
+  producer: notification_connector
+  evidence_kind: external_confirmed
+  privacy_class: pseudonymous
+  required_data:
+  - invitation_id
+  - delivery_id
+  - channel
+  - provider
+  optional_data:
+  - template_version
+  consumers:
+  - delivery_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: identity.invitation.delivered
+  type: org.estimulo.identity.invitation.delivered
+  class: integration
+  bounded_context: identity
+  aggregate: invitation
+  producer: notification_connector
+  evidence_kind: external_confirmed
+  privacy_class: pseudonymous
+  required_data:
+  - invitation_id
+  - delivery_id
+  - channel
+  - delivered_at
+  optional_data: []
+  consumers:
+  - delivery_projection
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: identity.invitation.opened
+  type: org.estimulo.identity.invitation.opened
+  class: behavioral
+  bounded_context: identity
+  aggregate: invitation
+  producer: notification_connector
+  evidence_kind: external_observed
+  privacy_class: pseudonymous
+  required_data:
+  - invitation_id
+  - delivery_id
+  - channel
+  optional_data:
+  - client_time
+  consumers:
+  - engagement_projection
+  feature_input: weak_only
+  retention_class: operational
+  notes: Não usar isoladamente; abertura pode ser bloqueada ou simulada pelo provedor.
+- alias: identity.account.registered
+  type: org.estimulo.identity.account.registered
+  class: domain
+  bounded_context: identity
+  aggregate: user_account
+  producer: identity
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - user_account_id
+  - entrepreneur_id
+  - registration_method
+  optional_data: []
+  consumers:
+  - identity_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: identity.email.verified
+  type: org.estimulo.identity.email.verified
+  class: domain
+  bounded_context: identity
+  aggregate: user_account
+  producer: identity
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - user_account_id
+  - verified_at
+  optional_data: []
+  consumers:
+  - identity_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: identity.account.activated
+  type: org.estimulo.identity.account.activated
+  class: domain
+  bounded_context: identity
+  aggregate: user_account
+  producer: identity
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - user_account_id
+  - entrepreneur_id
+  optional_data: []
+  consumers:
+  - identity_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: identity.account.suspended
+  type: org.estimulo.identity.account.suspended
+  class: audit
+  bounded_context: identity
+  aggregate: user_account
+  producer: identity
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - user_account_id
+  - reason_code
+  - suspended_by
+  optional_data:
+  - expires_at
+  consumers:
+  - authorization_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: identity.authentication.succeeded
+  type: org.estimulo.identity.authentication.succeeded
+  class: audit
+  bounded_context: identity
+  aggregate: authentication
+  producer: identity
+  evidence_kind: server_acknowledged
+  privacy_class: restricted
+  required_data:
+  - user_account_id
+  - authentication_method
+  optional_data:
+  - session_id
+  - risk_signals
+  consumers:
+  - security_monitoring
+  feature_input: ineligible
+  retention_class: security_short
+  notes: ''
+- alias: identity.authentication.failed
+  type: org.estimulo.identity.authentication.failed
+  class: audit
+  bounded_context: identity
+  aggregate: authentication
+  producer: identity
+  evidence_kind: server_acknowledged
+  privacy_class: restricted
+  required_data:
+  - principal_hash
+  - reason_code
+  optional_data:
+  - risk_signals
+  consumers:
+  - security_monitoring
+  feature_input: ineligible
+  retention_class: security_short
+  notes: ''
+- alias: governance.consent.granted
+  type: org.estimulo.governance.consent.granted
+  class: domain
+  bounded_context: governance
+  aggregate: consent
+  producer: governance
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - consent_record_id
+  - entrepreneur_id
+  - purpose_code
+  - notice_version
+  - granted_at
+  optional_data:
+  - expires_at
+  consumers:
+  - consent_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: governance.consent.withdrawn
+  type: org.estimulo.governance.consent.withdrawn
+  class: domain
+  bounded_context: governance
+  aggregate: consent
+  producer: governance
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - consent_record_id
+  - entrepreneur_id
+  - purpose_code
+  - withdrawn_at
+  optional_data:
+  - reason_code
+  consumers:
+  - consent_projection
+  - intervention_orchestrator
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.journey_version.published
+  type: org.estimulo.catalog.journey_version.published
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: journey_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - journey_definition_id
+  - journey_version_id
+  - version
+  - published_at
+  optional_data:
+  - publisher_organization_id
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.journey_version.retired
+  type: org.estimulo.catalog.journey_version.retired
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: journey_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - journey_definition_id
+  - journey_version_id
+  - retired_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.course_version.published
+  type: org.estimulo.catalog.course_version.published
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: course_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - course_definition_id
+  - course_version_id
+  - version
+  - published_at
+  optional_data:
+  - publisher_organization_id
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.course_version.retired
+  type: org.estimulo.catalog.course_version.retired
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: course_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - course_definition_id
+  - course_version_id
+  - retired_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.activity_version.published
+  type: org.estimulo.catalog.activity_version.published
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: activity_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - activity_definition_id
+  - activity_version_id
+  - version
+  - published_at
+  optional_data:
+  - publisher_organization_id
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.activity_version.retired
+  type: org.estimulo.catalog.activity_version.retired
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: activity_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - activity_definition_id
+  - activity_version_id
+  - retired_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.diagnostic_version.published
+  type: org.estimulo.catalog.diagnostic_version.published
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: diagnostic_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - diagnostic_definition_id
+  - diagnostic_version_id
+  - version
+  - published_at
+  optional_data:
+  - publisher_organization_id
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.diagnostic_version.retired
+  type: org.estimulo.catalog.diagnostic_version.retired
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: diagnostic_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - diagnostic_definition_id
+  - diagnostic_version_id
+  - retired_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.assessment_version.published
+  type: org.estimulo.catalog.assessment_version.published
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: assessment_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - assessment_definition_id
+  - assessment_version_id
+  - version
+  - published_at
+  optional_data:
+  - publisher_organization_id
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.assessment_version.retired
+  type: org.estimulo.catalog.assessment_version.retired
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: assessment_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - assessment_definition_id
+  - assessment_version_id
+  - retired_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.intervention_version.published
+  type: org.estimulo.catalog.intervention_version.published
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: intervention_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - intervention_definition_id
+  - intervention_version_id
+  - version
+  - published_at
+  optional_data:
+  - publisher_organization_id
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: catalog.intervention_version.retired
+  type: org.estimulo.catalog.intervention_version.retired
+  class: domain
+  bounded_context: learning_catalog
+  aggregate: intervention_version
+  producer: catalog
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - intervention_definition_id
+  - intervention_version_id
+  - retired_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - catalog_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.enrollment.created
+  type: org.estimulo.journey.enrollment.created
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: enrollment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - enrollment_id
+  - entrepreneur_id
+  - business_id
+  - journey_version_id
+  - program_id
+  - source
+  optional_data:
+  - cohort_id
+  - eligible_from
+  - expires_at
+  consumers:
+  - journey_projection
+  - crm_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.enrollment.activated
+  type: org.estimulo.journey.enrollment.activated
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: enrollment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - enrollment_id
+  - journey_instance_id
+  - activated_at
+  optional_data: []
+  consumers:
+  - journey_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.enrollment.cancelled
+  type: org.estimulo.journey.enrollment.cancelled
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: enrollment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - enrollment_id
+  - reason_code
+  - cancelled_at
+  optional_data:
+  - cancelled_by
+  consumers:
+  - journey_projection
+  - intervention_orchestrator
+  - crm_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.enrollment.expired
+  type: org.estimulo.journey.enrollment.expired
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: enrollment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - enrollment_id
+  - expired_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - journey_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.instance.available
+  type: org.estimulo.journey.instance.available
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: journey_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - journey_instance_id
+  - journey_version_id
+  - available_at
+  optional_data:
+  - expires_at
+  consumers:
+  - journey_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.instance.started
+  type: org.estimulo.journey.instance.started
+  class: behavioral_domain
+  bounded_context: journey_orchestration
+  aggregate: journey_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - journey_instance_id
+  - started_at
+  - entry_point
+  optional_data: []
+  consumers:
+  - journey_projection
+  - behavioral_store
+  - intervention_orchestrator
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: journey.instance.paused
+  type: org.estimulo.journey.instance.paused
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: journey_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - journey_instance_id
+  - reason_code
+  - paused_at
+  optional_data: []
+  consumers:
+  - journey_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.instance.resumed
+  type: org.estimulo.journey.instance.resumed
+  class: behavioral_domain
+  bounded_context: journey_orchestration
+  aggregate: journey_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - journey_instance_id
+  - resumed_at
+  optional_data:
+  - pause_duration_seconds
+  consumers:
+  - journey_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: journey.milestone.achieved
+  type: org.estimulo.journey.milestone.achieved
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: journey_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - journey_instance_id
+  - milestone_definition_id
+  - milestone_code
+  - achieved_at
+  - evidence_refs
+  optional_data: []
+  consumers:
+  - journey_projection
+  - credential_engine
+  - crm_projection
+  feature_input: derived_only
+  retention_class: operational
+  notes: ''
+- alias: journey.instance.completed
+  type: org.estimulo.journey.instance.completed
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: journey_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - journey_instance_id
+  - completion_policy_version
+  - completed_at
+  - evidence_refs
+  optional_data:
+  - completion_level
+  consumers:
+  - journey_projection
+  - credential_engine
+  - crm_projection
+  feature_input: derived_only
+  retention_class: operational
+  notes: ''
+- alias: journey.path.assigned
+  type: org.estimulo.journey.path.assigned
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: path_assignment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - path_assignment_id
+  - journey_instance_id
+  - path_template_id
+  - assignment_policy_version
+  - reason_codes
+  optional_data:
+  - diagnostic_result_id
+  - segment_assignment_ids
+  consumers:
+  - journey_projection
+  - explanation_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.path.reassigned
+  type: org.estimulo.journey.path.reassigned
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: path_assignment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - path_assignment_id
+  - previous_path_template_id
+  - new_path_template_id
+  - reason_codes
+  - reassigned_at
+  optional_data:
+  - actor_override_id
+  consumers:
+  - journey_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.path.started
+  type: org.estimulo.journey.path.started
+  class: behavioral_domain
+  bounded_context: journey_orchestration
+  aggregate: path_assignment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - path_assignment_id
+  - journey_instance_id
+  - started_at
+  optional_data: []
+  consumers:
+  - journey_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: journey.path.completed
+  type: org.estimulo.journey.path.completed
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: path_assignment
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - path_assignment_id
+  - completion_policy_version
+  - completed_at
+  - evidence_refs
+  optional_data: []
+  consumers:
+  - journey_projection
+  - credential_engine
+  feature_input: derived_only
+  retention_class: operational
+  notes: ''
+- alias: journey.step.available
+  type: org.estimulo.journey.step.available
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: activity_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - journey_instance_id
+  - path_step_id
+  - activity_version_id
+  - available_at
+  optional_data:
+  - due_at
+  consumers:
+  - journey_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.step.blocked
+  type: org.estimulo.journey.step.blocked
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: activity_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - rule_version
+  - reason_codes
+  - blocked_at
+  optional_data: []
+  consumers:
+  - journey_projection
+  - explanation_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.step.unblocked
+  type: org.estimulo.journey.step.unblocked
+  class: domain
+  bounded_context: journey_orchestration
+  aggregate: activity_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - rule_version
+  - evidence_refs
+  - unblocked_at
+  optional_data: []
+  consumers:
+  - journey_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: journey.step.skipped
+  type: org.estimulo.journey.step.skipped
+  class: behavioral_domain
+  bounded_context: journey_orchestration
+  aggregate: activity_instance
+  producer: journey_orchestration
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - skip_policy_version
+  - skipped_at
+  optional_data:
+  - reason_code
+  - participant_choice
+  consumers:
+  - journey_projection
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: diagnostic.session.started
+  type: org.estimulo.diagnostic.session.started
+  class: behavioral_domain
+  bounded_context: diagnostics
+  aggregate: diagnostic_session
+  producer: diagnostics
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - diagnostic_session_id
+  - diagnostic_version_id
+  - entrepreneur_id
+  - started_at
+  optional_data:
+  - journey_instance_id
+  consumers:
+  - diagnostic_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: diagnostic.response.recorded
+  type: org.estimulo.diagnostic.response.recorded
+  class: behavioral
+  bounded_context: diagnostics
+  aggregate: diagnostic_session
+  producer: diagnostics
+  evidence_kind: server_acknowledged
+  privacy_class: restricted
+  required_data:
+  - diagnostic_session_id
+  - item_version_id
+  - response_value
+  - response_sequence
+  - answered_at
+  optional_data:
+  - response_time_ms
+  - client_event_id
+  consumers:
+  - diagnostic_projection
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: Resposta pode ser sensível; payload deve usar códigos, nunca texto livre desnecessário.
+- alias: diagnostic.response.changed
+  type: org.estimulo.diagnostic.response.changed
+  class: behavioral
+  bounded_context: diagnostics
+  aggregate: diagnostic_session
+  producer: diagnostics
+  evidence_kind: server_acknowledged
+  privacy_class: restricted
+  required_data:
+  - diagnostic_session_id
+  - item_version_id
+  - previous_response_hash
+  - response_value
+  - change_sequence
+  optional_data:
+  - response_time_ms
+  consumers:
+  - diagnostic_projection
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: diagnostic.session.abandoned
+  type: org.estimulo.diagnostic.session.abandoned
+  class: behavioral_domain
+  bounded_context: diagnostics
+  aggregate: diagnostic_session
+  producer: diagnostics
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - diagnostic_session_id
+  - abandoned_at
+  - last_item_version_id
+  optional_data:
+  - reason_code
+  consumers:
+  - diagnostic_projection
+  - intervention_orchestrator
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: diagnostic.session.resumed
+  type: org.estimulo.diagnostic.session.resumed
+  class: behavioral_domain
+  bounded_context: diagnostics
+  aggregate: diagnostic_session
+  producer: diagnostics
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - diagnostic_session_id
+  - resumed_at
+  optional_data:
+  - elapsed_seconds
+  consumers:
+  - diagnostic_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: diagnostic.session.completed
+  type: org.estimulo.diagnostic.session.completed
+  class: behavioral_domain
+  bounded_context: diagnostics
+  aggregate: diagnostic_session
+  producer: diagnostics
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - diagnostic_session_id
+  - completed_at
+  - completeness_ratio
+  optional_data:
+  - quality_flags
+  consumers:
+  - diagnostic_projection
+  - personalization_engine
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: diagnostic.result.generated
+  type: org.estimulo.diagnostic.result.generated
+  class: domain
+  bounded_context: diagnostics
+  aggregate: diagnostic_result
+  producer: diagnostics
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - diagnostic_result_id
+  - diagnostic_session_id
+  - instrument_version
+  - dimension_results
+  - data_quality
+  - generated_at
+  optional_data:
+  - operational_readiness
+  consumers:
+  - personalization_engine
+  - research_projection
+  feature_input: derived_only
+  retention_class: operational
+  notes: ''
+- alias: personalization.recommendation.generated
+  type: org.estimulo.personalization.recommendation.generated
+  class: domain
+  bounded_context: diagnostics
+  aggregate: recommendation
+  producer: personalization_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - recommendation_id
+  - entrepreneur_id
+  - policy_version
+  - recommended_start
+  - reason_codes
+  - generated_at
+  optional_data:
+  - journey_instance_id
+  consumers:
+  - journey_orchestration
+  - explanation_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: personalization.recommendation.presented
+  type: org.estimulo.personalization.recommendation.presented
+  class: behavioral
+  bounded_context: diagnostics
+  aggregate: recommendation
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - recommendation_id
+  - presentation_version
+  - presented_at
+  optional_data:
+  - channel
+  consumers:
+  - behavioral_store
+  feature_input: weak_only
+  retention_class: operational
+  notes: ''
+- alias: personalization.recommendation.accepted
+  type: org.estimulo.personalization.recommendation.accepted
+  class: behavioral_domain
+  bounded_context: diagnostics
+  aggregate: recommendation
+  producer: application_backend
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - recommendation_id
+  - accepted_at
+  optional_data:
+  - selected_option
+  consumers:
+  - journey_orchestration
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: personalization.recommendation.overridden
+  type: org.estimulo.personalization.recommendation.overridden
+  class: behavioral_domain
+  bounded_context: diagnostics
+  aggregate: recommendation
+  producer: application_backend
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - recommendation_id
+  - alternative_selected
+  - overridden_at
+  optional_data:
+  - reason_code
+  consumers:
+  - journey_orchestration
+  - behavioral_store
+  - research_projection
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: personalization.segment.assigned
+  type: org.estimulo.personalization.segment.assigned
+  class: domain
+  bounded_context: diagnostics
+  aggregate: segment_assignment
+  producer: personalization_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - segment_assignment_id
+  - segment_definition_id
+  - policy_version
+  - subject_id
+  - reason_codes
+  - valid_from
+  optional_data:
+  - valid_until
+  - source_event_ids
+  consumers:
+  - journey_orchestration
+  - intervention_orchestrator
+  - research_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: personalization.segment.removed
+  type: org.estimulo.personalization.segment.removed
+  class: domain
+  bounded_context: diagnostics
+  aggregate: segment_assignment
+  producer: personalization_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - segment_assignment_id
+  - removed_at
+  - reason_code
+  optional_data: []
+  consumers:
+  - journey_orchestration
+  - intervention_orchestrator
+  - research_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: personalization.uncertainty.recorded
+  type: org.estimulo.personalization.uncertainty.recorded
+  class: domain
+  bounded_context: diagnostics
+  aggregate: recommendation
+  producer: personalization_engine
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - subject_id
+  - policy_version
+  - uncertainty_reasons
+  - recorded_at
+  optional_data:
+  - missing_inputs
+  consumers:
+  - research_projection
+  - explanation_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: learning.activity.started
+  type: org.estimulo.learning.activity.started
+  class: behavioral_domain
+  bounded_context: learning_delivery
+  aggregate: activity_instance
+  producer: learning_delivery
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - activity_version_id
+  - journey_instance_id
+  - started_at
+  optional_data:
+  - entry_point
+  - attempt_number
+  consumers:
+  - progress_projection
+  - behavioral_store
+  - intervention_orchestrator
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: learning.activity.paused
+  type: org.estimulo.learning.activity.paused
+  class: behavioral
+  bounded_context: learning_delivery
+  aggregate: activity_instance
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - paused_at
+  optional_data:
+  - position
+  - active_duration_seconds
+  - client_event_id
+  consumers:
+  - progress_projection
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: learning.activity.resumed
+  type: org.estimulo.learning.activity.resumed
+  class: behavioral_domain
+  bounded_context: learning_delivery
+  aggregate: activity_instance
+  producer: learning_delivery
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - resumed_at
+  optional_data:
+  - resume_position
+  consumers:
+  - progress_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: learning.activity.progressed
+  type: org.estimulo.learning.activity.progressed
+  class: behavioral
+  bounded_context: learning_delivery
+  aggregate: activity_instance
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - progress_measure
+  - progress_unit
+  - client_event_id
+  optional_data:
+  - active_duration_seconds
+  - client_time
+  - media_position
+  consumers:
+  - progress_projection
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: Eventos de progresso devem ser limitados por frequência e consolidados para evitar ruído.
+- alias: learning.activity.completed
+  type: org.estimulo.learning.activity.completed
+  class: behavioral_domain
+  bounded_context: learning_delivery
+  aggregate: activity_instance
+  producer: learning_delivery
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - completion_policy_version
+  - completed_at
+  - evidence_refs
+  optional_data:
+  - active_duration_seconds
+  consumers:
+  - progress_projection
+  - journey_orchestration
+  - behavioral_store
+  - gamification_engine
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: learning.activity.revisited
+  type: org.estimulo.learning.activity.revisited
+  class: behavioral
+  bounded_context: learning_delivery
+  aggregate: activity_instance
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - activity_instance_id
+  - revisited_at
+  - client_event_id
+  optional_data:
+  - entry_point
+  consumers:
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: learning.asset.opened
+  type: org.estimulo.learning.asset.opened
+  class: behavioral
+  bounded_context: learning_delivery
+  aggregate: content_asset
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - content_asset_id
+  - activity_instance_id
+  - client_event_id
+  - opened_at
+  optional_data:
+  - asset_type
+  consumers:
+  - behavioral_store
+  feature_input: weak_only
+  retention_class: operational
+  notes: ''
+- alias: learning.asset.downloaded
+  type: org.estimulo.learning.asset.downloaded
+  class: behavioral_domain
+  bounded_context: learning_delivery
+  aggregate: content_asset
+  producer: application_backend
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - content_asset_id
+  - activity_instance_id
+  - download_receipt_id
+  - downloaded_at
+  optional_data: []
+  consumers:
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: learning.external_resource.opened
+  type: org.estimulo.learning.external_resource.opened
+  class: behavioral
+  bounded_context: learning_delivery
+  aggregate: external_resource
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - resource_definition_id
+  - activity_instance_id
+  - client_event_id
+  - opened_at
+  optional_data:
+  - destination_domain
+  consumers:
+  - behavioral_store
+  feature_input: weak_only
+  retention_class: operational
+  notes: Não armazenar URL completa com query string.
+- alias: assessment.attempt.started
+  type: org.estimulo.assessment.attempt.started
+  class: behavioral_domain
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: assessment
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - assessment_attempt_id
+  - assessment_version_id
+  - activity_instance_id
+  - attempt_number
+  - started_at
+  optional_data: []
+  consumers:
+  - assessment_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: assessment.answer.recorded
+  type: org.estimulo.assessment.answer.recorded
+  class: behavioral
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: assessment
+  evidence_kind: server_acknowledged
+  privacy_class: restricted
+  required_data:
+  - assessment_attempt_id
+  - question_version_id
+  - answer_payload
+  - answer_sequence
+  - recorded_at
+  optional_data:
+  - response_time_ms
+  consumers:
+  - assessment_projection
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: assessment.attempt.submitted
+  type: org.estimulo.assessment.attempt.submitted
+  class: behavioral_domain
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: assessment
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - assessment_attempt_id
+  - submitted_at
+  - answered_count
+  optional_data:
+  - active_duration_seconds
+  consumers:
+  - assessment_projection
+  - scoring_engine
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: assessment.attempt.scored
+  type: org.estimulo.assessment.attempt.scored
+  class: domain
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: scoring_engine
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - assessment_attempt_id
+  - scoring_policy_version
+  - score
+  - max_score
+  - scored_at
+  optional_data:
+  - dimension_scores
+  - quality_flags
+  consumers:
+  - assessment_projection
+  - journey_orchestration
+  - research_projection
+  feature_input: derived_only
+  retention_class: operational
+  notes: ''
+- alias: assessment.attempt.passed
+  type: org.estimulo.assessment.attempt.passed
+  class: domain
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: scoring_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - assessment_attempt_id
+  - passing_policy_version
+  - passed_at
+  - evidence_refs
+  optional_data: []
+  consumers:
+  - assessment_projection
+  - journey_orchestration
+  - gamification_engine
+  feature_input: derived_only
+  retention_class: operational
+  notes: ''
+- alias: assessment.attempt.failed
+  type: org.estimulo.assessment.attempt.failed
+  class: domain
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: scoring_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - assessment_attempt_id
+  - passing_policy_version
+  - failed_at
+  optional_data:
+  - reason_codes
+  consumers:
+  - assessment_projection
+  - intervention_orchestrator
+  feature_input: derived_only
+  retention_class: operational
+  notes: ''
+- alias: assessment.attempt.invalidated
+  type: org.estimulo.assessment.attempt.invalidated
+  class: audit
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: assessment
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - assessment_attempt_id
+  - invalidated_at
+  - reason_code
+  - invalidated_by
+  optional_data: []
+  consumers:
+  - assessment_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: assessment.feedback.available
+  type: org.estimulo.assessment.feedback.available
+  class: domain
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: assessment
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - assessment_attempt_id
+  - feedback_version
+  - available_at
+  optional_data: []
+  consumers:
+  - assessment_projection
+  - notification_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: assessment.feedback.viewed
+  type: org.estimulo.assessment.feedback.viewed
+  class: behavioral
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - assessment_attempt_id
+  - feedback_version
+  - client_event_id
+  - viewed_at
+  optional_data: []
+  consumers:
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: assessment.retry.available
+  type: org.estimulo.assessment.retry.available
+  class: domain
+  bounded_context: assessment
+  aggregate: assessment_attempt
+  producer: assessment
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - assessment_attempt_id
+  - retry_policy_version
+  - next_attempt_number
+  - available_at
+  optional_data:
+  - available_until
+  consumers:
+  - assessment_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: practice.activity.started
+  type: org.estimulo.practice.activity.started
+  class: behavioral_domain
+  bounded_context: practice
+  aggregate: practice_instance
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - practice_instance_id
+  - activity_instance_id
+  - started_at
+  optional_data: []
+  consumers:
+  - practice_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: practice.submission.draft_saved
+  type: org.estimulo.practice.submission.draft_saved
+  class: behavioral_domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - submission_id
+  - practice_instance_id
+  - revision_number
+  - saved_at
+  optional_data:
+  - field_presence
+  - attachment_count
+  consumers:
+  - practice_projection
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: practice.evidence.attached
+  type: org.estimulo.practice.evidence.attached
+  class: behavioral_domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - submission_id
+  - evidence_asset_id
+  - asset_type
+  - attached_at
+  optional_data:
+  - content_hash
+  consumers:
+  - practice_projection
+  - security_scanner
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: practice.evidence.removed
+  type: org.estimulo.practice.evidence.removed
+  class: behavioral_domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - submission_id
+  - evidence_asset_id
+  - removed_at
+  optional_data:
+  - reason_code
+  consumers:
+  - practice_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: practice.submission.submitted
+  type: org.estimulo.practice.submission.submitted
+  class: behavioral_domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - submission_id
+  - practice_instance_id
+  - revision_number
+  - submitted_at
+  - evidence_refs
+  optional_data:
+  - self_report_fields
+  consumers:
+  - practice_projection
+  - review_queue
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: practice.review.started
+  type: org.estimulo.practice.review.started
+  class: audit
+  bounded_context: practice
+  aggregate: practice_review
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - review_id
+  - submission_id
+  - reviewer_id
+  - rubric_version
+  - started_at
+  optional_data: []
+  consumers:
+  - practice_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: practice.revision.requested
+  type: org.estimulo.practice.revision.requested
+  class: domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - review_id
+  - submission_id
+  - rubric_version
+  - reason_codes
+  - requested_at
+  optional_data:
+  - feedback_ref
+  consumers:
+  - practice_projection
+  - notification_orchestrator
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: practice.submission.resubmitted
+  type: org.estimulo.practice.submission.resubmitted
+  class: behavioral_domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - submission_id
+  - revision_number
+  - resubmitted_at
+  - evidence_refs
+  optional_data: []
+  consumers:
+  - practice_projection
+  - review_queue
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: practice.submission.accepted
+  type: org.estimulo.practice.submission.accepted
+  class: domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - review_id
+  - submission_id
+  - rubric_version
+  - accepted_at
+  - evidence_summary
+  optional_data: []
+  consumers:
+  - practice_projection
+  - journey_orchestration
+  - gamification_engine
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: practice.submission.rejected
+  type: org.estimulo.practice.submission.rejected
+  class: domain
+  bounded_context: practice
+  aggregate: practice_submission
+  producer: practice
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - review_id
+  - submission_id
+  - rubric_version
+  - rejected_at
+  - reason_codes
+  optional_data: []
+  consumers:
+  - practice_projection
+  - intervention_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: practice.application.self_reported
+  type: org.estimulo.practice.application.self_reported
+  class: behavioral
+  bounded_context: practice
+  aggregate: application_evidence
+  producer: practice
+  evidence_kind: self_reported
+  privacy_class: restricted
+  required_data:
+  - practice_instance_id
+  - application_status
+  - reported_at
+  optional_data:
+  - result_description_code
+  - evidence_asset_id
+  consumers:
+  - research_projection
+  - behavioral_store
+  feature_input: conditional
+  retention_class: operational
+  notes: Nunca equivale automaticamente a aplicação comprovada.
+- alias: practice.application.verified
+  type: org.estimulo.practice.application.verified
+  class: domain
+  bounded_context: practice
+  aggregate: application_evidence
+  producer: practice
+  evidence_kind: reviewer_validated
+  privacy_class: restricted
+  required_data:
+  - application_evidence_id
+  - practice_instance_id
+  - verification_method
+  - verified_at
+  - verifier_id
+  optional_data:
+  - evidence_refs
+  consumers:
+  - research_projection
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: practice.use_permission.granted
+  type: org.estimulo.practice.use_permission.granted
+  class: domain
+  bounded_context: governance
+  aggregate: content_permission
+  producer: governance
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - permission_id
+  - submission_id
+  - purpose_code
+  - notice_version
+  - granted_at
+  optional_data:
+  - expires_at
+  consumers:
+  - content_curation
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: practice.use_permission.withdrawn
+  type: org.estimulo.practice.use_permission.withdrawn
+  class: domain
+  bounded_context: governance
+  aggregate: content_permission
+  producer: governance
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - permission_id
+  - submission_id
+  - withdrawn_at
+  optional_data: []
+  consumers:
+  - content_curation
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: engagement.points.awarded
+  type: org.estimulo.engagement.points.awarded
+  class: domain
+  bounded_context: engagement
+  aggregate: point_ledger_entry
+  producer: gamification_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - ledger_entry_id
+  - entrepreneur_id
+  - rule_version
+  - points
+  - source_event_ids
+  - awarded_at
+  optional_data:
+  - journey_instance_id
+  consumers:
+  - points_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: Evento derivado de fatos de origem; não usar diretamente como feature.
+- alias: engagement.points.reversed
+  type: org.estimulo.engagement.points.reversed
+  class: domain
+  bounded_context: engagement
+  aggregate: point_ledger_entry
+  producer: gamification_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - ledger_entry_id
+  - reverses_entry_id
+  - reason_code
+  - reversed_at
+  optional_data: []
+  consumers:
+  - points_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: engagement.badge.awarded
+  type: org.estimulo.engagement.badge.awarded
+  class: domain
+  bounded_context: engagement
+  aggregate: badge_award
+  producer: gamification_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - badge_award_id
+  - badge_version_id
+  - entrepreneur_id
+  - source_event_ids
+  - awarded_at
+  optional_data:
+  - journey_instance_id
+  consumers:
+  - badge_projection
+  - crm_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: engagement.badge.revoked
+  type: org.estimulo.engagement.badge.revoked
+  class: domain
+  bounded_context: engagement
+  aggregate: badge_award
+  producer: gamification_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - badge_award_id
+  - reason_code
+  - revoked_at
+  optional_data: []
+  consumers:
+  - badge_projection
+  - crm_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: credential.certificate.issued
+  type: org.estimulo.credential.certificate.issued
+  class: domain
+  bounded_context: credentials
+  aggregate: certificate
+  producer: credential_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - certificate_id
+  - certificate_definition_version_id
+  - entrepreneur_id
+  - journey_instance_id
+  - evidence_snapshot
+  - issued_at
+  optional_data:
+  - expires_at
+  consumers:
+  - credential_projection
+  - crm_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: credential.certificate.revoked
+  type: org.estimulo.credential.certificate.revoked
+  class: domain
+  bounded_context: credentials
+  aggregate: certificate
+  producer: credential_engine
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - certificate_id
+  - reason_code
+  - revoked_at
+  optional_data: []
+  consumers:
+  - credential_projection
+  - crm_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: credential.certificate.downloaded
+  type: org.estimulo.credential.certificate.downloaded
+  class: behavioral
+  bounded_context: credentials
+  aggregate: certificate
+  producer: application_backend
+  evidence_kind: server_acknowledged
+  privacy_class: pseudonymous
+  required_data:
+  - certificate_id
+  - client_event_id
+  - downloaded_at
+  optional_data: []
+  consumers:
+  - behavioral_store
+  feature_input: weak_only
+  retention_class: operational
+  notes: ''
+- alias: intervention.eligibility.detected
+  type: org.estimulo.intervention.eligibility.detected
+  class: domain
+  bounded_context: interventions
+  aggregate: intervention_candidate
+  producer: intervention_orchestrator
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - candidate_id
+  - intervention_definition_version_id
+  - subject_id
+  - trigger_event_ids
+  - rule_version
+  - detected_at
+  optional_data:
+  - priority
+  consumers:
+  - intervention_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: intervention.instance.created
+  type: org.estimulo.intervention.instance.created
+  class: domain
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: intervention_orchestrator
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - candidate_id
+  - channel
+  - created_at
+  optional_data:
+  - scheduled_for
+  consumers:
+  - intervention_projection
+  - notification_orchestrator
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: intervention.instance.suppressed
+  type: org.estimulo.intervention.instance.suppressed
+  class: domain
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: intervention_orchestrator
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - suppression_policy_version
+  - reason_codes
+  - suppressed_at
+  optional_data: []
+  consumers:
+  - intervention_projection
+  - research_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: intervention.message.sent
+  type: org.estimulo.intervention.message.sent
+  class: integration
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: notification_connector
+  evidence_kind: external_confirmed
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - delivery_id
+  - channel
+  - provider
+  - sent_at
+  optional_data:
+  - template_version
+  consumers:
+  - intervention_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: intervention.message.delivered
+  type: org.estimulo.intervention.message.delivered
+  class: integration
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: notification_connector
+  evidence_kind: external_confirmed
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - delivery_id
+  - delivered_at
+  optional_data: []
+  consumers:
+  - intervention_projection
+  - research_projection
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: intervention.message.opened
+  type: org.estimulo.intervention.message.opened
+  class: behavioral
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: notification_connector
+  evidence_kind: external_observed
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - delivery_id
+  - opened_at
+  optional_data: []
+  consumers:
+  - intervention_projection
+  - research_projection
+  feature_input: weak_only
+  retention_class: operational
+  notes: ''
+- alias: intervention.action.taken
+  type: org.estimulo.intervention.action.taken
+  class: behavioral_domain
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: application_backend
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - action_code
+  - source_event_id
+  - acted_at
+  optional_data: []
+  consumers:
+  - intervention_projection
+  - behavioral_store
+  - research_projection
+  feature_input: conditional
+  retention_class: operational
+  notes: Evitar circularidade quando a própria resposta for o outcome da intervenção.
+- alias: intervention.instance.dismissed
+  type: org.estimulo.intervention.instance.dismissed
+  class: behavioral_domain
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: application_backend
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - dismissed_at
+  optional_data:
+  - reason_code
+  consumers:
+  - intervention_projection
+  - research_projection
+  feature_input: conditional
+  retention_class: operational
+  notes: ''
+- alias: intervention.delivery.failed
+  type: org.estimulo.intervention.delivery.failed
+  class: integration
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: notification_connector
+  evidence_kind: external_confirmed
+  privacy_class: internal
+  required_data:
+  - intervention_instance_id
+  - delivery_id
+  - failure_code
+  - failed_at
+  optional_data:
+  - retryable
+  consumers:
+  - intervention_projection
+  - operations_monitoring
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: intervention.instance.cancelled
+  type: org.estimulo.intervention.instance.cancelled
+  class: domain
+  bounded_context: interventions
+  aggregate: intervention_instance
+  producer: intervention_orchestrator
+  evidence_kind: server_transactional
+  privacy_class: pseudonymous
+  required_data:
+  - intervention_instance_id
+  - reason_code
+  - cancelled_at
+  optional_data: []
+  consumers:
+  - intervention_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: support.requested
+  type: org.estimulo.support.requested
+  class: behavioral_domain
+  bounded_context: interventions
+  aggregate: support_request
+  producer: application_backend
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - support_request_id
+  - entrepreneur_id
+  - request_category
+  - requested_at
+  optional_data:
+  - journey_instance_id
+  - activity_instance_id
+  - preferred_channel
+  consumers:
+  - support_queue
+  - behavioral_store
+  feature_input: eligible
+  retention_class: operational
+  notes: ''
+- alias: support.request.fulfilled
+  type: org.estimulo.support.request.fulfilled
+  class: domain
+  bounded_context: interventions
+  aggregate: support_request
+  producer: support_operations
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - support_request_id
+  - fulfillment_type
+  - fulfilled_at
+  optional_data:
+  - resolution_code
+  consumers:
+  - support_projection
+  - research_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: integration.sync.requested
+  type: org.estimulo.integration.sync.requested
+  class: integration
+  bounded_context: integrations
+  aggregate: sync_operation
+  producer: integration_orchestrator
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - sync_operation_id
+  - connector
+  - entity_type
+  - entity_id
+  - mapping_version
+  - requested_at
+  optional_data:
+  - trigger_event_ids
+  consumers:
+  - integration_worker
+  - operations_monitoring
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: integration.sync.succeeded
+  type: org.estimulo.integration.sync.succeeded
+  class: integration
+  bounded_context: integrations
+  aggregate: sync_operation
+  producer: integration_worker
+  evidence_kind: external_confirmed
+  privacy_class: internal
+  required_data:
+  - sync_operation_id
+  - connector
+  - external_object_id
+  - succeeded_at
+  optional_data:
+  - external_version
+  consumers:
+  - integration_projection
+  - operations_monitoring
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: integration.sync.failed
+  type: org.estimulo.integration.sync.failed
+  class: integration
+  bounded_context: integrations
+  aggregate: sync_operation
+  producer: integration_worker
+  evidence_kind: external_confirmed
+  privacy_class: internal
+  required_data:
+  - sync_operation_id
+  - connector
+  - failure_code
+  - failed_at
+  - retryable
+  optional_data:
+  - provider_request_id
+  consumers:
+  - integration_projection
+  - retry_scheduler
+  - operations_monitoring
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: integration.conflict.detected
+  type: org.estimulo.integration.conflict.detected
+  class: integration
+  bounded_context: integrations
+  aggregate: sync_operation
+  producer: integration_worker
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - sync_operation_id
+  - entity_type
+  - entity_id
+  - conflicting_fields
+  - detected_at
+  optional_data:
+  - external_snapshot_hash
+  consumers:
+  - reconciliation_queue
+  - operations_monitoring
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: integration.conflict.reconciled
+  type: org.estimulo.integration.conflict.reconciled
+  class: integration
+  bounded_context: integrations
+  aggregate: sync_operation
+  producer: integration_worker
+  evidence_kind: server_transactional
+  privacy_class: restricted
+  required_data:
+  - sync_operation_id
+  - resolution_policy
+  - resolved_fields
+  - reconciled_at
+  optional_data:
+  - resolved_by
+  consumers:
+  - integration_projection
+  - audit_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: integration.webhook.received
+  type: org.estimulo.integration.webhook.received
+  class: integration
+  bounded_context: integrations
+  aggregate: webhook_delivery
+  producer: webhook_gateway
+  evidence_kind: external_observed
+  privacy_class: internal
+  required_data:
+  - webhook_delivery_id
+  - connector
+  - provider_event_id
+  - received_at
+  - payload_hash
+  optional_data: []
+  consumers:
+  - webhook_validation
+  - operations_monitoring
+  feature_input: ineligible
+  retention_class: integration_short
+  notes: ''
+- alias: integration.webhook.validated
+  type: org.estimulo.integration.webhook.validated
+  class: integration
+  bounded_context: integrations
+  aggregate: webhook_delivery
+  producer: webhook_gateway
+  evidence_kind: server_acknowledged
+  privacy_class: internal
+  required_data:
+  - webhook_delivery_id
+  - signature_version
+  - validated_at
+  optional_data: []
+  consumers:
+  - webhook_processing
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: integration.webhook.rejected
+  type: org.estimulo.integration.webhook.rejected
+  class: audit
+  bounded_context: integrations
+  aggregate: webhook_delivery
+  producer: webhook_gateway
+  evidence_kind: server_acknowledged
+  privacy_class: restricted
+  required_data:
+  - webhook_delivery_id
+  - reason_code
+  - rejected_at
+  optional_data: []
+  consumers:
+  - security_monitoring
+  - operations_monitoring
+  feature_input: ineligible
+  retention_class: security_short
+  notes: ''
+- alias: integration.webhook.processed
+  type: org.estimulo.integration.webhook.processed
+  class: integration
+  bounded_context: integrations
+  aggregate: webhook_delivery
+  producer: integration_worker
+  evidence_kind: server_transactional
+  privacy_class: internal
+  required_data:
+  - webhook_delivery_id
+  - canonical_event_ids
+  - processed_at
+  optional_data: []
+  consumers:
+  - integration_projection
+  feature_input: ineligible
+  retention_class: operational
+  notes: ''
+- alias: external.credit.stage.changed
+  type: org.estimulo.external.credit.stage.changed
+  class: integration
+  bounded_context: integrations
+  aggregate: credit_operation
+  producer: credit_connector
+  evidence_kind: external_confirmed
+  privacy_class: restricted
+  required_data:
+  - credit_operation_ref
+  - previous_stage_code
+  - new_stage_code
+  - source_occurred_at
+  - source_event_id
+  optional_data:
+  - business_id
+  - entrepreneur_id
+  - reason_codes
+  consumers:
+  - journey_orchestration
+  - intervention_orchestrator
+  - research_projection
+  feature_input: conditional
+  retention_class: operational
+  notes: Contrato reservado; não implementar até receber estados, IDs e fonte oficial da operação de crédito.

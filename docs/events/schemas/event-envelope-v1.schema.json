@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.estimulo.org/events/envelope/1.0.0.json",
+  "title": "Estimulo Canonical Event Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "specversion",
+    "id",
+    "source",
+    "type",
+    "subject",
+    "time",
+    "datacontenttype",
+    "dataschema",
+    "tenantid",
+    "correlationid",
+    "aggregateid",
+    "aggregateversion",
+    "privacyclass",
+    "producer",
+    "data"
+  ],
+  "properties": {
+    "specversion": {
+      "const": "1.0"
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source": {
+      "type": "string",
+      "format": "uri"
+    },
+    "type": {
+      "type": "string",
+      "pattern": "^org\\.estimulo\\.[a-z0-9]+(?:[._][a-z0-9]+)*$"
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "datacontenttype": {
+      "const": "application/json"
+    },
+    "dataschema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "tenantid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "correlationid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "causationid": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "traceparent": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 128
+    },
+    "partitionkey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "aggregateid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "aggregateversion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "privacyclass": {
+      "enum": [
+        "internal",
+        "pseudonymous",
+        "restricted"
+      ]
+    },
+    "producer": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$"
+    },
+    "clienteventid": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "correctionof": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "data": {
+      "type": "object"
+    }
+  }
+}

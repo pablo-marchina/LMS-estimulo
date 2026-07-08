@@ -1,0 +1,100 @@
+instrument:
+  code: diagnostic-production
+  version: 0.2
+  status: draft_for_initial_production
+  purposes:
+    - operational_routing
+    - low_risk_personalization
+    - prospective_research
+  prohibited_uses:
+    - credit_decision
+    - credit_pricing
+    - default_prediction
+    - permanent_personality_label
+
+sections:
+  - code: goal
+    outputs:
+      - primary_goal
+      - target_use_case
+      - application_horizon
+      - priority_business_area
+
+  - code: operational_readiness
+    outputs:
+      - access_readiness
+      - digital_preparation_needed
+      - privacy_preparation_needed
+      - support_preference
+      - available_time_band
+
+  - code: exploratory_dimensions
+    dimensions:
+      - action_planning
+      - information_control
+      - execution_self_regulation
+      - persistence_recovery
+      - applied_learning
+      - support_use
+      - digital_experimentation
+      - confidence_verification
+    scoring:
+      method: equal_weight_mean
+      normalized_range: [0, 100]
+      minimum_answered_ratio: 0.6
+      missing_result: insufficient_evidence
+      interface_labels: prohibited_until_validated
+
+  - code: preferences
+    outputs:
+      - preferred_formats
+      - nudge_opt_in
+      - nudge_frequency_cap
+      - support_mode
+      - instruction_granularity
+
+operational_segments:
+  - digital_preparation_needed
+  - privacy_preparation_needed
+  - guided_start_recommended
+  - self_directed_start
+  - practice_support_needed
+  - assessment_recovery_needed
+  - reengagement_needed
+  - completed_not_applied
+  - human_support_requested
+  - uncertain_personalization
+
+routing_priority:
+  - factual_access_constraints
+  - declared_goal
+  - observed_behavior
+  - provisional_dimensions
+  - default_experience
+
+archetypes:
+  enabled: false
+  required_for_participation: false
+  future_discovery:
+    compare_profile_counts: [1, 2, 3, 4, 5, 6]
+    require_utility_over_simple_rules: true
+    require_uncertainty_state: true
+
+output:
+  fields:
+    - instrument_version
+    - status
+    - operational_readiness
+    - dimension_scores
+    - data_quality
+    - operational_segments
+    - recommended_start
+    - classification
+
+review_checkpoints:
+  - participants: 20
+    purpose: usability_and_event_quality
+  - participants: 50
+    purpose: item_distribution_and_rule_quality
+  - participants: 100
+    purpose: preliminary_exploratory_analysis
