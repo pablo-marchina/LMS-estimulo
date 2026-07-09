@@ -1,0 +1,204 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_step1_vertical_unit",
+  "status": "approved_for_internal_runtime_validation",
+  "openai_content_status": "BLOCKED",
+  "openai_delivery_credit": false,
+  "visibility": "internal_test_only",
+  "journey": {
+    "code": "e14_runtime_validation_journey",
+    "version": 1,
+    "title": "Validação técnica do fluxo de aprendizagem",
+    "description": "Jornada sintética interna usada exclusivamente para provar o runtime multi-jornada.",
+    "publishable_to_real_participants": false,
+    "partner_attribution": null,
+    "language": "pt-BR"
+  },
+  "diagnostic": {
+    "code": "e14_runtime_readiness_diagnostic",
+    "version": 1,
+    "purpose": "Selecionar um caminho técnico de demonstração; não possui validade psicométrica, educacional ou de crédito.",
+    "dimensions": [
+      {"code": "tool_familiarity", "min_score": 0, "max_score": 4},
+      {"code": "review_autonomy", "min_score": 0, "max_score": 4}
+    ],
+    "questions": [
+      {
+        "code": "q1_digital_assistant_frequency",
+        "dimension": "tool_familiarity",
+        "prompt": "Com que frequência você usa assistentes digitais para executar tarefas?",
+        "required": true,
+        "options": [
+          {"code": "never", "label": "Nunca", "score": 0},
+          {"code": "sometimes", "label": "Às vezes", "score": 1},
+          {"code": "frequently", "label": "Com frequência", "score": 2},
+          {"code": "unknown", "label": "Não sei avaliar", "score": 0, "uncertain": true}
+        ]
+      },
+      {
+        "code": "q2_follow_instructions",
+        "dimension": "tool_familiarity",
+        "prompt": "Ao receber instruções passo a passo em uma ferramenta nova, como você costuma avançar?",
+        "required": true,
+        "options": [
+          {"code": "need_support", "label": "Preciso de acompanhamento", "score": 0},
+          {"code": "some_support", "label": "Consigo com alguma ajuda", "score": 1},
+          {"code": "independent", "label": "Consigo de forma independente", "score": 2},
+          {"code": "unknown", "label": "Não sei avaliar", "score": 0, "uncertain": true}
+        ]
+      },
+      {
+        "code": "q3_identify_components",
+        "dimension": "review_autonomy",
+        "prompt": "Você consegue separar os dados de entrada, a regra aplicada e o resultado esperado de um processo?",
+        "required": true,
+        "options": [
+          {"code": "not_yet", "label": "Ainda não", "score": 0},
+          {"code": "with_example", "label": "Com um exemplo", "score": 1},
+          {"code": "yes", "label": "Sim", "score": 2},
+          {"code": "unknown", "label": "Não sei avaliar", "score": 0, "uncertain": true}
+        ]
+      },
+      {
+        "code": "q4_review_output",
+        "dimension": "review_autonomy",
+        "prompt": "Antes de usar o resultado de uma automação, você revisa se ele corresponde aos dados e à regra informados?",
+        "required": true,
+        "options": [
+          {"code": "rarely", "label": "Raramente", "score": 0},
+          {"code": "sometimes", "label": "Às vezes", "score": 1},
+          {"code": "always", "label": "Sempre", "score": 2},
+          {"code": "unknown", "label": "Não sei avaliar", "score": 0, "uncertain": true}
+        ]
+      }
+    ],
+    "assignment_rule": {
+      "type": "deterministic_internal_fixture",
+      "low_confidence_when": "uncertain_answer_count >= 2",
+      "guided_when": "low_confidence OR tool_familiarity <= 2 OR review_autonomy <= 2",
+      "standard_when": "NOT low_confidence AND tool_familiarity >= 3 AND review_autonomy >= 3",
+      "fallback_path": "guided",
+      "records_uncertainty": true
+    }
+  },
+  "paths": [
+    {"code": "guided", "title": "Caminho guiado", "steps": ["welcome", "diagnosis", "guided_context", "activity", "quick_check", "completion"]},
+    {"code": "standard", "title": "Caminho direto", "steps": ["welcome", "diagnosis", "activity", "quick_check", "completion"]}
+  ],
+  "activity": {
+    "code": "inputs_rules_outputs",
+    "version": 1,
+    "title": "Entradas, regras, saídas e validação humana",
+    "estimated_duration_minutes": 6,
+    "learning_objective": "Distinguir os dados de entrada, a regra de processamento, a saída produzida e a validação humana em um fluxo simples.",
+    "content_sections": [
+      {"code": "input", "heading": "Entrada", "body": "Entrada é a informação fornecida ao processo. No exemplo, a entrada é o valor total de um pedido."},
+      {"code": "rule", "heading": "Regra", "body": "Regra é a condição aplicada à entrada. No exemplo, pedidos com valor igual ou superior a R$ 100 recebem frete grátis."},
+      {"code": "output", "heading": "Saída", "body": "Saída é o resultado produzido após aplicar a regra. Para um pedido de R$ 120, a saída informa frete grátis."},
+      {"code": "human_validation", "heading": "Validação humana", "body": "Antes de usar o resultado, a pessoa verifica se a entrada está correta, se a regra vigente foi aplicada e se a saída faz sentido."}
+    ],
+    "guided_context": {
+      "estimated_duration_minutes": 2,
+      "body": "No caminho guiado, cada componente é destacado separadamente antes do mesmo conteúdo principal. Esse passo não altera o objetivo nem a avaliação."
+    },
+    "accessibility": {
+      "text_first": true,
+      "requires_audio": false,
+      "requires_video": false,
+      "keyboard_only_supported": true,
+      "screen_reader_labels_required": true,
+      "color_not_sole_indicator": true,
+      "language": "pt-BR"
+    },
+    "authorization": {
+      "owner": "Plataforma Estímulo - artefato técnico interno",
+      "source": "Conteúdo original produzido para validação do runtime",
+      "external_license_required": false,
+      "real_participant_use_authorized": false
+    }
+  },
+  "quick_check": {
+    "code": "inputs_rules_outputs_check",
+    "version": 1,
+    "type": "single_choice",
+    "prompt": "Um sistema recebe o valor do pedido e concede frete grátis quando o valor é igual ou superior a R$ 100. Qual elemento representa a regra?",
+    "options": [
+      {"code": "a", "label": "O valor do pedido", "correct": false, "feedback": "O valor do pedido é a entrada do processo."},
+      {"code": "b", "label": "A condição valor do pedido ≥ R$ 100", "correct": true, "feedback": "Correto. A condição define como a entrada será processada."},
+      {"code": "c", "label": "O resultado frete grátis", "correct": false, "feedback": "Frete grátis é a saída produzida pela regra."},
+      {"code": "d", "label": "A conferência final feita pela pessoa", "correct": false, "feedback": "A conferência é a validação humana do resultado."}
+    ],
+    "passing_score": 1,
+    "max_attempts": 3,
+    "feedback_policy": "immediate_per_option",
+    "show_correct_answer_after": "final_failed_attempt",
+    "allow_resume": false,
+    "time_limit_seconds": null
+  },
+  "completion_rule": {
+    "all_required": [
+      "diagnostic.session.completed",
+      "journey.path.assigned",
+      "learning.activity.started",
+      "all_content_sections_acknowledged",
+      "assessment.attempt.passed"
+    ],
+    "activity_completion_effects": [
+      "learning.activity.completed",
+      "journey.path.completed",
+      "journey.instance.completed",
+      "progress_percent=100"
+    ],
+    "time_spent_is_not_sufficient": true
+  },
+  "points": {
+    "production_rule": false,
+    "currency": "internal_test_points",
+    "entries": [
+      {"rule_code": "e14_activity_complete_v1", "amount": 5, "caused_by": "learning.activity.completed", "idempotency_scope": "enrollment_id:activity_version_id"},
+      {"rule_code": "e14_quick_check_pass_v1", "amount": 2, "caused_by": "assessment.attempt.passed", "idempotency_scope": "enrollment_id:assessment_version_id"}
+    ],
+    "maximum_total_per_enrollment": 7,
+    "transferable_to_real_rewards": false
+  },
+  "required_events": [
+    "catalog.journey_version.published",
+    "catalog.activity_version.published",
+    "catalog.diagnostic_version.published",
+    "catalog.assessment_version.published",
+    "journey.enrollment.created",
+    "journey.enrollment.activated",
+    "journey.instance.available",
+    "journey.instance.started",
+    "diagnostic.session.started",
+    "diagnostic.response.recorded",
+    "diagnostic.session.completed",
+    "diagnostic.result.generated",
+    "personalization.uncertainty.recorded",
+    "journey.path.assigned",
+    "journey.path.started",
+    "journey.step.available",
+    "learning.activity.started",
+    "learning.activity.progressed",
+    "assessment.attempt.started",
+    "assessment.answer.recorded",
+    "assessment.attempt.submitted",
+    "assessment.attempt.scored",
+    "assessment.attempt.passed",
+    "assessment.attempt.failed",
+    "assessment.feedback.available",
+    "learning.activity.completed",
+    "engagement.points.awarded",
+    "journey.path.completed",
+    "journey.instance.completed"
+  ],
+  "explicit_limitations": [
+    "Não é conteúdo da Jornada OpenAI.",
+    "Não pode ser exibido a participantes reais.",
+    "Não valida aprendizagem sobre IA, ChatGPT ou Codex.",
+    "O diagnóstico não é psicométrico e não produz arquétipos.",
+    "Nenhum resultado pode ser usado para decisão de crédito.",
+    "Os pontos são apenas dados de teste e não aprovam regras reais de gamificação.",
+    "A conclusão desta jornada não conta como entrega da Jornada OpenAI."
+  ]
+}

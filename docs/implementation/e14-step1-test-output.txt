@@ -1,0 +1,18 @@
+TAP version 13
+# Subtest: atribui standard quando ambas as dimensões têm evidência suficiente
+ok 1
+# Subtest: atribui guided quando uma dimensão está no limiar inferior
+ok 2
+# Subtest: baixa confiança sempre usa fallback guided
+ok 3
+# Subtest: quick check possui exatamente uma resposta correta e feedback completo
+ok 4
+# Subtest: pontos são idempotentes, limitados e exclusivamente técnicos
+ok 5
+# Subtest: todos os eventos usados existem no catálogo canônico
+ok 6
+1..6
+# tests 6
+# pass 6
+# fail 0
+# duration_ms 218.611406

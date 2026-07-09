@@ -1,0 +1,12 @@
+{
+  "status": "ok",
+  "artifact": "e14_step1_vertical_unit",
+  "openai_content_status": "BLOCKED",
+  "questions": 4,
+  "dimensions": 2,
+  "paths": ["guided", "standard"],
+  "content_sections": 4,
+  "quick_check_options": 4,
+  "required_events": 29,
+  "maximum_test_points": 7
+}
