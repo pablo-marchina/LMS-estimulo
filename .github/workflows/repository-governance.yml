@@ -1,0 +1,86 @@
+name: Repository governance
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repository-governance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  naming:
+    name: Validate naming conventions
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate branch name
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          standard='^(feat|fix|docs|refactor|test|ci|chore|security|hotfix)/[a-z0-9]+(-[a-z0-9]+)*$'
+          dependabot='^dependabot/(npm_and_yarn|github_actions)/[A-Za-z0-9._/-]+$'
+
+          if [[ ! "$BRANCH_NAME" =~ $standard && ! "$BRANCH_NAME" =~ $dependabot ]]; then
+            echo "Invalid branch name: $BRANCH_NAME"
+            echo "Expected: <type>/<scope>-<description> in kebab-case."
+            exit 1
+          fi
+
+      - name: Validate pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pattern='^(feat|fix|docs|refactor|test|ci|chore|security|perf|build)(\([a-z0-9-]+\))?(!)?: .{10,}$'
+
+          if [[ ! "$PR_TITLE" =~ $pattern ]]; then
+            echo "Invalid pull request title: $PR_TITLE"
+            echo "Expected Conventional Commits, for example: feat(diagnostics): add versioned assignment"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate new canonical file names
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          invalid=0
+
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            filename="${path##*/}"
+
+            if [[ "$path" == docs/*.md || "$path" == docs/**/*.md ]]; then
+              doc_pattern='^([A-Z0-9]+(_[A-Z0-9]+)*|ADR-[0-9]{3}-[A-Z0-9]+(-[A-Z0-9]+)*)\.md$'
+              if [[ ! "$filename" =~ $doc_pattern ]]; then
+                echo "Invalid canonical documentation filename: $path"
+                invalid=1
+              fi
+            fi
+
+            if [[ "$path" == supabase/migrations/*.sql ]]; then
+              migration_pattern='^[0-9]{14}_m[0-9]+[a-z]?_[a-z0-9_]+\.sql$'
+              if [[ ! "$filename" =~ $migration_pattern ]]; then
+                echo "Invalid migration filename: $path"
+                invalid=1
+              fi
+            fi
+          done < <(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")
+
+          if [[ "$invalid" -ne 0 ]]; then
+            exit 1
+          fi
