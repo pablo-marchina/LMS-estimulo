@@ -1,0 +1,229 @@
+name: E14 runtime history export
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_project_ref:
+        description: "Type the authorized Supabase development/test project ref"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  EXPECTED_PROJECT_REF: cfpfeavjlgheqqiaqtzv
+  ARTIFACT_ROOT: .artifacts/e14-runtime-history
+
+jobs:
+  export:
+    name: Export read-only migration history
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Validate explicit project confirmation
+        env:
+          CONFIRMED_PROJECT_REF: ${{ inputs.confirm_project_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$CONFIRMED_PROJECT_REF" != "$EXPECTED_PROJECT_REF" ]]; then
+            echo "The supplied project ref does not match the authorized development/test project."
+            exit 1
+          fi
+
+      - name: Validate read-only database secret
+        env:
+          DATABASE_URL: ${{ secrets.E14_SUPABASE_DB_URL_READ_ONLY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$DATABASE_URL" ]]; then
+            echo "Missing repository secret E14_SUPABASE_DB_URL_READ_ONLY."
+            exit 1
+          fi
+          if [[ "$DATABASE_URL" != *"$EXPECTED_PROJECT_REF"* ]]; then
+            echo "The database URL does not identify the authorized development/test project."
+            exit 1
+          fi
+
+      - name: Create isolated artifact directories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ARTIFACT_ROOT/raw"
+          mkdir -p "$ARTIFACT_ROOT/m13/supabase/migrations"
+          mkdir -p "$ARTIFACT_ROOT/m13/supabase/canonical-migrations"
+          mkdir -p "$ARTIFACT_ROOT/m14/supabase/migrations"
+          mkdir -p "$ARTIFACT_ROOT/m14/supabase/canonical-migrations"
+
+      - name: Export M13 migration history
+        env:
+          DATABASE_URL: ${{ secrets.E14_SUPABASE_DB_URL_READ_ONLY }}
+          PGOPTIONS: "-c default_transaction_read_only=on"
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$DATABASE_URL" \
+            -X -q -A -t \
+            -v ON_ERROR_STOP=1 \
+            -v from_version=20260709051056 \
+            -v to_version=20260709060330 \
+            -f scripts/e14/runtime-source-recovery/export-migration-history.sql \
+            > "$ARTIFACT_ROOT/raw/m13-migration-history.local.jsonl"
+
+      - name: Materialize M13 history
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/e14/runtime-source-recovery/materialize-migration-history.mjs \
+            --input "$ARTIFACT_ROOT/raw/m13-migration-history.local.jsonl" \
+            --migrations-dir "$ARTIFACT_ROOT/m13/supabase/migrations" \
+            --canonical-file "$ARTIFACT_ROOT/m13/supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql" \
+            --manifest "$ARTIFACT_ROOT/m13/supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json" \
+            --from-version 20260709051056 \
+            --to-version 20260709060330
+
+      - name: Validate M13 manifest and files
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs \
+            --manifest "$ARTIFACT_ROOT/m13/supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json" \
+            --migrations-dir "$ARTIFACT_ROOT/m13/supabase/migrations" \
+            --canonical-file "$ARTIFACT_ROOT/m13/supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql" \
+            | tee "$ARTIFACT_ROOT/m13/validation-result.json"
+
+      - name: Export M14 and M14b history
+        env:
+          DATABASE_URL: ${{ secrets.E14_SUPABASE_DB_URL_READ_ONLY }}
+          PGOPTIONS: "-c default_transaction_read_only=on"
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          psql "$DATABASE_URL" \
+            -X -q -A -t \
+            -v ON_ERROR_STOP=1 \
+            -v from_version=20260709183504 \
+            -v to_version=20260709184749 \
+            -f scripts/e14/runtime-source-recovery/export-migration-history.sql \
+            > "$ARTIFACT_ROOT/raw/m14-migration-history.local.jsonl"
+
+      - name: Materialize M14 and M14b exact versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/e14/runtime-source-recovery/materialize-migration-history.mjs \
+            --input "$ARTIFACT_ROOT/raw/m14-migration-history.local.jsonl" \
+            --migrations-dir "$ARTIFACT_ROOT/m14/supabase/migrations" \
+            --canonical-file "$ARTIFACT_ROOT/m14/supabase/canonical-migrations/20260709183504_m14_application_canonical.sql" \
+            --manifest "$ARTIFACT_ROOT/m14/supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json" \
+            --from-version 20260709183504 \
+            --to-version 20260709184749
+
+      - name: Validate exact M14 inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          const root = process.env.ARTIFACT_ROOT;
+          const manifestPath = `${root}/m14/supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json`;
+          const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+          const expected = [
+            {
+              version: '20260709183504',
+              name: 'm14_step5_application_read_surfaces',
+              bytes: 10164,
+              sha256: '464263feab785f9ae35d95ad89c215e9794f473e89f5d7d36a0f1c371d1c328d',
+            },
+            {
+              version: '20260709184749',
+              name: 'm14b_step5_operator_workspace',
+              bytes: 1881,
+              sha256: '9b4b9b387778ee174c01aaf700d638e6df157065a167c585624e8a1ad3e1fe69',
+            },
+          ];
+
+          if (manifest.migration_count !== expected.length) {
+            throw new Error(`unexpected M14 migration count ${manifest.migration_count}`);
+          }
+          for (const item of expected) {
+            const migration = manifest.migrations.find((candidate) => candidate.version === item.version);
+            if (!migration) throw new Error(`missing M14 version ${item.version}`);
+            if (migration.name !== item.name) throw new Error(`unexpected M14 name for ${item.version}`);
+            if (migration.remote_sql_bytes !== item.bytes) throw new Error(`unexpected M14 bytes for ${item.version}`);
+            if (migration.remote_sql_sha256 !== item.sha256) throw new Error(`unexpected M14 hash for ${item.version}`);
+          }
+
+          const result = {
+            status: 'valid',
+            migration_count: manifest.migration_count,
+            first_version: manifest.first_version,
+            last_version: manifest.last_version,
+            total_remote_sql_bytes: manifest.total_remote_sql_bytes,
+          };
+          await writeFile(
+            `${root}/m14/validation-result.json`,
+            `${JSON.stringify(result, null, 2)}\n`,
+            'utf8',
+          );
+          NODE
+
+      - name: Remove raw exports before artifact upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$ARTIFACT_ROOT/raw"
+
+      - name: Record artifact provenance
+        env:
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$ARTIFACT_ROOT/PROVENANCE.json" <<EOF
+          {
+            "schema_version": "1.0",
+            "artifact": "e14_runtime_history_export",
+            "source_repository": "${GITHUB_REPOSITORY}",
+            "source_sha": "${SOURCE_SHA}",
+            "workflow_run_id": "${RUN_ID}",
+            "workflow_run_attempt": "${RUN_ATTEMPT}",
+            "project_ref": "${EXPECTED_PROJECT_REF}",
+            "environment_classification": "development_test_only",
+            "database_transaction_mode": "read_only",
+            "raw_exports_included": false,
+            "automatic_git_write": false
+          }
+          EOF
+
+      - name: Publish reviewed recovery artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: e14-runtime-history-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.ARTIFACT_ROOT }}
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 9
