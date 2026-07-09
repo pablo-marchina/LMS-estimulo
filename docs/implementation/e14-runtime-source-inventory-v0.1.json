@@ -1,0 +1,68 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_runtime_source_inventory",
+  "date": "2026-07-09",
+  "environment": {
+    "provider": "supabase",
+    "project_ref": "cfpfeavjlgheqqiaqtzv",
+    "classification": "development_test_only"
+  },
+  "method": {
+    "access": "read_only_queries",
+    "source_relation": "supabase_migrations.schema_migrations",
+    "sql_hash_algorithm": "sha256",
+    "sql_join_separator": "\\n",
+    "participant_data_accessed": false,
+    "ddl_applied": false
+  },
+  "m13_runtime": {
+    "first_version": "20260709051056",
+    "last_version": "20260709060330",
+    "migration_count": 165,
+    "statement_count": 165,
+    "total_sql_bytes": 123636,
+    "combined_fingerprint_sha256": "6df68289eb6de6a47f84f6bb8dae0761c75f148132dd99341e739e8f4a62f144",
+    "materialization_status": "pending"
+  },
+  "temporary_transport_history": {
+    "first_version": "20260709165813",
+    "last_version": "20260709174710",
+    "migration_count": 9,
+    "statement_count": 9,
+    "total_sql_bytes": 5310,
+    "active_custom_matching_functions": [],
+    "active_custom_matching_relations": [],
+    "catalog_matches_ignored": [
+      "pg_catalog.lo_export",
+      "pg_catalog.pg_export_snapshot"
+    ],
+    "cleanup_status": "no_custom_matching_objects_detected"
+  },
+  "m14_application": [
+    {
+      "version": "20260709183504",
+      "name": "m14_step5_application_read_surfaces",
+      "statement_count": 1,
+      "sql_bytes": 10164,
+      "sql_sha256": "464263feab785f9ae35d95ad89c215e9794f473e89f5d7d36a0f1c371d1c328d",
+      "local_identifier_status": "mismatch"
+    },
+    {
+      "version": "20260709184749",
+      "name": "m14b_step5_operator_workspace",
+      "statement_count": 1,
+      "sql_bytes": 1881,
+      "sql_sha256": "9b4b9b387778ee174c01aaf700d638e6df157065a167c585624e8a1ad3e1fe69",
+      "local_identifier_status": "mismatch"
+    }
+  ],
+  "gates": {
+    "remote_inventory_fingerprinted": true,
+    "temporary_custom_objects_remaining": false,
+    "m13_materialized_in_git": false,
+    "m14_identifiers_reconciled": false,
+    "clean_replay_passed": false,
+    "schema_equivalence_passed": false,
+    "new_functional_migration_authorized": false
+  }
+}
