@@ -1,0 +1,27 @@
+{
+  "date": "2026-07-08",
+  "project_ref": "cfpfeavjlgheqqiaqtzv",
+  "tables": 125,
+  "foreign_keys": 222,
+  "check_constraints": 52,
+  "indexes_including_pk_unique": 403,
+  "triggers": 26,
+  "policies": 196,
+  "rls_tables": 52,
+  "rls_without_policy": 0,
+  "unindexed_foreign_keys": 0,
+  "security_advisor_lints": 0,
+  "performance_blockers": 0,
+  "performance_info_only": "unused_index before representative traffic",
+  "proof_extensions": {
+    "pg_net_installed": false,
+    "http_installed": false
+  },
+  "edge_function": {
+    "slug": "file-storage",
+    "version": 3,
+    "status": "ACTIVE",
+    "verify_jwt": true,
+    "bootstrap_secret_present": false
+  }
+}

@@ -46,7 +46,7 @@ Referência operacional inicial:
 
 - sob condições moderadamente favoráveis, cerca de 200 respostas pode sustentar análise fatorial exploratória;
 - condições piores, muitos itens ou classes pouco separadas podem exigir 400 ou mais;
-- a primeira amostra pequena da coorte inicial de produção não autoriza declarar validação estatística.
+- a primeira amostra pequena do MVP não autoriza declarar validação estatística.
 
 ### Etapa D — Estrutura das dimensões
 

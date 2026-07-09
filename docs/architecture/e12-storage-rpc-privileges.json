@@ -1,0 +1,17 @@
+{
+  "date": "2026-07-08",
+  "project_ref": "cfpfeavjlgheqqiaqtzv",
+  "functions": [
+    "file_abort_upload_intent",
+    "file_complete_release",
+    "file_confirm_upload",
+    "file_create_upload_intent",
+    "file_get_download_descriptor",
+    "file_get_upload_intent",
+    "file_record_scan_result"
+  ],
+  "anon_execute": false,
+  "authenticated_execute": false,
+  "service_role_execute": true,
+  "all_passed": true
+}

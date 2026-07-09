@@ -200,7 +200,7 @@ A aplicação deve começar como **monólito modular**. Os contextos abaixo são
 - `ScoreRun` / `ScoreResult` / `ScoreExplanation`;
 - `ScoreValidationResult`.
 
-**Regra:** não escreve em decisões de crédito na release inicial de produção.
+**Regra:** não escreve em decisões de crédito no MVP.
 
 ### BC-10 — CRM & External Integrations
 
@@ -353,5 +353,5 @@ Isso evita criar um segundo conjunto de regras administrativas paralelo ao domí
 - definir estratégia de leitura entre contextos no monólito;
 - escolher biblioteca/abordagem para transações e outbox;
 - validar limites operacionais do HubSpot;
-- confirmar quais papéis entram na release inicial de produção;
+- confirmar quais papéis entram no MVP;
 - confirmar se o contexto de crédito será apenas externo ou terá uma projeção local.

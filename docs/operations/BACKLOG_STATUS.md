@@ -34,30 +34,36 @@
 | E07-T01 Finalidade do diagnóstico | DONE V0.1 | Usos permitidos, usos proibidos e guardrails definidos. |
 | E07-T02 Dimensões candidatas | DONE V0.1 | Oito dimensões comportamentais, contexto e prontidão OpenAI separados. |
 | E07-T03 Preparar pesquisa | DONE V0.1 | Protocolo, amostragem, roteiro e template de evidências concluídos. |
-| E07-T04 Realizar entrevistas | DEFERRED OPTIONAL | Não bloqueia a release inicial de produção; executar posteriormente se a amostra se tornar disponível. |
-| E07-T05 Sintetizar padrões | PLANNED FROM INITIAL COHORT | Será executado com dados prospectivos da coorte inicial e, se possível, entrevistas posteriores. |
-| E07-T06 Propor arquétipos | DEFERRED | Arquétipos desabilitados na release inicial; definição depende de evidência e teste de utilidade. |
-| E07-T07 Diagnóstico da release inicial | DONE V0.2 | Roteamento operacional, dimensões provisórias, incerteza e segmentos definidos; sem arquétipo e sem uso em crédito. |
+| E07-T04 Realizar entrevistas | DEFERRED OPTIONAL | Não bloqueia o MVP; executar posteriormente se a amostra se tornar disponível. |
+| E07-T05 Sintetizar padrões | PLANNED FROM PILOT | Será executado com dados prospectivos do piloto e, se possível, entrevistas posteriores. |
+| E07-T06 Propor arquétipos | DEFERRED | Arquétipos desabilitados no MVP; definição depende de evidência e teste de utilidade. |
+| E07-T07 Diagnóstico do MVP | DONE V0.2 | Roteamento operacional, dimensões provisórias, incerteza e segmentos definidos; sem arquétipo e sem uso em crédito. |
 | E07-T08 Momentos de intervenção | DONE STRUCTURE | Modelo genérico e candidatos OpenAI definidos; crédito e tempos finais pendentes. |
 | E07-T09 Plano de validação | DONE V0.1 | Etapas qualitativa, cognitiva, fatorial, perfis, utilidade e equidade documentadas. |
-| E07 Diagnóstico/personalização | DONE FOR INITIAL PRODUCTION V0.2 | Arquétipos transferidos para validação posterior; a coorte inicial produzirá evidências. |
-| E08 Eventos comportamentais | DONE V0.1 | Arquitetura, envelope, 118 eventos, schemas, idempotência, privacidade e roteamento definidos. |
-| E09 Fluxos de dados ponta a ponta | DONE V0.1 | Fluxos por família, falhas, replay, reconciliação e matriz de 118 rotas definidos. |
-| E10-T01 Modelo conceitual | DONE V0.1 | Domínio traduzido para schemas físicos. |
-| E10-T02 Modelo lógico completo | DONE V0.1 | 121 tabelas e dicionário de dados. |
-| E10-T03 Constraints e integridade | DONE V0.1 | FKs, checks, imutabilidade e concorrência documentados. |
-| E10-T04 Ledger de gamificação | DONE V0.1 | Ledger idempotente e projeções separadas. |
-| E10-T05 Features comportamentais | DONE STRUCTURE | Estrutura reproduzível; fórmulas serão validadas com dados. |
-| E10-T06 Score experimental | DONE STRUCTURE | Estrutura e guardrails; sem uso em crédito. |
-| E10-T07 Governança de dados | DONE STRUCTURE | Consentimento, auditoria, retenção e linhagem modelados; prazos pendentes. |
-| E10-T08 Índices e particionamento | DONE V0.1 | Índices iniciais e gatilhos de evolução definidos. |
-| E10-T09 Comparação/migração do schema atual | DONE V0.1 | Mapeamento legado e ondas M00–M08 definidos. |
-| E10 Modelagem completa do banco | DONE LOGICAL/PHYSICAL PRELIMINARY V0.1 | DDL estático validado; execução PostgreSQL real permanece pendente para E12. |
-| E12-T00 Estratégia de ambientes | DONE | Supabase definido para local/test; AWS definida para staging/produção; AWS staging obrigatório. |
-| E12-T01 Portabilidade Supabase/AWS | DONE DESIGN V0.1 | Matriz de equivalência e adapters definidos; implementação pendente. |
-| E12-T02 Provas PostgreSQL Supabase/RDS | READY | Executar o mesmo DDL/migrations nos dois provedores. |
-| E12-T03 Adapter de identidade Supabase/Cognito | READY | Validar JWT/OIDC, identidade interna e contexto RLS neutro. |
-| E12-T04 Storage Supabase/S3 | READY | Validar contrato de upload, confirmação, scan e download assinado. |
-| E12-T05 Outbox/queue test/SQS | READY | Validar entrega, retry, inbox e DLQ. |
-| E12-T06 Compute e deploy AWS | READY | Provar container em ECS/Fargate, deploy, rollback e health checks. |
-| E12-T07 Observabilidade AWS | READY | Provar OpenTelemetry para CloudWatch/X-Ray. |
+| E07 Diagnóstico/personalização | DONE FOR MVP V0.2 | Arquétipos transferidos para validação posterior; piloto produzirá evidências. |
+| E08 Eventos comportamentais | READY | Pode iniciar com base no domínio preliminar. |
+| E08 Eventos comportamentais | DONE V0.1 | Envelope, catálogo, idempotência, qualidade e retenção documentados. |
+| E09 Fluxos ponta a ponta | DONE V0.1 | Famílias de fluxo, linhagem, falhas, replay e reconciliação documentados. |
+| E10 Modelo de dados e score | DONE BASELINE V0.2 | 122 tabelas lógicas, features e score experimental separados. |
+| E11 HubSpot | BLOCKED EXTERNAL | Fluxo lógico pronto; inventário e sandbox reais permanecem pendentes. |
+| E12-T01–T06 Banco/identidade/RLS/outbox | DONE LIVE | M00–M08 aplicados e validados no Supabase real. |
+| E12-T07 Storage | DONE LIVE | M09, bucket privado, upload assinado, quarentena e release comprovados. |
+| E12-T08 Queue/worker | DONE LIVE | M10, retry, visibility, DLQ, redrive e worker comprovados. |
+| E12-T09 Scheduler/reconciliação | DONE LIVE | M11 e quatro cron jobs ativos. |
+| E12-T10 Métricas/alertas | DONE LIVE | Snapshots e ciclo open/ack/resolved comprovados. |
+| E12-T11 Concorrência | DONE LIVE | 20 jobs divididos entre quatro workers sem duplicidade. |
+| E12 Supabase test foundation | DONE V1.9 | Ambiente de teste continuamente operacional; scanner ainda técnico. |
+| E12 AWS staging parity | BLOCKED EXTERNAL | Requer conta, região, rede, domínios, orçamento e políticas AWS. |
+| E13-T01 Classificação e inventário | DONE LIVE | 8 classes, 18 ativos e vínculos de necessidade implementados. |
+| E13-T02 ROPA e bases legais | DONE TECHNICAL / BLOCKED APPROVAL | 7 atividades em draft; base legal não atribuída sem aprovação. |
+| E13-T03 Consentimento e direitos | DONE TECHNICAL | Evidência append-only e workflow server-side validados; canal/exportação real pendentes. |
+| E13-T04 Retenção e legal hold | DONE TECHNICAL / BLOCKED APPROVAL | Políticas draft, dry run e bloqueio por hold implementados; prazos pendentes. |
+| E13-T05 Logging e redaction | DONE LIVE | Redaction recursiva e payload/hash consistentes comprovados. |
+| E13-T06 RLS e acesso interno | DONE LIVE | 156/156 tabelas com RLS; zero acesso direto de cliente. |
+| E13-T07 Incidentes | DONE TECHNICAL | Registro/timeline validados; playbook, contatos e exercício pendentes. |
+| E13-T08 Secrets e chaves | DONE BASELINE / BLOCKED AWS | Inventário metadata-only; KMS, rotação e IAM AWS pendentes. |
+| E13-T09 Backup e restore | DONE MODEL / BLOCKED EXTERNAL | Registro e critérios prontos; configuração e restore AWS não executados. |
+| E13-T10 Fornecedores e transferências | DONE MODEL / BLOCKED EXTERNAL | Supabase, AWS e HubSpot cadastrados como draft; contratos/regiões pendentes. |
+| E13-T11 Production-readiness gate | DONE LIVE | 24 controles; 2 passed, 22 blocking; produção `ready=false`. |
+| E13 Segurança, LGPD e operação | DONE TECHNICAL V2.0 / PRODUCTION BLOCKED | M12 aplicada e validada; decisões institucionais e AWS/HubSpot continuam bloqueantes. |
+

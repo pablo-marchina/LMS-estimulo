@@ -1,0 +1,36 @@
+{
+  "date": "2026-07-08",
+  "provider": "Supabase Storage",
+  "project_ref": "cfpfeavjlgheqqiaqtzv",
+  "bucket": "estimulo-private-test",
+  "bucket_public": false,
+  "source_key": "quarantine/e12-provider-proof/e4345df1-e5c5-4274-919a-e550eed25285/proof.txt",
+  "target_key": "protected/e12-provider-proof/e4345df1-e5c5-4274-919a-e550eed25285/proof.txt",
+  "payload_bytes": 64,
+  "signed_upload_created": true,
+  "uploaded": true,
+  "source_info": {
+    "size": 64,
+    "content_type": "text/plain",
+    "etag": null,
+    "version": "2467d032-0431-400a-9398-e96db5fba66c"
+  },
+  "sha256": "6b7a54f34ea78dd38c7a4c0848756eefaac85798b6a96750dd1e4f9744c3faca",
+  "hash_verified": true,
+  "released": true,
+  "target_info": {
+    "size": 64,
+    "content_type": "text/plain",
+    "etag": null,
+    "version": "1de2e090-a190-40ce-a943-2e7dc36ecd24"
+  },
+  "signed_download_verified": true,
+  "cleaned": true,
+  "residual_objects": 0,
+  "all_passed": true,
+  "notes": [
+    "No signed URL or credential retained.",
+    "Temporary bootstrap function was replaced by JWT-verified version 3.",
+    "Proof-only HTTP extensions were removed."
+  ]
+}

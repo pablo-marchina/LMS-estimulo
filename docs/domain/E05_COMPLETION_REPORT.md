@@ -25,7 +25,7 @@
 - Publicação imutável e fixação da participação à versão foram definidas.
 - Autorização foi estruturada por capacidade e escopo.
 - Administração foi tratada como composição de casos de uso.
-- Score permaneceu fora do cadastro principal e da decisão de crédito na release inicial de produção.
+- Score permaneceu fora do cadastro principal e da decisão de crédito no MVP.
 
 ## 3. Critérios de aceite do E05
 

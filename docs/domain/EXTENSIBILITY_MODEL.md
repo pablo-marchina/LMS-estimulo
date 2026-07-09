@@ -281,4 +281,4 @@ Quando uma nova versão de jornada for publicada:
 - linguagem de regras e biblioteca de avaliação;
 - granularidade de versionamento de módulos e ativos;
 - política de migração para correções críticas;
-- tipos de atividade incluídos na release inicial de produção.
+- tipos de atividade incluídos no MVP.

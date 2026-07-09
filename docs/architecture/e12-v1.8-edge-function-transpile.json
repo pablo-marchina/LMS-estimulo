@@ -1,0 +1,21 @@
+{
+  "tool": "typescript 5.8.3 transpileModule",
+  "mode": "syntax/transpile validation; Deno runtime imports are not resolved in this offline check",
+  "files": [
+    {
+      "file": "supabase/functions/file-storage/index.ts",
+      "source_bytes": 10651,
+      "emitted_bytes": 11062,
+      "diagnostics": [],
+      "passed": true
+    },
+    {
+      "file": "supabase/functions/file-scan-worker/index.ts",
+      "source_bytes": 13773,
+      "emitted_bytes": 13305,
+      "diagnostics": [],
+      "passed": true
+    }
+  ],
+  "all_passed": true
+}

@@ -1,0 +1,139 @@
+{
+  "date": "2026-07-08",
+  "project_ref": "cfpfeavjlgheqqiaqtzv",
+  "project_name": "LMS-estimulo",
+  "region": "sa-east-1",
+  "postgres_major": 17,
+  "tables": 122,
+  "foreign_keys": 213,
+  "check_constraints": 40,
+  "indexes_including_pk_unique": 389,
+  "triggers": 23,
+  "policies": 186,
+  "rls_tables": 49,
+  "rls_without_policy": 0,
+  "unindexed_foreign_keys": 0,
+  "security_advisor_lints": 0,
+  "performance_structural_lints": {
+    "unindexed_foreign_keys": 0,
+    "multiple_permissive_policies": 0
+  },
+  "performance_informational_lints": [
+    "unused_index"
+  ],
+  "tests": {
+    "rls_cross_participant_isolation": true,
+    "stable_external_identity_resolution": true,
+    "transactional_event_and_two_outbox_routes": true,
+    "outbox_claim": true,
+    "consumer_inbox_idempotency": true,
+    "append_only_event_store": true,
+    "test_data_persisted": false
+  },
+  "remote_migrations": [
+    {
+      "version": "20260708220357",
+      "name": "m00_extensions_schemas_context"
+    },
+    {
+      "version": "20260708220419",
+      "name": "m01_identity_core"
+    },
+    {
+      "version": "20260708220445",
+      "name": "m02_catalog"
+    },
+    {
+      "version": "20260708220505",
+      "name": "m03_orchestration"
+    },
+    {
+      "version": "20260708220536",
+      "name": "m04_diagnostics_assessment"
+    },
+    {
+      "version": "20260708220558",
+      "name": "m05_engagement_intervention"
+    },
+    {
+      "version": "20260708220623",
+      "name": "m06_eventing_integration"
+    },
+    {
+      "version": "20260708220646",
+      "name": "m07_intelligence_governance"
+    },
+    {
+      "version": "20260708220719",
+      "name": "m08a_enable_rls"
+    },
+    {
+      "version": "20260708220755",
+      "name": "m08b_harden_trigger_functions"
+    },
+    {
+      "version": "20260708221428",
+      "name": "m08c_foreign_keys_part_1"
+    },
+    {
+      "version": "20260708221457",
+      "name": "m08c_foreign_keys_part_2"
+    },
+    {
+      "version": "20260708221522",
+      "name": "m08c_foreign_keys_part_3"
+    },
+    {
+      "version": "20260708221551",
+      "name": "m08d_integrity_indexes_triggers"
+    },
+    {
+      "version": "20260708221622",
+      "name": "m08e_identity_authorization"
+    },
+    {
+      "version": "20260708221643",
+      "name": "m08f_rls_identity_core"
+    },
+    {
+      "version": "20260708221703",
+      "name": "m08g_rls_journey_diagnostics"
+    },
+    {
+      "version": "20260708221724",
+      "name": "m08h_rls_assessment_engagement_intervention"
+    },
+    {
+      "version": "20260708221743",
+      "name": "m08i_rls_integration_intelligence_governance"
+    },
+    {
+      "version": "20260708221802",
+      "name": "m08j_transactional_outbox_privileges"
+    },
+    {
+      "version": "20260708221848",
+      "name": "m08k_runtime_roles_and_grants"
+    },
+    {
+      "version": "20260708221922",
+      "name": "m08l_test_executor_role_membership"
+    },
+    {
+      "version": "20260708222008",
+      "name": "m08m_fix_pgcrypto_schema_qualification"
+    },
+    {
+      "version": "20260708222033",
+      "name": "m08n_grant_pgcrypto_digest_to_worker"
+    },
+    {
+      "version": "20260708222345",
+      "name": "m08o_split_all_policies_by_command"
+    },
+    {
+      "version": "20260708222355",
+      "name": "m08p_cover_unindexed_foreign_keys"
+    }
+  ]
+}

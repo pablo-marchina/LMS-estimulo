@@ -1,0 +1,28 @@
+{
+  "ok": true,
+  "actual": {
+    "tables": 125,
+    "foreign_keys": 222,
+    "indexes": 57,
+    "triggers": 26
+  },
+  "performance_hardening": {
+    "qualified_pgcrypto": true,
+    "policy_command_split": true,
+    "fk_covering_indexes": true,
+    "storage_quarantine_lifecycle": true
+  },
+  "errors": [],
+  "files": [
+    "20260708000100_m00_extensions_schemas_context.sql",
+    "20260708000200_m01_identity_core.sql",
+    "20260708000300_m02_catalog.sql",
+    "20260708000400_m03_orchestration.sql",
+    "20260708000500_m04_diagnostics_assessment.sql",
+    "20260708000600_m05_engagement_intervention.sql",
+    "20260708000700_m06_eventing_integration.sql",
+    "20260708000800_m07_intelligence_governance.sql",
+    "20260708000900_m08_constraints_security_runtime.sql",
+    "20260708001000_m09_storage_lifecycle.sql"
+  ]
+}

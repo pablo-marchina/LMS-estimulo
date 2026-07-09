@@ -72,18 +72,6 @@
 | NFR-QA-003 | Contratos de eventos e APIs devem ser validados automaticamente. |
 | NFR-QA-004 | Dependências devem ser analisadas e atualizadas de forma controlada. |
 
-## Portabilidade de ambientes
-
-| ID | Requisito inicial |
-|---|---|
-| NFR-PT-001 | O mesmo conjunto de migrations PostgreSQL deve ser aplicado em Supabase e Amazon RDS PostgreSQL. |
-| NFR-PT-002 | Módulos de domínio não podem importar SDKs do Supabase, AWS, HubSpot ou OpenAI. |
-| NFR-PT-003 | Autenticação deve usar um adapter OIDC/JWT e identidade interna independente do provedor. |
-| NFR-PT-004 | Storage, filas, e-mail, secrets e observabilidade devem possuir contratos internos e implementações por ambiente. |
-| NFR-PT-005 | Toda release deve passar por AWS staging antes da produção. |
-| NFR-PT-006 | O CI deve validar compatibilidade de schema, RLS e contratos nos ambientes suportados. |
-| NFR-PT-007 | Recursos proprietários do Supabase não podem ser dependência única de uma capacidade produtiva. |
-
 ## Prontidão para produção
 
 | ID | Requisito inicial |

@@ -1,0 +1,154 @@
+TAP version 13
+# Subtest: verifies RS256, validates claims and returns a normalized identity
+ok 1 - verifies RS256, validates claims and returns a normalized identity
+  ---
+  duration_ms: 245.079658
+  type: 'test'
+  ...
+# Subtest: verifies ES256, validates claims and returns a normalized identity
+ok 2 - verifies ES256, validates claims and returns a normalized identity
+  ---
+  duration_ms: 2.671373
+  type: 'test'
+  ...
+# Subtest: rejects expired asymmetric token
+ok 3 - rejects expired asymmetric token
+  ---
+  duration_ms: 295.306263
+  type: 'test'
+  ...
+# Subtest: uses the Auth server for legacy HS256 tokens
+ok 4 - uses the Auth server for legacy HS256 tokens
+  ---
+  duration_ms: 1.187286
+  type: 'test'
+  ...
+# Subtest: Supabase queue adapter publishes provider-neutral jobs
+ok 5 - Supabase queue adapter publishes provider-neutral jobs
+  ---
+  duration_ms: 1.939226
+  type: 'test'
+  ...
+# Subtest: Supabase queue adapter normalizes delivery and lifecycle calls
+ok 6 - Supabase queue adapter normalizes delivery and lifecycle calls
+  ---
+  duration_ms: 2.977751
+  type: 'test'
+  ...
+# Subtest: Supabase queue adapter surfaces RPC errors
+ok 7 - Supabase queue adapter surfaces RPC errors
+  ---
+  duration_ms: 0.886488
+  type: 'test'
+  ...
+# Subtest: performs signed upload, verifies hash, releases and signs download
+ok 8 - performs signed upload, verifies hash, releases and signs download
+  ---
+  duration_ms: 52.689037
+  type: 'test'
+  ...
+# Subtest: refuses overwrite-like keys, MIME mismatch, oversized objects and premature download
+ok 9 - refuses overwrite-like keys, MIME mismatch, oversized objects and premature download
+  ---
+  duration_ms: 1.235069
+  type: 'test'
+  ...
+# Subtest: identity provider returns normalized identity without raw tokens
+ok 10 - identity provider returns normalized identity without raw tokens
+  ---
+  duration_ms: 1.619801
+  type: 'test'
+  ...
+# Subtest: identity provider rejects invalid token
+ok 11 - identity provider rejects invalid token
+  ---
+  duration_ms: 0.688327
+  type: 'test'
+  ...
+# Subtest: storage contract creates intent and confirms metadata only
+ok 12 - storage contract creates intent and confirms metadata only
+  ---
+  duration_ms: 1.24598
+  type: 'test'
+  ...
+# Subtest: queue contract deduplicates publish, hides in-flight messages and acknowledges idempotently
+ok 13 - queue contract deduplicates publish, hides in-flight messages and acknowledges idempotently
+  ---
+  duration_ms: 2.437406
+  type: 'test'
+  ...
+# Subtest: queue retry produces a new receipt and increments receive count
+ok 14 - queue retry produces a new receipt and increments receive count
+  ---
+  duration_ms: 0.782383
+  type: 'test'
+  ...
+# Subtest: queue moves exhausted jobs to the dead-letter collection
+ok 15 - queue moves exhausted jobs to the dead-letter collection
+  ---
+  duration_ms: 0.471339
+  type: 'test'
+  ...
+# Subtest: accepts a valid signed request
+ok 16 - accepts a valid signed request
+  ---
+  duration_ms: 2.057665
+  type: 'test'
+  ...
+# Subtest: rejects a modified body
+ok 17 - rejects a modified body
+  ---
+  duration_ms: 0.749692
+  type: 'test'
+  ...
+# Subtest: rejects an expired timestamp
+ok 18 - rejects an expired timestamp
+  ---
+  duration_ms: 0.365357
+  type: 'test'
+  ...
+# Subtest: rejects malformed signatures
+ok 19 - rejects malformed signatures
+  ---
+  duration_ms: 0.198419
+  type: 'test'
+  ...
+# Subtest: marks clean text as clean after integrity checks
+ok 20 - marks clean text as clean after integrity checks
+  ---
+  duration_ms: 2.287843
+  type: 'test'
+  ...
+# Subtest: detects the EICAR test signature
+ok 21 - detects the EICAR test signature
+  ---
+  duration_ms: 0.391083
+  type: 'test'
+  ...
+# Subtest: returns unsupported for non-text content
+ok 22 - returns unsupported for non-text content
+  ---
+  duration_ms: 0.302803
+  type: 'test'
+  ...
+# Subtest: rejects size mismatch
+ok 23 - rejects size mismatch
+  ---
+  duration_ms: 0.610592
+  type: 'test'
+  ...
+# Subtest: rejects hash mismatch
+ok 24 - rejects hash mismatch
+  ---
+  duration_ms: 0.32242
+  type: 'test'
+  ...
+1..24
+# tests 24
+# suites 0
+# pass 24
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 740.992532

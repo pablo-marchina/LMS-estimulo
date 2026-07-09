@@ -20,7 +20,7 @@ Este documento é conceitual. Ele não define ainda nomes finais de tabelas, tec
 5. **Publicação cria imutabilidade.** Versões publicadas não são alteradas silenciosamente.
 6. **Estado atual não substitui histórico.** Projeções facilitam a aplicação, mas eventos e registros históricos preservam como o estado foi alcançado.
 7. **Segmento, arquétipo e momento de crédito são conceitos diferentes.** Nenhum deles deve ser usado como sinônimo dos demais.
-8. **Score é derivado, experimental e versionado.** Não pertence ao perfil principal do empreendedor nem altera crédito na release inicial de produção.
+8. **Score é derivado, experimental e versionado.** Não pertence ao perfil principal do empreendedor nem altera crédito no MVP.
 9. **Regras de jornada são dados estruturados.** Texto explicativo pode coexistir, mas não substitui regras executáveis.
 10. **A administração é uma superfície da aplicação.** Ela opera os domínios; não é um domínio independente que duplica regras.
 
@@ -474,7 +474,7 @@ Resultado histórico de uma feature para uma entidade e janela, associado a uma 
 - `ScoreExplanation`: contribuições e limitações;
 - `ScoreValidationResult`: evidências de validação.
 
-**Invariante:** score experimental não altera crédito na release inicial de produção.
+**Invariante:** score experimental não altera crédito no MVP.
 
 ## 12. Integrações e governança
 
@@ -510,7 +510,7 @@ Ações sensíveis de publicação, revisão, exportação, alteração de regra
 
 | Origem | Relação | Destino | Cardinalidade conceitual |
 |---|---|---|---|
-| UserAccount | representa | Entrepreneur | 0..1 para 1 na release inicial de produção |
+| UserAccount | representa | Entrepreneur | 0..1 para 1 no MVP |
 | Entrepreneur | possui vínculo | Business | N:N via BusinessMembership |
 | UserAccount | integra | Organization | N:N via OrganizationMembership |
 | Program | agrupa | JourneyDefinition | 1:N |
@@ -555,7 +555,7 @@ Estas questões não bloqueiam o modelo conceitual, mas precisarão de informaç
 - possibilidade de uma pessoa operar mais de um negócio no piloto;
 - relação da participação com uma solicitação/operação de crédito;
 - dados e estados reais de crédito;
-- papéis administrativos efetivamente necessários na release inicial de produção;
+- papéis administrativos efetivamente necessários no MVP;
 - política institucional de retenção e exclusão;
 - regras finais da Jornada OpenAI;
 - finalidade e método do diagnóstico.

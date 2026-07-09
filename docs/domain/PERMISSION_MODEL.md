@@ -98,7 +98,7 @@ Uma decisão de acesso deve considerar:
 
 - analisar associação entre features experimentais e desfechos de crédito em ambiente autorizado;
 - acesso sujeito a segregação, finalidade e revisão;
-- não utiliza score experimental para decisão produtiva na release inicial.
+- não utiliza score experimental para decisão produtiva no MVP.
 
 ### Privacy / Compliance
 
@@ -145,7 +145,7 @@ Legenda: `O` próprio, `A` atribuído/escopo autorizado, `G` global limitado, `�
 | Revisar submissão | — | — | — | A | A excepcional | — | — | — | G |
 | Consultar eventos brutos | próprios selecionados | — | agregados | relacionados à revisão | A operacional | — | A pseudonimizado | A | excepcional |
 | Ver features experimentais | explicação própria futura | — | agregados | — | somente se aprovado | — | A | A governança | excepcional |
-| Ver score experimental | não na release inicial | — | — | — | — | — | A | A governança | excepcional |
+| Ver score experimental | não no MVP | — | — | — | — | — | A | A governança | excepcional |
 | Reprocessar integração | — | — | — | — | A | — | — | auditoria | G |
 | Exportar dados | próprios | — | agregados | — | autorizado | — | A aprovado | A | excepcional |
 | Gerir papéis | — | — | — | — | — | — | — | revisão | G |
@@ -216,7 +216,7 @@ Quando viável:
 ## 9. Pendências
 
 - papéis efetivamente existentes na operação;
-- parceiros terão acesso direto na release inicial ou somente no futuro;
+- parceiros terão acesso direto no MVP ou somente no futuro;
 - quem revisará práticas;
 - necessidade de impersonation para suporte;
 - política para visualização de resultados diagnósticos;

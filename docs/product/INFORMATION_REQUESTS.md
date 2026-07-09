@@ -85,3 +85,23 @@ Obter:
 - processo de resposta a incidentes;
 - restrições para uso de dados comportamentais e score;
 - exigências de fornecedores de nuvem e localização dos dados.
+
+## IR-007 — decisões e evidências para liberar o gate E13
+
+Obter e aprovar, sem compartilhar segredos no chat:
+
+- entidade jurídica controladora e escopo das responsabilidades;
+- encarregado, ato de designação ou análise de dispensa, canal público e substituição;
+- bases legais por atividade de tratamento;
+- aviso de privacidade e textos de consentimento versionados;
+- prazos de retenção, gatilhos, anonimização e legal holds;
+- canal e procedimento de direitos dos titulares;
+- playbook, contatos e critérios de comunicação de incidentes;
+- contratos, DPAs, regiões, subprocessadores e transferências de Supabase, AWS e HubSpot;
+- conta, região, rede, domínios, KMS, IAM, Secrets Manager, backup/PITR e logs AWS;
+- RPO/RTO e relatório de teste de restauração;
+- inventário real do HubSpot e fluxo real de crédito;
+- governança para qualquer uso de sinais em crédito: finalidade, revisão humana, explicação, contestação, equidade, validação e monitoramento;
+- RIPD efetivo para perfilamento/alto risco, quando aplicável.
+
+**Motivo:** o código e o banco não podem decidir essas matérias. O gate de produção permanece bloqueado até que as evidências sejam registradas e verificadas.

@@ -1,0 +1,2501 @@
+version: '0.2'
+date: '2026-07-08'
+status: logical_and_executable_physical_baseline_pending_database_execution
+database: PostgreSQL-compatible; Supabase local/test and Amazon RDS staging/production
+schemas:
+  iam: Contas autenticáveis, organizações operadoras, papéis, capacidades e vínculos internos.
+  core: Empreendedores, negócios beneficiários, vínculos e arquivos protegidos.
+  catalog: Programas, definições e versões publicáveis de jornadas, cursos, atividades e competências.
+  orchestration: Regras, trilhas, inscrições, instâncias, passos e projeções de execução.
+  diagnostics: Instrumentos, respostas, resultados, segmentos operacionais e arquétipos futuros.
+  assessment: Avaliações, tentativas, práticas, evidências e revisões.
+  engagement: Pontos, selos, sequências e certificados.
+  intervention: Definições, regras, instâncias e entregas de intervenções.
+  eventing: Schemas de eventos, log canônico, outbox, inbox, entregas e dead letters.
+  integration: Conexões, mapeamentos, webhooks, sincronizações, conflitos e reconciliação.
+  intelligence: Features comportamentais, execuções, scores experimentais, explicações e validações.
+  governance: Consentimentos, solicitações de privacidade, retenção, linhagem, aprovações e auditoria.
+  reporting: Views e projeções de leitura; não contém fatos primários.
+tables:
+- schema: iam
+  name: user_accounts
+  description: Conta interna desacoplada de qualquer provedor de autenticação.
+  primary_key: id
+  columns:
+  - id uuid
+  - email_normalized text
+  - status text
+  - last_authenticated_at timestamptz nullable
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys: []
+  unique_constraints:
+  - email_normalized
+  source_of_truth: operational
+  append_only: false
+- schema: iam
+  name: external_identities
+  description: Identidades OIDC externas vinculadas à conta interna; permite Supabase, Cognito e rotação
+    de provedor sem trocar a conta.
+  primary_key: id
+  columns:
+  - id uuid
+  - user_account_id uuid
+  - provider text
+  - issuer text
+  - subject text
+  - email_normalized text nullable
+  - email_verified boolean
+  - claims_fingerprint text
+  - first_authenticated_at timestamptz
+  - last_authenticated_at timestamptz
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - user_account_id -> iam.user_accounts.id
+  unique_constraints:
+  - issuer, subject
+  - user_account_id, issuer, subject
+  source_of_truth: operational
+  append_only: false
+- schema: iam
+  name: organizations
+  description: Estímulo, parceiros, produtores de conteúdo e outras organizações operadoras.
+  primary_key: id
+  columns:
+  - id uuid
+  - organization_type text
+  - slug text
+  - legal_name text
+  - display_name text
+  - status text
+  - metadata jsonb
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys: []
+  unique_constraints:
+  - slug
+  source_of_truth: operational
+  append_only: false
+- schema: iam
+  name: organization_memberships
+  description: Vínculo de uma conta com uma organização e seu período de validade.
+  primary_key: id
+  columns:
+  - id uuid
+  - organization_id uuid
+  - user_account_id uuid
+  - status text
+  - valid_from timestamptz
+  - valid_until timestamptz nullable
+  - created_at timestamptz
+  foreign_keys:
+  - organization_id -> iam.organizations.id
+  - user_account_id -> iam.user_accounts.id
+  unique_constraints:
+  - organization_id, user_account_id, valid_from
+  source_of_truth: operational
+  append_only: false
+- schema: iam
+  name: role_definitions
+  description: Papéis como agrupadores de capacidades.
+  primary_key: id
+  columns:
+  - id uuid
+  - organization_id uuid
+  - code text
+  - name text
+  - description text
+  - status text
+  foreign_keys:
+  - organization_id -> iam.organizations.id
+  unique_constraints:
+  - organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: iam
+  name: permission_definitions
+  description: Capacidades atômicas autorizáveis.
+  primary_key: id
+  columns:
+  - id uuid
+  - code text
+  - resource_type text
+  - action text
+  - description text
+  foreign_keys: []
+  unique_constraints:
+  - code
+  source_of_truth: operational
+  append_only: false
+- schema: iam
+  name: role_permissions
+  description: Capacidades incluídas em um papel.
+  primary_key: role_id, permission_id
+  columns:
+  - role_id uuid
+  - permission_id uuid
+  foreign_keys:
+  - role_id -> iam.role_definitions.id
+  - permission_id -> iam.permission_definitions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: iam
+  name: membership_roles
+  description: Papéis atribuídos a um vínculo organizacional.
+  primary_key: membership_id, role_id, valid_from
+  columns:
+  - membership_id uuid
+  - role_id uuid
+  - scope jsonb
+  - valid_from timestamptz
+  - valid_until timestamptz nullable
+  foreign_keys:
+  - membership_id -> iam.organization_memberships.id
+  - role_id -> iam.role_definitions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: core
+  name: entrepreneurs
+  description: Pessoa participante das iniciativas, independente da conta de acesso.
+  primary_key: id
+  columns:
+  - id uuid
+  - user_account_id uuid nullable
+  - preferred_name text nullable
+  - legal_name text nullable
+  - email_normalized text nullable
+  - phone_e164 text nullable
+  - status text
+  - profile_data jsonb
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - user_account_id -> iam.user_accounts.id
+  unique_constraints:
+  - user_account_id
+  source_of_truth: operational
+  append_only: false
+- schema: core
+  name: businesses
+  description: Unidade econômica beneficiária, formal ou informal conforme o programa.
+  primary_key: id
+  columns:
+  - id uuid
+  - legal_name text nullable
+  - trade_name text nullable
+  - registration_type text nullable
+  - registration_number_hash text nullable
+  - status text
+  - country_code char(2)
+  - profile_data jsonb
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys: []
+  unique_constraints:
+  - registration_type, registration_number_hash
+  source_of_truth: operational
+  append_only: false
+- schema: core
+  name: business_memberships
+  description: Relação temporal entre empreendedor e negócio.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - business_id uuid
+  - relationship_type text
+  - is_primary boolean
+  - verification_status text
+  - valid_from date
+  - valid_until date nullable
+  - evidence_reference text nullable
+  - created_at timestamptz
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - business_id -> core.businesses.id
+  unique_constraints:
+  - entrepreneur_id, business_id, relationship_type, valid_from
+  source_of_truth: operational
+  append_only: false
+- schema: core
+  name: file_objects
+  description: Metadados de arquivos protegidos; o binário permanece em object storage.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - storage_provider text
+  - bucket text
+  - object_key text
+  - content_type text
+  - size_bytes bigint
+  - sha256 text
+  - security_status text
+  - retention_class text
+  - created_at timestamptz
+  - deleted_at timestamptz nullable
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - storage_provider, bucket, object_key
+  - sha256, size_bytes
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: programs
+  description: Estrutura institucional que agrupa jornadas.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - description text nullable
+  - status text
+  - valid_from date nullable
+  - valid_until date nullable
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: journey_definitions
+  description: Identidade estável de uma jornada ao longo das versões.
+  primary_key: id
+  columns:
+  - id uuid
+  - program_id uuid
+  - owner_organization_id uuid
+  - code text
+  - slug text
+  - name text
+  - purpose text nullable
+  - status text
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - program_id -> catalog.programs.id
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  - owner_organization_id, slug
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: journey_versions
+  description: Snapshot imutável após publicação.
+  primary_key: id
+  columns:
+  - id uuid
+  - journey_definition_id uuid
+  - version_number integer
+  - status text
+  - title text
+  - description text nullable
+  - configuration jsonb
+  - schema_version text
+  - published_at timestamptz nullable
+  - retired_at timestamptz nullable
+  - content_hash text
+  - created_by uuid
+  - created_at timestamptz
+  foreign_keys:
+  - journey_definition_id -> catalog.journey_definitions.id
+  - created_by -> iam.user_accounts.id
+  unique_constraints:
+  - journey_definition_id, version_number
+  - journey_definition_id, content_hash
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: course_definitions
+  description: Identidade estável de curso reutilizável.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - slug text
+  - name text
+  - status text
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  - owner_organization_id, slug
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: course_versions
+  description: Snapshot de curso publicado.
+  primary_key: id
+  columns:
+  - id uuid
+  - course_definition_id uuid
+  - version_number integer
+  - status text
+  - title text
+  - description text nullable
+  - estimated_minutes integer
+  - published_at timestamptz nullable
+  - content_hash text
+  - created_by uuid
+  - created_at timestamptz
+  foreign_keys:
+  - course_definition_id -> catalog.course_definitions.id
+  - created_by -> iam.user_accounts.id
+  unique_constraints:
+  - course_definition_id, version_number
+  - course_definition_id, content_hash
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: modules
+  description: Agrupamento editorial dentro de uma versão de curso.
+  primary_key: id
+  columns:
+  - id uuid
+  - course_version_id uuid
+  - code text
+  - title text
+  - description text nullable
+  - position integer
+  - estimated_minutes integer
+  - metadata jsonb
+  foreign_keys:
+  - course_version_id -> catalog.course_versions.id
+  unique_constraints:
+  - course_version_id, code
+  - course_version_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: activity_definitions
+  description: Identidade estável de atividade reutilizável.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - activity_type text
+  - name text
+  - status text
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: activity_versions
+  description: Snapshot executável de atividade.
+  primary_key: id
+  columns:
+  - id uuid
+  - activity_definition_id uuid
+  - version_number integer
+  - status text
+  - title text
+  - description text nullable
+  - activity_type text
+  - configuration jsonb
+  - estimated_minutes integer
+  - published_at timestamptz nullable
+  - content_hash text
+  - created_by uuid
+  - created_at timestamptz
+  foreign_keys:
+  - activity_definition_id -> catalog.activity_definitions.id
+  - created_by -> iam.user_accounts.id
+  unique_constraints:
+  - activity_definition_id, version_number
+  - activity_definition_id, content_hash
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: module_activities
+  description: Ordena atividades em módulos sem duplicá-las.
+  primary_key: module_id, activity_version_id
+  columns:
+  - module_id uuid
+  - activity_version_id uuid
+  - position integer
+  - is_required boolean
+  foreign_keys:
+  - module_id -> catalog.modules.id
+  - activity_version_id -> catalog.activity_versions.id
+  unique_constraints:
+  - module_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: content_assets
+  description: Ativos vinculados a versões de atividade.
+  primary_key: id
+  columns:
+  - id uuid
+  - activity_version_id uuid
+  - file_object_id uuid nullable
+  - asset_type text
+  - title text
+  - external_url text nullable
+  - language_code text
+  - accessibility_metadata jsonb
+  - position integer
+  - is_required boolean
+  - created_at timestamptz
+  foreign_keys:
+  - activity_version_id -> catalog.activity_versions.id
+  - file_object_id -> core.file_objects.id
+  unique_constraints:
+  - activity_version_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: competencies
+  description: Competências reutilizáveis e versionáveis por código.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - description text nullable
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: journey_competencies
+  description: Competências alvo de uma versão de jornada.
+  primary_key: journey_version_id, competency_id
+  columns:
+  - journey_version_id uuid
+  - competency_id uuid
+  - target_level numeric
+  - weight numeric
+  foreign_keys:
+  - journey_version_id -> catalog.journey_versions.id
+  - competency_id -> catalog.competencies.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: activity_competencies
+  description: Competências praticadas ou avaliadas por uma atividade.
+  primary_key: activity_version_id, competency_id, evidence_type
+  columns:
+  - activity_version_id uuid
+  - competency_id uuid
+  - evidence_type text
+  - weight numeric
+  foreign_keys:
+  - activity_version_id -> catalog.activity_versions.id
+  - competency_id -> catalog.competencies.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: catalog
+  name: content_contributors
+  description: Autores, professores, mentores ou parceiros associados a um conteúdo.
+  primary_key: id
+  columns:
+  - id uuid
+  - activity_version_id uuid nullable
+  - course_version_id uuid nullable
+  - organization_id uuid nullable
+  - user_account_id uuid nullable
+  - contribution_role text
+  - display_name text nullable
+  foreign_keys:
+  - activity_version_id -> catalog.activity_versions.id
+  - course_version_id -> catalog.course_versions.id
+  - organization_id -> iam.organizations.id
+  - user_account_id -> iam.user_accounts.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: rule_definitions
+  description: Identidade estável de regra executável.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - rule_type text
+  - name text
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: rule_versions
+  description: Expressão estruturada e validada de uma regra.
+  primary_key: id
+  columns:
+  - id uuid
+  - rule_definition_id uuid
+  - version_number integer
+  - status text
+  - language text
+  - expression jsonb
+  - input_schema jsonb
+  - output_schema jsonb
+  - published_at timestamptz nullable
+  - content_hash text
+  - created_at timestamptz
+  foreign_keys:
+  - rule_definition_id -> orchestration.rule_definitions.id
+  unique_constraints:
+  - rule_definition_id, version_number
+  - rule_definition_id, content_hash
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: path_templates
+  description: Trilha possível em uma versão de jornada.
+  primary_key: id
+  columns:
+  - id uuid
+  - journey_version_id uuid
+  - code text
+  - name text
+  - description text nullable
+  - is_default boolean
+  - status text
+  foreign_keys:
+  - journey_version_id -> catalog.journey_versions.id
+  unique_constraints:
+  - journey_version_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: path_steps
+  description: Nó de execução que referencia atividade versionada.
+  primary_key: id
+  columns:
+  - id uuid
+  - path_template_id uuid
+  - code text
+  - activity_version_id uuid
+  - position_hint integer
+  - is_required boolean
+  - availability_rule_version_id uuid nullable
+  - completion_rule_version_id uuid nullable
+  - due_offset interval nullable
+  - metadata jsonb
+  foreign_keys:
+  - path_template_id -> orchestration.path_templates.id
+  - activity_version_id -> catalog.activity_versions.id
+  - availability_rule_version_id -> orchestration.rule_versions.id
+  - completion_rule_version_id -> orchestration.rule_versions.id
+  unique_constraints:
+  - path_template_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: path_transitions
+  description: Arestas condicionais entre passos.
+  primary_key: id
+  columns:
+  - id uuid
+  - path_template_id uuid
+  - from_step_id uuid nullable
+  - to_step_id uuid nullable
+  - condition_rule_version_id uuid nullable
+  - priority integer
+  - transition_type text
+  foreign_keys:
+  - path_template_id -> orchestration.path_templates.id
+  - from_step_id -> orchestration.path_steps.id
+  - to_step_id -> orchestration.path_steps.id
+  - condition_rule_version_id -> orchestration.rule_versions.id
+  unique_constraints:
+  - path_template_id, from_step_id, to_step_id, priority
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: assignment_policies
+  description: Política versionada usada para atribuir trilha.
+  primary_key: id
+  columns:
+  - id uuid
+  - journey_version_id uuid
+  - rule_version_id uuid
+  - priority integer
+  - status text
+  - valid_from timestamptz nullable
+  - valid_until timestamptz nullable
+  foreign_keys:
+  - journey_version_id -> catalog.journey_versions.id
+  - rule_version_id -> orchestration.rule_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: cohorts
+  description: Grupo operacional de participantes.
+  primary_key: id
+  columns:
+  - id uuid
+  - program_id uuid
+  - journey_version_id uuid nullable
+  - code text
+  - name text
+  - status text
+  - starts_at timestamptz nullable
+  - ends_at timestamptz nullable
+  - metadata jsonb
+  foreign_keys:
+  - program_id -> catalog.programs.id
+  - journey_version_id -> catalog.journey_versions.id
+  unique_constraints:
+  - program_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: enrollments
+  description: Atribuição formal de pessoa/negócio a uma versão de jornada.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - business_id uuid nullable
+  - journey_version_id uuid
+  - cohort_id uuid nullable
+  - source text
+  - status text
+  - assigned_at timestamptz
+  - accepted_at timestamptz nullable
+  - expires_at timestamptz nullable
+  - aggregate_version bigint
+  - created_at timestamptz
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - business_id -> core.businesses.id
+  - journey_version_id -> catalog.journey_versions.id
+  - cohort_id -> orchestration.cohorts.id
+  unique_constraints:
+  - entrepreneur_id, business_id, journey_version_id, cohort_id
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: journey_instances
+  description: Execução longitudinal de uma inscrição.
+  primary_key: id
+  columns:
+  - id uuid
+  - enrollment_id uuid
+  - status text
+  - started_at timestamptz nullable
+  - paused_at timestamptz nullable
+  - base_completed_at timestamptz nullable
+  - fully_completed_at timestamptz nullable
+  - ended_at timestamptz nullable
+  - aggregate_version bigint
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - enrollment_id -> orchestration.enrollments.id
+  unique_constraints:
+  - enrollment_id
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: path_assignments
+  description: Trilha efetivamente atribuída e explicação da decisão.
+  primary_key: id
+  columns:
+  - id uuid
+  - journey_instance_id uuid
+  - path_template_id uuid
+  - assignment_policy_id uuid nullable
+  - status text
+  - reason jsonb
+  - confidence numeric nullable
+  - valid_from timestamptz
+  - valid_until timestamptz nullable
+  - created_at timestamptz
+  foreign_keys:
+  - journey_instance_id -> orchestration.journey_instances.id
+  - path_template_id -> orchestration.path_templates.id
+  - assignment_policy_id -> orchestration.assignment_policies.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: step_instances
+  description: Estado operacional de um passo para uma participação.
+  primary_key: id
+  columns:
+  - id uuid
+  - path_assignment_id uuid
+  - path_step_id uuid
+  - activity_version_id uuid
+  - status text
+  - available_at timestamptz nullable
+  - started_at timestamptz nullable
+  - completed_at timestamptz nullable
+  - attempt_count integer
+  - aggregate_version bigint
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - path_assignment_id -> orchestration.path_assignments.id
+  - path_step_id -> orchestration.path_steps.id
+  - activity_version_id -> catalog.activity_versions.id
+  unique_constraints:
+  - path_assignment_id, path_step_id
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: activity_sessions
+  description: Sessões operacionais de consumo de atividade.
+  primary_key: id
+  columns:
+  - id uuid
+  - step_instance_id uuid
+  - entrepreneur_id uuid
+  - started_at timestamptz
+  - last_seen_at timestamptz nullable
+  - ended_at timestamptz nullable
+  - device_class text nullable
+  - channel text nullable
+  - accepted_observation_count integer
+  foreign_keys:
+  - step_instance_id -> orchestration.step_instances.id
+  - entrepreneur_id -> core.entrepreneurs.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: orchestration
+  name: progress_projections
+  description: Projeção reconstruível para leitura rápida.
+  primary_key: journey_instance_id
+  columns:
+  - journey_instance_id uuid
+  - completed_required_steps integer
+  - total_required_steps integer
+  - completion_ratio numeric
+  - current_step_id uuid nullable
+  - last_activity_at timestamptz nullable
+  - projection_version bigint
+  - updated_at timestamptz
+  foreign_keys:
+  - journey_instance_id -> orchestration.journey_instances.id
+  - current_step_id -> orchestration.path_steps.id
+  unique_constraints: []
+  source_of_truth: projection
+  append_only: false
+- schema: orchestration
+  name: personalization_decisions
+  description: Decisão explicável de roteamento ou adaptação.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - decision_type text
+  - rule_version_id uuid nullable
+  - input_snapshot jsonb
+  - output jsonb
+  - confidence numeric nullable
+  - status text
+  - decided_at timestamptz
+  - expires_at timestamptz nullable
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  - rule_version_id -> orchestration.rule_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: diagnostic_definitions
+  description: Identidade estável de instrumento diagnóstico.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - purpose text
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: diagnostic_versions
+  description: Versão imutável do instrumento após publicação.
+  primary_key: id
+  columns:
+  - id uuid
+  - diagnostic_definition_id uuid
+  - version_number integer
+  - status text
+  - configuration jsonb
+  - published_at timestamptz
+  - content_hash text
+  - created_at timestamptz
+  foreign_keys:
+  - diagnostic_definition_id -> diagnostics.diagnostic_definitions.id
+  unique_constraints:
+  - diagnostic_definition_id, version_number
+  - diagnostic_definition_id, content_hash
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: dimensions
+  description: Dimensões contínuas exploratórias de uma versão.
+  primary_key: id
+  columns:
+  - id uuid
+  - diagnostic_version_id uuid
+  - code text
+  - name text
+  - description text nullable
+  - minimum_answer_ratio numeric
+  - position integer
+  foreign_keys:
+  - diagnostic_version_id -> diagnostics.diagnostic_versions.id
+  unique_constraints:
+  - diagnostic_version_id, code
+  - diagnostic_version_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: items
+  description: Perguntas ou itens do diagnóstico.
+  primary_key: id
+  columns:
+  - id uuid
+  - diagnostic_version_id uuid
+  - dimension_id uuid nullable
+  - code text
+  - item_type text
+  - prompt text
+  - configuration jsonb
+  - position integer
+  - is_required boolean
+  foreign_keys:
+  - diagnostic_version_id -> diagnostics.diagnostic_versions.id
+  - dimension_id -> diagnostics.dimensions.id
+  unique_constraints:
+  - diagnostic_version_id, code
+  - diagnostic_version_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: item_options
+  description: Opções válidas para itens fechados.
+  primary_key: id
+  columns:
+  - id uuid
+  - item_id uuid
+  - code text
+  - label text
+  - value jsonb
+  - position integer
+  foreign_keys:
+  - item_id -> diagnostics.items.id
+  unique_constraints:
+  - item_id, code
+  - item_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: sessions
+  description: Execução de um diagnóstico por participante.
+  primary_key: id
+  columns:
+  - id uuid
+  - diagnostic_version_id uuid
+  - entrepreneur_id uuid
+  - business_id uuid nullable
+  - journey_instance_id uuid nullable
+  - status text
+  - started_at timestamptz
+  - completed_at timestamptz nullable
+  - abandoned_at timestamptz nullable
+  - aggregate_version bigint
+  - created_at timestamptz
+  foreign_keys:
+  - diagnostic_version_id -> diagnostics.diagnostic_versions.id
+  - entrepreneur_id -> core.entrepreneurs.id
+  - business_id -> core.businesses.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: responses
+  description: Histórico append-only de respostas e alterações.
+  primary_key: id
+  columns:
+  - id uuid
+  - session_id uuid
+  - item_id uuid
+  - revision integer
+  - response_value jsonb
+  - response_time_ms integer nullable
+  - recorded_at timestamptz
+  - supersedes_response_id uuid nullable
+  - source_event_id uuid
+  foreign_keys:
+  - session_id -> diagnostics.sessions.id
+  - item_id -> diagnostics.items.id
+  - supersedes_response_id -> diagnostics.responses.id
+  - source_event_id -> eventing.events.event_id
+  unique_constraints:
+  - session_id, item_id, revision
+  source_of_truth: behavioral_fact
+  append_only: true
+- schema: diagnostics
+  name: results
+  description: Resultado operacional versionado do diagnóstico.
+  primary_key: id
+  columns:
+  - id uuid
+  - session_id uuid
+  - calculation_version text
+  - status text
+  - operational_readiness jsonb
+  - data_quality jsonb
+  - recommended_start jsonb
+  - calculated_at timestamptz
+  - source_event_high_watermark uuid nullable
+  foreign_keys:
+  - session_id -> diagnostics.sessions.id
+  unique_constraints:
+  - session_id, calculation_version
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: dimension_results
+  description: Escore contínuo e qualidade por dimensão.
+  primary_key: result_id, dimension_id
+  columns:
+  - result_id uuid
+  - dimension_id uuid
+  - score numeric nullable
+  - answered_ratio numeric
+  - evidence_status text
+  - details jsonb
+  foreign_keys:
+  - result_id -> diagnostics.results.id
+  - dimension_id -> diagnostics.dimensions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: segment_definitions
+  description: Identidade estável de segmento operacional temporário.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - description text nullable
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: segment_versions
+  description: Regra e semântica versionadas de segmento.
+  primary_key: id
+  columns:
+  - id uuid
+  - segment_definition_id uuid
+  - version_number integer
+  - rule_version_id uuid nullable
+  - status text
+  - validity_interval interval nullable
+  - published_at timestamptz nullable
+  foreign_keys:
+  - segment_definition_id -> diagnostics.segment_definitions.id
+  - rule_version_id -> orchestration.rule_versions.id
+  unique_constraints:
+  - segment_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: segment_assignments
+  description: Atribuição temporária, explicável e revogável.
+  primary_key: id
+  columns:
+  - id uuid
+  - segment_version_id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - source_type text
+  - source_reference jsonb
+  - confidence numeric nullable
+  - assigned_at timestamptz
+  - valid_until timestamptz nullable
+  - revoked_at timestamptz nullable
+  foreign_keys:
+  - segment_version_id -> diagnostics.segment_versions.id
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: archetype_definitions
+  description: Estrutura futura; desabilitada até validação.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - description text nullable
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: archetype_versions
+  description: Modelo probabilístico futuro e versionado.
+  primary_key: id
+  columns:
+  - id uuid
+  - archetype_definition_id uuid
+  - version_number integer
+  - model_reference text nullable
+  - status text
+  - validation_status text
+  - published_at timestamptz nullable
+  foreign_keys:
+  - archetype_definition_id -> diagnostics.archetype_definitions.id
+  unique_constraints:
+  - archetype_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: diagnostics
+  name: archetype_assignments
+  description: Resultado probabilístico futuro, inclusive incerto.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - model_version_reference text
+  - primary_archetype_version_id uuid nullable
+  - probability numeric nullable
+  - secondary_archetype_version_id uuid nullable
+  - secondary_probability numeric nullable
+  - classification_status text
+  - assigned_at timestamptz
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  - primary_archetype_version_id -> diagnostics.archetype_versions.id
+  - secondary_archetype_version_id -> diagnostics.archetype_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: assessment_specs
+  description: Configuração específica para atividade do tipo avaliação.
+  primary_key: activity_version_id
+  columns:
+  - activity_version_id uuid
+  - grading_mode text
+  - passing_score numeric nullable
+  - max_attempts integer nullable
+  - time_limit_seconds integer nullable
+  - randomization_policy jsonb
+  - feedback_policy jsonb
+  foreign_keys:
+  - activity_version_id -> catalog.activity_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: questions
+  description: Questões pertencentes a uma versão publicada de atividade.
+  primary_key: id
+  columns:
+  - id uuid
+  - activity_version_id uuid
+  - code text
+  - question_type text
+  - prompt text
+  - points numeric
+  - position integer
+  - configuration jsonb
+  foreign_keys:
+  - activity_version_id -> catalog.activity_versions.id
+  unique_constraints:
+  - activity_version_id, code
+  - activity_version_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: answer_options
+  description: Opções de questões fechadas.
+  primary_key: id
+  columns:
+  - id uuid
+  - question_id uuid
+  - code text
+  - label text
+  - value jsonb
+  - is_correct boolean nullable
+  - position integer
+  foreign_keys:
+  - question_id -> assessment.questions.id
+  unique_constraints:
+  - question_id, code
+  - question_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: attempts
+  description: Tentativa de avaliação vinculada ao passo e à versão.
+  primary_key: id
+  columns:
+  - id uuid
+  - step_instance_id uuid
+  - activity_version_id uuid
+  - entrepreneur_id uuid
+  - attempt_number integer
+  - status text
+  - started_at timestamptz
+  - submitted_at timestamptz nullable
+  - scored_at timestamptz nullable
+  - aggregate_version bigint
+  foreign_keys:
+  - step_instance_id -> orchestration.step_instances.id
+  - activity_version_id -> catalog.activity_versions.id
+  - entrepreneur_id -> core.entrepreneurs.id
+  unique_constraints:
+  - step_instance_id, attempt_number
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: responses
+  description: Respostas por tentativa e questão.
+  primary_key: id
+  columns:
+  - id uuid
+  - attempt_id uuid
+  - question_id uuid
+  - response_value jsonb
+  - responded_at timestamptz
+  - source_event_id uuid
+  foreign_keys:
+  - attempt_id -> assessment.attempts.id
+  - question_id -> assessment.questions.id
+  - source_event_id -> eventing.events.event_id
+  unique_constraints:
+  - attempt_id, question_id
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: results
+  description: Resultado reproduzível de uma tentativa.
+  primary_key: id
+  columns:
+  - id uuid
+  - attempt_id uuid
+  - scoring_version text
+  - raw_score numeric
+  - normalized_score numeric
+  - passed boolean
+  - details jsonb
+  - calculated_at timestamptz
+  foreign_keys:
+  - attempt_id -> assessment.attempts.id
+  unique_constraints:
+  - attempt_id, scoring_version
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: practice_specs
+  description: Configuração específica para atividade prática.
+  primary_key: activity_version_id
+  columns:
+  - activity_version_id uuid
+  - submission_mode text
+  - allowed_evidence_types text[]
+  - max_submissions integer nullable
+  - review_required boolean
+  - rubric_version_id uuid nullable
+  - terms_version text nullable
+  foreign_keys:
+  - activity_version_id -> catalog.activity_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: rubric_definitions
+  description: Identidade estável de rubrica.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: rubric_versions
+  description: Snapshot imutável da rubrica.
+  primary_key: id
+  columns:
+  - id uuid
+  - rubric_definition_id uuid
+  - version_number integer
+  - status text
+  - published_at timestamptz nullable
+  - content_hash text
+  foreign_keys:
+  - rubric_definition_id -> assessment.rubric_definitions.id
+  unique_constraints:
+  - rubric_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: rubric_criteria
+  description: Critérios e escalas da rubrica.
+  primary_key: id
+  columns:
+  - id uuid
+  - rubric_version_id uuid
+  - code text
+  - name text
+  - description text
+  - max_score numeric
+  - weight numeric
+  - position integer
+  - levels jsonb
+  foreign_keys:
+  - rubric_version_id -> assessment.rubric_versions.id
+  unique_constraints:
+  - rubric_version_id, code
+  - rubric_version_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: submissions
+  description: Entrega prática, sem armazenar binário diretamente.
+  primary_key: id
+  columns:
+  - id uuid
+  - step_instance_id uuid
+  - activity_version_id uuid
+  - entrepreneur_id uuid
+  - submission_number integer
+  - status text
+  - text_content text nullable
+  - external_link text nullable
+  - submitted_at timestamptz
+  - accepted_at timestamptz nullable
+  - aggregate_version bigint
+  - allow_public_use boolean
+  foreign_keys:
+  - step_instance_id -> orchestration.step_instances.id
+  - activity_version_id -> catalog.activity_versions.id
+  - entrepreneur_id -> core.entrepreneurs.id
+  unique_constraints:
+  - step_instance_id, submission_number
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: submission_evidence
+  description: Arquivos ou evidências associados a entrega.
+  primary_key: id
+  columns:
+  - id uuid
+  - submission_id uuid
+  - file_object_id uuid
+  - evidence_type text
+  - position integer
+  - metadata jsonb
+  foreign_keys:
+  - submission_id -> assessment.submissions.id
+  - file_object_id -> core.file_objects.id
+  unique_constraints:
+  - submission_id, position
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: reviews
+  description: Revisão humana ou automática explicitamente identificada.
+  primary_key: id
+  columns:
+  - id uuid
+  - submission_id uuid
+  - reviewer_user_account_id uuid nullable
+  - review_type text
+  - rubric_version_id uuid nullable
+  - status text
+  - feedback text nullable
+  - reviewed_at timestamptz
+  - source_event_id uuid
+  foreign_keys:
+  - submission_id -> assessment.submissions.id
+  - reviewer_user_account_id -> iam.user_accounts.id
+  - rubric_version_id -> assessment.rubric_versions.id
+  - source_event_id -> eventing.events.event_id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: assessment
+  name: review_scores
+  description: Pontuação por critério de rubrica.
+  primary_key: review_id, rubric_criterion_id
+  columns:
+  - review_id uuid
+  - rubric_criterion_id uuid
+  - score numeric
+  - comment text nullable
+  foreign_keys:
+  - review_id -> assessment.reviews.id
+  - rubric_criterion_id -> assessment.rubric_criteria.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: point_rule_definitions
+  description: Identidade estável de regra de pontos.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: point_rule_versions
+  description: Quantidade, recorrência e elegibilidade versionadas.
+  primary_key: id
+  columns:
+  - id uuid
+  - point_rule_definition_id uuid
+  - version_number integer
+  - status text
+  - amount integer
+  - eligibility_rule_version_id uuid
+  - recurrence_policy jsonb
+  - published_at timestamptz
+  foreign_keys:
+  - point_rule_definition_id -> engagement.point_rule_definitions.id
+  - eligibility_rule_version_id -> orchestration.rule_versions.id
+  unique_constraints:
+  - point_rule_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: point_ledger
+  description: Lançamentos imutáveis positivos ou negativos.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - point_rule_version_id uuid
+  - amount integer
+  - source_event_id uuid
+  - idempotency_key text
+  - reason text
+  - reverses_entry_id uuid nullable
+  - occurred_at timestamptz
+  - created_at timestamptz
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  - point_rule_version_id -> engagement.point_rule_versions.id
+  - source_event_id -> eventing.events.event_id
+  - reverses_entry_id -> engagement.point_ledger.id
+  unique_constraints:
+  - idempotency_key
+  source_of_truth: ledger
+  append_only: true
+- schema: engagement
+  name: point_balance_projections
+  description: Saldo reconstruível por escopo.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - balance integer
+  - last_ledger_entry_id uuid
+  - projection_version bigint
+  - updated_at timestamptz
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  - last_ledger_entry_id -> engagement.point_ledger.id
+  unique_constraints:
+  - entrepreneur_id, journey_instance_id (NULLS NOT DISTINCT)
+  source_of_truth: projection
+  append_only: false
+- schema: engagement
+  name: badge_definitions
+  description: Identidade estável de selo.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: badge_versions
+  description: Critérios e apresentação versionados.
+  primary_key: id
+  columns:
+  - id uuid
+  - badge_definition_id uuid
+  - version_number integer
+  - status text
+  - title text
+  - description text
+  - criteria_rule_version_id uuid
+  - asset_file_object_id uuid nullable
+  - published_at timestamptz nullable
+  foreign_keys:
+  - badge_definition_id -> engagement.badge_definitions.id
+  - criteria_rule_version_id -> orchestration.rule_versions.id
+  - asset_file_object_id -> core.file_objects.id
+  unique_constraints:
+  - badge_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: badge_awards
+  description: Emissão idempotente de selo.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - badge_version_id uuid
+  - source_event_id uuid
+  - evidence_snapshot jsonb
+  - awarded_at timestamptz
+  - revoked_at timestamptz nullable
+  - revocation_reason text nullable
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  - badge_version_id -> engagement.badge_versions.id
+  - source_event_id -> eventing.events.event_id
+  unique_constraints:
+  - entrepreneur_id, journey_instance_id, badge_version_id
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: certificate_definitions
+  description: Identidade estável de certificado.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: certificate_versions
+  description: Requisitos, template e validade versionados.
+  primary_key: id
+  columns:
+  - id uuid
+  - certificate_definition_id uuid
+  - version_number integer
+  - status text
+  - journey_version_id uuid
+  - requirements_rule_version_id uuid
+  - template_file_object_id uuid nullable
+  - validity_policy jsonb
+  - published_at timestamptz nullable
+  foreign_keys:
+  - certificate_definition_id -> engagement.certificate_definitions.id
+  - journey_version_id -> catalog.journey_versions.id
+  - requirements_rule_version_id -> orchestration.rule_versions.id
+  - template_file_object_id -> core.file_objects.id
+  unique_constraints:
+  - certificate_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: certificate_issuances
+  description: Credencial verificável emitida e revogável.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid
+  - certificate_version_id uuid
+  - verification_code text
+  - display_name_snapshot text
+  - requirement_snapshot jsonb
+  - source_event_id uuid
+  - status text
+  - issued_at timestamptz
+  - expires_at timestamptz nullable
+  - revoked_at timestamptz nullable
+  - revocation_reason text nullable
+  - document_file_object_id uuid nullable
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  - certificate_version_id -> engagement.certificate_versions.id
+  - source_event_id -> eventing.events.event_id
+  - document_file_object_id -> core.file_objects.id
+  unique_constraints:
+  - verification_code
+  - journey_instance_id, certificate_version_id
+  source_of_truth: operational
+  append_only: false
+- schema: engagement
+  name: streak_projections
+  description: Sequências derivadas para interface, nunca fato primário.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - streak_type text
+  - current_count integer
+  - longest_count integer
+  - last_qualifying_date date nullable
+  - projection_version bigint
+  - updated_at timestamptz
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  unique_constraints:
+  - entrepreneur_id, journey_instance_id, streak_type (NULLS NOT DISTINCT)
+  source_of_truth: projection
+  append_only: false
+- schema: intervention
+  name: definitions
+  description: Identidade estável de intervenção.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - purpose text
+  - status text
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: intervention
+  name: versions
+  description: Conteúdo, canal, cooldown e regras versionados.
+  primary_key: id
+  columns:
+  - id uuid
+  - intervention_definition_id uuid
+  - version_number integer
+  - status text
+  - eligibility_rule_version_id uuid
+  - channel_policy jsonb
+  - content_template jsonb
+  - cooldown interval nullable
+  - priority integer
+  - published_at timestamptz nullable
+  foreign_keys:
+  - intervention_definition_id -> intervention.definitions.id
+  - eligibility_rule_version_id -> orchestration.rule_versions.id
+  unique_constraints:
+  - intervention_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: intervention
+  name: instances
+  description: Intervenção criada para uma pessoa em contexto específico.
+  primary_key: id
+  columns:
+  - id uuid
+  - intervention_version_id uuid
+  - entrepreneur_id uuid
+  - journey_instance_id uuid nullable
+  - trigger_event_id uuid nullable
+  - status text
+  - eligible_at timestamptz
+  - scheduled_at timestamptz nullable
+  - sent_at timestamptz nullable
+  - completed_at timestamptz nullable
+  - suppression_reason text nullable
+  - aggregate_version bigint
+  foreign_keys:
+  - intervention_version_id -> intervention.versions.id
+  - entrepreneur_id -> core.entrepreneurs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  - trigger_event_id -> eventing.events.event_id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: intervention
+  name: delivery_attempts
+  description: Tentativas de entrega e confirmação de provedor.
+  primary_key: id
+  columns:
+  - id uuid
+  - intervention_instance_id uuid
+  - channel text
+  - provider text
+  - attempt_number integer
+  - status text
+  - external_message_id text nullable
+  - requested_at timestamptz
+  - delivered_at timestamptz nullable
+  - opened_at timestamptz nullable
+  - failure_code text nullable
+  - failure_details jsonb
+  foreign_keys:
+  - intervention_instance_id -> intervention.instances.id
+  unique_constraints:
+  - intervention_instance_id, channel, attempt_number
+  source_of_truth: operational
+  append_only: false
+- schema: intervention
+  name: responses
+  description: Resposta explícita ou ação atribuível à intervenção.
+  primary_key: id
+  columns:
+  - id uuid
+  - intervention_instance_id uuid
+  - response_type text
+  - response_value jsonb
+  - source_event_id uuid
+  - responded_at timestamptz
+  foreign_keys:
+  - intervention_instance_id -> intervention.instances.id
+  - source_event_id -> eventing.events.event_id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: eventing
+  name: event_schemas
+  description: Registro de schemas JSON por tipo e versão.
+  primary_key: id
+  columns:
+  - id uuid
+  - event_name text
+  - event_version integer
+  - schema_uri text
+  - schema_document jsonb
+  - schema_hash text
+  - status text
+  - published_at timestamptz
+  foreign_keys: []
+  unique_constraints:
+  - event_name, event_version
+  - schema_hash
+  source_of_truth: operational
+  append_only: false
+- schema: eventing
+  name: events
+  description: Log canônico imutável de fatos e observações aceitas.
+  primary_key: event_id
+  columns:
+  - event_id uuid
+  - event_name text
+  - event_version integer
+  - occurred_at timestamptz
+  - received_at timestamptz
+  - producer text
+  - subject_type text
+  - subject_id uuid nullable
+  - actor_type text
+  - actor_id uuid nullable
+  - organization_id uuid nullable
+  - journey_instance_id uuid nullable
+  - aggregate_type text nullable
+  - aggregate_id uuid nullable
+  - aggregate_version bigint nullable
+  - partition_key text
+  - correlation_id uuid
+  - causation_id uuid nullable
+  - traceparent text nullable
+  - evidence_nature text
+  - privacy_class text
+  - payload jsonb
+  - payload_hash text
+  - schema_id uuid
+  - created_at timestamptz
+  foreign_keys:
+  - schema_id -> eventing.event_schemas.id
+  - organization_id -> iam.organizations.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  unique_constraints:
+  - aggregate_type, aggregate_id, aggregate_version (partial)
+  - producer, payload_hash, occurred_at (optional dedup)
+  source_of_truth: canonical_event
+  append_only: true
+- schema: eventing
+  name: outbox
+  description: Entrega assíncrona criada atomicamente com o fato.
+  primary_key: id
+  columns:
+  - id uuid
+  - event_id uuid
+  - route_key text
+  - status text
+  - available_at timestamptz
+  - claimed_at timestamptz nullable
+  - claimed_by text nullable
+  - attempt_count integer
+  - last_error_code text nullable
+  - completed_at timestamptz nullable
+  - created_at timestamptz
+  foreign_keys:
+  - event_id -> eventing.events.event_id
+  unique_constraints:
+  - event_id, route_key
+  source_of_truth: operational
+  append_only: false
+- schema: eventing
+  name: consumer_definitions
+  description: Consumidores lógicos e suas políticas.
+  primary_key: id
+  columns:
+  - id uuid
+  - code text
+  - name text
+  - status text
+  - max_attempts integer
+  - retry_policy jsonb
+  - dead_letter_policy jsonb
+  foreign_keys: []
+  unique_constraints:
+  - code
+  source_of_truth: operational
+  append_only: false
+- schema: eventing
+  name: consumer_inbox
+  description: Deduplicação e estado por consumidor/evento.
+  primary_key: consumer_id, event_id
+  columns:
+  - consumer_id uuid
+  - event_id uuid
+  - status text
+  - received_at timestamptz
+  - processing_started_at timestamptz nullable
+  - processed_at timestamptz nullable
+  - attempt_count integer
+  - last_error_code text nullable
+  foreign_keys:
+  - consumer_id -> eventing.consumer_definitions.id
+  - event_id -> eventing.events.event_id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: eventing
+  name: delivery_attempts
+  description: Histórico append-only de tentativas de distribuição.
+  primary_key: id
+  columns:
+  - id uuid
+  - outbox_id uuid
+  - consumer_id uuid
+  - attempt_number integer
+  - status text
+  - started_at timestamptz
+  - finished_at timestamptz nullable
+  - error_code text nullable
+  - error_details jsonb
+  foreign_keys:
+  - outbox_id -> eventing.outbox.id
+  - consumer_id -> eventing.consumer_definitions.id
+  unique_constraints:
+  - outbox_id, consumer_id, attempt_number
+  source_of_truth: operational
+  append_only: true
+- schema: eventing
+  name: dead_letters
+  description: Eventos/entregas isolados para investigação e replay.
+  primary_key: id
+  columns:
+  - id uuid
+  - event_id uuid
+  - consumer_id uuid nullable
+  - source_type text
+  - reason_code text
+  - reason_details jsonb
+  - status text
+  - created_at timestamptz
+  - resolved_at timestamptz nullable
+  - resolution text nullable
+  foreign_keys:
+  - event_id -> eventing.events.event_id
+  - consumer_id -> eventing.consumer_definitions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: eventing
+  name: projection_checkpoints
+  description: Checkpoint de projeções reconstruíveis.
+  primary_key: projection_code, partition_key
+  columns:
+  - projection_code text
+  - partition_key text
+  - last_event_id uuid nullable
+  - last_received_at timestamptz nullable
+  - projection_version bigint
+  - updated_at timestamptz
+  foreign_keys:
+  - last_event_id -> eventing.events.event_id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: connections
+  description: Configuração não secreta de conectores; segredos ficam em secret manager.
+  primary_key: id
+  columns:
+  - id uuid
+  - organization_id uuid
+  - provider text
+  - environment text
+  - status text
+  - secret_reference text
+  - configuration jsonb
+  - created_at timestamptz
+  - updated_at timestamptz
+  foreign_keys:
+  - organization_id -> iam.organizations.id
+  unique_constraints:
+  - organization_id, provider, environment
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: external_object_mappings
+  description: Mapeia entidades internas a IDs externos.
+  primary_key: id
+  columns:
+  - id uuid
+  - connection_id uuid
+  - internal_entity_type text
+  - internal_entity_id uuid
+  - external_object_type text
+  - external_object_id text
+  - status text
+  - first_synced_at timestamptz
+  - last_synced_at timestamptz
+  - metadata jsonb
+  foreign_keys:
+  - connection_id -> integration.connections.id
+  unique_constraints:
+  - connection_id, external_object_type, external_object_id
+  - connection_id, internal_entity_type, internal_entity_id, external_object_type
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: mapping_definitions
+  description: Identidade estável de contrato de mapeamento.
+  primary_key: id
+  columns:
+  - id uuid
+  - connection_id uuid
+  - code text
+  - direction text
+  - internal_entity_type text
+  - external_object_type text
+  - status text
+  foreign_keys:
+  - connection_id -> integration.connections.id
+  unique_constraints:
+  - connection_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: mapping_versions
+  description: Campos e transformações versionados.
+  primary_key: id
+  columns:
+  - id uuid
+  - mapping_definition_id uuid
+  - version_number integer
+  - status text
+  - field_mappings jsonb
+  - validation_schema jsonb
+  - published_at timestamptz
+  - content_hash text
+  foreign_keys:
+  - mapping_definition_id -> integration.mapping_definitions.id
+  unique_constraints:
+  - mapping_definition_id, version_number
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: sync_jobs
+  description: Unidade idempotente de envio ou leitura externa.
+  primary_key: id
+  columns:
+  - id uuid
+  - connection_id uuid
+  - mapping_version_id uuid
+  - source_event_id uuid nullable
+  - operation text
+  - internal_entity_type text
+  - internal_entity_id uuid
+  - idempotency_key text
+  - status text
+  - scheduled_at timestamptz
+  - started_at timestamptz nullable
+  - completed_at timestamptz nullable
+  - external_object_id text nullable
+  - attempt_count integer
+  - last_error_code text nullable
+  foreign_keys:
+  - connection_id -> integration.connections.id
+  - mapping_version_id -> integration.mapping_versions.id
+  - source_event_id -> eventing.events.event_id
+  unique_constraints:
+  - idempotency_key
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: sync_attempts
+  description: Histórico de tentativas e resposta sanitizada.
+  primary_key: id
+  columns:
+  - id uuid
+  - sync_job_id uuid
+  - attempt_number integer
+  - status text
+  - request_hash text
+  - response_status integer nullable
+  - response_reference text nullable
+  - started_at timestamptz
+  - finished_at timestamptz nullable
+  - error_code text nullable
+  - error_details jsonb
+  foreign_keys:
+  - sync_job_id -> integration.sync_jobs.id
+  unique_constraints:
+  - sync_job_id, attempt_number
+  source_of_truth: operational
+  append_only: true
+- schema: integration
+  name: conflicts
+  description: Divergências que exigem política ou revisão.
+  primary_key: id
+  columns:
+  - id uuid
+  - connection_id uuid
+  - internal_entity_type text
+  - internal_entity_id uuid
+  - external_object_type text
+  - external_object_id text nullable
+  - field_name text nullable
+  - internal_value_hash text nullable
+  - external_value_hash text nullable
+  - status text
+  - detected_at timestamptz
+  - resolved_at timestamptz nullable
+  - resolution text nullable
+  foreign_keys:
+  - connection_id -> integration.connections.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: reconciliation_runs
+  description: Execução de reconciliação por conexão e escopo.
+  primary_key: id
+  columns:
+  - id uuid
+  - connection_id uuid
+  - scope jsonb
+  - status text
+  - started_at timestamptz
+  - completed_at timestamptz nullable
+  - summary jsonb
+  foreign_keys:
+  - connection_id -> integration.connections.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: reconciliation_items
+  description: Resultado por objeto reconciliado.
+  primary_key: id
+  columns:
+  - id uuid
+  - run_id uuid
+  - internal_entity_type text
+  - internal_entity_id uuid nullable
+  - external_object_type text
+  - external_object_id text nullable
+  - status text
+  - difference_summary jsonb
+  - action_taken text nullable
+  foreign_keys:
+  - run_id -> integration.reconciliation_runs.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: integration
+  name: webhook_receipts
+  description: Recebimento bruto isolado por hash/referência, sem promover payload inteiro.
+  primary_key: id
+  columns:
+  - id uuid
+  - connection_id uuid
+  - provider_event_id text nullable
+  - received_at timestamptz
+  - signature_status text
+  - replay_status text
+  - payload_hash text
+  - payload_object_reference text nullable
+  - status text
+  - normalized_event_id uuid nullable
+  - rejection_reason text nullable
+  foreign_keys:
+  - connection_id -> integration.connections.id
+  - normalized_event_id -> eventing.events.event_id
+  unique_constraints:
+  - connection_id, provider_event_id
+  - connection_id, payload_hash
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: feature_definitions
+  description: Identidade estável de uma característica comportamental.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - description text
+  - value_type text
+  - status text
+  - allowed_uses text[]
+  - prohibited_uses text[]
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: feature_versions
+  description: Fórmula, janela, fontes e tratamento de ausência versionados.
+  primary_key: id
+  columns:
+  - id uuid
+  - feature_definition_id uuid
+  - version_number integer
+  - status text
+  - computation_type text
+  - expression jsonb
+  - window_definition jsonb
+  - missing_policy jsonb
+  - quality_policy jsonb
+  - published_at timestamptz
+  - content_hash text
+  foreign_keys:
+  - feature_definition_id -> intelligence.feature_definitions.id
+  unique_constraints:
+  - feature_definition_id, version_number
+  - feature_definition_id, content_hash
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: feature_dependencies
+  description: Eventos ou features que alimentam uma versão.
+  primary_key: feature_version_id, dependency_type, dependency_reference
+  columns:
+  - feature_version_id uuid
+  - dependency_type text
+  - dependency_reference text
+  - required boolean
+  - weight numeric nullable
+  foreign_keys:
+  - feature_version_id -> intelligence.feature_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: feature_computation_runs
+  description: Execução reproduzível de cálculo.
+  primary_key: id
+  columns:
+  - id uuid
+  - feature_version_id uuid
+  - run_type text
+  - status text
+  - window_start timestamptz nullable
+  - window_end timestamptz nullable
+  - input_high_watermark timestamptz nullable
+  - code_reference text
+  - started_at timestamptz
+  - completed_at timestamptz nullable
+  - summary jsonb
+  foreign_keys:
+  - feature_version_id -> intelligence.feature_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: feature_values
+  description: Valor derivado por sujeito, contexto e janela.
+  primary_key: id
+  columns:
+  - id uuid
+  - feature_version_id uuid
+  - run_id uuid
+  - subject_type text
+  - subject_id uuid
+  - journey_instance_id uuid nullable
+  - window_start timestamptz nullable
+  - window_end timestamptz nullable
+  - as_of timestamptz
+  - numeric_value numeric nullable
+  - text_value text nullable
+  - json_value jsonb nullable
+  - quality_status text
+  - evidence_count integer
+  - lineage_hash text
+  - created_at timestamptz
+  foreign_keys:
+  - feature_version_id -> intelligence.feature_versions.id
+  - run_id -> intelligence.feature_computation_runs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  unique_constraints:
+  - feature_version_id, subject_type, subject_id, journey_instance_id, window_start, window_end, as_of
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: score_definitions
+  description: Identidade estável de score experimental.
+  primary_key: id
+  columns:
+  - id uuid
+  - owner_organization_id uuid
+  - code text
+  - name text
+  - purpose text
+  - status text
+  - allowed_uses text[]
+  - prohibited_uses text[]
+  foreign_keys:
+  - owner_organization_id -> iam.organizations.id
+  unique_constraints:
+  - owner_organization_id, code
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: score_versions
+  description: Modelo, inputs, calibração e limites versionados.
+  primary_key: id
+  columns:
+  - id uuid
+  - score_definition_id uuid
+  - version_number integer
+  - status text
+  - model_type text
+  - model_reference text
+  - input_schema jsonb
+  - output_schema jsonb
+  - decision_thresholds jsonb nullable
+  - validation_status text
+  - published_at timestamptz nullable
+  - content_hash text
+  foreign_keys:
+  - score_definition_id -> intelligence.score_definitions.id
+  unique_constraints:
+  - score_definition_id, version_number
+  - score_definition_id, content_hash
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: score_runs
+  description: Execução de score em lote ou individual.
+  primary_key: id
+  columns:
+  - id uuid
+  - score_version_id uuid
+  - status text
+  - run_type text
+  - code_reference text
+  - input_high_watermark timestamptz nullable
+  - started_at timestamptz
+  - completed_at timestamptz nullable
+  - summary jsonb
+  foreign_keys:
+  - score_version_id -> intelligence.score_versions.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: score_results
+  description: Resultado derivado sem autoridade de crédito.
+  primary_key: id
+  columns:
+  - id uuid
+  - score_version_id uuid
+  - run_id uuid
+  - subject_type text
+  - subject_id uuid
+  - journey_instance_id uuid nullable
+  - score_value numeric nullable
+  - score_band text nullable
+  - uncertainty numeric nullable
+  - input_snapshot_hash text
+  - status text
+  - calculated_at timestamptz
+  foreign_keys:
+  - score_version_id -> intelligence.score_versions.id
+  - run_id -> intelligence.score_runs.id
+  - journey_instance_id -> orchestration.journey_instances.id
+  unique_constraints:
+  - score_version_id, subject_type, subject_id, journey_instance_id, calculated_at
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: score_contributions
+  description: Explicação por feature/entrada, sem expor PII.
+  primary_key: score_result_id, feature_version_id
+  columns:
+  - score_result_id uuid
+  - feature_version_id uuid
+  - feature_value_id uuid nullable
+  - contribution numeric nullable
+  - rank integer nullable
+  - explanation jsonb
+  foreign_keys:
+  - score_result_id -> intelligence.score_results.id
+  - feature_version_id -> intelligence.feature_versions.id
+  - feature_value_id -> intelligence.feature_values.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: validation_runs
+  description: Validação temporal, técnica, de utilidade e equidade.
+  primary_key: id
+  columns:
+  - id uuid
+  - target_type text
+  - target_version_id uuid
+  - validation_type text
+  - dataset_reference text
+  - status text
+  - methodology jsonb
+  - started_at timestamptz
+  - completed_at timestamptz nullable
+  - approved_for_use boolean
+  - limitations jsonb
+  foreign_keys: []
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: intelligence
+  name: validation_metrics
+  description: Métricas de uma validação por segmento/janela.
+  primary_key: id
+  columns:
+  - id uuid
+  - validation_run_id uuid
+  - metric_code text
+  - segment_reference text nullable
+  - metric_value numeric nullable
+  - metric_json jsonb nullable
+  - confidence_interval jsonb nullable
+  foreign_keys:
+  - validation_run_id -> intelligence.validation_runs.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: governance
+  name: purposes
+  description: Finalidades documentadas de tratamento.
+  primary_key: id
+  columns:
+  - id uuid
+  - code text
+  - name text
+  - description text
+  - status text
+  - legal_basis_reference text nullable
+  foreign_keys: []
+  unique_constraints:
+  - code
+  source_of_truth: operational
+  append_only: false
+- schema: governance
+  name: consent_records
+  description: Registro append-only de concessão, recusa ou revogação.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid
+  - purpose_id uuid
+  - policy_version text
+  - status text
+  - captured_at timestamptz
+  - channel text
+  - evidence_reference text
+  - supersedes_consent_id uuid nullable
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  - purpose_id -> governance.purposes.id
+  - supersedes_consent_id -> governance.consent_records.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: true
+- schema: governance
+  name: privacy_requests
+  description: Solicitações de acesso, correção, oposição, exclusão ou revisão.
+  primary_key: id
+  columns:
+  - id uuid
+  - entrepreneur_id uuid nullable
+  - request_type text
+  - status text
+  - requested_at timestamptz
+  - due_at timestamptz nullable
+  - completed_at timestamptz nullable
+  - request_reference text
+  - resolution_summary text nullable
+  foreign_keys:
+  - entrepreneur_id -> core.entrepreneurs.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: governance
+  name: retention_policies
+  description: Regras de retenção por classe e store.
+  primary_key: id
+  columns:
+  - id uuid
+  - code text
+  - data_class text
+  - store_reference text
+  - retention_interval interval nullable
+  - deletion_action text
+  - legal_hold_supported boolean
+  - status text
+  - effective_from date
+  foreign_keys: []
+  unique_constraints:
+  - code
+  source_of_truth: operational
+  append_only: false
+- schema: governance
+  name: data_lineage_edges
+  description: Relações de linhagem entre dados, eventos, features, scores e destinos.
+  primary_key: id
+  columns:
+  - id uuid
+  - from_type text
+  - from_reference text
+  - to_type text
+  - to_reference text
+  - transformation_reference text nullable
+  - created_at timestamptz
+  foreign_keys: []
+  unique_constraints:
+  - from_type, from_reference, to_type, to_reference, transformation_reference
+  source_of_truth: operational
+  append_only: false
+- schema: governance
+  name: model_approvals
+  description: Aprovação e limites de uso para diagnóstico, feature ou score.
+  primary_key: id
+  columns:
+  - id uuid
+  - target_type text
+  - target_version_id uuid
+  - approval_scope text
+  - status text
+  - conditions jsonb
+  - approved_by uuid nullable
+  - approved_at timestamptz nullable
+  - expires_at timestamptz nullable
+  foreign_keys:
+  - approved_by -> iam.user_accounts.id
+  unique_constraints: []
+  source_of_truth: operational
+  append_only: false
+- schema: governance
+  name: audit_log
+  description: Ações privilegiadas e mudanças administrativas imutáveis.
+  primary_key: id
+  columns:
+  - id uuid
+  - occurred_at timestamptz
+  - actor_user_account_id uuid nullable
+  - organization_id uuid nullable
+  - action text
+  - resource_type text
+  - resource_id uuid nullable
+  - request_id uuid nullable
+  - before_hash text nullable
+  - after_hash text nullable
+  - details jsonb
+  - privacy_class text
+  foreign_keys:
+  - actor_user_account_id -> iam.user_accounts.id
+  - organization_id -> iam.organizations.id
+  unique_constraints: []
+  source_of_truth: audit
+  append_only: true

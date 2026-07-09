@@ -97,26 +97,3 @@ Registrar ações administrativas como:
 ## 8. Validação necessária no E12
 
 O helper `iam.current_user_account_id()` do DDL é um adapter neutro. Ele deverá ser substituído ou integrado ao mecanismo real de claims do provedor escolhido antes de qualquer migration produtiva.
-## 9. Adapter de identidade entre Supabase e AWS
-
-A API validará o JWT do ambiente:
-
-- Supabase Auth em local/test;
-- Amazon Cognito em staging/produção.
-
-Depois resolverá `(provider, subject)` em `iam.external_identities` e obterá `iam.user_accounts.id`. Antes de executar o caso de uso, a transação definirá contexto neutro:
-
-```sql
-SET LOCAL app.user_account_id = '<uuid>';
-SET LOCAL app.organization_id = '<uuid>';
-```
-
-As policies e helpers deverão ler `current_setting(...)`, não claims proprietários. O acesso direto do navegador às tabelas internas fica proibido mesmo no Supabase compartilhado.
-
-## 10. Validação cruzada obrigatória
-
-- testes positivos e negativos de RLS no Supabase;
-- os mesmos casos de autorização via API/Cognito no RDS;
-- teste de pooling para garantir que `SET LOCAL` não vaze entre requisições;
-- teste de conta desativada, membership expirada e mudança de organização;
-- auditoria de toda operação privilegiada.

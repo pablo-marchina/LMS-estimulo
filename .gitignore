@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+**/*.local.json
+**/*.local.txt
+**/database-migration-report.local.txt

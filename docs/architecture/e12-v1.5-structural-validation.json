@@ -1,0 +1,9 @@
+{
+  "tables_sql": 122,
+  "tables_yaml": 122,
+  "table_set_difference": [],
+  "foreign_key_missing_targets": [],
+  "duplicate_policy_names": [],
+  "dollar_quote_errors": [],
+  "exact_secret_present": false
+}

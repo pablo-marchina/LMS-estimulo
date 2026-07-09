@@ -1,0 +1,46 @@
+{
+  "version": "2.0",
+  "executionMode": "single transactions rolled back",
+  "passed": 8,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "recursive_redaction",
+      "passed": true
+    },
+    {
+      "name": "queue_payload_hash_integrity",
+      "passed": true
+    },
+    {
+      "name": "privacy_request_workflow",
+      "passed": true
+    },
+    {
+      "name": "consent_evidence_append_only",
+      "passed": true
+    },
+    {
+      "name": "legal_hold_blocks_retention",
+      "passed": true
+    },
+    {
+      "name": "incident_workflow_redaction",
+      "passed": true
+    },
+    {
+      "name": "credit_processing_activation_guard",
+      "passed": true,
+      "expectedError": "credit_decision_governance_not_ready"
+    },
+    {
+      "name": "production_readiness_gate_blocks",
+      "passed": true
+    }
+  ],
+  "residualRows": {
+    "consentRecords": 0,
+    "privacyRequests": 0,
+    "securityIncidents": 0
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "version": "0.4",
+  "generated_at": "2026-07-09",
+  "source": "canonical M00–M12",
+  "migrations": [
+    {
+      "file": "20260708000100_m00_extensions_schemas_context.sql",
+      "sha256": "71b1377b32dab7f5e190b00fc9459a4a6af23993e573397f7462489dce8ab0df",
+      "statement_count": 44
+    },
+    {
+      "file": "20260708000200_m01_identity_core.sql",
+      "sha256": "821b29aacab33ace4c22ec1b9ec2faaba586ab7887be5c88ba1c48e1748ac685",
+      "statement_count": 14
+    },
+    {
+      "file": "20260708000300_m02_catalog.sql",
+      "sha256": "33fdcfe7cbc16e8e9c337c318f7bc0f619a8487c56e77e83b07f06602a0cdbe4",
+      "statement_count": 16
+    },
+    {
+      "file": "20260708000400_m03_orchestration.sql",
+      "sha256": "5322d59967bf54aa0ffcb20dad0f1ed68c93bca102e7787409dc2ec4f243c8e0",
+      "statement_count": 16
+    },
+    {
+      "file": "20260708000500_m04_diagnostics_assessment.sql",
+      "sha256": "64bdb3f8f4359219cace2c328807acf4bca0fc56eb32446ef9dd53c7cbaccb7b",
+      "statement_count": 31
+    },
+    {
+      "file": "20260708000600_m05_engagement_intervention.sql",
+      "sha256": "18a3fdd4745fbb11d1ba864e86415dbf5b46fa5bcd2bc7e2217e36707e21221d",
+      "statement_count": 18
+    },
+    {
+      "file": "20260708000700_m06_eventing_integration.sql",
+      "sha256": "8961435b47ddc69fb508540c2bccd9530da00ed737e085f2e8d88a6b3e8f4019",
+      "statement_count": 20
+    },
+    {
+      "file": "20260708000800_m07_intelligence_governance.sql",
+      "sha256": "de9fbd8a38a7253e2c017f59cff547e11d3c6a45333cf6714317ae8857a94713",
+      "statement_count": 21
+    },
+    {
+      "file": "20260708000900_m08_constraints_security_runtime.sql",
+      "sha256": "3508ef17d34124a3d5f8c4e401b70273a43df521c2b865f35c45941619241701",
+      "statement_count": 619
+    },
+    {
+      "file": "20260708001000_m09_storage_lifecycle.sql",
+      "sha256": "6e72fb6d1d4f68890710972349289fe3ad7dd601c960f8be68db4323dc74d14b",
+      "statement_count": 211
+    },
+    {
+      "file": "20260708001100_m10_queue_worker.sql",
+      "sha256": "8b8c5c06e20156fada9318aec0c2b4cd0812cfba61f602a6e4eb6292ba50884b",
+      "statement_count": 404
+    },
+    {
+      "file": "20260708001200_m11_scheduler_observability.sql",
+      "sha256": "b33324f4baa98d91c58ca2ed1197a453a04104775b370ef5971223f22dd6032d",
+      "statement_count": 377
+    },
+    {
+      "file": "20260708001300_m12_security_privacy_operations.sql",
+      "sha256": "ab7bd0d8d9427911e5c8b107c98df13f5681c75caef934aaff281b82f34a8790",
+      "statement_count": 353
+    }
+  ]
+}

@@ -6,7 +6,7 @@
 ## Validações realizadas
 
 - YAML carregado com sucesso;
-- 121 tabelas identificadas;
+- 122 tabelas identificadas no baseline v0.2;
 - todas as PKs referenciam colunas existentes;
 - todas as 212 FKs referenciam tabelas e colunas existentes;
 - 121 comandos `CREATE TABLE` gerados;
@@ -24,8 +24,8 @@ O ambiente atual não possui servidor/cliente PostgreSQL nem Docker. Portanto, o
 
 Antes de aprovar como migration produtiva, executar:
 
-1. `psql -v ON_ERROR_STOP=1 -f database-target-v0.1.sql` em banco descartável;
-2. introspecção das 121 tabelas e constraints;
+1. `psql -v ON_ERROR_STOP=1 -f database-target-v0.2.sql` em banco descartável;
+2. introspecção das 122 tabelas e constraints;
 3. testes de inserts válidos/inválidos;
 4. testes de triggers append-only;
 5. testes de RLS após instalação das policies concretas;
@@ -34,4 +34,4 @@ Antes de aprovar como migration produtiva, executar:
 
 ## Classificação do SQL
 
-`database-target-v0.1.sql` é um **DDL de design preliminar**, não uma migration aprovada. Ele será decomposto nas ondas M00–M08 depois das decisões de stack/autenticação do E12.
+`database-target-v0.2.sql` é a baseline física atual; ela já foi decomposta em migrations M00–M08 no E12. A execução em PostgreSQL real ainda é obrigatória.

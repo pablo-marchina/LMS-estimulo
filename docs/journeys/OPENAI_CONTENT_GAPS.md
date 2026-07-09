@@ -33,7 +33,7 @@
 9. Definir comunicação de reprovação e nova tentativa.
 10. Definir equivalências acessíveis para todas as atividades.
 
-## P2 - Podem evoluir após a release inicial de produção
+## P2 - Podem evoluir após o MVP
 
 1. Adaptação do caminho por diagnóstico/arquétipo.
 2. Recomendação do bloco base a partir de evidências.

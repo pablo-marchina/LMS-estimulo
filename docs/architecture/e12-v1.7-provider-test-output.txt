@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: verifies RS256, validates claims and returns a normalized identity
+ok 1 - verifies RS256, validates claims and returns a normalized identity
+  ---
+  duration_ms: 399.197581
+  type: 'test'
+  ...
+# Subtest: verifies ES256, validates claims and returns a normalized identity
+ok 2 - verifies ES256, validates claims and returns a normalized identity
+  ---
+  duration_ms: 2.049388
+  type: 'test'
+  ...
+# Subtest: rejects expired asymmetric token
+ok 3 - rejects expired asymmetric token
+  ---
+  duration_ms: 322.290607
+  type: 'test'
+  ...
+# Subtest: uses the Auth server for legacy HS256 tokens
+ok 4 - uses the Auth server for legacy HS256 tokens
+  ---
+  duration_ms: 1.176879
+  type: 'test'
+  ...
+# Subtest: performs signed upload, verifies hash, releases and signs download
+ok 5 - performs signed upload, verifies hash, releases and signs download
+  ---
+  duration_ms: 4.363879
+  type: 'test'
+  ...
+# Subtest: refuses overwrite-like keys, MIME mismatch, oversized objects and premature download
+ok 6 - refuses overwrite-like keys, MIME mismatch, oversized objects and premature download
+  ---
+  duration_ms: 1.059557
+  type: 'test'
+  ...
+# Subtest: identity provider returns normalized identity without raw tokens
+ok 7 - identity provider returns normalized identity without raw tokens
+  ---
+  duration_ms: 1.204578
+  type: 'test'
+  ...
+# Subtest: identity provider rejects invalid token
+ok 8 - identity provider rejects invalid token
+  ---
+  duration_ms: 0.696006
+  type: 'test'
+  ...
+# Subtest: storage contract creates intent and confirms metadata only
+ok 9 - storage contract creates intent and confirms metadata only
+  ---
+  duration_ms: 3.20775
+  type: 'test'
+  ...
+# Subtest: queue contract is idempotent and acknowledges once
+ok 10 - queue contract is idempotent and acknowledges once
+  ---
+  duration_ms: 2.099863
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 877.372025

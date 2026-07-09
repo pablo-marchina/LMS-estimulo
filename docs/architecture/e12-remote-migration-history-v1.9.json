@@ -1,0 +1,31 @@
+{
+  "version": "1.9",
+  "captured_at": "2026-07-08",
+  "remote_migration_count": 58,
+  "canonical_local_count": 12,
+  "canonical_local_range": "M00–M11",
+  "latest_remote": {
+    "version": "20260708235115",
+    "name": "m11q_cover_scheduler_foreign_keys"
+  },
+  "m11_remote_fragments": [
+    "m11a_enable_scheduler_extensions",
+    "m11b_worker_schedule_tables",
+    "m11c_observability_tables",
+    "m11d_observability_rls_grants",
+    "m11e_scheduler_alert_seed",
+    "m11f_dispatch_token_functions",
+    "m11g_worker_dispatcher",
+    "m11h_idempotent_worker_recovery",
+    "m11i_queue_reconciliation_helpers",
+    "m11j_dispatch_response_reconciliation",
+    "m11k_queue_reconciliation",
+    "m11l_queue_metrics_alerts",
+    "m11m_operational_status_cleanup",
+    "m11n_activate_continuous_scheduler",
+    "m11o_cleanup_concurrency_proof",
+    "m11p_fix_scan_state_ambiguity",
+    "m11q_cover_scheduler_foreign_keys"
+  ],
+  "note": "Remote history is intentionally incremental. Local M11 is consolidated; proof cleanup fragments are not reapplied as product migrations."
+}

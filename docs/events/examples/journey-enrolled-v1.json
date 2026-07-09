@@ -1,0 +1,32 @@
+{
+  "specversion": "1.0",
+  "id": "018fd2fb-2dbe-7f22-8d60-6fa4f55df001",
+  "source": "urn:estimulo:orchestration",
+  "type": "com.estimulo.journey.enrolled.v1",
+  "subject": "journey-instance/018fd2fb-2dbe-7f22-8d60-6fa4f55df002",
+  "time": "2026-07-08T21:30:00Z",
+  "datacontenttype": "application/json",
+  "dataschema": "urn:estimulo:event-schema:journey.enrolled:v1",
+  "correlationid": "018fd2fb-2dbe-7f22-8d60-6fa4f55df003",
+  "causationid": "018fd2fb-2dbe-7f22-8d60-6fa4f55df004",
+  "partitionkey": "journey-instance:018fd2fb-2dbe-7f22-8d60-6fa4f55df002",
+  "aggregateversion": 1,
+  "data": {
+    "actor": {
+      "entrepreneur_id": "018fd2fb-2dbe-7f22-8d60-6fa4f55df005",
+      "business_id": "018fd2fb-2dbe-7f22-8d60-6fa4f55df006"
+    },
+    "context": {
+      "program_id": "018fd2fb-2dbe-7f22-8d60-6fa4f55df007",
+      "journey_version_id": "018fd2fb-2dbe-7f22-8d60-6fa4f55df008",
+      "journey_instance_id": "018fd2fb-2dbe-7f22-8d60-6fa4f55df002",
+      "path_assignment_id": null,
+      "activity_instance_id": null,
+      "session_id": null
+    },
+    "evidence": {
+      "kind": "server_transactional",
+      "verification_status": "verified"
+    }
+  }
+}

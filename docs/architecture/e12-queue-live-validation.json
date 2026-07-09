@@ -1,0 +1,97 @@
+{
+  "version": "1.8",
+  "date": "2026-07-08",
+  "provider": "Supabase",
+  "project_ref": "cfpfeavjlgheqqiaqtzv",
+  "queue_protocol": {
+    "deduplication_stable": true,
+    "visibility_extended": true,
+    "retry_scheduled": true,
+    "second_receive_count": 2,
+    "acknowledgement": true,
+    "ack_idempotent": true,
+    "final_status": "completed",
+    "remaining_messages": 0
+  },
+  "dead_letter_redrive": {
+    "max_attempts_tested": 2,
+    "moved_to_dlq": true,
+    "redrive_preserved_job_identity": true,
+    "received_after_redrive": true,
+    "final_status": "completed",
+    "source_remaining": 0,
+    "dlq_remaining": 0
+  },
+  "file_integration": {
+    "transactional_scan_job": true,
+    "duplicate_scan_suppressed": true,
+    "scan_rows": 1,
+    "file_status": "clean",
+    "job_status": "completed",
+    "remaining_messages": 0
+  },
+  "edge_runtime_proof": {
+    "worker_id": "e12-edge-runtime-proof",
+    "receipt_status": "acked",
+    "attempt_outcome": "succeeded",
+    "scan_status": "clean",
+    "scanner_provider": "e12-proof-integrity-scanner",
+    "file_status": "clean",
+    "released": true,
+    "storage_objects_after_cleanup": 0,
+    "source_messages_after_cleanup": 0,
+    "dlq_messages_after_cleanup": 0
+  },
+  "final_edge_functions": {
+    "file-storage": {
+      "version": 6,
+      "verify_jwt": true,
+      "active": true
+    },
+    "file-scan-worker": {
+      "version": 2,
+      "verify_jwt": true,
+      "internal_auth": "HMAC-SHA256 timestamped"
+    }
+  },
+  "database": {
+    "tables": 130,
+    "foreign_keys": 233,
+    "check_constraints": 76,
+    "indexes_including_pk_unique": 425,
+    "triggers": 29,
+    "policies": 215,
+    "rls_tables": 57,
+    "rls_without_policy": 0,
+    "unindexed_foreign_keys": 0
+  },
+  "queues": {
+    "count": 2,
+    "source_length": 0,
+    "dlq_length": 0
+  },
+  "security": {
+    "advisor_lints": 0,
+    "service_only_rpcs": 9,
+    "anon_rpc_execute": 0,
+    "authenticated_rpc_execute": 0
+  },
+  "tests": {
+    "node_tests_passed": 24,
+    "node_tests_failed": 0,
+    "migration_validation": true
+  },
+  "cleanup": {
+    "fixture_rows": 0,
+    "storage_objects": 0,
+    "http_extension_installed": false,
+    "append_only_triggers_enabled": true
+  },
+  "limitations": [
+    "automatic scheduler not implemented",
+    "production malware scanner not implemented",
+    "multi-worker concurrency benchmark not executed",
+    "AWS SQS parity not executed",
+    "participant JWT and connection-pool tests pending"
+  ]
+}
