@@ -45,6 +45,8 @@
       "statement_count": 1,
       "sql_bytes": 10164,
       "sql_sha256": "464263feab785f9ae35d95ad89c215e9794f473e89f5d7d36a0f1c371d1c328d",
+      "local_file": "supabase/migrations/20260709183000_m14_step5_application_read_surfaces.sql",
+      "local_sql_equivalence": "verified_after_repository_file_normalization",
       "local_identifier_status": "mismatch"
     },
     {
@@ -53,12 +55,15 @@
       "statement_count": 1,
       "sql_bytes": 1881,
       "sql_sha256": "9b4b9b387778ee174c01aaf700d638e6df157065a167c585624e8a1ad3e1fe69",
+      "local_file": "supabase/migrations/20260709184500_m14b_step5_operator_workspace.sql",
+      "local_sql_equivalence": "verified_after_repository_file_normalization",
       "local_identifier_status": "mismatch"
     }
   ],
   "gates": {
     "remote_inventory_fingerprinted": true,
     "temporary_custom_objects_remaining": false,
+    "m14_sql_equivalence_verified": true,
     "m13_materialized_in_git": false,
     "m14_identifiers_reconciled": false,
     "clean_replay_passed": false,
