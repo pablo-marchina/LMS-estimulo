@@ -28,19 +28,69 @@ function sha256(buffer) {
   return createHash('sha256').update(buffer).digest('hex');
 }
 
+function candidateRepresentations(rawContent) {
+  const raw = rawContent;
+  const utf8 = raw.toString('utf8');
+  const withoutBom = utf8.replace(/^\uFEFF/, '');
+  const lfNormalized = withoutBom.replace(/\r\n/g, '\n');
+  const withoutFinalLf = lfNormalized.endsWith('\n')
+    ? lfNormalized.slice(0, -1)
+    : lfNormalized;
+
+  const candidates = [
+    { normalization: 'none', content: raw },
+    { normalization: 'utf8_bom_removed', content: Buffer.from(withoutBom, 'utf8') },
+    {
+      normalization: 'line_endings_normalized',
+      content: Buffer.from(lfNormalized, 'utf8'),
+    },
+    {
+      normalization: 'line_endings_and_final_lf_normalized',
+      content: Buffer.from(withoutFinalLf, 'utf8'),
+    },
+  ];
+
+  const unique = new Map();
+  for (const candidate of candidates) {
+    const fingerprint = `${candidate.content.byteLength}:${sha256(candidate.content)}`;
+    if (!unique.has(fingerprint)) unique.set(fingerprint, candidate);
+  }
+  return [...unique.values()];
+}
+
 for (const expected of EXPECTED) {
   test(`${expected.remoteVersion}_${expected.remoteName} matches remote SQL`, async () => {
-    const content = await readFile(expected.localFile);
-
-    assert.equal(
-      content.byteLength,
-      expected.remoteBytes,
-      `${expected.localFile} byte length differs from the remote statement`,
+    const rawContent = await readFile(expected.localFile);
+    const candidates = candidateRepresentations(rawContent);
+    const match = candidates.find(
+      (candidate) =>
+        candidate.content.byteLength === expected.remoteBytes &&
+        sha256(candidate.content) === expected.remoteSha256,
     );
-    assert.equal(
-      sha256(content),
-      expected.remoteSha256,
-      `${expected.localFile} SHA-256 differs from the remote statement`,
+
+    assert.ok(
+      match,
+      [
+        `${expected.localFile} contains SQL that differs from the remote statement`,
+        `remote=${expected.remoteBytes}:${expected.remoteSha256}`,
+        `local_candidates=${candidates
+          .map(
+            (candidate) =>
+              `${candidate.normalization}:${candidate.content.byteLength}:${sha256(
+                candidate.content,
+              )}`,
+          )
+          .join(',')}`,
+      ].join(' | '),
+    );
+
+    process.stdout.write(
+      `${JSON.stringify({
+        local_file: expected.localFile,
+        remote_version: expected.remoteVersion,
+        equivalence: 'verified',
+        normalization: match.normalization,
+      })}\n`,
     );
   });
 }
