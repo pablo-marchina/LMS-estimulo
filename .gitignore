@@ -2,8 +2,10 @@
 .env.*
 !.env.example
 **/*.local.json
+**/*.local.jsonl
 **/*.local.txt
 **/database-migration-report.local.txt
+.artifacts/
 node_modules/
 **/node_modules/
 .next/
