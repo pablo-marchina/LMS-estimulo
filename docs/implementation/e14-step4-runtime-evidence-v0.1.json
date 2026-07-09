@@ -16,19 +16,18 @@
     "remote_incremental_migrations": 165,
     "first_remote_version": "20260709051056",
     "last_remote_version": "20260709060330",
-    "fixture_completion_file": "supabase/canonical-migrations/20260708001410_m13a_e14_internal_fixture_completion.sql",
+    "fixture_completion_file": null,
     "fresh_replay_executed": false,
-    "fresh_replay_limitation": "A paid Supabase Preview Branch was declined and no equivalent clean PostgreSQL environment was available during this step.",
-    "files": [
-      "supabase/canonical-migrations/20260708001400_m13_e14_runtime_part_1.sql",
-      "supabase/canonical-migrations/20260708001401_m13_e14_runtime_part_2.sql",
-      "supabase/canonical-migrations/20260708001402_m13_e14_runtime_part_3.sql",
-      "supabase/canonical-migrations/20260708001403_m13_e14_runtime_part_4.sql",
-      "supabase/canonical-migrations/20260708001404_m13_e14_runtime_part_5.sql",
-      "supabase/canonical-migrations/20260708001405_m13_e14_runtime_part_6.sql"
-    ],
+    "fresh_replay_limitation": "Paid Supabase Preview Branch was declined; no clean local PostgreSQL was available; GitHub connector transport blocked committing the exact SQL export without truncation.",
+    "files": [],
     "combined_utf8_bytes": 133886,
-    "combined_sha256": "8d40700c6798b306d514db5da43a77d0d245756b9d71eda58c4ae462fcd1899f"
+    "combined_sha256": "8d40700c6798b306d514db5da43a77d0d245756b9d71eda58c4ae462fcd1899f",
+    "repository_status": "NOT_COMMITTED_CONNECTOR_TRANSPORT_BLOCKED",
+    "local_exact_export": {
+      "path": "/mnt/data/e14_step4_remote_replay.sql",
+      "utf8_bytes": 133886,
+      "sha256": "8d40700c6798b306d514db5da43a77d0d245756b9d71eda58c4ae462fcd1899f"
+    }
   },
   "runtime_surface": {
     "public_server_only_rpcs": [
@@ -51,15 +50,8 @@
     "private_view_count": 6,
     "immutability_trigger_count": 14,
     "canonical_event_schema_count": 29,
-    "execution_roles": [
-      "service_role",
-      "app_worker"
-    ],
-    "blocked_roles": [
-      "public",
-      "anon",
-      "authenticated"
-    ]
+    "execution_roles": ["service_role", "app_worker"],
+    "blocked_roles": ["public", "anon", "authenticated"]
   },
   "live_vertical": {
     "journey_code": "e14_runtime_validation_journey",
@@ -104,36 +96,12 @@
     }
   },
   "negative_proofs": [
-    {
-      "case": "published_graph_mutation",
-      "expected": "PUBLISHED_VERSION_IMMUTABLE",
-      "observed": true
-    },
-    {
-      "case": "stale_aggregate_version",
-      "expected": "AGGREGATE_VERSION_CONFLICT",
-      "observed": true
-    },
-    {
-      "case": "same_idempotency_key_different_payload",
-      "expected": "IDEMPOTENCY_KEY_REUSED",
-      "observed": true
-    },
-    {
-      "case": "operator_uses_participant_query",
-      "expected": "FORBIDDEN",
-      "observed": true
-    },
-    {
-      "case": "duplicate_section_with_different_request_key",
-      "expected": "same event replayed and accepted section count remains four",
-      "observed": true
-    },
-    {
-      "case": "repeat_successful_submission",
-      "expected": "same request_id, replayed true, no duplicate points or events",
-      "observed": true
-    }
+    {"case": "published_graph_mutation", "expected": "PUBLISHED_VERSION_IMMUTABLE", "observed": true},
+    {"case": "stale_aggregate_version", "expected": "AGGREGATE_VERSION_CONFLICT", "observed": true},
+    {"case": "same_idempotency_key_different_payload", "expected": "IDEMPOTENCY_KEY_REUSED", "observed": true},
+    {"case": "operator_uses_participant_query", "expected": "FORBIDDEN", "observed": true},
+    {"case": "duplicate_section_with_different_request_key", "expected": "same event replayed and accepted section count remains four", "observed": true},
+    {"case": "repeat_successful_submission", "expected": "same request_id, replayed true, no duplicate points or events", "observed": true}
   ],
   "step4_scope": {
     "implemented": [
@@ -151,6 +119,7 @@
     ],
     "remaining_blockers": [
       "Real Supabase Auth JWT to iam.user_accounts mapping has not been proven end to end.",
+      "The exact canonical SQL replay was exported and hash-verified locally but could not be committed through the GitHub connector without truncation; no partial migration was retained in the branch.",
       "Canonical migrations have not yet been replayed on a clean database.",
       "Supabase Security and Performance Advisor endpoints were blocked by the connector; SQL privilege checks were used instead.",
       "OpenAI journey content remains editorially blocked; the runtime journey is internal technical evidence only.",
@@ -162,6 +131,7 @@
     "backend_vertical_runtime": "LIVE_COMPLETE",
     "auth_mapping_proof": "BLOCKED",
     "fresh_replay_proof": "NOT_EXECUTED",
-    "safe_next_step": "E14 Step 5 frontend integration may proceed against the 13 service-only RPCs, while auth mapping and fresh replay remain explicit release blockers."
+    "safe_next_step": "E14 Step 5 frontend integration may proceed against the 13 service-only RPCs, while auth mapping and fresh replay remain explicit release blockers.",
+    "canonical_replay_repository": "BLOCKED"
   }
 }
