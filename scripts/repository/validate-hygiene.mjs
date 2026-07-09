@@ -1,8 +1,11 @@
-import { access, readFile, readdir, stat } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const root = path.resolve(import.meta.dirname, '../..');
 const ignoredDirectories = new Set(['.git', '.next', '.artifacts', 'node_modules']);
+const textExtensions = new Set([
+  '.md', '.json', '.yaml', '.yml', '.csv', '.sql', '.mjs', '.js', '.ts', '.tsx', '.py', '.ps1', '.toml', '.txt',
+]);
 const errors = [];
 const files = [];
 
@@ -103,6 +106,38 @@ async function validateEdgeFunctionSources() {
   }
 }
 
+async function readTextFiles() {
+  const entries = [];
+  for (const file of files) {
+    if (!textExtensions.has(path.posix.extname(file))) continue;
+    try {
+      entries.push({ file, content: await readFile(path.join(root, file), 'utf8') });
+    } catch {
+      // Binary or non-UTF-8 files are not candidates for textual reference analysis.
+    }
+  }
+  return entries;
+}
+
+function referencedByAnotherFile(candidate, entries) {
+  const basename = path.posix.basename(candidate);
+  return entries.some(({ file, content }) => {
+    if (file === candidate) return false;
+    return content.includes(candidate) || content.includes(basename);
+  });
+}
+
+function collectIndexTargets(indexSource) {
+  const targets = new Set();
+  for (const match of indexSource.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
+    const raw = match[1].trim();
+    if (!raw || raw.startsWith('#') || /^[a-z]+:/i.test(raw)) continue;
+    const clean = decodeURI(raw.split('#', 1)[0].split('?', 1)[0]);
+    if (clean) targets.add(path.posix.normalize(clean));
+  }
+  return targets;
+}
+
 await walk(root);
 validatePaths();
 await validateRequiredFiles();
@@ -110,11 +145,37 @@ await validateLocalLinks('README.md');
 await validateLocalLinks('PROJECT_INDEX.md');
 await validateEdgeFunctionSources();
 
+const textEntries = await readTextFiles();
+const indexSource = await readFile(path.join(root, 'PROJECT_INDEX.md'), 'utf8');
+const indexTargets = collectIndexTargets(indexSource);
+
+const unindexedMarkdown = files
+  .filter((file) => file.startsWith('docs/') && file.endsWith('.md'))
+  .filter((file) => !indexTargets.has(file))
+  .sort();
+
+const unreferencedDocumentationArtifacts = files
+  .filter((file) => file.startsWith('docs/'))
+  .filter((file) => ['.json', '.yaml', '.yml', '.csv', '.sql', '.txt'].includes(path.posix.extname(file)))
+  .filter((file) => !referencedByAnotherFile(file, textEntries))
+  .sort();
+
+const unreferencedScripts = files
+  .filter((file) => file.startsWith('scripts/'))
+  .filter((file) => ['.mjs', '.js', '.py', '.ps1', '.sql'].includes(path.posix.extname(file)))
+  .filter((file) => !referencedByAnotherFile(file, textEntries))
+  .sort();
+
 const result = {
   status: errors.length === 0 ? 'ok' : 'failed',
   files_scanned: files.length,
   markdown_files: files.filter((file) => file.endsWith('.md')).length,
   errors,
+  candidates: {
+    unindexed_markdown: unindexedMarkdown,
+    unreferenced_documentation_artifacts: unreferencedDocumentationArtifacts,
+    unreferenced_scripts: unreferencedScripts,
+  },
 };
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
