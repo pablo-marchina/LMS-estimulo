@@ -92,4 +92,15 @@ jobs:
           node-version: "22"
 
       - name: Validate repository hygiene
-        run: node scripts/repository/validate-hygiene.mjs
+        run: |
+          mkdir -p .artifacts
+          node scripts/repository/validate-hygiene.mjs | tee .artifacts/repository-hygiene.json
+
+      - name: Publish repository hygiene report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-hygiene-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/repository-hygiene.json
+          if-no-files-found: error
+          retention-days: 3
