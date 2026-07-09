@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_step3_component_map",
+  "KEEP": [
+    "ui/button",
+    "ui/card",
+    "ui/badge",
+    "ui/input",
+    "ui/progress",
+    "ui/status-pill",
+    "ui/motion-card",
+    "build configuration"
+  ],
+  "REFACTOR": [
+    "layout/student-shell",
+    "layout/admin-shell",
+    "layout/marketing-nav",
+    "dashboard/dashboard-overview",
+    "player/lesson-player",
+    "dashboard/auth-card",
+    "supabase/client",
+    "supabase/server",
+    "supabase/proxy"
+  ],
+  "REPLACE": [
+    "journey/journey-data",
+    "journey/progress",
+    "gamification/rules",
+    "courses/admin-data",
+    "courses/submissions",
+    "types/domain",
+    "database/schema.sql",
+    "database/seed.sql"
+  ],
+  "target_path": "apps/web"
+}

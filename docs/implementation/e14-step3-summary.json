@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_step3_frontend_review",
+  "status": "DONE",
+  "target_path": "apps/web",
+  "route_total": 24,
+  "route_refactor": 8,
+  "route_replace": 6,
+  "route_remove": 10,
+  "finding_total": 9
+}
