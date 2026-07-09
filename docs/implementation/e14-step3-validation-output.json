@@ -1,0 +1,18 @@
+{
+  "status": "ok",
+  "artifact": "e14_step3_frontend_review",
+  "routes": 24,
+  "admin_anchor_placeholders": 5,
+  "classifications": {
+    "KEEP": 0,
+    "REFACTOR": 8,
+    "REPLACE": 6,
+    "REMOVE_FROM_RUNTIME": 10
+  },
+  "reusable_components": 8,
+  "refactor_components": 9,
+  "replace_components": 8,
+  "target_path": "apps/web",
+  "tests_passed": 6,
+  "tests_failed": 0
+}
