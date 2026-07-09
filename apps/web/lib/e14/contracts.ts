@@ -87,6 +87,7 @@ export type DiagnosticItem = {
 
 export type ContentSection = {
   code: string;
+  heading?: string;
   title?: string;
   body?: string;
   [key: string]: unknown;

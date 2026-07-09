@@ -20,7 +20,6 @@ export async function proxy(request: NextRequest) {
   const { data } = await client.auth.getUser();
   const protectedPath = request.nextUrl.pathname.startsWith("/empreendedor") || request.nextUrl.pathname.startsWith("/admin");
   if (protectedPath && !data.user) return NextResponse.redirect(new URL("/entrar", request.url));
-  if (request.nextUrl.pathname === "/entrar" && data.user) return NextResponse.redirect(new URL("/empreendedor", request.url));
   return response;
 }
 

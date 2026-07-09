@@ -110,7 +110,8 @@ export async function submitQuickCheckAction(formData: FormData) {
   const current = experience.state.q;
   if (!current) throw new Error("ASSESSMENT_VERSION_NOT_AVAILABLE");
   await e14.submitQuickCheck(actor, current.attempt_id, current.aggregate_version, `${baseKey}:submit`);
-  redirect(`/empreendedor/resultado?journey=${journey}`);
+  const updated = await e14.getParticipantExperience(actor, journey);
+  redirect(updated.state.q?.passed ? `/empreendedor/resultado?journey=${journey}` : `/empreendedor/atividade/${step}?journey=${journey}`);
 }
 
 export async function publishVerticalAction(formData: FormData) {

@@ -2,7 +2,9 @@ import { signInAction } from "./actions";
 
 const errorMessages: Record<string, string> = {
   campos_obrigatorios: "Preencha e-mail e senha.",
-  credenciais_invalidas: "Não foi possível entrar com essas credenciais."
+  credenciais_invalidas: "Não foi possível entrar com essas credenciais.",
+  identidade_nao_vinculada: "A autenticação foi concluída, mas a identidade interna ainda não está vinculada.",
+  acesso_nao_autorizado: "Sua identidade não possui acesso ativo a uma jornada ou área operacional."
 };
 
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {

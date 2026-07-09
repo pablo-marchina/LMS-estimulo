@@ -29,7 +29,7 @@ export default async function ActivityPage({ params, searchParams }: { params: P
         {experience.activity.sections.map((section, index) => (
           <article className="content-section" key={section.code}>
             <p className="eyebrow">Parte {index + 1}</p>
-            <h2>{text(section.title) ?? section.code}</h2>
+            <h2>{text(section.heading) ?? text(section.title) ?? section.code}</h2>
             {text(section.body) ? <p>{text(section.body)}</p> : null}
             <label className="confirm-row"><input type="checkbox" name={`section_${section.code}`} /><span>Li e compreendi esta parte</span></label>
           </article>
