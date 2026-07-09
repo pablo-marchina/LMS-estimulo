@@ -1,0 +1,50 @@
+name: E14 runtime source recovery
+
+on:
+  pull_request:
+    paths:
+      - "scripts/e14/runtime-source-recovery/**"
+      - "package.json"
+      - ".gitignore"
+      - ".github/workflows/e14-runtime-source-recovery.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "scripts/e14/runtime-source-recovery/**"
+      - "package.json"
+      - ".gitignore"
+      - ".github/workflows/e14-runtime-source-recovery.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e14-runtime-source-recovery-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test deterministic recovery tooling
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run synthetic recovery tests
+        run: npm run test:e14-runtime-recovery
+
+      - name: Confirm raw exports stay ignored
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .gitignore
+          grep -Fx '**/*.local.jsonl' .gitignore
+          grep -Fx '.artifacts/' .gitignore
