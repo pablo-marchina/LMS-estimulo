@@ -13,7 +13,7 @@
   "frontend_findings": {
     "private_repository": "operational backend and domain; no Next.js app in its current tree",
     "public_foundation": "executable Next.js foundation; candidate for audited UI reuse only",
-    "lovable_prototype": "experience reference with placeholder participant data"
+    "lovable_prototype": "prototype experience reference with placeholder participant data"
   },
   "corrections": [
     "frontend sources exist outside the private operational tree",
