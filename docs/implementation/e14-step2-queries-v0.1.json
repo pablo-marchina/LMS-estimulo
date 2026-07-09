@@ -1,0 +1,104 @@
+{
+  "commands": [
+    {
+      "id": "QRY01_GET_PARTICIPANT_STATE",
+      "kind": "query",
+      "method": "GET",
+      "path": "/v1/me/journey-instances/{journey_instance_id}",
+      "actor": "participant",
+      "authorization": "participant owns the journey instance",
+      "request_required": [],
+      "transaction": "read-only repeatable snapshot",
+      "reads": [
+        "orchestration.journey_instances",
+        "orchestration.path_assignments",
+        "orchestration.step_instances",
+        "orchestration.progress_projections",
+        "assessment.attempts",
+        "assessment.results",
+        "engagement.point_balance_projections"
+      ],
+      "writes": [],
+      "events": [],
+      "success": {
+        "status": 200,
+        "state": "current_domain_state",
+        "fields": [
+          "journey",
+          "diagnostic_summary",
+          "path",
+          "current_activity",
+          "progress",
+          "latest_assessment",
+          "points"
+        ]
+      },
+      "idempotency": "not applicable",
+      "failures": [
+        {
+          "condition": "not owner",
+          "status": 404,
+          "code": "RESOURCE_NOT_FOUND",
+          "effects": "none"
+        }
+      ],
+      "implementation_status": "contract_only"
+    },
+    {
+      "id": "QRY02_GET_ADMIN_RESULT",
+      "kind": "query",
+      "method": "GET",
+      "path": "/v1/admin/journey-instances/{journey_instance_id}/result",
+      "actor": "operator",
+      "authorization": "journey.execution.read on owner organization",
+      "request_required": [],
+      "transaction": "read-only repeatable snapshot; no derived credit or behavioral interpretation",
+      "reads": [
+        "orchestration.enrollments",
+        "orchestration.journey_instances",
+        "diagnostics.results",
+        "diagnostics.dimension_results",
+        "orchestration.path_assignments",
+        "orchestration.step_instances",
+        "orchestration.progress_projections",
+        "assessment.attempts",
+        "assessment.results",
+        "engagement.point_ledger",
+        "eventing.events"
+      ],
+      "writes": [],
+      "events": [],
+      "success": {
+        "status": 200,
+        "state": "operator_result_visible",
+        "fields": [
+          "participant_reference",
+          "journey_version",
+          "diagnostic",
+          "assigned_path",
+          "activity_status",
+          "quick_check",
+          "progress",
+          "points",
+          "event_evidence"
+        ]
+      },
+      "display_constraints": [
+        "no credit score",
+        "no archetype",
+        "no inferred persistence or risk",
+        "show event and version identifiers"
+      ],
+      "idempotency": "not applicable",
+      "failures": [
+        {
+          "condition": "cross-organization access",
+          "status": 404,
+          "code": "RESOURCE_NOT_FOUND",
+          "effects": "none"
+        }
+      ],
+      "implementation_status": "contract_only"
+    }
+  ]
+}
