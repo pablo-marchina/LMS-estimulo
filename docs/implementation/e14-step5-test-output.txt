@@ -1,22 +1,15 @@
 TAP version 13
-# Subtest: passo permanece bloqueado sem aplicação executável
+# Subtest: status avança de bloqueado para parcial
 ok 1
-# Subtest: seis rotas mínimas estão definidas na ordem exigida
+# Subtest: aplicação executável e seis rotas estão presentes
 ok 2
-# Subtest: home do participante consulta estado e inicia jornada
+# Subtest: camada de aplicação cobre backend e consultas
 ok 3
-# Subtest: diagnóstico cobre os três comandos e refresh de estado
+# Subtest: tela estática não conta como prova de runtime
 ok 4
-# Subtest: atividade cobre conteúdo, seções, avaliação e submissão
+# Subtest: conclusão permanece dependente das provas restantes
 ok 5
-# Subtest: admin publica, matricula e consulta evidências
-ok 6
-# Subtest: credenciais privilegiadas e escritas diretas são proibidas no browser
-ok 7
-# Subtest: estados, acessibilidade e saída não podem ser simulados
-ok 8
-1..8
-# tests 8
-# pass 8
+1..5
+# tests 5
+# pass 5
 # fail 0
-# duration_ms 117.373488
