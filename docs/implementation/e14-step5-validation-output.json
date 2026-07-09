@@ -1,10 +1,11 @@
 {
   "status": "ok",
   "artifact": "e14_step5_frontend_integration_contract",
-  "step5_status": "BLOCKED",
+  "step5_status": "PARTIAL",
+  "frontend_application_status": "EXECUTABLE_FOUNDATION",
   "routes": 6,
-  "mapped_rpcs": 13,
-  "accessibility_requirements": 6,
-  "blockers": 3,
-  "exit_criteria_met": 0
+  "existing_backend_rpcs": 13,
+  "application_read_rpcs": 5,
+  "pending_proofs": 3,
+  "exit_criteria_met": 4
 }
