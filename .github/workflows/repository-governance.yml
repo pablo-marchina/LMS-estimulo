@@ -92,7 +92,9 @@ jobs:
           node-version: "22"
 
       - name: Validate repository hygiene
+        shell: bash
         run: |
+          set -o pipefail
           mkdir -p .artifacts
           node scripts/repository/validate-hygiene.mjs | tee .artifacts/repository-hygiene.json
 
