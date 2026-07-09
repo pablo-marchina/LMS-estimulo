@@ -1,0 +1,18 @@
+TAP version 13
+# Subtest: inventário contém 24 rotas reais sem duplicação
+ok 1
+# Subtest: cadastro público e recursos fora da vertical são removidos do runtime
+ok 2
+# Subtest: jornada, player e administração de conteúdo são substituídos
+ok 3
+# Subtest: shells, autenticação e dashboard exigem refatoração
+ok 4
+# Subtest: schema e fixtures da fundação não entram no domínio privado
+ok 5
+# Subtest: aplicação integrada terá destino apps/web
+ok 6
+1..6
+# tests 6
+# pass 6
+# fail 0
+# duration_ms 237.277558
