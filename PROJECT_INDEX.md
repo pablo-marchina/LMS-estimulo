@@ -1,6 +1,6 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 2.2  
+**Versão:** 2.3  
 **Data:** 2026-07-09  
 **Status:** E14 em execução; produção bloqueada
 
@@ -80,6 +80,7 @@ backend_e2e_replayed = true
 - [Princípios da release inicial](docs/product/INITIAL_PRODUCTION_RELEASE_PRINCIPLES.md)
 - [Escopo multi-jornada](docs/product/MULTI_JOURNEY_PRODUCT_SCOPE.md)
 - [Premissas e escopo](docs/product/PREMISES_AND_SCOPE.md)
+- [Requisitos não funcionais](docs/product/NON_FUNCTIONAL_REQUIREMENTS.md)
 - [Glossário](docs/product/GLOSSARY.md)
 - [Inventário da Jornada OpenAI](docs/product/OPENAI_JOURNEY_INVENTORY.md)
 - [Inventário de informações](docs/product/INFORMATION_INVENTORY.md)
@@ -118,14 +119,16 @@ backend_e2e_replayed = true
 - [Envelope canônico](docs/events/CANONICAL_EVENT_ENVELOPE.md)
 - [Nomenclatura e versionamento](docs/events/EVENT_NAMING_AND_VERSIONING.md)
 - [Catálogo de eventos](docs/events/EVENT_CATALOG_V0_1.md)
+- [Qualidade da evidência](docs/events/EVENT_EVIDENCE_QUALITY.md)
 - [Registro de schemas](docs/events/EVENT_SCHEMA_REGISTRY.md)
 - [Idempotência e ordenação](docs/events/EVENT_IDEMPOTENCY_AND_ORDERING.md)
 - [Privacidade e retenção](docs/events/EVENT_PRIVACY_SECURITY_RETENTION.md)
 - [Arquitetura de fluxos](docs/dataflows/DATA_FLOW_ARCHITECTURE.md)
+- [Famílias de fluxo](docs/dataflows/FLOW_FAMILY_CATALOG.md)
 - [Linhagem](docs/dataflows/DATA_LINEAGE_MATRIX.md)
 - [Falhas e reconciliação](docs/dataflows/FAILURE_RECOVERY_RECONCILIATION.md)
 
-### Banco
+### Banco e modelos quantitativos
 
 - [Modelo do banco](docs/data/database/DATABASE_MODEL.md)
 - [ERD](docs/data/database/DATABASE_ERD.md)
@@ -134,8 +137,24 @@ backend_e2e_replayed = true
 - [Índices e particionamento](docs/data/database/DATABASE_INDEXING_PARTITIONING.md)
 - [RLS](docs/data/database/DATABASE_RLS_AND_SECURITY.md)
 - [Estratégia de migrations](docs/data/database/DATABASE_MIGRATION_STRATEGY.md)
+- [Ledger de gamificação](docs/data/database/GAMIFICATION_LEDGER_MODEL.md)
+- [Features comportamentais](docs/data/database/BEHAVIORAL_FEATURE_MODEL.md)
+- [Score experimental e guardrails](docs/data/database/EXPERIMENTAL_SCORE_MODEL.md)
 - [Migrations M00–M12](docs/architecture/E12_EXECUTABLE_MIGRATIONS.md)
 - [Manifest canônico](supabase/canonical-migrations/MIGRATION_MANIFEST.json)
+
+### Fundação técnica do ambiente de teste
+
+- [Bridge de identidade](docs/architecture/E12_IDENTITY_BRIDGE.md)
+- [Implementação de RLS](docs/architecture/E12_RLS_IMPLEMENTATION.md)
+- [Transactional outbox](docs/architecture/E12_TRANSACTIONAL_OUTBOX.md)
+- [Arquitetura de storage](docs/architecture/E12_STORAGE_ARCHITECTURE.md)
+- [Arquitetura de filas](docs/architecture/E12_QUEUE_ARCHITECTURE.md)
+- [Scheduler e dispatcher](docs/architecture/E12_SCHEDULER_DISPATCHER_ARCHITECTURE.md)
+- [Reconciliação e recuperação](docs/architecture/E12_RECONCILIATION_AND_RECOVERY.md)
+- [Observabilidade e alertas](docs/architecture/E12_OBSERVABILITY_AND_ALERTS.md)
+
+Esses componentes são adapters e provas do Supabase de teste, não arquitetura produtiva AWS.
 
 ### E14
 
@@ -150,10 +169,14 @@ backend_e2e_replayed = true
 ### Integrações e ambientes
 
 - [HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
 - [Portas e adapters](docs/architecture/PROVIDER_PORTS_AND_ADAPTERS.md)
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
 - [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Arquitetura AWS](docs/architecture/AWS_PRODUCTION_REFERENCE_ARCHITECTURE.md)
+- [Mapeamento storage → AWS](docs/architecture/E12_STORAGE_AWS_MAPPING.md)
+- [Mapeamento filas → SQS](docs/architecture/E12_QUEUE_AWS_SQS_MAPPING.md)
+- [Mapeamento operacional → AWS](docs/architecture/E12_AWS_OPERATIONS_MAPPING.md)
 - [ADR Supabase teste / AWS produção](docs/decisions/ADR-001-SUPABASE-TEST-AWS-PRODUCTION.md)
 
 ### Segurança e operação
