@@ -1,0 +1,86 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+const root = resolve(import.meta.dirname, "../..");
+const read = (path) => readFile(resolve(root, path), "utf8");
+
+test("workspace contém aplicação Next.js real em apps/web", async () => {
+  const rootPackage = JSON.parse(await read("package.json"));
+  const webPackage = JSON.parse(await read("apps/web/package.json"));
+  assert.deepEqual(rootPackage.workspaces, ["apps/*"]);
+  assert.equal(webPackage.dependencies.next, "16.2.10");
+});
+
+test("seis rotas do contrato existem", async () => {
+  for (const path of ["entrar/page.tsx", "empreendedor/page.tsx", "empreendedor/diagnostico/page.tsx", "empreendedor/atividade/[stepInstanceId]/page.tsx", "empreendedor/resultado/page.tsx", "admin/page.tsx"]) assert.ok((await read(`apps/web/app/${path}`)).length > 50);
+});
+
+test("service role permanece server-only", async () => {
+  const admin = await read("apps/web/lib/supabase/admin.ts");
+  const actions = await read("apps/web/app/actions/e14.ts");
+  assert.ok(admin.includes('import "server-only"'));
+  assert.ok(!actions.includes("SUPABASE_SERVICE_ROLE_KEY"));
+});
+
+test("todos os comandos E14 são acessados pela camada tipada", async () => {
+  const rpc = await read("apps/web/lib/e14/rpc.ts");
+  for (const name of ["publishVertical", "createEnrollment", "startJourney", "startDiagnostic", "recordDiagnosticResponse", "completeDiagnostic", "startActivity", "acknowledgeSection", "startQuickCheck", "recordQuickCheckAnswer", "submitQuickCheck", "getParticipantState", "getOperatorResult"]) assert.ok(rpc.includes(name));
+});
+
+test("descoberta multi-jornada não depende de UUID hardcoded", async () => {
+  const home = await read("apps/web/app/empreendedor/page.tsx");
+  const migration = await read("supabase/migrations/20260709183000_m14_step5_application_read_surfaces.sql");
+  assert.ok(home.includes("listParticipantJourneys"));
+  assert.ok(migration.includes("e14_list_participant_journeys"));
+  assert.ok(!home.includes("e14_runtime_validation_journey"));
+});
+
+test("conteúdo versionado vem do backend e não vaza resposta correta", async () => {
+  const migration = await read("supabase/migrations/20260709183000_m14_step5_application_read_surfaces.sql");
+  assert.ok(migration.includes("content_sections"));
+  assert.ok(migration.includes("assessment.answer_options"));
+  assert.ok(!migration.includes("'is_correct'"));
+});
+
+test("resultados pedagógicos não são apresentados como decisão de crédito", async () => {
+  const result = await read("apps/web/app/empreendedor/resultado/page.tsx");
+  assert.ok(result.includes("não os apresenta como score, risco ou decisão de crédito"));
+});
+
+test("admin não exige UUIDs digitados manualmente", async () => {
+  const source = await read("apps/web/app/admin/page.tsx");
+  assert.ok(source.includes("workspace.journey_versions"));
+  assert.ok(source.includes("workspace.participants"));
+  assert.ok(!source.includes("ID do empreendedor"));
+  assert.ok(!source.includes("ID da versão da jornada"));
+});
+
+test("cadastro público não existe", async () => {
+  const login = await read("apps/web/app/entrar/page.tsx");
+  assert.ok(login.includes("cadastro público não está habilitado"));
+  assert.ok(!login.includes("signUp"));
+});
+
+test("login direciona participante e operador conforme identidade interna", async () => {
+  const action = await read("apps/web/app/entrar/actions.ts");
+  assert.ok(action.includes("auth.identity.entrepreneur_id"));
+  assert.ok(action.includes("/admin?organization="));
+});
+
+test("atividade renderiza o heading real do conteúdo versionado", async () => {
+  const activity = await read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx");
+  assert.ok(activity.includes("section.heading"));
+});
+
+test("tentativa reprovada retorna para revisão da atividade", async () => {
+  const actions = await read("apps/web/app/actions/e14.ts");
+  assert.ok(actions.includes("updated.state.q?.passed"));
+  assert.ok(actions.includes("/empreendedor/atividade/${step}"));
+});
+
+test("área operacional mantém consulta quando gestão não está disponível", async () => {
+  const admin = await read("apps/web/app/admin/page.tsx");
+  assert.ok(admin.includes("Promise.allSettled"));
+  assert.ok(admin.includes("Consulta disponível"));
+});

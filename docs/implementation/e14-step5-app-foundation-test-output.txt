@@ -1,0 +1,31 @@
+TAP version 13
+# Subtest: workspace contém aplicação Next.js real em apps/web
+ok 1
+# Subtest: seis rotas do contrato existem
+ok 2
+# Subtest: service role permanece server-only
+ok 3
+# Subtest: todos os comandos E14 são acessados pela camada tipada
+ok 4
+# Subtest: descoberta multi-jornada não depende de UUID hardcoded
+ok 5
+# Subtest: conteúdo versionado vem do backend e não vaza resposta correta
+ok 6
+# Subtest: resultados pedagógicos não são apresentados como decisão de crédito
+ok 7
+# Subtest: admin não exige UUIDs digitados manualmente
+ok 8
+# Subtest: cadastro público não existe
+ok 9
+# Subtest: login direciona participante e operador conforme identidade interna
+ok 10
+# Subtest: atividade renderiza o heading real do conteúdo versionado
+ok 11
+# Subtest: tentativa reprovada retorna para revisão da atividade
+ok 12
+# Subtest: área operacional mantém consulta quando gestão não está disponível
+ok 13
+1..13
+# tests 13
+# pass 13
+# fail 0

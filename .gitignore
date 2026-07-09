@@ -4,3 +4,8 @@
 **/*.local.json
 **/*.local.txt
 **/database-migration-report.local.txt
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+**/*.tsbuildinfo
