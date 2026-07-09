@@ -1,0 +1,22 @@
+TAP version 13
+# Subtest: passo permanece bloqueado sem aplicação executável
+ok 1
+# Subtest: seis rotas mínimas estão definidas na ordem exigida
+ok 2
+# Subtest: home do participante consulta estado e inicia jornada
+ok 3
+# Subtest: diagnóstico cobre os três comandos e refresh de estado
+ok 4
+# Subtest: atividade cobre conteúdo, seções, avaliação e submissão
+ok 5
+# Subtest: admin publica, matricula e consulta evidências
+ok 6
+# Subtest: credenciais privilegiadas e escritas diretas são proibidas no browser
+ok 7
+# Subtest: estados, acessibilidade e saída não podem ser simulados
+ok 8
+1..8
+# tests 8
+# pass 8
+# fail 0
+# duration_ms 117.373488
