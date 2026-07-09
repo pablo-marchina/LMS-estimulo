@@ -127,6 +127,10 @@ function referencedByAnotherFile(candidate, entries) {
   });
 }
 
+function isKnownGlobEntrypoint(file) {
+  return file.startsWith('scripts/e14/runtime-source-recovery/') && file.endsWith('.test.mjs');
+}
+
 function collectIndexTargets(indexSource) {
   const targets = new Set();
   for (const match of indexSource.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
@@ -163,6 +167,7 @@ const unreferencedDocumentationArtifacts = files
 const unreferencedScripts = files
   .filter((file) => file.startsWith('scripts/'))
   .filter((file) => ['.mjs', '.js', '.py', '.ps1', '.sql'].includes(path.posix.extname(file)))
+  .filter((file) => !isKnownGlobEntrypoint(file))
   .filter((file) => !referencedByAnotherFile(file, textEntries))
   .sort();
 
