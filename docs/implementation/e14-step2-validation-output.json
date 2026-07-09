@@ -1,0 +1,11 @@
+{
+  "status": "ok",
+  "artifact": "e14_step2_e2e_acceptance_contract",
+  "commands": 14,
+  "write_commands": 11,
+  "acceptance_scenarios": 21,
+  "canonical_events": 29,
+  "referenced_tables": 36,
+  "explicit_gaps": 5,
+  "step2_status": "DONE"
+}
