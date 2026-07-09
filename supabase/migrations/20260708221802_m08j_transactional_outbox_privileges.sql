@@ -1,0 +1,3 @@
+-- E14 migration-history compatibility marker.
+-- The final schema effect is represented by the canonical M00-M12 carrier migrations.
+-- Intentionally no-op. Keep this file so Supabase can reconcile the remote migration version.
