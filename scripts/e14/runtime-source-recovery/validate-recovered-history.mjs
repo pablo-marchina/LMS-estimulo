@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const EXPECTED = Object.freeze({
+export const E14_M13_EXPECTED = Object.freeze({
   firstVersion: '20260709051056',
   lastVersion: '20260709060330',
   migrationCount: 165,
@@ -83,11 +83,10 @@ async function validateMigrationFiles(manifest, migrationsDirectory) {
   return { seenVersions, totalRemoteSqlBytes };
 }
 
-export async function validateRecoveredHistory({
-  manifestFile,
-  migrationsDirectory,
-  canonicalFile,
-}) {
+export async function validateRecoveredHistory(
+  { manifestFile, migrationsDirectory, canonicalFile },
+  expected = E14_M13_EXPECTED,
+) {
   const manifest = JSON.parse(await readFile(manifestFile, 'utf8'));
 
   assert(manifest.schema_version === '1.0', 'unexpected manifest schema version');
@@ -96,20 +95,20 @@ export async function validateRecoveredHistory({
     'unexpected manifest artifact type',
   );
   assert(
-    manifest.first_version === EXPECTED.firstVersion,
+    manifest.first_version === expected.firstVersion,
     `unexpected first version ${manifest.first_version}`,
   );
   assert(
-    manifest.last_version === EXPECTED.lastVersion,
+    manifest.last_version === expected.lastVersion,
     `unexpected last version ${manifest.last_version}`,
   );
   assert(
-    manifest.migration_count === EXPECTED.migrationCount,
+    manifest.migration_count === expected.migrationCount,
     `unexpected migration count ${manifest.migration_count}`,
   );
   assert(
     Array.isArray(manifest.migrations) &&
-      manifest.migrations.length === EXPECTED.migrationCount,
+      manifest.migrations.length === expected.migrationCount,
     'manifest migration list is incomplete',
   );
 
@@ -125,11 +124,11 @@ export async function validateRecoveredHistory({
     migrationsDirectory,
   );
   assert(
-    totalRemoteSqlBytes === EXPECTED.totalRemoteSqlBytes,
+    totalRemoteSqlBytes === expected.totalRemoteSqlBytes,
     `unexpected remote SQL byte total ${totalRemoteSqlBytes}`,
   );
   assert(
-    manifest.total_remote_sql_bytes === EXPECTED.totalRemoteSqlBytes,
+    manifest.total_remote_sql_bytes === expected.totalRemoteSqlBytes,
     `manifest remote SQL byte total differs: ${manifest.total_remote_sql_bytes}`,
   );
 
@@ -140,7 +139,7 @@ export async function validateRecoveredHistory({
     .join('\n');
   const fingerprint = sha256(fingerprintInput);
   assert(
-    fingerprint === EXPECTED.combinedRemoteFingerprint,
+    fingerprint === expected.combinedRemoteFingerprint,
     `unexpected combined remote fingerprint ${fingerprint}`,
   );
   assert(
