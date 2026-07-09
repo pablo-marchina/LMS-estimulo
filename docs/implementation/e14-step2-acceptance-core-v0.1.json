@@ -74,8 +74,8 @@
     {
       "id": "GAP03_APPLICATION",
       "severity": "P0_FOR_STEPS_3_AND_5",
-      "finding": "The repository still has no executable Next.js application.",
-      "required_action": "Locate or implement the application before frontend mapping and integration can be completed."
+      "finding": "The private operational repository has no Next.js application in its current tree, but an executable public foundation and a Lovable prototype exist outside it and have not been reconciled with the private domain.",
+      "required_action": "Audit both frontend references, reuse only compatible UI assets and routes, replace their schema and hardcoded data, and integrate the selected application structure into the private operational repository."
     },
     {
       "id": "GAP04_AUTH_MAPPING_PROOF",
