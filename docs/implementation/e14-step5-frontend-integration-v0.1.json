@@ -1,55 +1,42 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "artifact": "e14_step5_frontend_integration_contract",
   "date": "2026-07-09",
-  "step5_status": "BLOCKED",
-  "frontend_application_status": "BLOCKED",
+  "step5_status": "PARTIAL",
+  "frontend_application_status": "EXECUTABLE_FOUNDATION",
   "openai_content_status": "BLOCKED",
   "target_application_path": "apps/web",
   "observed_repository_state": {
-    "package_json_found": false,
-    "next_config_found": false,
-    "react_source_found": false,
-    "executable_web_application_found": false,
+    "package_json_found": true,
+    "next_config_found": true,
+    "react_source_found": true,
+    "executable_web_application_found": true,
     "static_screen_accepted_as_runtime_evidence": false
   },
-  "security_boundary": {
-    "browser_direct_domain_writes": false,
-    "browser_service_role_credentials": false,
-    "required_call_path": "browser -> Next.js server/BFF -> server-only E14 RPC -> PostgreSQL transaction",
-    "authentication_dependency": "Supabase Auth JWT must resolve to iam.user_accounts and, for participants, core.entrepreneurs",
-    "mutating_command_headers": ["Idempotency-Key"],
-    "concurrency_field": "expected_aggregate_version"
+  "implemented": {
+    "routes": 6,
+    "existing_backend_rpcs_mapped": 13,
+    "application_read_rpcs": 5,
+    "server_identity_bridge": true,
+    "server_application_layer": true,
+    "database_migrations_applied_in_test": true,
+    "ci_build_passed": true,
+    "structural_tests_passed": 13
   },
-  "routes": [
-    {"route":"/entrar","surface":"login","actor":"public","read_rpcs":[],"write_rpcs":[],"external_dependency":"Supabase Auth plus internal identity resolution","states":["loading","ready","error","unauthorized"],"success_destination":"role and enrollment aware redirect"},
-    {"route":"/empreendedor","surface":"participant_home","actor":"participant","read_rpcs":["e14_get_participant_state"],"write_rpcs":["e14_start_journey"],"states":["loading","empty","error","unauthorized","ready","success"],"success_destination":"/empreendedor/diagnostico or current activity/result"},
-    {"route":"/empreendedor/diagnostico","surface":"diagnosis","actor":"participant","read_rpcs":["e14_get_participant_state"],"write_rpcs":["e14_start_diagnostic","e14_record_diagnostic_response","e14_complete_diagnostic"],"states":["loading","empty","error","unauthorized","ready","success","conflict"],"success_destination":"/empreendedor/atividade/[stepInstanceId]"},
-    {"route":"/empreendedor/atividade/[stepInstanceId]","surface":"activity_and_quick_check","actor":"participant","read_rpcs":["e14_get_participant_state"],"write_rpcs":["e14_start_activity","e14_acknowledge_section","e14_start_quick_check","e14_record_quick_check_answer","e14_submit_quick_check"],"states":["loading","empty","error","unauthorized","ready","success","conflict","failed_attempt","passed_attempt"],"success_destination":"/empreendedor/resultado"},
-    {"route":"/empreendedor/resultado","surface":"participant_result","actor":"participant","read_rpcs":["e14_get_participant_state"],"write_rpcs":[],"states":["loading","empty","error","unauthorized","ready"],"forbidden_content":["credit_score","archetype","risk_inference"]},
-    {"route":"/admin","surface":"operator_dashboard","actor":"operator","read_rpcs":["e14_get_operator_result"],"write_rpcs":["e14_publish_vertical","e14_create_enrollment"],"states":["loading","empty","error","unauthorized","ready","success","conflict"],"forbidden_content":["credit_score","archetype","risk_inference"]}
-  ],
-  "accessibility_requirements": [
-    "programmatic labels and instructions",
-    "logical heading and focus order",
-    "full keyboard operation",
-    "visible and announced error and success feedback",
-    "status never communicated by color alone",
-    "responsive layout without loss of action or evidence"
-  ],
-  "implementation_order": ["/entrar","/empreendedor","/empreendedor/diagnostico","/empreendedor/atividade/[stepInstanceId]","/empreendedor/resultado","/admin"],
-  "blockers": [
-    {"id":"STEP5_BLOCKER_APPLICATION","severity":"P0","finding":"The private operational repository has no executable web application in its current tree.","resolution":"Create or import the audited Next.js foundation into apps/web before route implementation."},
-    {"id":"STEP5_BLOCKER_AUTH_MAPPING","severity":"P0","finding":"A real Supabase Auth JWT has not been proven to resolve to the internal participant/operator identity.","resolution":"Implement and prove the server-side identity bridge before any protected route can call the E14 RPCs."},
-    {"id":"STEP5_BLOCKER_SERVER_ADAPTER","severity":"P0","finding":"The 13 E14 RPCs are server-only and no application service/BFF exists in the repository.","resolution":"Create a typed server-only service layer; never expose service_role or app_worker credentials to the browser."}
+  "remaining_blockers": [
+    "BROWSER_E2E",
+    "ACCESSIBILITY_PROOF",
+    "DEPENDENCY_LOCK_VERSIONING"
   ],
   "exit_criteria": {
-    "six_routes_executable": false,
-    "real_auth_and_authorization": false,
-    "all_screen_states_implemented": false,
+    "six_routes_executable": true,
+    "server_identity_bridge_implemented": true,
+    "read_models_live_in_test": true,
+    "ci_build_passed": true,
+    "real_session_flow_proven": false,
     "accessibility_verified": false,
-    "journey_completed_without_manual_database_interaction": false,
+    "journey_completed_through_browser": false,
     "step5_complete": false
   },
-  "safe_next_action": "Add an executable Next.js application at apps/web, implement the server-side identity bridge and BFF, then build the six routes in the declared order."
+  "safe_next_action": "EXECUTE_CONTROLLED_BROWSER_E2E"
 }
