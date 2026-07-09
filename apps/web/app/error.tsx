@@ -1,0 +1,2 @@
+"use client";
+export default function ErrorPage({ reset }: { error: Error; reset: () => void }) { return <main className="page-container"><section className="status-panel status-panel--warning" role="alert"><h1>Não foi possível carregar esta etapa</h1><p>Nenhum dado foi alterado. Tente novamente.</p><button className="button button--primary" onClick={reset}>Tentar novamente</button></section></main>; }

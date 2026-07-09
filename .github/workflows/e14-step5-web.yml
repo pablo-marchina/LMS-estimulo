@@ -1,0 +1,29 @@
+name: E14 Step 5 web
+on:
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "package.json"
+      - "scripts/e14/validate-step5-app-foundation*"
+      - "supabase/migrations/20260709183000_m14_step5_application_read_surfaces.sql"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npm audit --omit=dev
+      - run: npm run validate:e14-step5
+      - run: npm run test:e14-step5
+      - run: npm run typecheck:web
+      - run: npm run build:web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key

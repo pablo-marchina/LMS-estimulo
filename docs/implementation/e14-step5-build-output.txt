@@ -1,0 +1,18 @@
+Next.js 16.2.10 production build
+
+Compiled successfully.
+TypeScript passed.
+Static pages generated: 4/4.
+
+Routes:
+- / (static)
+- /_not-found (static)
+- /admin (dynamic)
+- /empreendedor (dynamic)
+- /empreendedor/atividade/[stepInstanceId] (dynamic)
+- /empreendedor/diagnostico (dynamic)
+- /empreendedor/resultado (dynamic)
+- /entrar (dynamic)
+- Proxy middleware enabled
+
+npm audit --omit=dev: 0 vulnerabilities
