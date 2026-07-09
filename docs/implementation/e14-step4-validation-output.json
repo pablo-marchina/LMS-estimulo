@@ -1,0 +1,17 @@
+{
+  "status": "ok",
+  "step4_status": "PARTIAL",
+  "backend_runtime": "LIVE_COMPLETE",
+  "remote_migrations": 165,
+  "canonical_replay_bytes": 133886,
+  "canonical_replay_sha256": "8d40700c6798b306d514db5da43a77d0d245756b9d71eda58c4ae462fcd1899f",
+  "canonical_replay_repository": "BLOCKED",
+  "public_server_only_rpcs": 13,
+  "canonical_event_schemas": 29,
+  "live_events": 35,
+  "live_outbox_rows": 35,
+  "point_ledger_entries": 2,
+  "point_balance": 7,
+  "negative_proofs": 6,
+  "remaining_blockers": 7
+}

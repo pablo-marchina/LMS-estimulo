@@ -1,0 +1,137 @@
+{
+  "artifact": "e14_step4_backend_vertical_runtime_evidence",
+  "version": "0.1",
+  "generated_at": "2026-07-09",
+  "status": "PARTIAL",
+  "openai_content_status": "BLOCKED",
+  "environment": {
+    "provider": "Supabase",
+    "project_ref": "cfpfeavjlgheqqiaqtzv",
+    "region": "sa-east-1",
+    "database": "PostgreSQL 17",
+    "data_class": "synthetic_internal_test_only"
+  },
+  "canonical_replay": {
+    "source": "exact successful remote migrations whose names start with m13, ordered by remote version",
+    "remote_incremental_migrations": 165,
+    "first_remote_version": "20260709051056",
+    "last_remote_version": "20260709060330",
+    "fixture_completion_file": null,
+    "fresh_replay_executed": false,
+    "fresh_replay_limitation": "Paid Supabase Preview Branch was declined; no clean local PostgreSQL was available; GitHub connector transport blocked committing the exact SQL export without truncation.",
+    "files": [],
+    "combined_utf8_bytes": 133886,
+    "combined_sha256": "8d40700c6798b306d514db5da43a77d0d245756b9d71eda58c4ae462fcd1899f",
+    "repository_status": "NOT_COMMITTED_CONNECTOR_TRANSPORT_BLOCKED",
+    "local_exact_export": {
+      "path": "/mnt/data/e14_step4_remote_replay.sql",
+      "utf8_bytes": 133886,
+      "sha256": "8d40700c6798b306d514db5da43a77d0d245756b9d71eda58c4ae462fcd1899f"
+    }
+  },
+  "runtime_surface": {
+    "public_server_only_rpcs": [
+      "e14_publish_vertical",
+      "e14_create_enrollment",
+      "e14_start_journey",
+      "e14_start_diagnostic",
+      "e14_record_diagnostic_response",
+      "e14_complete_diagnostic",
+      "e14_start_activity",
+      "e14_acknowledge_section",
+      "e14_start_quick_check",
+      "e14_record_quick_check_answer",
+      "e14_submit_quick_check",
+      "e14_get_participant_state",
+      "e14_get_operator_result"
+    ],
+    "public_rpc_count": 13,
+    "private_function_count": 133,
+    "private_view_count": 6,
+    "immutability_trigger_count": 14,
+    "canonical_event_schema_count": 29,
+    "execution_roles": ["service_role", "app_worker"],
+    "blocked_roles": ["public", "anon", "authenticated"]
+  },
+  "live_vertical": {
+    "journey_code": "e14_runtime_validation_journey",
+    "visibility": "internal_test_only",
+    "real_participant_use_authorized": false,
+    "organization_id": "427d7ce5-c341-54cf-a3a2-c2936e4a0a27",
+    "operator_user_account_id": "ade2f5b8-e864-58cd-a62b-849474eb7fbc",
+    "participant_user_account_id": "5f543bc4-289e-5336-a41b-df01c9d05acb",
+    "entrepreneur_id": "3ffe971e-25c7-5cd4-af0e-25524004f01e",
+    "journey_version_id": "c97c5753-a910-56e8-aa5c-4bb8377f83e6",
+    "journey_instance_id": "7fb30cbd-cf52-58e9-acdd-857832784f2b",
+    "diagnostic_session_id": "68c7350e-8b5e-55ce-a7d7-1d6de6bb3593",
+    "step_instance_id": "c249ea41-9260-5770-a6b4-470ac7a31d76",
+    "activity_session_id": "08f50574-3379-551f-a19c-82610bcbf367",
+    "assigned_path": "standard",
+    "low_confidence": false,
+    "acknowledged_sections": 4,
+    "failed_attempt": {
+      "status": "failed",
+      "score": 0,
+      "journey_status_after_attempt": "in_progress",
+      "progress_after_attempt": 0,
+      "points_after_attempt": 0
+    },
+    "passed_attempt": {
+      "attempt_number": 2,
+      "status": "passed",
+      "score": 100,
+      "journey_status": "completed",
+      "step_status": "completed",
+      "path_status": "completed",
+      "progress": 1,
+      "point_ledger_entries": 2,
+      "point_ledger_sum": 7,
+      "projected_balance": 7
+    },
+    "event_store": {
+      "events": 35,
+      "outbox_rows": 35,
+      "passed_submission_correlation_events": 8,
+      "passed_submission_correlation_outbox_rows": 8
+    }
+  },
+  "negative_proofs": [
+    {"case": "published_graph_mutation", "expected": "PUBLISHED_VERSION_IMMUTABLE", "observed": true},
+    {"case": "stale_aggregate_version", "expected": "AGGREGATE_VERSION_CONFLICT", "observed": true},
+    {"case": "same_idempotency_key_different_payload", "expected": "IDEMPOTENCY_KEY_REUSED", "observed": true},
+    {"case": "operator_uses_participant_query", "expected": "FORBIDDEN", "observed": true},
+    {"case": "duplicate_section_with_different_request_key", "expected": "same event replayed and accepted section count remains four", "observed": true},
+    {"case": "repeat_successful_submission", "expected": "same request_id, replayed true, no duplicate points or events", "observed": true}
+  ],
+  "step4_scope": {
+    "implemented": [
+      "published graph immutability",
+      "server-side command layer",
+      "authorization against internal IAM roles",
+      "idempotency and optimistic concurrency",
+      "publication and synthetic enrollment",
+      "participant journey, diagnostic and path assignment",
+      "activity section progress",
+      "quick-check failure and pass branches",
+      "append-only points ledger and balance projection",
+      "participant and operator read models",
+      "canonical events and transactional outbox"
+    ],
+    "remaining_blockers": [
+      "Real Supabase Auth JWT to iam.user_accounts mapping has not been proven end to end.",
+      "The exact canonical SQL replay was exported and hash-verified locally but could not be committed through the GitHub connector without truncation; no partial migration was retained in the branch.",
+      "Canonical migrations have not yet been replayed on a clean database.",
+      "Supabase Security and Performance Advisor endpoints were blocked by the connector; SQL privilege checks were used instead.",
+      "OpenAI journey content remains editorially blocked; the runtime journey is internal technical evidence only.",
+      "The neutralized e14-migration-export Edge Function still requires manual deletion."
+    ]
+  },
+  "exit_assessment": {
+    "step4_status": "PARTIAL",
+    "backend_vertical_runtime": "LIVE_COMPLETE",
+    "auth_mapping_proof": "BLOCKED",
+    "fresh_replay_proof": "NOT_EXECUTED",
+    "safe_next_step": "E14 Step 5 frontend integration may proceed against the 13 service-only RPCs, while auth mapping and fresh replay remain explicit release blockers.",
+    "canonical_replay_repository": "BLOCKED"
+  }
+}
