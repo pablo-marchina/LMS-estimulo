@@ -8,6 +8,7 @@
     "dev:web": "npm --workspace @estimulo/web run dev",
     "build:web": "npm --workspace @estimulo/web run build",
     "typecheck:web": "npm --workspace @estimulo/web run typecheck",
+    "validate:repository": "node scripts/repository/validate-hygiene.mjs",
     "validate:e14-step5": "node scripts/e14/validate-step5-app-foundation.mjs",
     "test:e14-step5": "node --test scripts/e14/validate-step5-app-foundation.test.mjs",
     "test:e14-runtime-recovery": "node --test scripts/e14/runtime-source-recovery/*.test.mjs"

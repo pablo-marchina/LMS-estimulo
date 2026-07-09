@@ -1,29 +1,50 @@
 name: E14 Step 5 web
+
 on:
   pull_request:
     paths:
       - "apps/web/**"
       - "package.json"
       - "scripts/e14/validate-step5-app-foundation*"
-      - "supabase/migrations/20260709183000_m14_step5_application_read_surfaces.sql"
-      - "supabase/migrations/20260709184500_m14b_step5_operator_workspace.sql"
+      - "supabase/migrations/*_m14*_step5_*.sql"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e14-step5-web-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - run: npm install --ignore-scripts
-      - run: npm audit --omit=dev
-      - run: npm run validate:e14-step5
-      - run: npm run test:e14-step5
-      - run: npm run typecheck:web
-      - run: npm run build:web
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Validate application foundation
+        run: npm run validate:e14-step5
+
+      - name: Run application foundation tests
+        run: npm run test:e14-step5
+
+      - name: Typecheck web application
+        run: npm run typecheck:web
+
+      - name: Build web application
+        run: npm run build:web
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
