@@ -61,3 +61,26 @@ test("cadastro público não existe", async () => {
   assert.ok(login.includes("cadastro público não está habilitado"));
   assert.ok(!login.includes("signUp"));
 });
+
+test("login direciona participante e operador conforme identidade interna", async () => {
+  const action = await read("apps/web/app/entrar/actions.ts");
+  assert.ok(action.includes("auth.identity.entrepreneur_id"));
+  assert.ok(action.includes("/admin?organization="));
+});
+
+test("atividade renderiza o heading real do conteúdo versionado", async () => {
+  const activity = await read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx");
+  assert.ok(activity.includes("section.heading"));
+});
+
+test("tentativa reprovada retorna para revisão da atividade", async () => {
+  const actions = await read("apps/web/app/actions/e14.ts");
+  assert.ok(actions.includes("updated.state.q?.passed"));
+  assert.ok(actions.includes("/empreendedor/atividade/${step}"));
+});
+
+test("área operacional mantém consulta quando gestão não está disponível", async () => {
+  const admin = await read("apps/web/app/admin/page.tsx");
+  assert.ok(admin.includes("Promise.allSettled"));
+  assert.ok(admin.includes("Consulta disponível"));
+});

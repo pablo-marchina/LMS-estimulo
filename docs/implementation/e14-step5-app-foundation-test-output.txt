@@ -17,7 +17,15 @@ ok 7
 ok 8
 # Subtest: cadastro público não existe
 ok 9
-1..9
-# tests 9
-# pass 9
+# Subtest: login direciona participante e operador conforme identidade interna
+ok 10
+# Subtest: atividade renderiza o heading real do conteúdo versionado
+ok 11
+# Subtest: tentativa reprovada retorna para revisão da atividade
+ok 12
+# Subtest: área operacional mantém consulta quando gestão não está disponível
+ok 13
+1..13
+# tests 13
+# pass 13
 # fail 0
