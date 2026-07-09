@@ -4,6 +4,7 @@ import type {
   IdentityContext,
   JourneyState,
   OperatorInstances,
+  OperatorWorkspace,
   ParticipantExperience,
   ParticipantJourneys,
   RpcEnvelope
@@ -50,6 +51,11 @@ export const e14 = {
   }),
 
   listOperatorInstances: (actor: string, organizationId: string) => invoke<OperatorInstances>("e14_list_operator_instances", {
+    p_actor_user_account_id: actor,
+    p_organization_id: organizationId
+  }),
+
+  getOperatorWorkspace: (actor: string, organizationId: string) => invoke<OperatorWorkspace>("e14_get_operator_workspace", {
     p_actor_user_account_id: actor,
     p_organization_id: organizationId
   }),

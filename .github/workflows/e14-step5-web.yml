@@ -6,6 +6,7 @@ on:
       - "package.json"
       - "scripts/e14/validate-step5-app-foundation*"
       - "supabase/migrations/20260709183000_m14_step5_application_read_surfaces.sql"
+      - "supabase/migrations/20260709184500_m14b_step5_operator_workspace.sql"
   workflow_dispatch:
 
 jobs:
@@ -17,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci --ignore-scripts
+      - run: npm install --ignore-scripts
       - run: npm audit --omit=dev
       - run: npm run validate:e14-step5
       - run: npm run test:e14-step5

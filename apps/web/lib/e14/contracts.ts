@@ -126,6 +126,25 @@ export type OperatorInstances = {
   instances: JourneyState[];
 };
 
+export type OperatorWorkspace = {
+  organization_id: string;
+  journey_versions: Array<{
+    journey_version_id: string;
+    journey_definition_id: string;
+    journey_code: string;
+    title: string;
+    version_number: number;
+    status: string;
+    content_hash: string;
+    published_at: string | null;
+  }>;
+  participants: Array<{
+    entrepreneur_id: string;
+    display_name: string;
+    email: string;
+  }>;
+};
+
 export type RpcEnvelope<T> = {
   request_id: string;
   idempotency_key: string;

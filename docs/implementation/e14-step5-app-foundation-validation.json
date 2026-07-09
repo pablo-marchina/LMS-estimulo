@@ -1,9 +1,10 @@
 {
   "status": "ok",
-  "required_files": 11,
+  "required_files": 12,
   "existing_rpcs_mapped": 13,
-  "new_read_rpcs": 4,
+  "new_read_rpcs": 5,
   "routes": 6,
   "browser_service_role_references": 0,
-  "participant_correct_answer_leaks": 0
+  "participant_correct_answer_leaks": 0,
+  "lockfile_repository_status": "NOT_VERSIONED_CONNECTOR_TRANSPORT_LIMITATION"
 }
