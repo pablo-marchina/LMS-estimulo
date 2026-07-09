@@ -41,13 +41,17 @@ jobs:
       - name: Run synthetic materialization tests
         run: node --test scripts/e14/runtime-source-recovery/materialize-migration-history.test.mjs
 
-      - name: Compare local M14 application read surfaces
+      - id: compare_m14
+        name: Compare local M14 application read surfaces
+        continue-on-error: true
         run: >-
           node --test
           --test-name-pattern="20260709183504"
           scripts/e14/runtime-source-recovery/compare-local-m14.test.mjs
 
-      - name: Compare local M14b operator workspace
+      - id: compare_m14b
+        name: Compare local M14b operator workspace
+        continue-on-error: true
         run: >-
           node --test
           --test-name-pattern="20260709184749"
@@ -60,3 +64,18 @@ jobs:
           test -f .gitignore
           grep -Fx '**/*.local.jsonl' .gitignore
           grep -Fx '.artifacts/' .gitignore
+
+      - name: Enforce remote M14 equivalence
+        if: always()
+        env:
+          M14_OUTCOME: ${{ steps.compare_m14.outcome }}
+          M14B_OUTCOME: ${{ steps.compare_m14b.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$M14_OUTCOME" != "success" || "$M14B_OUTCOME" != "success" ]]; then
+            echo "M14 outcome: $M14_OUTCOME"
+            echo "M14b outcome: $M14B_OUTCOME"
+            echo "Local M14 files must be replaced by content recovered from the remote history."
+            exit 1
+          fi
