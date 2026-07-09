@@ -1,25 +1,43 @@
-# E14-R1 — Delta inicial de schema e runtime
+# E14-R1 — Delta de schema e runtime
 
-**Versão:** 0.1  
+**Versão:** 0.2  
 **Data:** 2026-07-09  
-**Status:** PARTIAL — auditoria remota iniciada  
+**Status:** PARTIAL — delta estrutural identificado; nova migration bloqueada  
 **Ambiente inspecionado:** Supabase de desenvolvimento/teste `cfpfeavjlgheqqiaqtzv`  
 **DDL aplicado nesta etapa:** nenhum
 
 ## 1. Objetivo
 
-Determinar o que pode ser reutilizado antes de criar a próxima migration. Esta análise segue o `Estimulo_all`, o ADR-002 e a regra de que Supabase é somente desenvolvimento/teste; qualquer estrutura aprovada deverá permanecer PostgreSQL-portável e ser validada posteriormente no AWS staging.
+Determinar o que deve ser reutilizado, estendido ou recuperado antes de criar qualquer nova migration funcional. Esta análise segue o `Estimulo_all`, o ADR-002 e a regra de que Supabase é somente desenvolvimento/teste; estruturas aprovadas devem permanecer PostgreSQL-portáveis e ser validadas no AWS staging.
 
-## 2. Evidência inspecionada
+## 2. Bloqueio P0 de fonte de verdade
 
-A inspeção read-only do banco confirmou estruturas existentes nas áreas:
+O runtime remoto contém 165 versões M13, totalizando 123.636 bytes de SQL, que não estão integralmente versionadas no Git. Também existem nove versões temporárias de transporte/exportação e duas versões M14.
 
-- `diagnostics`;
-- `catalog`;
-- `eventing`;
-- `integration`.
+Os identificadores M14 divergem:
 
-Contagens observadas no ambiente de teste:
+| Capacidade | Supabase | Git |
+|---|---|---|
+| Application read surfaces | `20260709183504` | `20260709183000` |
+| Operator workspace | `20260709184749` | `20260709184500` |
+
+Consequências:
+
+- o Git ainda não reconstrói o backend E14 comprovado;
+- não existe replay limpo equivalente ao ambiente testado;
+- migrations locais M14 podem ser interpretadas como ainda não aplicadas;
+- a portabilidade para AWS não está provada;
+- nova DDL ampliaria uma baseline não reproduzível.
+
+O plano completo está em `RUNTIME_GAP_E14.md`.
+
+```text
+new_functional_migration_authorized = false
+```
+
+## 3. Evidência do ambiente de teste
+
+### 3.1 Dados atuais
 
 | Relação | Linhas |
 |---|---:|
@@ -40,141 +58,217 @@ Contagens observadas no ambiente de teste:
 | `eventing.events` | 39 |
 | `eventing.outbox` | 39 |
 
-Não há dados de arquétipo, conteúdo ou conexão HubSpot a migrar nesse ambiente neste momento. Isso reduz o risco de extensão aditiva, mas não elimina a obrigação de preservar compatibilidade e replay limpo.
+Não há dados de arquétipo, conteúdo ou HubSpot a migrar atualmente. Mudanças aditivas continuam exigindo replay e compatibilidade.
 
-## 3. Classificação por capacidade
+### 3.2 Controles confirmados
 
-### 3.1 Formulário e respostas
+Todas as 24 tabelas auditadas possuem RLS. Também foram confirmados:
 
-| Estrutura | Classificação | Evidência | Delta provável |
+- imutabilidade de `diagnostic_versions` publicados;
+- proteção de `items` e `item_options` quando a versão está publicada;
+- `responses` append-only;
+- revisão única por `(session_id, item_id, revision)`;
+- no máximo uma sessão `in_progress` por `journey_instance_id`;
+- `events` append-only com redaction/hash;
+- versão agregada única em eventos;
+- rota única por `(event_id, route_key)` na outbox;
+- idempotency key única em `integration.sync_jobs`;
+- tentativas de sincronização append-only;
+- mappings e integrações versionados.
+
+Esses controles devem ser preservados.
+
+## 4. Classificação final por capacidade
+
+### 4.1 Formulário e respostas
+
+| Estrutura | Classificação | Evidência | Delta necessário |
 |---|---|---|---|
-| `diagnostic_definitions` | `REUSE_AS_IS` | definição possui organização, código, nome, finalidade e status | nenhum inicialmente |
-| `diagnostic_versions` | `EXTEND_EXISTING` | já possui versão, status, configuração, publicação e hash | confirmar suporte formal a draft/cloning e publicação imutável por constraints/RPCs |
-| `items` | `REUSE_AS_IS` | itens pertencem à versão e possuem tipo, prompt, configuração, posição e obrigatoriedade | validar tipos necessários do formulário real |
-| `item_options` | `REUSE_AS_IS` | opções pertencem ao item e são ordenadas | validar regra de pesos/mapeamento sem hardcode |
-| `sessions` | `EXTEND_EXISTING` | sessão preserva versão, empreendedor, jornada, estado e aggregate version | avaliar `submitted_at`, política de retomada e vínculo explícito à revisão final |
-| `responses` | `REUSE_AS_IS` | revisão, valor, tempo, supersessão e evento de origem já existem | formalizar constraints de cadeia e idempotência nos novos comandos |
-| `results` | `EXTEND_EXISTING` | resultado preserva sessão, versão de cálculo, qualidade e timestamp | falta ligação explícita ao resultado de arquétipo e histórico de recalculação |
+| `diagnostic_definitions` | `REUSE_AS_IS` | definição por organização, código, finalidade e status | nenhum |
+| `diagnostic_versions` | `EXTEND_EXISTING` | versão, configuração, hash e trigger de imutabilidade já existem | permitir ciclo draft/publicação consistente; `published_at` não deve ser obrigatório em draft |
+| `items` | `REUSE_AS_IS` | versão, tipo, prompt, configuração, posição e obrigatoriedade | validar tipos do formulário oficial |
+| `item_options` | `REUSE_AS_IS` | código, label, valor e posição por item | armazenar regra/peso em configuração versionada, sem hardcode |
+| `sessions` | `REUSE_AS_IS` | versão, empreendedor, jornada, estado e optimistic concurrency | formalizar estados e política de retomada nos comandos |
+| `responses` | `REUSE_AS_IS` | append-only, revision, supersessão, tempo e evento de origem | validar cadeia de revisão e idempotência no RPC |
+| `results` | `EXTEND_EXISTING` | resultado por sessão e versão de cálculo | ligação explícita ao resultado de arquétipo e evidência de cálculo |
 
-**Conclusão:** o núcleo de formulário já existe. Não criar tabelas paralelas `forms`, `form_versions`, `answers` ou equivalentes antes de provar uma lacuna não coberta.
+**Decisão:** não criar `forms`, `form_versions`, `answers` ou subsistema paralelo.
 
-### 3.2 Quatro arquétipos
+### 4.2 Quatro arquétipos
 
-| Estrutura | Classificação | Evidência | Delta provável |
+| Estrutura | Classificação | Evidência | Delta necessário |
 |---|---|---|---|
-| `archetype_definitions` | `REUSE_AS_IS` | definição configurável por organização com código, nome, descrição e status | popular exatamente quatro definições ativas somente quando nomes oficiais forem fornecidos |
-| `archetype_versions` | `EXTEND_EXISTING` | versão, referência de modelo, status, validação e publicação | falta configuração versionada de regras, pesos, mensagens e associações de trilha |
-| `archetype_assignments` | `EXTEND_EXISTING` | preserva empreendedor, jornada, versão de modelo, arquétipos e probabilidades | faltam sessão/resultado de origem, justificativa, evidências, motivo/tipo da atribuição, autor, supersessão, effective period e override auditável |
+| `archetype_definitions` | `REUSE_AS_IS` | definição configurável por organização; código único | cadastrar exatamente quatro definições ativas quando os nomes oficiais forem fornecidos |
+| `archetype_versions` | `EXTEND_EXISTING` | versão, referência de modelo, status e publicação | configuração versionada, hash, mensagens, critérios, associações de trilha e imutabilidade após publicação |
+| `archetype_assignments` | `EXTEND_EXISTING` | empreendedor, jornada, versão e probabilidades | origem, justificativa, evidência, tipo, autor, supersessão, override e evento de origem |
 
-**Decisão preliminar:** reutilizar as três tabelas. A próxima migration deverá ser aditiva e não criar um segundo subsistema de arquétipos.
+Problema confirmado: `archetype_assignments` permite `UPDATE` e `DELETE` por worker e não possui trigger append-only. Isso contradiz histórico, recálculo e override auditável.
 
-Campos candidatos a delta, sujeitos à auditoria de constraints e casos de uso:
+Direção obrigatória:
 
-- em `archetype_versions`: `configuration jsonb`, `content_hash`, `created_at`, metadados de publicação e validação mais explícitos;
-- em `archetype_assignments`: `diagnostic_session_id`, `diagnostic_result_id`, `assignment_strategy`, `assignment_reason`, `evidence_snapshot`, `assigned_by_user_account_id`, `supersedes_assignment_id`, `effective_from`, `effective_to`, `override_reason`, `source_event_id`;
-- índice/constraint para uma atribuição atual por escopo sem apagar o histórico;
-- RPCs para atribuição, recálculo e override com evento/outbox na mesma transação.
+- cada atribuição, recálculo ou override cria uma nova linha;
+- atribuições anteriores nunca são sobrescritas;
+- uma cadeia `supersedes_assignment_id` preserva a evolução;
+- o estado atual é uma projeção da cadeia;
+- o RPC serializa concorrência e grava estado, evento e outbox atomicamente;
+- probabilidade/confiança permanece nula quando o método real não a sustentar.
 
-A presença de colunas de probabilidade não obriga o método inicial a inventar probabilidades. Elas poderão permanecer nulas quando a regra real for determinística.
+Campos candidatos, ainda sujeitos ao formulário oficial:
 
-### 3.3 Conteúdo próprio e de terceiros
+```text
+diagnostic_session_id
+diagnostic_result_id
+assignment_strategy
+assignment_reason
+evidence_snapshot
+assigned_by_user_account_id
+supersedes_assignment_id
+override_reason
+source_event_id
+created_at
+```
 
-| Estrutura | Classificação | Evidência | Delta provável |
+Não adicionar `effective_to` se ele exigir mutação da linha histórica; preferir cadeia append-only e projeção atual.
+
+### 4.3 Conteúdo próprio e de terceiros
+
+| Estrutura | Classificação | Evidência | Delta necessário |
 |---|---|---|---|
-| `catalog.content_assets` | `EXTEND_EXISTING` | já liga conteúdo à versão da atividade e suporta arquivo ou `external_url` | modelo atual é insuficiente para direitos, provider adapter, tracking e fallback |
+| `catalog.content_assets` | `EXTEND_EXISTING` | exige exatamente um entre arquivo e URL externa; posição única por atividade | provider, direitos, embed, tracking, disponibilidade, conclusão e fallback |
 
 Campos candidatos:
 
-- `ownership_type`;
-- `provider`;
-- `external_id`;
-- `canonical_url`;
-- `embed_policy`;
-- `rights_status` e referência de licença;
-- `availability_status`;
-- `tracking_capabilities jsonb`;
-- `completion_policy jsonb`;
-- `fallback_configuration jsonb`;
-- `metadata_version` ou estrutura equivalente versionada.
+```text
+ownership_type
+provider
+external_id
+canonical_url
+embed_policy
+rights_status
+license_reference
+availability_status
+tracking_capabilities jsonb
+completion_policy jsonb
+fallback_configuration jsonb
+metadata_version
+```
 
-Antes de adicionar colunas, verificar se metadados equivalentes já existem em outra tabela do catálogo. A primeira integração deve usar um único provedor real autorizado.
+Antes da DDL, verificar se metadados equivalentes existem em outra estrutura do catálogo. A primeira integração usará um único provedor real autorizado.
 
-### 3.4 Eventos e outbox
+### 4.4 Eventos e outbox
 
-| Estrutura | Classificação | Evidência | Delta provável |
+| Estrutura | Classificação | Evidência | Delta necessário |
 |---|---|---|---|
-| `eventing.event_schemas` | `REUSE_AS_IS` | schema versionado, hash e status | publicar schemas dos novos eventos |
-| `eventing.events` | `REUSE_AS_IS` | contexto rico, ator, subject, aggregate, correlação, causalidade, natureza da evidência e privacidade | nenhum delta estrutural previsto |
-| `eventing.outbox` | `REUSE_AS_IS` | rota, claim, tentativas, erro e conclusão | nenhum delta estrutural previsto |
+| `eventing.event_schemas` | `REUSE_AS_IS` | schema, versão, hash e publicação | registrar novos contratos |
+| `eventing.events` | `REUSE_AS_IS` | append-only, contexto, ordenação, correlação, privacidade e redaction | nenhum delta estrutural previsto |
+| `eventing.outbox` | `REUSE_AS_IS` | rota, disponibilidade, claim, tentativa e erro | nenhum delta estrutural previsto |
 
-Eventos já observados incluem início/conclusão de diagnóstico, resposta registrada, resultado gerado e eventos de avaliação. Faltam contratos e runtime para:
-
-- resposta revisada como semântica explícita quando necessário;
-- arquétipo atribuído;
-- arquétipo recalculado;
-- arquétipo sobrescrito por override;
-- conteúdo externo aberto/iniciado/progresso/concluído conforme capacidade;
-- projeção e reconciliação HubSpot.
-
-### 3.5 HubSpot e integrações
-
-| Estrutura | Classificação | Evidência | Delta provável |
-|---|---|---|---|
-| `integration.connections` | `REUSE_AS_IS` | provider, ambiente, secret reference e configuração | criar conexão HubSpot somente após sandbox/scopes autorizados |
-| `mapping_definitions` / `mapping_versions` | `REUSE_AS_IS` | mapping versionado e validável | materializar a matriz User 360 sem nova tabela inicialmente |
-| `external_object_mappings` | `REUSE_AS_IS` | vínculo interno/externo e timestamps | nenhum delta inicial |
-| `sync_jobs` / `sync_attempts` | `REUSE_AS_IS` | idempotência, estado, tentativas e erros | implementar adapter/worker e política de backoff/DLQ |
-| `conflicts` | `REUSE_AS_IS` | conflito por campo e resolução | definir autoridade por campo |
-| `reconciliation_runs` / `reconciliation_items` | `REUSE_AS_IS` | execução e diferenças | implementar readback HubSpot |
-| `webhook_receipts` | `REUSE_AS_IS` | assinatura, replay, hash e normalização | ativar somente quando webhook real for necessário |
-
-**Conclusão:** a base de integração já cobre a maior parte da resiliência necessária. A lacuna principal é implementação e configuração real, não proliferação de tabelas.
-
-## 4. Hipótese de migration M15
-
-Nenhuma M15 será aplicada antes de concluir:
-
-1. inspeção de constraints, índices, triggers e RLS das estruturas candidatas;
-2. revisão dos RPCs E14 existentes;
-3. mapeamento das ações das seis rotas atuais;
-4. confirmação do formulário real e dos quatro arquétipos;
-5. seleção do primeiro conteúdo externo autorizado;
-6. inventário do HubSpot sandbox.
-
-Se confirmada, M15 deverá concentrar apenas extensões necessárias para:
-
-- configuração versionada dos arquétipos;
-- histórico completo de atribuição, recálculo e override;
-- metadados de conteúdo externo;
-- constraints e índices correspondentes;
-- eventos e funções atômicas indispensáveis.
-
-## 5. Gaps que não exigem schema novo por enquanto
-
-- HubSpot User 360 pode usar `mapping_definitions` e `mapping_versions`;
-- retry/reconciliação podem usar as tabelas `integration` existentes;
-- registro de eventos pode usar `event_schemas`, `events` e `outbox` existentes;
-- formulário pode usar `diagnostic_*`, `items`, `item_options`, `sessions` e `responses` existentes;
-- AWS não exige schema separado; exige adapters e validação das mesmas migrations em PostgreSQL gerenciado.
-
-## 6. Próximas provas
-
-- extrair constraints/índices/RLS das tabelas classificadas;
-- localizar as migrations que criaram cada estrutura;
-- auditar os RPCs que escrevem diagnóstico e vertical E14;
-- mapear componentes/ações de `apps/web` para eventos;
-- comparar schema Git versus schema remoto;
-- produzir versão 0.2 deste delta com decisão final `REUSE`, `EXTEND`, `DEPRECATE` ou `NEW` por item;
-- somente então escrever e testar M15 em banco limpo e no Supabase de teste.
-
-## 7. Status do gate E14-R1
+Novos contratos necessários:
 
 ```text
-remote_schema_inventory_started = true
+diagnostic.answer_revised
+diagnostic.archetype_assigned
+diagnostic.archetype_recalculated
+diagnostic.archetype_overridden
+content.opened
+content.started
+content.progress_observed
+content.completed
+integration.hubspot_projection_requested
+integration.hubspot_projection_succeeded
+integration.hubspot_projection_failed
+integration.hubspot_reconciled
+```
+
+Nomes finais devem ser reconciliados com o catálogo canônico antes de publicação.
+
+### 4.5 HubSpot e integrações
+
+| Estrutura | Classificação | Evidência | Delta necessário |
+|---|---|---|---|
+| `integration.connections` | `REUSE_AS_IS` | provider, ambiente, segredo por referência e configuração | conexão real após sandbox/scopes |
+| `mapping_definitions` / `mapping_versions` | `REUSE_AS_IS` | mapping versionado com schema e hash | materializar matriz User 360 |
+| `external_object_mappings` | `REUSE_AS_IS` | vínculo interno/externo | nenhum delta inicial |
+| `sync_jobs` / `sync_attempts` | `REUSE_AS_IS` | idempotência, scheduling, tentativas e erros | adapter, worker, backoff e política de DLQ |
+| `conflicts` | `REUSE_AS_IS` | conflito por campo e resolução | autoridade por campo |
+| `reconciliation_runs` / `reconciliation_items` | `REUSE_AS_IS` | readback e diferenças | implementação real |
+| `webhook_receipts` | `REUSE_AS_IS` | assinatura, replay, hash e normalização | ativar somente com necessidade real |
+
+**Decisão:** HubSpot não exige novo subsistema de persistência. A lacuna principal é adapter, configuração, projeção e operação.
+
+## 5. Lacuna de manutenibilidade das funções
+
+O runtime remoto contém helpers internos com nomes opacos, como:
+
+```text
+e14_apply_a
+e14_exec_c
+e14_write_c3
+e14_q1
+e14_q2
+```
+
+Nenhuma nova capacidade será implementada ampliando esse padrão.
+
+Depois de restaurar a fonte de verdade:
+
+1. manter RPCs públicos estáveis;
+2. criar helpers semânticos por contexto;
+3. migrar um caso de uso por vez;
+4. provar equivalência de estado, evento e outbox;
+5. remover aliases somente após análise de dependência.
+
+A refatoração não será misturada em um big bang com a implementação dos arquétipos.
+
+## 6. Sequência corrigida
+
+```text
+recuperar as 165 migrations M13 e os IDs exatos M14
+→ construir manifest com hashes
+→ executar replay em PostgreSQL limpo
+→ comparar schema e contratos públicos
+→ mapear ações das seis rotas
+→ concluir delta final
+→ definir a próxima migration funcional
+→ implementar arquétipos e conteúdo externo
+```
+
+A próxima migration não será chamada antecipadamente de M15. A numeração será decidida após reconciliação do histórico.
+
+## 7. Gaps que não exigem tabelas novas
+
+- formulário usa `diagnostic_*`, `items`, `item_options`, `sessions` e `responses`;
+- arquétipos estendem as três tabelas existentes;
+- HubSpot usa o schema `integration` existente;
+- eventos usam `event_schemas`, `events` e `outbox`;
+- AWS reutiliza as mesmas migrations PostgreSQL por adapters de infraestrutura.
+
+## 8. Próximas provas
+
+1. exportar statements M13/M14 do histórico remoto;
+2. criar manifest de versões, tamanhos e hashes;
+3. reconciliar carriers locais com timestamps remotos;
+4. executar replay limpo;
+5. comparar tabelas, colunas, constraints, índices, triggers, policies e funções;
+6. congelar contratos dos RPCs públicos;
+7. mapear as ações atuais de `apps/web` para o registro de interações;
+8. receber formulário, quatro arquétipos, conteúdo externo e inventário HubSpot oficiais;
+9. atualizar este documento para v0.3 e autorizar ou rejeitar a migration funcional.
+
+## 9. Status do gate E14-R1
+
+```text
+remote_schema_inventory_complete = true
+critical_constraints_reviewed = true
+critical_indexes_reviewed = true
+critical_triggers_reviewed = true
+critical_rls_reviewed = true
+remote_runtime_versions_missing_locally = 165
+m14_version_identifiers_match = false
+clean_replay_passed = false
+schema_equivalence_passed = false
 new_ddl_applied = false
-parallel_form_subsystem_created = false
-parallel_archetype_subsystem_created = false
-existing_integration_foundation_reused = planned
+parallel_subsystems_created = false
 schema_delta_final = false
-m15_authorized = false
+new_functional_migration_authorized = false
 ```
