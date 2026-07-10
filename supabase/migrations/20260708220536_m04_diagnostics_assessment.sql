@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220536
+-- Remote name: m04_diagnostics_assessment
+-- Remote SQL SHA-256: 44e80d92e19876d7bf97fd656c9fc870510a4e98a4805c2338b54fa4eae243fc
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M04 — diagnostics, personalization evidence, assessments and practical work
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

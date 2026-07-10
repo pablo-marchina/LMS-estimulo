@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220419
+-- Remote name: m01_identity_core
+-- Remote SQL SHA-256: e9676126a0a73fe1c12d776f80efccf08612989be1c7e27551229f093effe2c9
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M01 — identity, organizations, entrepreneurs, businesses and protected file metadata
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

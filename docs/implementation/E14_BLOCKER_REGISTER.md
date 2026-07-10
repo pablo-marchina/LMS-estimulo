@@ -1,7 +1,7 @@
 # E14 — registro de bloqueadores
 
-**Versão:** 0.3  
-**Data:** 2026-07-09  
+**Versão:** 0.4  
+**Data:** 2026-07-10  
 **Status:** Ativo
 
 ## Regras
@@ -17,7 +17,7 @@
 
 | ID | Severidade | Área | Descrição | Rastreamento | Bloqueia | Critério de encerramento |
 |---|---|---|---|---|---|---|
-| E14-B001 | P0 | Database/runtime | As 165 migrations M13 e as 2 migrations M14/M14b foram recuperadas com versões, bytes e hashes remotos exatos; replay limpo e equivalência ainda não foram comprovados | `RUNTIME_GAP_E14.md`, `M13_RUNTIME_MANIFEST.json` e `M14_RUNTIME_MANIFEST.json` | novas migrations funcionais | replay limpo, equivalência de schema e contratos públicos |
+| E14-B001 | P0 | Database/runtime | As 243 migrations M00–M14 foram recuperadas, validadas, reproduzidas do zero e comparadas estruturalmente com o Supabase de teste; contratos públicos e backend E2E ainda não foram comprovados | `RUNTIME_GAP_E14.md`, três manifests e `e14-clean-replay.yml` | novas migrations funcionais | contratos públicos, backend E2E, RLS negativo, idempotência e concorrência comprovados |
 | E14-B002 | P0 | Maintainability | helpers privados E14 possuem nomes opacos e aliases extensos | `RUNTIME_GAP_E14.md` | expansão do padrão | contratos públicos congelados e substituição incremental comprovada |
 | E14-B003 | P1 | Build/CI | não existe lockfile npm canônico | `README.md` e CI | instalação totalmente reproduzível | `package-lock.json`, `npm ci` e instalação limpa Windows/Linux |
 | E14-B004 | P1 | Browser E2E | fluxo real pelo navegador e acessibilidade não foram comprovados | plano E14 | conclusão da vertical | E2E com contas técnicas e auditoria de acessibilidade |
@@ -28,13 +28,14 @@
 
 ```text
 E14-B001
-  → Git contém o histórico remoto exato
-  → replay e equivalência continuam obrigatórios
+  → histórico remoto integral está no Git
+  → replay limpo e equivalência estrutural passaram
+  → contratos públicos e backend E2E continuam obrigatórios
   → somente depois libera o delta final de schema e novas migrations
 
 E14-B002
   → impede ampliação da dívida técnica
-  → é tratado incrementalmente depois de E14-B001
+  → é tratado incrementalmente depois de congelar os contratos públicos
 
 E14-B003
   → torna instalação e CI determinísticos
@@ -54,8 +55,11 @@ E14-B006
 p0_open = 2
 p1_open = 4
 remote_migration_source_materialized = true
-clean_replay_passed = false
-schema_equivalence_passed = false
+recovered_migration_count = 243
+clean_replay_passed = true
+schema_equivalence_passed = true
+public_rpc_contracts_passed = false
+backend_e2e_replayed = false
 new_functional_migration_authorized = false
 supabase_production_authorized = false
 aws_staging_gate_required = true

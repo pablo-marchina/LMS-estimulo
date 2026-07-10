@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220558
+-- Remote name: m05_engagement_intervention
+-- Remote SQL SHA-256: be397638ff58ce8fefeb4b20b67469d41e566d30a28f50f0b4356e5ce320cada
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M05 — gamification, credentials and interventions
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

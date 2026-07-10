@@ -12,17 +12,17 @@ AWS staging = gate obrigatório
 AWS produção = ambiente oficial futuro
 ```
 
-O bloqueio técnico prioritário é reconciliar no Git o histórico M13/M14 aplicado ao Supabase de teste e provar replay em PostgreSQL limpo.
+O histórico remoto M00–M14 está materializado no Git. O replay transacional das 243 migrations e a equivalência estrutural passaram; o bloqueio técnico prioritário agora é congelar os contratos públicos e reproduzir o backend E2E com checks negativos de RLS, idempotência e concorrência.
 
 ## Estrutura
 
 ```text
 apps/web/                         aplicação Next.js
 supabase/migrations/              histórico executável de migrations
-supabase/canonical-migrations/    migrations canônicas e manifests
+supabase/canonical-migrations/    SQL canônico, manifests e baseline estrutural
 supabase/functions/               adapters ativos apenas no Supabase de teste
 docs/                             documentação canônica atual
-scripts/e14/                      validação e recuperação do workstream atual
+scripts/e14/                      validação, replay e equivalência do workstream atual
 ```
 
 Artefatos de execução, outputs de testes, relatórios locais e exports de banco não são versionados. O histórico Git é o arquivo de versões substituídas.
@@ -49,12 +49,16 @@ A instalação ainda não é totalmente determinística porque o repositório n�
 
 ```bash
 npm run validate:repository
+npm run validate:e14-runtime-history
+npm run test:e14-clean-replay
 npm run validate:e14-step5
 npm run test:e14-step5
 npm run test:e14-runtime-recovery
 npm run typecheck:web
 npm run build:web
 ```
+
+`npm run test:e14-clean-replay` exige PostgreSQL 17.6 compatível com o ambiente Supabase e executa validação dos manifests, replay das 243 migrations e comparação estrutural.
 
 ## Documentação
 
