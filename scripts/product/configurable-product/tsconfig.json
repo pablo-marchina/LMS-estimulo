@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "types": ["node"],
     "rootDir": "../../..",
-    "outDir": "../../../.tmp/e14-configurable-product",
+    "outDir": "../../../.tmp/configurable-product",
     "noEmit": false,
     "declaration": false,
     "sourceMap": false
