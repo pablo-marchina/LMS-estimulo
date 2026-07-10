@@ -46,3 +46,60 @@ insert into orchestration.path_steps(
 ('3adecac4-6198-56f5-a243-d00f895d0786','829dabbd-aaec-5de0-a443-9d1de02b0334','activity',app_private.e14_deterministic_uuid('e14:activity-version:v1'),1,true,null,null,null,'{"presentation_mode":"guided","required_sections":["input","rule","output","human_validation"]}'::jsonb),
 ('83797c1d-8de4-5aa3-a749-5dafdd33a808','6e43a0d5-ccf7-5e16-a6e8-9e8d1e39cd1c','activity',app_private.e14_deterministic_uuid('e14:activity-version:v1'),1,true,null,null,null,'{"presentation_mode":"standard","required_sections":["input","rule","output","human_validation"]}'::jsonb)
 on conflict (path_template_id, code) do nothing;
+
+with event_names(event_name) as (
+  values
+    ('assessment.answer.recorded'),
+    ('assessment.attempt.failed'),
+    ('assessment.attempt.passed'),
+    ('assessment.attempt.scored'),
+    ('assessment.attempt.started'),
+    ('assessment.attempt.submitted'),
+    ('assessment.feedback.available'),
+    ('catalog.activity_version.published'),
+    ('catalog.assessment_version.published'),
+    ('catalog.diagnostic_version.published'),
+    ('catalog.journey_version.published'),
+    ('diagnostic.response.recorded'),
+    ('diagnostic.result.generated'),
+    ('diagnostic.session.completed'),
+    ('diagnostic.session.started'),
+    ('engagement.points.awarded'),
+    ('journey.enrollment.activated'),
+    ('journey.enrollment.created'),
+    ('journey.instance.available'),
+    ('journey.instance.completed'),
+    ('journey.instance.started'),
+    ('journey.path.assigned'),
+    ('journey.path.completed'),
+    ('journey.path.started'),
+    ('journey.step.available'),
+    ('learning.activity.completed'),
+    ('learning.activity.progressed'),
+    ('learning.activity.started'),
+    ('personalization.uncertainty.recorded')
+), documents as (
+  select
+    event_name,
+    jsonb_build_object(
+      'type','object',
+      'title',event_name,
+      '$schema','https://json-schema.org/draft/2020-12/schema',
+      'additionalProperties',true
+    ) as schema_document
+  from event_names
+)
+insert into eventing.event_schemas(
+  id,event_name,event_version,schema_uri,schema_document,schema_hash,status,published_at
+)
+select
+  app_private.e14_deterministic_uuid('e14:event-schema:' || event_name || ':1'),
+  event_name,
+  1,
+  'urn:estimulo:event:' || event_name || ':1',
+  schema_document,
+  app_private.e14_request_hash(schema_document),
+  'published',
+  '2026-07-09T05:10:56.317612Z'::timestamptz
+from documents
+on conflict do nothing;
