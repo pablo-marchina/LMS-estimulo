@@ -5,7 +5,10 @@ on:
     paths:
       - ".github/workflows/e14-clean-replay.yml"
       - "package.json"
+      - "apps/web/lib/e14/rpc.ts"
+      - "docs/implementation/e14-public-rpc-contracts-v1.json"
       - "scripts/e14/database-equivalence/**"
+      - "scripts/e14/public-contracts/**"
       - "scripts/e14/runtime-source-recovery/**"
       - "supabase/canonical-migrations/**"
       - "supabase/migrations/**"
@@ -19,7 +22,7 @@ concurrency:
 
 jobs:
   replay:
-    name: Replay and compare E14 schema
+    name: Replay and verify E14 database contracts
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -71,7 +74,7 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
 
-      - name: Replay exact migration history from zero
+      - name: Replay history and verify schema and RPC contracts
         id: replay
         shell: bash
         run: |
@@ -84,7 +87,7 @@ jobs:
             cat .artifacts/e14-clean-replay.log
             rm -f .artifacts/e14-clean-replay.log
           else
-            tail -n 160 .artifacts/e14-clean-replay.log >> "$GITHUB_STEP_SUMMARY"
+            tail -n 180 .artifacts/e14-clean-replay.log >> "$GITHUB_STEP_SUMMARY"
           fi
           exit 0
 
@@ -98,9 +101,9 @@ jobs:
           retention-days: 3
           compression-level: 9
 
-      - name: Fail when replay or equivalence fails
+      - name: Fail when replay, equivalence or public contracts fail
         if: steps.replay.outputs.exit_code != '0'
         shell: bash
         run: |
-          echo "Clean replay or schema equivalence failed. Inspect the uploaded diagnostic artifact."
+          echo "Clean replay, schema equivalence or public RPC contract validation failed. Inspect the uploaded diagnostic artifact."
           exit 1
