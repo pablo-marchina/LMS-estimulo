@@ -1,5 +1,12 @@
 export type LegacyE14RpcArguments = Record<string, unknown>;
 
+type CompleteDiagnosticInput = {
+  actorUserAccountId: string;
+  sessionId: string;
+  expectedAggregateVersion: number;
+  idempotencyKey: string;
+};
+
 type StartActivityInput = {
   actorUserAccountId: string;
   stepInstanceId: string;
@@ -54,6 +61,15 @@ type OperatorResultInput = {
  * receives a semantically named replacement without changing behavior.
  */
 export const legacyE14RpcArguments = {
+  completeDiagnostic(input: CompleteDiagnosticInput): LegacyE14RpcArguments {
+    return {
+      a: input.actorUserAccountId,
+      b: input.sessionId,
+      c: input.expectedAggregateVersion,
+      d: input.idempotencyKey
+    };
+  },
+
   startActivity(input: StartActivityInput): LegacyE14RpcArguments {
     return {
       a: input.actorUserAccountId,
