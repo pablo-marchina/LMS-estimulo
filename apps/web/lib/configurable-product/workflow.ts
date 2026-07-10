@@ -1,7 +1,8 @@
 import type {
   HubSpotSnapshot,
   HubSpotSnapshotQuery,
-  HubSpotWriteCommand
+  HubSpotWriteCommand,
+  JsonObject
 } from "../hubspot/contracts.js";
 import type { HubSpotDataGateway } from "../hubspot/gateway.js";
 import {
@@ -23,7 +24,7 @@ import {
 } from "./contracts.js";
 import { ConfigurableProductError } from "./validation.js";
 
-export type HubSpotRecordInput<T extends Record<string, unknown>> =
+export type HubSpotRecordInput<T extends JsonObject> =
   | {
       mode: "write";
       command: HubSpotWriteCommand<T>;
@@ -78,7 +79,7 @@ function activationWrite(
   };
 }
 
-async function resolveInput<T extends Record<string, unknown>>(
+async function resolveInput<T extends JsonObject>(
   context: HubSpotVerificationContext,
   input: HubSpotRecordInput<T>
 ): Promise<HubSpotSnapshot<T>> {
