@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
-import { acknowledgeActivityAction, submitQuickCheckAction } from "@/app/actions/e14";
+import { acknowledgeActivityAction, submitQuickCheckAction } from "@/app/actions/journey";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
-import { e14 } from "@/lib/e14/rpc";
+import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() ? value : null; }
 
@@ -12,7 +12,7 @@ export default async function ActivityPage({ params, searchParams }: { params: P
   if (!journey) notFound();
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const experience = await e14.getParticipantExperience(auth.identity.user_account_id, journey);
+  const experience = await journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey);
   if (experience.state.s?.step_instance_id !== stepInstanceId || !experience.activity) notFound();
 
   const accepted = experience.state.s.accepted_sections;

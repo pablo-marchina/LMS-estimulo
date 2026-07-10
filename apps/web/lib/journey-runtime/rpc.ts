@@ -8,8 +8,8 @@ import type {
   ParticipantExperience,
   ParticipantJourneys,
   RpcEnvelope
-} from "@/lib/e14/contracts";
-import { legacyE14RpcArguments } from "@/lib/e14/legacy-rpc-arguments";
+} from "@/lib/journey-runtime/contracts";
+import { legacyRpcArguments } from "@/lib/journey-runtime/legacy-rpc-arguments";
 
 export class JourneyRpcError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -21,11 +21,11 @@ export class JourneyRpcError extends Error {
 async function invoke<T>(name: string, args: Record<string, unknown>): Promise<T> {
   const client = createPrivilegedClient();
   const { data, error } = await client.rpc(name, args);
-  if (error) throw new JourneyRpcError(error.code ?? "E14_RPC_ERROR", error.message);
+  if (error) throw new JourneyRpcError(error.code ?? "JOURNEY_RPC_ERROR", error.message);
   return data as T;
 }
 
-export const e14 = {
+export const journeyRuntime = {
   resolveIdentity: (input: {
     provider: string;
     issuer: string;
@@ -107,7 +107,7 @@ export const e14 = {
 
   completeDiagnostic: (actor: string, sessionId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_complete_diagnostic",
-    legacyE14RpcArguments.completeDiagnostic({
+    legacyRpcArguments.completeDiagnostic({
       actorUserAccountId: actor,
       sessionId,
       expectedAggregateVersion: version,
@@ -117,7 +117,7 @@ export const e14 = {
 
   startActivity: (actor: string, stepId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_start_activity",
-    legacyE14RpcArguments.startActivity({
+    legacyRpcArguments.startActivity({
       actorUserAccountId: actor,
       stepInstanceId: stepId,
       expectedAggregateVersion: version,
@@ -127,7 +127,7 @@ export const e14 = {
 
   acknowledgeSection: (actor: string, sessionId: string, sectionCode: string, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_acknowledge_section",
-    legacyE14RpcArguments.acknowledgeSection({
+    legacyRpcArguments.acknowledgeSection({
       actorUserAccountId: actor,
       activitySessionId: sessionId,
       sectionCode,
@@ -138,7 +138,7 @@ export const e14 = {
 
   startQuickCheck: (actor: string, stepId: string, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_start_quick_check",
-    legacyE14RpcArguments.startQuickCheck({
+    legacyRpcArguments.startQuickCheck({
       actorUserAccountId: actor,
       stepInstanceId: stepId,
       idempotencyKey: key
@@ -147,7 +147,7 @@ export const e14 = {
 
   recordQuickCheckAnswer: (actor: string, attemptId: string, questionId: string, optionCode: string, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_record_quick_check_answer",
-    legacyE14RpcArguments.recordQuickCheckAnswer({
+    legacyRpcArguments.recordQuickCheckAnswer({
       actorUserAccountId: actor,
       attemptId,
       questionId,
@@ -158,7 +158,7 @@ export const e14 = {
 
   submitQuickCheck: (actor: string, attemptId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_submit_quick_check",
-    legacyE14RpcArguments.submitQuickCheck({
+    legacyRpcArguments.submitQuickCheck({
       actorUserAccountId: actor,
       attemptId,
       expectedAggregateVersion: version,
@@ -168,7 +168,7 @@ export const e14 = {
 
   getParticipantState: (actor: string, instanceId: string) => invoke<JourneyState>(
     "e14_get_participant_state",
-    legacyE14RpcArguments.getParticipantState({
+    legacyRpcArguments.getParticipantState({
       actorUserAccountId: actor,
       journeyInstanceId: instanceId
     })
@@ -176,7 +176,7 @@ export const e14 = {
 
   getOperatorResult: (actor: string, organizationId: string, instanceId: string) => invoke<Record<string, unknown>>(
     "e14_get_operator_result",
-    legacyE14RpcArguments.getOperatorResult({
+    legacyRpcArguments.getOperatorResult({
       actorUserAccountId: actor,
       organizationId,
       journeyInstanceId: instanceId

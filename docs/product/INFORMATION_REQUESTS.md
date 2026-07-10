@@ -86,7 +86,7 @@ Obter:
 - restrições para uso de dados comportamentais e score;
 - exigências de fornecedores de nuvem e localização dos dados.
 
-## IR-007 — decisões e evidências para liberar o gate E13
+## IR-007 — decisões e evidências para liberar o gate de segurança
 
 Obter e aprovar, sem compartilhar segredos no chat:
 

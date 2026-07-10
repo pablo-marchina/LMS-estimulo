@@ -137,7 +137,7 @@ backend_e2e_passed = true
 7. materializar a versão remota exata no Git;
 8. atualizar o baseline e repetir a seleção para a próxima cadeia.
 
-A contenção impede crescimento da dívida, mas o E14-B002 permanece aberto até a substituição física incremental do restante do legado.
+A contenção impede crescimento da dívida, mas o bloqueador `LEGACY-RPC-NAMING` permanece aberto até a substituição física incremental do restante do legado.
 
 ## Gates
 

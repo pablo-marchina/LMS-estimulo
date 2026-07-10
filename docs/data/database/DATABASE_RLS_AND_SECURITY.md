@@ -94,6 +94,6 @@ Registrar ações administrativas como:
 - acessar dado restrito;
 - aprovar modelo.
 
-## 8. Validação necessária no E12
+## 8. Validação necessária
 
 O helper `iam.current_user_account_id()` do DDL é um adapter neutro. Ele deverá ser substituído ou integrado ao mecanismo real de claims do provedor escolhido antes de qualquer migration produtiva.

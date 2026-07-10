@@ -1,4 +1,4 @@
-import type { JourneyState } from "@/lib/e14/contracts";
+import type { JourneyState } from "@/lib/journey-runtime/contracts";
 
 export function participantNextHref(state: JourneyState): string {
   const query = `?journey=${encodeURIComponent(state.journey_instance_id)}`;

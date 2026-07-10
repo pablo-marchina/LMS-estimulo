@@ -1,4 +1,4 @@
-# E14-R1c — contratos públicos de RPC
+# Contratos públicos de RPC
 
 **Versão:** 1.0  
 **Data:** 2026-07-10  
@@ -52,7 +52,7 @@ replayed
 data
 ```
 
-A camada TypeScript deve continuar propagando o código de erro PostgreSQL por `JourneyRpcError.code`. O fallback `E14_RPC_ERROR` só é usado quando o provedor não entrega um código.
+A camada TypeScript deve continuar propagando o código de erro PostgreSQL por `JourneyRpcError.code`. O fallback `JOURNEY_RPC_ERROR` só é usado quando o provedor não entrega um código.
 
 ## Erros já comprovados
 

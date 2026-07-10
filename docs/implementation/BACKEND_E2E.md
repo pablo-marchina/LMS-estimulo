@@ -1,4 +1,4 @@
-# E14-R1d — backend E2E reproduzível
+# Backend E2E reproduzível
 
 **Data:** 2026-07-10  
 **Estado:** concluído  

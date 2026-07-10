@@ -1,16 +1,16 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
-import { submitDiagnosisAction } from "@/app/actions/e14";
+import { submitDiagnosisAction } from "@/app/actions/journey";
 import { StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
-import { e14 } from "@/lib/e14/rpc";
+import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 export default async function DiagnosisPage({ searchParams }: { searchParams: Promise<{ journey?: string }> }) {
   const { journey } = await searchParams;
   if (!journey) return <StatusPanel title="Jornada não informada" tone="warning"><p>Volte para suas jornadas e selecione uma opção.</p></StatusPanel>;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const experience = await e14.getParticipantExperience(auth.identity.user_account_id, journey);
+  const experience = await journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey);
 
   if (experience.state.d?.status === "completed") {
     const step = experience.state.s?.step_instance_id;

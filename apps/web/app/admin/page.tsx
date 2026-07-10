@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
-import { createEnrollmentAction, publishVerticalAction } from "@/app/actions/e14";
+import { createEnrollmentAction, publishVerticalAction } from "@/app/actions/journey";
 import { AppShell } from "@/components/app-shell";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
-import { e14 } from "@/lib/e14/rpc";
-import { statusLabel } from "@/lib/e14/navigation";
+import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { statusLabel } from "@/lib/journey-runtime/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +16,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const organization = auth.identity.organizations.find((item) => item.organization_id === query.organization) ?? auth.identity.organizations[0];
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning"><p>Nenhuma organização ativa foi encontrada.</p></StatusPanel></AppShell>;
 
-  const listing = await e14.listOperatorInstances(auth.identity.user_account_id, organization.organization_id);
-  const workspaceResult = await Promise.allSettled([e14.getOperatorWorkspace(auth.identity.user_account_id, organization.organization_id)]);
+  const listing = await journeyRuntime.listOperatorInstances(auth.identity.user_account_id, organization.organization_id);
+  const workspaceResult = await Promise.allSettled([journeyRuntime.getOperatorWorkspace(auth.identity.user_account_id, organization.organization_id)]);
   const workspace = workspaceResult[0].status === "fulfilled" ? workspaceResult[0].value : null;
-  const result = query.instance ? await e14.getOperatorResult(auth.identity.user_account_id, organization.organization_id, query.instance) : null;
+  const result = query.instance ? await journeyRuntime.getOperatorResult(auth.identity.user_account_id, organization.organization_id, query.instance) : null;
 
   return <AppShell area="admin" email={auth.email}>
     <header className="page-heading"><p className="eyebrow">Operação</p><h1>Jornadas e evidências</h1><p>Publicação, matrícula e acompanhamento usam dados versionados e eventos reais.</p></header>

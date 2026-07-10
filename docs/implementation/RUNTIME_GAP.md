@@ -1,4 +1,4 @@
-# E14-R1 — fonte, contratos e comportamento do runtime
+# Fonte, contratos e comportamento do runtime
 
 **Versão:** 0.5  
 **Data:** 2026-07-10  

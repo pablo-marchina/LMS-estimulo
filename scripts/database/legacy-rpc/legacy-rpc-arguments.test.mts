@@ -1,10 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { legacyE14RpcArguments } from "../../../apps/web/lib/e14/legacy-rpc-arguments.js";
+import { legacyRpcArguments } from "../../../apps/web/lib/e14/legacy-rpc-arguments.js";
 
 test("maps all eight frozen public RPC argument aliases", () => {
   assert.deepEqual(
-    legacyE14RpcArguments.completeDiagnostic({
+    legacyRpcArguments.completeDiagnostic({
       actorUserAccountId: "actor",
       sessionId: "session",
       expectedAggregateVersion: 3,
@@ -14,7 +14,7 @@ test("maps all eight frozen public RPC argument aliases", () => {
   );
 
   assert.deepEqual(
-    legacyE14RpcArguments.startActivity({
+    legacyRpcArguments.startActivity({
       actorUserAccountId: "actor",
       stepInstanceId: "step",
       expectedAggregateVersion: 4,
@@ -24,7 +24,7 @@ test("maps all eight frozen public RPC argument aliases", () => {
   );
 
   assert.deepEqual(
-    legacyE14RpcArguments.acknowledgeSection({
+    legacyRpcArguments.acknowledgeSection({
       actorUserAccountId: "actor",
       activitySessionId: "activity-session",
       sectionCode: "input",
@@ -35,7 +35,7 @@ test("maps all eight frozen public RPC argument aliases", () => {
   );
 
   assert.deepEqual(
-    legacyE14RpcArguments.startQuickCheck({
+    legacyRpcArguments.startQuickCheck({
       actorUserAccountId: "actor",
       stepInstanceId: "step",
       idempotencyKey: "quick-start-key"
@@ -44,7 +44,7 @@ test("maps all eight frozen public RPC argument aliases", () => {
   );
 
   assert.deepEqual(
-    legacyE14RpcArguments.recordQuickCheckAnswer({
+    legacyRpcArguments.recordQuickCheckAnswer({
       actorUserAccountId: "actor",
       attemptId: "attempt",
       questionId: "question",
@@ -55,7 +55,7 @@ test("maps all eight frozen public RPC argument aliases", () => {
   );
 
   assert.deepEqual(
-    legacyE14RpcArguments.submitQuickCheck({
+    legacyRpcArguments.submitQuickCheck({
       actorUserAccountId: "actor",
       attemptId: "attempt",
       expectedAggregateVersion: 2,
@@ -65,7 +65,7 @@ test("maps all eight frozen public RPC argument aliases", () => {
   );
 
   assert.deepEqual(
-    legacyE14RpcArguments.getParticipantState({
+    legacyRpcArguments.getParticipantState({
       actorUserAccountId: "actor",
       journeyInstanceId: "journey"
     }),
@@ -73,7 +73,7 @@ test("maps all eight frozen public RPC argument aliases", () => {
   );
 
   assert.deepEqual(
-    legacyE14RpcArguments.getOperatorResult({
+    legacyRpcArguments.getOperatorResult({
       actorUserAccountId: "actor",
       organizationId: "organization",
       journeyInstanceId: "journey"

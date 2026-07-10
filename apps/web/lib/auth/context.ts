@@ -1,8 +1,8 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { createSessionClient } from "@/lib/supabase/server";
-import { e14, JourneyRpcError } from "@/lib/e14/rpc";
-import type { IdentityContext } from "@/lib/e14/contracts";
+import { journeyRuntime, JourneyRpcError } from "@/lib/journey-runtime/rpc";
+import type { IdentityContext } from "@/lib/journey-runtime/contracts";
 
 export type AuthContext =
   | { status: "anonymous" }
@@ -25,7 +25,7 @@ export async function getAuthContext(): Promise<AuthContext> {
     .digest("hex");
 
   try {
-    const identity = await e14.resolveIdentity({
+    const identity = await journeyRuntime.resolveIdentity({
       provider,
       issuer,
       subject: user.id,

@@ -34,7 +34,7 @@ if (opaqueRpcs.length !== 8) {
   fail(`Expected eight frozen opaque RPCs; found ${opaqueRpcs.length}.`);
 }
 
-if (!rpcSource.includes('from "@/lib/e14/legacy-rpc-arguments"')) {
+if (!rpcSource.includes('from "@/lib/journey-runtime/legacy-rpc-arguments"')) {
   fail("rpc.ts must import the legacy RPC argument compatibility boundary.");
 }
 
@@ -47,8 +47,8 @@ for (const rpcName of opaqueRpcs) {
   }
   methods.push(method);
 
-  if (!rpcSource.includes(`legacyE14RpcArguments.${method}(`)) {
-    fail(`${method} must construct ${rpcName} arguments through legacyE14RpcArguments.`);
+  if (!rpcSource.includes(`legacyRpcArguments.${method}(`)) {
+    fail(`${method} must construct ${rpcName} arguments through legacyRpcArguments.`);
   }
   if (!boundarySource.includes(`${method}(`)) {
     fail(`Compatibility boundary is missing mapper ${method}.`);

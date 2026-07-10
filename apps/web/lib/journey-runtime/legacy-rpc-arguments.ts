@@ -1,4 +1,4 @@
-export type LegacyE14RpcArguments = Record<string, unknown>;
+export type LegacyRpcArguments = Record<string, unknown>;
 
 type CompleteDiagnosticInput = {
   actorUserAccountId: string;
@@ -60,8 +60,8 @@ type OperatorResultInput = {
  * these aliases directly. Remove each mapper only after the corresponding RPC
  * receives a semantically named replacement without changing behavior.
  */
-export const legacyE14RpcArguments = {
-  completeDiagnostic(input: CompleteDiagnosticInput): LegacyE14RpcArguments {
+export const legacyRpcArguments = {
+  completeDiagnostic(input: CompleteDiagnosticInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.sessionId,
@@ -70,7 +70,7 @@ export const legacyE14RpcArguments = {
     };
   },
 
-  startActivity(input: StartActivityInput): LegacyE14RpcArguments {
+  startActivity(input: StartActivityInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.stepInstanceId,
@@ -79,7 +79,7 @@ export const legacyE14RpcArguments = {
     };
   },
 
-  acknowledgeSection(input: AcknowledgeSectionInput): LegacyE14RpcArguments {
+  acknowledgeSection(input: AcknowledgeSectionInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.activitySessionId,
@@ -89,7 +89,7 @@ export const legacyE14RpcArguments = {
     };
   },
 
-  startQuickCheck(input: StartQuickCheckInput): LegacyE14RpcArguments {
+  startQuickCheck(input: StartQuickCheckInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.stepInstanceId,
@@ -97,7 +97,7 @@ export const legacyE14RpcArguments = {
     };
   },
 
-  recordQuickCheckAnswer(input: RecordQuickCheckAnswerInput): LegacyE14RpcArguments {
+  recordQuickCheckAnswer(input: RecordQuickCheckAnswerInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.attemptId,
@@ -107,7 +107,7 @@ export const legacyE14RpcArguments = {
     };
   },
 
-  submitQuickCheck(input: SubmitQuickCheckInput): LegacyE14RpcArguments {
+  submitQuickCheck(input: SubmitQuickCheckInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.attemptId,
@@ -116,14 +116,14 @@ export const legacyE14RpcArguments = {
     };
   },
 
-  getParticipantState(input: ParticipantStateInput): LegacyE14RpcArguments {
+  getParticipantState(input: ParticipantStateInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.journeyInstanceId
     };
   },
 
-  getOperatorResult(input: OperatorResultInput): LegacyE14RpcArguments {
+  getOperatorResult(input: OperatorResultInput): LegacyRpcArguments {
     return {
       a: input.actorUserAccountId,
       b: input.organizationId,

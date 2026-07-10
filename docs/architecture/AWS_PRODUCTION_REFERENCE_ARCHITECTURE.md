@@ -127,7 +127,7 @@ CloudWatch Logs, Metrics, Alarms + X-Ray
 - rollout blue/green ou rolling com rollback automatizado;
 - acesso administrativo restrito e auditado.
 
-## 5. Decisões ainda do E12
+## 5. Decisões pendentes
 
 - RDS PostgreSQL tradicional versus Aurora PostgreSQL;
 - ECS/Fargate versus alternativa AWS equivalente;

@@ -1,4 +1,4 @@
-# ADR-002 — Rebaseline do E14 pelas premissas atuais
+# ADR-002 — Rebaseline pelas premissas atuais
 
 **Status:** Aceita  
 **Data:** 2026-07-09  

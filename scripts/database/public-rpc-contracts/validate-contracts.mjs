@@ -112,7 +112,7 @@ export function validateApplicationContract(manifest, source) {
     }
   });
 
-  assert.ok(source.includes('if (error) throw new JourneyRpcError(error.code ?? "E14_RPC_ERROR", error.message);'), 'database error code propagation changed');
+  assert.ok(source.includes('if (error) throw new JourneyRpcError(error.code ?? "JOURNEY_RPC_ERROR", error.message);'), 'database error code propagation changed');
   assert.deepEqual(
     sortedUnique([
       ...contract.command_methods,

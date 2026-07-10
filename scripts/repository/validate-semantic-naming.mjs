@@ -55,10 +55,10 @@ for (const absolute of walk(repositoryRoot)) {
   }
 }
 
-const forbiddenPlan = path.join(repositoryRoot, 'docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md');
+const forbiddenPlan = path.join(repositoryRoot, 'docs/implementation/action plan (not versioned)');
 try {
   statSync(forbiddenPlan);
-  violations.push('docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md: action plan must not be versioned');
+  violations.push('docs/implementation/action plan (not versioned): action plan must not be versioned');
 } catch {
   // Expected: the action plan is not part of the repository.
 }
