@@ -12,6 +12,20 @@ export const E14_M13_EXPECTED = Object.freeze({
     '6df68289eb6de6a47f84f6bb8dae0761c75f148132dd99341e739e8f4a62f144',
 });
 
+export const E14_M14_EXPECTED = Object.freeze({
+  firstVersion: '20260709183504',
+  lastVersion: '20260709184749',
+  migrationCount: 2,
+  totalRemoteSqlBytes: 12045,
+  combinedRemoteFingerprint:
+    '8b3cb9b361f2bbff69d784ef92767de14795f761c1159321e8b163ccde96fde0',
+});
+
+const EXPECTED_BY_FIRST_VERSION = new Map([
+  [E14_M13_EXPECTED.firstVersion, E14_M13_EXPECTED],
+  [E14_M14_EXPECTED.firstVersion, E14_M14_EXPECTED],
+]);
+
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -79,16 +93,28 @@ async function validateMigrationFiles(manifest, migrationsDirectory) {
   return { totalRemoteSqlBytes };
 }
 
+function resolveExpected(manifest, explicitExpected) {
+  if (explicitExpected) return explicitExpected;
+  const expected = EXPECTED_BY_FIRST_VERSION.get(manifest.first_version);
+  assert(expected, `no trusted inventory configured for ${manifest.first_version}`);
+  return expected;
+}
+
 export async function validateRecoveredHistory(
   { manifestFile, migrationsDirectory, canonicalFile },
-  expected = E14_M13_EXPECTED,
+  explicitExpected,
 ) {
   const manifest = JSON.parse(await readFile(manifestFile, 'utf8'));
+  const expected = resolveExpected(manifest, explicitExpected);
 
   assert(manifest.schema_version === '1.0', 'unexpected manifest schema version');
   assert(
     manifest.artifact === 'e14_runtime_migration_recovery_manifest',
     'unexpected manifest artifact type',
+  );
+  assert(
+    manifest.source === 'supabase_migrations.schema_migrations',
+    'unexpected manifest source',
   );
   assert(manifest.first_version === expected.firstVersion, `unexpected first version ${manifest.first_version}`);
   assert(manifest.last_version === expected.lastVersion, `unexpected last version ${manifest.last_version}`);
