@@ -1,6 +1,6 @@
 # E14 — registro de bloqueadores
 
-**Versão:** 0.7  
+**Versão:** 0.8  
 **Data:** 2026-07-10  
 **Status:** Ativo
 
@@ -20,11 +20,11 @@
 | E14-B004 | P1 | Browser E2E | fluxo pelo navegador e acessibilidade não foram comprovados | conclusão da vertical | E2E com contas técnicas e auditoria de acessibilidade |
 | E14-B005 | P1 | Product inputs | conteúdo externo e configuração inicial dos arquétipos ainda não foram aprovados | implementação final | entradas oficiais versionadas e aprovadas |
 | E14-B006 | P1 | Test adapters | storage/scan estão ativos no Supabase de teste sem consumidor atual | gate operacional | integrar com E2E ou remover integralmente função, scheduler e dependências |
-| E14-B007 | P0 | HubSpot authority | o HubSpot foi definido como autoridade de todos os dados coletados e utilizados, mas o sandbox, plano, objetos, propriedades, associações, scopes, webhooks e limites ainda não foram inventariados | modelo físico, novas migrations e implementação de formulário/arquétipos | inventário completo, modelo físico aprovado, adapter/readback definidos e matriz campo→HubSpot completa |
+| E14-B007 | P0 | HubSpot authority | a porta, o adapter de teste e o gate `write → readback → use` foram definidos, mas a conta, o modelo físico e o adapter real ainda não foram inventariados e comprovados | modelo físico, novas migrations e implementação final de formulário/arquétipos | inventário completo, modelo físico aprovado, adapter real testado e matriz campo→HubSpot completa |
 
-## Gate encerrado
+## Gates encerrados
 
-`E14-B001 — Database/runtime` foi encerrado:
+### E14-B001 — Database/runtime
 
 ```text
 remote_migration_source_materialized = true
@@ -38,13 +38,27 @@ idempotency_and_concurrency_passed = true
 events_and_outbox_passed = true
 ```
 
+### Subgate independente de E14-B007
+
+```text
+hubspot_gateway_contract_defined = true
+hubspot_test_adapter_implemented = true
+write_readback_use_gate_tested = true
+raw_request_payload_used_for_business_decision = false
+local_only_data_used_for_business_decision = false
+```
+
+Esse subgate reduz o trabalho bloqueado pelo acesso, mas não encerra E14-B007 porque ainda não prova a conta nem a API reais.
+
 ## Dependências
 
 ```text
 E14-B007
+  → porta e adapter de teste = concluídos
   → inventariar a conta HubSpot
   → escolher objetos, propriedades, associações e eventos
-  → definir write + readback e origem das leituras
+  → implementar adapter real com write + readback
+  → validar scopes, limites, webhooks e reconciliação
   → concluir o delta físico
   → somente então autorizar migrations técnicas
 
@@ -73,11 +87,15 @@ schema_equivalence_passed = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 hubspot_authoritative_source_decided = true
+hubspot_gateway_contract_defined = true
+hubspot_test_adapter_implemented = true
+write_readback_use_gate_tested = true
 hubspot_inventory_complete = false
 hubspot_physical_model_approved = false
+hubspot_real_adapter_implemented = false
 new_functional_migration_authorized = false
 supabase_production_authorized = false
 aws_staging_gate_required = true
 ```
 
-A próxima atividade bloqueante é o inventário do sandbox HubSpot. Até lá, nenhuma migration funcional de formulário, arquétipo ou regra de ativação será criada.
+Enquanto não houver acesso, o desenvolvimento pode avançar sobre a porta e o adapter de teste. Nenhuma propriedade, object type ID, associação ou migration dependente do modelo físico será inventada.
