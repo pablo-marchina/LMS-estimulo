@@ -97,6 +97,9 @@ jobs:
       - name: Test runtime recovery tooling
         run: npm run test:e14-runtime-recovery
 
+      - name: Test public RPC contract tooling
+        run: npm run test:e14-public-contracts
+
       - name: Validate recovered runtime history
         run: npm run validate:e14-runtime-history
 
