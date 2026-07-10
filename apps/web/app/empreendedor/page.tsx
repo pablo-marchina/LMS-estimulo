@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
-import { startJourneyAction } from "@/app/actions/e14";
+import { startJourneyAction } from "@/app/actions/journey";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
-import { e14 } from "@/lib/e14/rpc";
-import { participantNextHref, statusLabel } from "@/lib/e14/navigation";
+import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { participantNextHref, statusLabel } from "@/lib/journey-runtime/navigation";
 
 export default async function ParticipantHome() {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
   if (!auth.identity.entrepreneur_id) return <StatusPanel title="Perfil empreendedor não disponível" tone="warning"><p>A conta está autenticada, mas ainda não possui um perfil empreendedor ativo.</p></StatusPanel>;
 
-  const data = await e14.listParticipantJourneys(auth.identity.user_account_id);
+  const data = await journeyRuntime.listParticipantJourneys(auth.identity.user_account_id);
   return (
     <>
       <header className="page-heading"><p className="eyebrow">Seu desenvolvimento</p><h1>Jornadas disponíveis</h1><p>Continue do ponto certo. A plataforma usa o estado real de cada jornada, sem progresso calculado localmente.</p></header>

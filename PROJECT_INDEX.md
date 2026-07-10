@@ -1,22 +1,22 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 3.1  
+**Versão:** 4.0  
 **Data:** 2026-07-10  
-**Status:** E14 em execução; M15 aplicada e reconciliada; modelo físico HubSpot bloqueado pelo inventário da conta
+**Status:** fundação técnica reproduzível; modelo físico HubSpot pendente de inventário
 
-## 1. Hierarquia de referência
+## Hierarquia de referência
 
 Em caso de conflito:
 
-1. `Estimulo_all` e decisões explícitas posteriores da Estímulo;
-2. ADRs e decisões atuais aprovadas;
-3. estado real do repositório e ambientes autorizados;
+1. decisões explícitas posteriores da Estímulo;
+2. ADRs vigentes;
+3. estado real do repositório e dos ambientes autorizados;
 4. documentação técnica atual;
 5. histórico Git.
 
-Documentos e outputs substituídos não permanecem na árvore ativa. O Git preserva sua história.
+Documentos substituídos e planos operacionais não permanecem na árvore ativa. O Git preserva sua história.
 
-## 2. Recursos oficiais
+## Recursos oficiais
 
 - repositório: `pablo-marchina/LMS-estimulo`;
 - branch principal: `main`;
@@ -27,7 +27,7 @@ Documentos e outputs substituídos não permanecem na árvore ativa. O Git prese
 
 O Supabase não será promovido a produção. Toda release deve passar pelo AWS staging.
 
-## 3. Premissas atuais
+## Premissas atuais
 
 - desenvolvimento integralmente interno;
 - plataforma multi-jornada;
@@ -35,67 +35,47 @@ O Supabase não será promovido a produção. Toda release deve passar pelo AWS 
 - formulário configurável e versionado;
 - quatro arquétipos na configuração inicial, sem limite estrutural fixo;
 - adição, retirada, recálculo e override versionados e auditáveis;
-- captura governada de ações relevantes;
 - todo dado de negócio coletado é persistido no HubSpot;
 - toda função de negócio usa dados provenientes do HubSpot;
 - PostgreSQL é plano técnico de outbox, idempotência, cache HubSpot-sourced, auditoria e reconciliação;
-- conteúdo próprio e de terceiros por modelo unificado e adapters;
-- Supabase somente para desenvolvimento/teste;
-- AWS para staging e produção;
-- código, migrations, contratos, testes e documentação entregues juntos.
+- conteúdo próprio e de terceiros usa modelo unificado e adapters;
+- Supabase é somente desenvolvimento/teste;
+- AWS é o ambiente oficial de staging e produção.
 
 Detalhes: [PREMISES_AND_SCOPE.md](docs/product/PREMISES_AND_SCOPE.md) e [ADR-003](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md).
 
-## 4. Runtime atual
+## Runtime atual
 
 O repositório contém:
 
 - aplicação Next.js em `apps/web`;
 - seis rotas iniciais para participante e operação;
 - bridge de identidade e camada de RPCs no servidor;
-- 76 migrations M00–M12, 165 migrations M13, 2 migrations M14/M14b e 1 migration M15 recuperadas;
 - 244 migrations executáveis, manifests, fingerprints e SQL canônico;
 - gate de CI em PostgreSQL 17.6 com equivalência estrutural;
 - contrato congelado dos 18 RPCs públicos;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
-- porta `HubSpotDataGateway`, adapter em memória e gate `write → readback → use` testados sem acesso à conta real;
-- motor lógico configurável de formulário, arquétipos, classificação e ativações;
+- porta `HubSpotDataGateway`, adapter em memória e gate `write → readback → use`;
+- motor configurável de formulário, arquétipos, classificação e ativações;
 - `package-lock.json` v3 e instalações reproduzíveis em Ubuntu e Windows;
-- baseline de 106 helpers privados e 8 RPCs públicos opacos, com expansão bloqueada e aliases da aplicação isolados;
+- baseline de 106 helpers privados e 8 RPCs públicos opacos, com expansão bloqueada;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
-O runtime atual comprova a fundação técnica, mas ainda usa estruturas PostgreSQL que não satisfazem a autoridade HubSpot recém-definida. Essas estruturas serão réplica técnica, cache ou serão descontinuadas após a transição.
+Os identificadores remotos `e14_*` permanecem apenas como compatibilidade com o banco já aplicado. Novos arquivos, scripts, workflows, classes e documentos usam nomes semânticos.
 
-## 5. Bloqueadores ativos
+## Bloqueadores ativos
 
-Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
-
-Permanecem dois P0:
-
-1. substituir e remover incrementalmente as 114 funções com argumentos opacos ainda inventariadas, sem ampliar o legado;
-2. inventariar a conta HubSpot, aprovar o modelo físico e provar o adapter real.
+Fonte única: [DELIVERY_BLOCKERS.md](docs/implementation/DELIVERY_BLOCKERS.md).
 
 ```text
-clean_replay_passed = true
-schema_equivalence_passed = true
-public_rpc_contracts_passed = true
-backend_e2e_replayed = true
-reproducible_install_passed = true
-opaque_helper_containment_passed = true
-first_semantic_helper_applied_to_remote = true
-first_semantic_helper_materialized_in_git = true
-opaque_helper_physical_replacement_complete = false
-hubspot_authoritative_source_decided = true
-hubspot_gateway_contract_defined = true
-hubspot_test_adapter_implemented = true
-write_readback_use_gate_tested = true
-hubspot_inventory_complete = false
-hubspot_physical_model_approved = false
-hubspot_real_adapter_implemented = false
-new_functional_migration_authorized = false
+LEGACY-RPC-NAMING = open
+HUBSPOT-PHYSICAL-INTEGRATION = open
+BROWSER-ACCESSIBILITY = open
+PRODUCT-CONFIGURATION = open
+UNUSED-TEST-ADAPTERS = open
 ```
 
-## 6. Documentação canônica
+## Documentação canônica
 
 ### Produto
 
@@ -150,7 +130,7 @@ new_functional_migration_authorized = false
 - [Linhagem](docs/dataflows/DATA_LINEAGE_MATRIX.md)
 - [Falhas e reconciliação](docs/dataflows/FAILURE_RECOVERY_RECONCILIATION.md)
 
-### Banco e modelos quantitativos
+### Banco e arquitetura
 
 - [Modelo do banco](docs/data/database/DATABASE_MODEL.md)
 - [ERD](docs/data/database/DATABASE_ERD.md)
@@ -159,42 +139,30 @@ new_functional_migration_authorized = false
 - [Índices e particionamento](docs/data/database/DATABASE_INDEXING_PARTITIONING.md)
 - [RLS](docs/data/database/DATABASE_RLS_AND_SECURITY.md)
 - [Estratégia de migrations](docs/data/database/DATABASE_MIGRATION_STRATEGY.md)
-- [Ledger de gamificação](docs/data/database/GAMIFICATION_LEDGER_MODEL.md)
-- [Features comportamentais](docs/data/database/BEHAVIORAL_FEATURE_MODEL.md)
-- [Score experimental e guardrails](docs/data/database/EXPERIMENTAL_SCORE_MODEL.md)
-- [Migrations M00–M12](docs/architecture/E12_EXECUTABLE_MIGRATIONS.md)
-- [Manifest M00–M12 recuperado](supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json)
-- [Manifest M13 recuperado](supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json)
-- [Manifest M14 recuperado](supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json)
-- [Manifest M15 recuperado](supabase/canonical-migrations/M15_RUNTIME_MANIFEST.json)
+- [Migrations executáveis](docs/architecture/EXECUTABLE_MIGRATIONS.md)
+- [Bridge de identidade](docs/architecture/IDENTITY_BRIDGE.md)
+- [Implementação de RLS](docs/architecture/RLS_IMPLEMENTATION.md)
+- [Transactional outbox](docs/architecture/TRANSACTIONAL_OUTBOX.md)
+- [Arquitetura de storage](docs/architecture/STORAGE_ARCHITECTURE.md)
+- [Arquitetura de filas](docs/architecture/QUEUE_ARCHITECTURE.md)
+- [Scheduler e dispatcher](docs/architecture/SCHEDULER_DISPATCHER_ARCHITECTURE.md)
+- [Reconciliação e recuperação](docs/architecture/RECONCILIATION_AND_RECOVERY.md)
+- [Observabilidade e alertas](docs/architecture/OBSERVABILITY_AND_ALERTS.md)
 
-### Fundação técnica do ambiente de teste
+### Implementação atual
 
-- [Bridge de identidade](docs/architecture/E12_IDENTITY_BRIDGE.md)
-- [Implementação de RLS](docs/architecture/E12_RLS_IMPLEMENTATION.md)
-- [Transactional outbox](docs/architecture/E12_TRANSACTIONAL_OUTBOX.md)
-- [Arquitetura de storage](docs/architecture/E12_STORAGE_ARCHITECTURE.md)
-- [Arquitetura de filas](docs/architecture/E12_QUEUE_ARCHITECTURE.md)
-- [Scheduler e dispatcher](docs/architecture/E12_SCHEDULER_DISPATCHER_ARCHITECTURE.md)
-- [Reconciliação e recuperação](docs/architecture/E12_RECONCILIATION_AND_RECOVERY.md)
-- [Observabilidade e alertas](docs/architecture/E12_OBSERVABILITY_AND_ALERTS.md)
-
-Esses componentes são adapters e provas do Supabase de teste, não arquitetura produtiva AWS.
-
-### E14
-
-- [Rebaseline anterior](docs/decisions/ADR-002-E14-REBASELINE-NEW-PREMISES.md)
+- [Rebaseline de premissas](docs/decisions/ADR-002-REBASELINE-NEW-PREMISES.md)
 - [HubSpot como fonte autoritativa](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
 - [Decisões](docs/decisions/DECISION_LOG.md)
-- [Plano](docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md)
-- [Rastreabilidade](docs/implementation/E14_PREMISE_TRACEABILITY_MATRIX.md)
-- [Bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
-- [Delta de schema](docs/implementation/SCHEMA_DELTA_E14.md)
-- [Runtime](docs/implementation/RUNTIME_GAP_E14.md)
-- [Contratos públicos de RPC](docs/implementation/E14_PUBLIC_RPC_CONTRACTS.md)
-- [Backend E2E](docs/implementation/E14_BACKEND_E2E.md)
-- [Motor configurável](docs/implementation/E14_CONFIGURABLE_PRODUCT_ENGINE.md)
-- [Contenção de helpers opacos](docs/implementation/E14_OPAQUE_HELPER_CONTAINMENT.md)
+- [Rastreabilidade de premissas](docs/implementation/PREMISE_TRACEABILITY_MATRIX.md)
+- [Bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md)
+- [Delta de schema](docs/implementation/SCHEMA_DELTA.md)
+- [Lacunas do runtime](docs/implementation/RUNTIME_GAP.md)
+- [Contratos públicos de RPC](docs/implementation/PUBLIC_RPC_CONTRACTS.md)
+- [Backend E2E](docs/implementation/BACKEND_E2E.md)
+- [Motor configurável](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
+- [Contenção de helpers opacos](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
+- [Fundação da aplicação](docs/implementation/APPLICATION_FOUNDATION.md)
 
 ### Integrações e ambientes
 
@@ -206,14 +174,14 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
 - [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Arquitetura AWS](docs/architecture/AWS_PRODUCTION_REFERENCE_ARCHITECTURE.md)
-- [Mapeamento storage → AWS](docs/architecture/E12_STORAGE_AWS_MAPPING.md)
-- [Mapeamento filas → SQS](docs/architecture/E12_QUEUE_AWS_SQS_MAPPING.md)
-- [Mapeamento operacional → AWS](docs/architecture/E12_AWS_OPERATIONS_MAPPING.md)
+- [Mapeamento storage → AWS](docs/architecture/STORAGE_AWS_MAPPING.md)
+- [Mapeamento filas → SQS](docs/architecture/QUEUE_AWS_SQS_MAPPING.md)
+- [Mapeamento operacional → AWS](docs/architecture/AWS_OPERATIONS_MAPPING.md)
 - [ADR Supabase teste / AWS produção](docs/decisions/ADR-001-SUPABASE-TEST-AWS-PRODUCTION.md)
 
 ### Segurança e operação
 
-- [Arquitetura de segurança e privacidade](docs/security/E13_SECURITY_PRIVACY_ARCHITECTURE.md)
+- [Arquitetura de segurança e privacidade](docs/security/SECURITY_PRIVACY_ARCHITECTURE.md)
 - [Classificação](docs/security/DATA_CLASSIFICATION_AND_HANDLING.md)
 - [Registro de tratamentos](docs/security/RECORD_OF_PROCESSING_ACTIVITIES.md)
 - [Bases legais e consentimento](docs/security/LEGAL_BASIS_AND_CONSENT_GOVERNANCE.md)
@@ -228,6 +196,6 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 - [Risk register](docs/decisions/RISK_REGISTER.md)
 - [Matriz de acessos](docs/operations/ACCESS_MATRIX.md)
 
-## 7. Sequência obrigatória
+## Regra de nomenclatura
 
-A sequência vigente está no [plano E14](docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md) e no [registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md). Nenhuma migration dependente do modelo físico HubSpot pode ser criada antes do inventário e da aprovação desse modelo.
+O repositório não versiona planos operacionais nem usa fases de entrega como identidade de arquivos, scripts, workflows, classes ou documentos. Identificadores remotos históricos permanecem somente onde são necessários para reproduzir e migrar contratos já aplicados.

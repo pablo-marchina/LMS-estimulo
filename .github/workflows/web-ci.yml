@@ -1,0 +1,87 @@
+name: Web CI
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/web-ci.yml"
+      - ".npmrc"
+      - "apps/web/**"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/repository/validate-package-lock.mjs"
+      - "scripts/repository/validate-semantic-naming.mjs"
+      - "scripts/application/validate-foundation*"
+      - "scripts/integrations/hubspot-contracts/**"
+      - "scripts/product/configurable-product/**"
+      - "scripts/database/legacy-rpc/**"
+      - "docs/implementation/opaque-helper-baseline-v1.json"
+      - "docs/implementation/public-rpc-contracts-v1.json"
+      - "supabase/migrations/*_m14*_step5_*.sql"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate web application
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install pinned npm
+        run: npm install --global npm@10.9.2 --no-audit --no-fund
+
+      - name: Validate dependency lock
+        run: npm run validate:dependency-lock
+
+      - name: Validate semantic naming
+        run: npm run validate:semantic-naming
+
+      - name: Install dependencies from lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Confirm lockfile remains unchanged
+        run: git diff --exit-code -- package-lock.json
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Validate application foundation
+        run: npm run validate:application-foundation
+
+      - name: Run application foundation tests
+        run: npm run test:application-foundation
+
+      - name: Test HubSpot authoritative data contracts
+        run: npm run test:hubspot-contracts
+
+      - name: Test configurable product behavior
+        run: npm run test:configurable-product
+
+      - name: Test legacy RPC containment
+        run: npm run test:legacy-rpc-containment
+
+      - name: Validate legacy RPC containment
+        run: npm run validate:legacy-rpc-containment
+
+      - name: Typecheck web application
+        run: npm run typecheck:web
+
+      - name: Build web application
+        run: npm run build:web
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key

@@ -1,0 +1,17 @@
+{
+  "extends": "../../../apps/web/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "outDir": "../../../.tmp/legacy-rpc",
+    "rootDir": "../../..",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": false,
+    "types": ["node"],
+    "paths": {}
+  },
+  "include": [
+    "../../../apps/web/lib/journey-runtime/legacy-rpc-arguments.ts",
+    "./legacy-rpc-arguments.test.mts"
+  ]
+}

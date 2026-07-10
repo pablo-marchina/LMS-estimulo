@@ -112,7 +112,7 @@ A identidade externa é mapeada por:
 
 O `sub` do Cognito e o subject do Supabase nunca serão a chave primária principal da plataforma.
 
-## Critérios de aceite do E12
+## Critérios de aceite
 
 - mesmos casos de uso executam com adapters Supabase e AWS;
 - contratos de domínio não mudam entre ambientes;

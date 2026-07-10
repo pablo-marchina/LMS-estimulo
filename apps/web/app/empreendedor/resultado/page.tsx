@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
-import { e14 } from "@/lib/e14/rpc";
-import { statusLabel } from "@/lib/e14/navigation";
+import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { statusLabel } from "@/lib/journey-runtime/navigation";
 
 export default async function ResultPage({ searchParams }: { searchParams: Promise<{ journey?: string }> }) {
   const { journey } = await searchParams;
   if (!journey) return <StatusPanel title="Jornada não informada" tone="warning"><p>Selecione uma jornada para consultar o resultado.</p></StatusPanel>;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const state = await e14.getParticipantState(auth.identity.user_account_id, journey);
+  const state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journey);
 
   return (
     <>

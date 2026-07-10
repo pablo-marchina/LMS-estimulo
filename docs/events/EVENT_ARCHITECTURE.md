@@ -143,7 +143,7 @@ Eventos elegíveis como evidência bruta incluem início, retomada, conclusão v
 
 Eventos derivados incluem pontos, selos, certificado, score e marco. Eles preservam auditabilidade, mas não devem substituir seus eventos de origem como inputs de features.
 
-## 9. Resultado do E08
+## 9. Resultado da modelagem de eventos
 
 O E08 define contrato, taxonomia e governança. O E09 desenhará o caminho ponta a ponta de cada família, incluindo tabelas, filas lógicas, retries, DLQ, HubSpot e estados intermediários.
 

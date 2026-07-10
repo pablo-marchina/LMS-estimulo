@@ -149,7 +149,7 @@ Isso permite provar quais snapshots HubSpot originaram o resultado.
 Comando:
 
 ```bash
-npm run test:e14-hubspot-contracts
+npm run test:hubspot-contracts
 ```
 
 Casos cobertos:
