@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_remote_schema_baseline",
+  "source": "Supabase development/test project cfpfeavjlgheqqiaqtzv",
+  "observed_at": "2026-07-10",
+  "database_transaction_mode": "read_only",
+  "scope": {
+    "application_schemas": [
+      "app_private",
+      "assessment",
+      "catalog",
+      "core",
+      "diagnostics",
+      "engagement",
+      "eventing",
+      "governance",
+      "iam",
+      "integration",
+      "intelligence",
+      "intervention",
+      "orchestration",
+      "reporting"
+    ],
+    "public_routines": "e14_*",
+    "provider_owned_objects_excluded": true
+  },
+  "inventory": {
+    "schema_version": "1.0",
+    "postgres_major": 17,
+    "categories": {
+      "types": {
+        "count": 0,
+        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      },
+      "columns": {
+        "count": 1635,
+        "sha256": "54dfd1e2c206d32492a20ced198dff67b450a30461490376c8c9138c1c489a57"
+      },
+      "indexes": {
+        "count": 516,
+        "sha256": "14fcc45b7c37a813b7ddf2d611a0dc0a5dc6fe2bf5acf6810627fd2d2360cc4b"
+      },
+      "schemas": {
+        "count": 14,
+        "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344"
+      },
+      "policies": {
+        "count": 624,
+        "sha256": "3708bcfb97c407ae74574b3cf8167771f132849b3d6d4a6a06d103de3be29409"
+      },
+      "routines": {
+        "count": 212,
+        "sha256": "58af8903de44edb3d9b4f344a94c4f99d1cea1c4c2838e6472ee55a9f0a0f55a"
+      },
+      "triggers": {
+        "count": 77,
+        "sha256": "5f829375309dd270f7f7685020469c3d41caa2f2d4395901298607ed10f33089"
+      },
+      "relations": {
+        "count": 163,
+        "sha256": "6d4119be5ff5e2b3d140036f30d8ae7901c29e56e5d0eb0ebf877360abf703a0"
+      },
+      "constraints": {
+        "count": 742,
+        "sha256": "4d57e36c7af70de8c231f9d881e6900bf814fb77adc101953c2ab89b4015f542"
+      }
+    }
+  }
+}
