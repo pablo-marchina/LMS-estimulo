@@ -1,22 +1,24 @@
 # Contratos públicos de RPC
 
-**Versão:** 1.0  
+**Versão:** 2.0  
 **Data:** 2026-07-10  
-**Status:** fronteira estrutural congelada; replay comportamental pendente
+**Status:** fronteira estrutural e comportamento reproduzidos
 
 ## Escopo
 
-A camada pública E14 contém 18 RPCs consumidos exclusivamente pelo backend da aplicação em `apps/web/lib/journey-runtime/rpc.ts`:
+A camada pública legada contém 18 RPCs consumidos exclusivamente pelo backend em `apps/web/lib/journey-runtime/rpc.ts`:
 
 - 11 comandos transacionais;
 - 6 consultas;
 - 1 operação de resolução de identidade.
 
-O navegador não chama o banco diretamente. O caminho obrigatório permanece:
+O navegador não chama o banco diretamente:
 
 ```text
-browser -> Next.js server action/BFF -> client privilegiado do servidor -> RPC E14 -> PostgreSQL
+browser → Next.js server action/BFF → client privilegiado → RPC PostgreSQL
 ```
+
+Os nomes remotos `e14_*` permanecem por compatibilidade com o banco aplicado. Eles não definem a nomenclatura dos módulos da aplicação.
 
 ## Contrato congelado
 
@@ -24,13 +26,13 @@ O artefato `public-rpc-contracts-v1.json` fixa:
 
 - nomes e assinaturas PostgreSQL;
 - quantidade de RPCs;
-- tipos de argumentos e retorno por meio do fingerprint do catálogo;
+- argumentos e retorno por fingerprint do catálogo;
 - linguagem, volatilidade e corpo SQL;
 - `SECURITY DEFINER`;
 - `search_path=pg_catalog`;
-- grants exclusivamente para `postgres`, `service_role` e `app_worker`;
+- grants para `postgres`, `service_role` e `app_worker`;
 - bloqueio de `PUBLIC`, `anon` e `authenticated`;
-- correspondência entre os 18 métodos TypeScript e os 18 RPCs;
+- correspondência entre métodos TypeScript e RPCs;
 - classificação entre comandos, consultas e identidade.
 
 Fingerprint autorizado:
@@ -39,11 +41,9 @@ Fingerprint autorizado:
 b751369fb873eb50a423ed7d74614a6c75e4480058e79e6a63006ec10920336f
 ```
 
-Qualquer mudança de assinatura, corpo, grant, configuração ou mapeamento da aplicação exige revisão explícita do contrato. Alterar apenas o baseline para fazer o CI passar é proibido.
+Alterar apenas o baseline para fazer o CI passar é proibido.
 
 ## Envelope de comandos
-
-Os 11 comandos retornam o envelope:
 
 ```text
 request_id
@@ -52,22 +52,18 @@ replayed
 data
 ```
 
-A camada TypeScript deve continuar propagando o código de erro PostgreSQL por `JourneyRpcError.code`. O fallback `JOURNEY_RPC_ERROR` só é usado quando o provedor não entrega um código.
+A camada TypeScript propaga o código PostgreSQL por `JourneyRpcError.code`. O fallback `JOURNEY_RPC_ERROR` é usado apenas quando o provedor não entrega código.
 
-## Erros já comprovados
-
-As provas de runtime anteriores registraram:
+## Erros comprovados
 
 - `PUBLISHED_VERSION_IMMUTABLE`;
 - `AGGREGATE_VERSION_CONFLICT`;
 - `IDEMPOTENCY_KEY_REUSED`;
 - `FORBIDDEN`.
 
-Esses códigos fazem parte da fronteira observada. A cobertura completa de erros, efeitos, eventos, outbox e respostas continua pertencendo ao backend E2E.
+## Compatibilidade técnica
 
-## Dívida técnica preservada
-
-Oito RPCs ainda expõem argumentos opacos como `a`, `b`, `c`, `d` e `e`:
+Oito RPCs ainda expõem argumentos opacos:
 
 - `e14_acknowledge_section`;
 - `e14_complete_diagnostic`;
@@ -78,19 +74,16 @@ Oito RPCs ainda expõem argumentos opacos como `a`, `b`, `c`, `d` e `e`:
 - `e14_start_quick_check`;
 - `e14_submit_quick_check`.
 
-A E14-R1c congela essa realidade para impedir divergência silenciosa. Ela não autoriza ampliar o padrão. A substituição futura deve manter o contrato público antigo durante uma migração compatível e comprovada.
+Essa realidade permanece congelada para impedir divergência silenciosa. A aplicação constrói os aliases exclusivamente pela fronteira `legacyRpcArguments`. Substituições futuras devem manter compatibilidade até que todos os consumidores tenham migrado.
 
 ## Validação
 
-O comando executado depois do replay limpo é:
-
 ```bash
 npm run validate:public-rpc-contracts
+npm run test:backend-e2e
 ```
 
-O gate compara o banco reconstruído com o fingerprint autorizado e valida o mapa real da aplicação. Os testes unitários do validador também rodam em `Repository governance`.
-
-## Critério de saída
+## Estado comprovado
 
 ```text
 public_rpc_count = 18
@@ -99,7 +92,5 @@ public_rpc_grants_match = true
 public_rpc_security_boundary_matches = true
 application_rpc_mapping_matches = true
 public_rpc_contracts_passed = true
-backend_e2e_replayed = false
+backend_e2e_replayed = true
 ```
-
-O próximo passo é reproduzir o backend E2E em banco limpo, cobrindo respostas, erros, RLS negativa, idempotência, concorrência, eventos e outbox.
