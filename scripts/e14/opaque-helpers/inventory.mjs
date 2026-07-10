@@ -28,6 +28,10 @@ function parseArgument(argument) {
   return { name, type };
 }
 
+function parseDropArgument(argument) {
+  return { name: "", type: normalizeWhitespace(argument) };
+}
+
 function functionKey(schema, name, arguments_) {
   return `${schema}.${name}(${arguments_.map((argument) => argument.type).join(",")})`;
 }
@@ -37,15 +41,18 @@ function escapeRegExp(value) {
 }
 
 export function parseE14Functions(sql, sourcePath) {
-  const functions = [];
-  const pattern = /create\s+or\s+replace\s+function\s+(app_private|public)\.(e14_[a-z0-9_]+)\s*\(([\s\S]*?)\)\s*returns\b[\s\S]*?\bas\s+\$\$([\s\S]*?)\$\$\s*;/gi;
+  const operations = [];
+  const createPattern = /create\s+or\s+replace\s+function\s+(app_private|public)\.(e14_[a-z0-9_]+)\s*\(([\s\S]*?)\)\s*returns\b[\s\S]*?\bas\s+\$\$([\s\S]*?)\$\$\s*;/gi;
+  const dropPattern = /drop\s+function\s+(?:if\s+exists\s+)?(app_private|public)\.(e14_[a-z0-9_]+)\s*\(([^;()]*)\)\s*;/gi;
   let match;
 
-  while ((match = pattern.exec(sql)) !== null) {
+  while ((match = createPattern.exec(sql)) !== null) {
     const schema = match[1].toLowerCase();
     const name = match[2].toLowerCase();
     const arguments_ = splitArguments(match[3]).map(parseArgument);
-    functions.push({
+    operations.push({
+      operation: "create",
+      position: match.index,
       schema,
       name,
       arguments: arguments_,
@@ -55,12 +62,30 @@ export function parseE14Functions(sql, sourcePath) {
     });
   }
 
-  return functions;
+  while ((match = dropPattern.exec(sql)) !== null) {
+    const schema = match[1].toLowerCase();
+    const name = match[2].toLowerCase();
+    const arguments_ = splitArguments(match[3]).map(parseDropArgument);
+    operations.push({
+      operation: "drop",
+      position: match.index,
+      schema,
+      name,
+      arguments: arguments_,
+      sourcePath,
+      key: functionKey(schema, name, arguments_)
+    });
+  }
+
+  return operations.sort((left, right) => left.position - right.position);
 }
 
-export function buildOpaqueInventory(functions) {
+export function buildOpaqueInventory(operations) {
   const finalDefinitions = new Map();
-  for (const function_ of functions) finalDefinitions.set(function_.key, function_);
+  for (const operation of operations) {
+    if (operation.operation === "drop") finalDefinitions.delete(operation.key);
+    else finalDefinitions.set(operation.key, operation);
+  }
   const finalFunctions = [...finalDefinitions.values()].sort((left, right) =>
     left.key.localeCompare(right.key)
   );
@@ -109,12 +134,12 @@ export function inventoryRepository() {
   const files = readdirSync(migrationsDir)
     .filter((filename) => filename.endsWith(".sql"))
     .sort();
-  const functions = files.flatMap((filename) => {
+  const operations = files.flatMap((filename) => {
     const absolutePath = resolve(migrationsDir, filename);
     const sourcePath = relative(repositoryRoot, absolutePath).replaceAll("\\", "/");
     return parseE14Functions(readFileSync(absolutePath, "utf8"), sourcePath);
   });
-  return buildOpaqueInventory(functions);
+  return buildOpaqueInventory(operations);
 }
 
 function stableJson(value) {
