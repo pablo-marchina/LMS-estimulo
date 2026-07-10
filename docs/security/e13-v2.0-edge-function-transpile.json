@@ -1,7 +1,0 @@
-{
-  "tool": "esbuild 0.28.1",
-  "file_storage_ok": true,
-  "file_scan_worker_ok": true,
-  "storage_log": "\n  ../../../tmp/file-storage-v20.js  10.0kb\n\n\u26a1 Done in 12ms\n",
-  "worker_log": "\n  ../../../tmp/file-worker-v20.js  12.3kb\n\n\u26a1 Done in 13ms\n"
-}

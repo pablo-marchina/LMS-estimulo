@@ -12,10 +12,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  naming:
-    name: Validate naming conventions
+  governance:
+    name: Validate repository governance
     runs-on: ubuntu-latest
     timeout-minutes: 5
+
     steps:
       - name: Validate branch name
         env:
@@ -84,3 +85,24 @@ jobs:
           if [[ "$invalid" -ne 0 ]]; then
             exit 1
           fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate repository hygiene
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .artifacts
+          node scripts/repository/validate-hygiene.mjs | tee .artifacts/repository-hygiene.json
+
+      - name: Publish repository hygiene report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: repository-hygiene-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/repository-hygiene.json
+          if-no-files-found: error
+          retention-days: 3

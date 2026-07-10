@@ -1,27 +1,49 @@
 # E14 runtime source recovery
 
-This workflow restores the migration SQL already applied to the Supabase development/test project into the official Git repository. It does not apply DDL, modify remote migration history, or promote Supabase to production.
+Ferramentas para recuperar no Git o histórico de migrations já aplicado ao Supabase de desenvolvimento/teste. Elas não aplicam DDL, não modificam o histórico remoto e não promovem Supabase a produção.
 
-## Safety model
+## Ambiente autorizado
 
-- export is performed inside a read-only transaction;
-- credentials are supplied only through environment variables;
-- raw exports use the `.local.jsonl` suffix and must not be committed;
-- every migration is checked by byte length and SHA-256;
-- generated files are never overwritten when content differs;
-- migration versions and names come from the remote history without renaming;
-- replay and schema equivalence are separate required gates.
+```text
+project_ref = cfpfeavjlgheqqiaqtzv
+environment = development_test_only
+production = AWS
+```
 
-## Prerequisites
+## Segurança
 
-- PostgreSQL `psql` client compatible with PostgreSQL 17;
-- Node.js 22 or newer;
-- a database connection with read access to `supabase_migrations.schema_migrations`;
-- the connection must point only to the authorized Supabase development/test project.
+- exportação em transação read-only;
+- credencial dedicada somente leitura;
+- segredo somente em variável de ambiente ou GitHub Actions secret;
+- exports brutos com sufixo `.local.jsonl`;
+- exports brutos removidos antes do upload do artifact;
+- SHA-256 por migration e para o conjunto ordenado;
+- nenhum commit ou push automático;
+- nenhum acesso a dados de participantes.
 
-Do not use a production database URL. Do not paste credentials into commands, documentation, commits, logs, or pull requests.
+Secret esperado no GitHub:
 
-## 1. Export M13 history
+```text
+E14_SUPABASE_DB_URL_READ_ONLY
+```
+
+A role deve conseguir apenas conectar, ler `supabase_migrations.schema_migrations`, executar `extensions.digest` e usar transações read-only.
+
+## Workflow manual
+
+```text
+.github/workflows/e14-runtime-history-export.yml
+```
+
+Depois que o workflow estiver na `main`:
+
+1. abrir **Actions**;
+2. selecionar **E14 runtime history export**;
+3. executar manualmente;
+4. informar `cfpfeavjlgheqqiaqtzv` no campo de confirmação;
+5. revisar o artifact antes de criar qualquer PR de materialização.
+
+## Exportação local M13
 
 ### PowerShell
 
@@ -30,7 +52,7 @@ $env:PGOPTIONS = "-c default_transaction_read_only=on"
 $ExportFile = ".artifacts/e14/m13-migration-history.local.jsonl"
 New-Item -ItemType Directory -Force (Split-Path $ExportFile) | Out-Null
 
-psql $env:SUPABASE_DB_URL `
+psql $env:E14_SUPABASE_DB_URL_READ_ONLY `
   -X -q -A -t `
   -v ON_ERROR_STOP=1 `
   -v from_version=20260709051056 `
@@ -45,7 +67,7 @@ psql $env:SUPABASE_DB_URL `
 export PGOPTIONS='-c default_transaction_read_only=on'
 mkdir -p .artifacts/e14
 
-psql "$SUPABASE_DB_URL" \
+psql "$E14_SUPABASE_DB_URL_READ_ONLY" \
   -X -q -A -t \
   -v ON_ERROR_STOP=1 \
   -v from_version=20260709051056 \
@@ -54,59 +76,60 @@ psql "$SUPABASE_DB_URL" \
   > .artifacts/e14/m13-migration-history.local.jsonl
 ```
 
-Expected initial invariants:
+## Invariantes M13
 
 ```text
 migration_count = 165
+statement_count = 165
 total_remote_sql_bytes = 123636
 first_version = 20260709051056
 last_version = 20260709060330
+combined_remote_fingerprint_sha256 = 6df68289eb6de6a47f84f6bb8dae0761c75f148132dd99341e739e8f4a62f144
 ```
 
-The expected byte count is an audit signal, not a permanent constant. Any difference must be investigated against the authorized environment before files are materialized.
+Qualquer diferença interrompe o processo.
 
-## 2. Materialize exact versions
+## Materialização
 
-```powershell
-node scripts/e14/runtime-source-recovery/materialize-migration-history.mjs `
-  --input .artifacts/e14/m13-migration-history.local.jsonl `
-  --migrations-dir supabase/migrations `
-  --canonical-file supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql `
-  --manifest supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json `
-  --from-version 20260709051056 `
+```bash
+node scripts/e14/runtime-source-recovery/materialize-migration-history.mjs \
+  --input .artifacts/e14/m13-migration-history.local.jsonl \
+  --migrations-dir .artifacts/e14/recovered/supabase/migrations \
+  --canonical-file .artifacts/e14/recovered/supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql \
+  --manifest .artifacts/e14/recovered/supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json \
+  --from-version 20260709051056 \
   --to-version 20260709060330
 ```
 
-The command generates:
+A ferramenta não sobrescreve conteúdo divergente.
 
-- one timestamped SQL file per remote version under `supabase/migrations`;
-- a deterministic consolidated SQL artifact under `supabase/canonical-migrations`;
-- a manifest with remote and materialized SHA-256 fingerprints.
+## Validação
 
-No generated file is silently replaced. A content conflict stops the command.
-
-## 3. Export and reconcile M14
-
-Run the same process for:
-
-```text
-from_version = 20260709183504
-to_version = 20260709184749
+```bash
+node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs \
+  --manifest .artifacts/e14/recovered/supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json \
+  --migrations-dir .artifacts/e14/recovered/supabase/migrations \
+  --canonical-file .artifacts/e14/recovered/supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql
 ```
 
-The remote filenames must replace the local files that use divergent timestamps only after SQL content and hashes are compared. Never edit the remote history to match local names.
+Testes sintéticos:
 
-## 4. Validate the tooling
-
-```powershell
+```bash
 npm run test:e14-runtime-recovery
 ```
 
-The tests use temporary synthetic data and never connect to Supabase.
+## M14/M14b
 
-## 5. Required follow-up gates
+Intervalo remoto:
 
-Materialization alone does not close issue #38. The pull request must also prove:
+```text
+20260709183504_m14_step5_application_read_surfaces
+20260709184749_m14b_step5_operator_workspace
+```
+
+Os identificadores remotos devem substituir os timestamps locais somente depois da comparação de conteúdo. O histórico remoto nunca é alterado para coincidir com o Git.
+
+## Gates posteriores
 
 ```text
 remote_versions_missing_locally = 0
@@ -117,14 +140,4 @@ public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 ```
 
-Replay must occur in a disposable PostgreSQL environment. AWS staging remains a later, mandatory portability gate.
-
-## Prohibited actions
-
-- applying a new functional migration before reconciliation;
-- deleting or rewriting remote migration history;
-- committing `.local.jsonl` exports or database URLs;
-- using real participant data;
-- combining migration recovery with the four-archetype implementation;
-- renaming recovered remote versions for cosmetic consistency;
-- expanding opaque `app_private.e14_*` helper naming during recovery.
+A materialização só deve gerar PR depois que o artifact real existir e tiver sido revisado. Não abrir PR apenas com placeholders, inventários ou hashes sem os arquivos recuperados.
