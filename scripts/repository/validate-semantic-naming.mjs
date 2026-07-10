@@ -58,7 +58,7 @@ for (const absolute of walk(repositoryRoot)) {
 }
 
 for (const relative of [
-  'docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md',
+  'docs/implementation/action plan (not versioned)',
   'docs/implementation/ACTION_PLAN.md',
   'ACTION_PLAN.md',
 ]) {
