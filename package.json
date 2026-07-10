@@ -11,6 +11,9 @@
     "validate:repository": "node scripts/repository/validate-hygiene.mjs",
     "validate:e14-step5": "node scripts/e14/validate-step5-app-foundation.mjs",
     "validate:e14-runtime-history": "node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql && node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709183504_m14_application_canonical.sql",
+    "replay:e14-clean": "node scripts/e14/database-equivalence/replay-clean.mjs",
+    "validate:e14-schema-equivalence": "node scripts/e14/database-equivalence/validate-equivalence.mjs",
+    "test:e14-clean-replay": "npm run validate:e14-runtime-history && npm run replay:e14-clean && npm run validate:e14-schema-equivalence",
     "test:e14-step5": "node --test scripts/e14/validate-step5-app-foundation.test.mjs",
     "test:e14-runtime-recovery": "node --test scripts/e14/runtime-source-recovery/*.test.mjs"
   },
