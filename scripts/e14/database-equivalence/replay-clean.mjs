@@ -103,7 +103,11 @@ function assertCleanDatabase(databaseUrl) {
 function applyMigration(databaseUrl, migration, index, total) {
   const relativePath = path.relative(repositoryRoot, migration.file).replaceAll('\\', '/');
   process.stdout.write(`[${index + 1}/${total}] ${migration.source} ${relativePath}\n`);
-  runPsql(databaseUrl, ['--file', migration.file], { stdio: 'inherit', encoding: null });
+  try {
+    runPsql(databaseUrl, ['--quiet', '--file', migration.file]);
+  } catch (error) {
+    fail(`migration failed: ${relativePath}\n${error.message}`);
+  }
 }
 
 export async function replayCleanDatabase(databaseUrl) {
