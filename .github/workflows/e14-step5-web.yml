@@ -3,6 +3,7 @@ name: Web CI
 on:
   pull_request:
     paths:
+      - ".github/workflows/e14-step5-web.yml"
       - "apps/web/**"
       - "package.json"
       - "scripts/e14/validate-step5-app-foundation*"
