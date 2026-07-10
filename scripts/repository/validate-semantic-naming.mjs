@@ -44,9 +44,11 @@ function isCompatibilityReference(relative) {
 }
 
 const violations = [];
-const phaseNamedPath = /(^|\/)[Ee]\d{2}(?:[_-]|\/|$)/;
-const uppercasePhaseIdentifier = /\bE\d{2}(?:-[A-Z0-9]+|_[A-Z0-9_]+)?\b/g;
+const phaseNamedPath = /(^|\/)[Ee]\d{2}(?:[._\/-]|$)/;
 const phaseScriptName = /(?:^|:)(?:e|E)\d{2}(?:[-_:]|$)/;
+const phaseHeading = /^(#{1,6})\s+.*\bE\d{2}(?:-[A-Z0-9]+|_[A-Z0-9_]+)?\b/m;
+const phaseBlockerId = /\bE\d{2}-B\d+\b/;
+const activeCodeIdentifier = /\b(?:legacy)?E\d{2}[A-Za-z_][A-Za-z0-9_]*\b|\b(?:const|let|var|class|function|interface|type)\s+e\d{2}\b|["']@\/(?:[^"']*\/)?e\d{2}\//;
 
 for (const absolute of walk(repositoryRoot)) {
   const relative = relativePath(absolute);
@@ -55,12 +57,17 @@ for (const absolute of walk(repositoryRoot)) {
   }
 }
 
-const forbiddenPlan = path.join(repositoryRoot, 'docs/implementation/action plan (not versioned)');
-try {
-  statSync(forbiddenPlan);
-  violations.push('docs/implementation/action plan (not versioned): action plan must not be versioned');
-} catch {
-  // Expected: the action plan is not part of the repository.
+for (const relative of [
+  'docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md',
+  'docs/implementation/ACTION_PLAN.md',
+  'ACTION_PLAN.md',
+]) {
+  try {
+    statSync(path.join(repositoryRoot, relative));
+    violations.push(`${relative}: action plans must not be versioned in the repository`);
+  } catch {
+    // Expected: operational plans live outside the repository.
+  }
 }
 
 const packageJson = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'));
@@ -73,8 +80,23 @@ for (const scriptName of Object.keys(packageJson.scripts ?? {})) {
 for (const absolute of walk(path.join(repositoryRoot, '.github', 'workflows'))) {
   const relative = relativePath(absolute);
   const text = readFileSync(absolute, 'utf8');
-  if (/\bE\d{2}\b|(?:^|[\/:])e\d{2}(?:[-_/:]|$)/m.test(text)) {
-    violations.push(`${relative}: workflow still contains a phase-based active identifier`);
+  if (phaseNamedPath.test(relative) || /\bE\d{2}\b|(?:^|[\/:])e\d{2}(?:[-_/:]|$)/m.test(text)) {
+    violations.push(`${relative}: workflow contains a phase-based active identity`);
+  }
+}
+
+for (const absolute of walk(path.join(repositoryRoot, 'docs'))) {
+  const relative = relativePath(absolute);
+  if (!relative.endsWith('.md')) continue;
+  const text = readFileSync(absolute, 'utf8');
+  if (phaseHeading.test(text)) {
+    violations.push(`${relative}: document heading is named after a delivery phase`);
+  }
+  if (phaseBlockerId.test(text)) {
+    violations.push(`${relative}: blocker IDs must be semantic and durable`);
+  }
+  if (/E\d{2}_REBASELINE_EXECUTION_PLAN|E\d{2}-R\d+/.test(text)) {
+    violations.push(`${relative}: active document references a phase-based plan identity`);
   }
 }
 
@@ -82,16 +104,10 @@ for (const absolute of walk(repositoryRoot)) {
   const relative = relativePath(absolute);
   if (relative === 'scripts/repository/validate-semantic-naming.mjs') continue;
   if (isImmutableHistory(relative) || isCompatibilityReference(relative)) continue;
-  if (!/\.(?:js|jsx|mjs|mts|ts|tsx|json|ya?ml|md)$/.test(relative)) continue;
-  let text;
-  try {
-    text = readFileSync(absolute, 'utf8');
-  } catch {
-    continue;
-  }
-  const matches = [...text.matchAll(uppercasePhaseIdentifier)].map((match) => match[0]);
-  if (matches.length > 0) {
-    violations.push(`${relative}: active phase identifiers remain (${[...new Set(matches)].join(', ')})`);
+  if (!/\.(?:js|jsx|mjs|mts|ts|tsx)$/.test(relative)) continue;
+  const text = readFileSync(absolute, 'utf8');
+  if (activeCodeIdentifier.test(text)) {
+    violations.push(`${relative}: active code symbol or import is named after a delivery phase`);
   }
 }
 
@@ -101,4 +117,4 @@ if (violations.length > 0) {
   process.exit(1);
 }
 
-console.log('Semantic naming validation passed: active repository artifacts use durable semantic names.');
+console.log('Semantic naming validation passed: active repository identities use durable semantic names.');
