@@ -114,7 +114,7 @@ function applyMigration(databaseUrl, migration, index, total) {
   const relativePath = path.relative(repositoryRoot, migration.file).replaceAll('\\', '/');
   process.stdout.write(`[${index + 1}/${total}] ${migration.source} ${relativePath}\n`);
   try {
-    runPsql(databaseUrl, ['--quiet', '--file', migration.file]);
+    runPsql(databaseUrl, ['--quiet', '--single-transaction', '--file', migration.file]);
   } catch (error) {
     fail(`migration failed: ${relativePath}\n${error.message}`);
   }
@@ -127,6 +127,7 @@ export async function replayCleanDatabase(databaseUrl) {
   plan.forEach((migration, index) => applyMigration(databaseUrl, migration, index, plan.length));
   return {
     status: 'replayed',
+    transaction_mode: 'one_transaction_per_migration',
     migration_files: plan.length,
     recovered_m00_m12: 76,
     recovered_m13: 165,
