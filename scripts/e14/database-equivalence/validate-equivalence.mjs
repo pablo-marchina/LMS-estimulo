@@ -10,8 +10,9 @@ const baselinePath = path.join(
   'supabase/canonical-migrations/E14_REMOTE_SCHEMA_BASELINE.json',
 );
 const inventorySqlPath = path.join(repositoryRoot, 'scripts/e14/database-equivalence/inventory.sql');
+const diagnosticSqlPath = path.join(repositoryRoot, 'scripts/e14/database-equivalence/diagnostic.sql');
 
-function runInventory(databaseUrl) {
+function runJsonSql(databaseUrl, sqlPath, label) {
   const result = spawnSync(
     'psql',
     [
@@ -24,7 +25,7 @@ function runInventory(databaseUrl) {
       '--tuples-only',
       '--no-align',
       '--file',
-      inventorySqlPath,
+      sqlPath,
     ],
     {
       cwd: repositoryRoot,
@@ -39,7 +40,7 @@ function runInventory(databaseUrl) {
   if (result.error) throw new Error(`failed to start psql: ${result.error.message}`);
   if (result.status !== 0) {
     throw new Error(
-      `inventory query failed with status ${result.status}\n${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim(),
+      `${label} query failed with status ${result.status}\n${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim(),
     );
   }
 
@@ -48,7 +49,7 @@ function runInventory(databaseUrl) {
     .map((line) => line.trim())
     .filter(Boolean);
   if (lines.length !== 1) {
-    throw new Error(`expected one inventory JSON row, received ${lines.length}`);
+    throw new Error(`expected one ${label} JSON row, received ${lines.length}`);
   }
   return JSON.parse(lines[0]);
 }
@@ -68,14 +69,17 @@ function categoryDiff(expected, actual) {
 export async function validateSchemaEquivalence(databaseUrl) {
   if (!databaseUrl) throw new Error('DATABASE_URL is required');
   const baseline = JSON.parse(await readFile(baselinePath, 'utf8'));
-  const actual = runInventory(databaseUrl);
+  const actual = runJsonSql(databaseUrl, inventorySqlPath, 'inventory');
   const expected = baseline.inventory;
   const differences = categoryDiff(expected.categories, actual.categories);
 
   assert.equal(actual.schema_version, expected.schema_version, 'inventory schema version differs');
   assert.equal(actual.postgres_major, expected.postgres_major, 'PostgreSQL major version differs');
   if (differences.length > 0) {
-    throw new Error(`schema equivalence failed\n${JSON.stringify(differences, null, 2)}`);
+    const diagnostic = runJsonSql(databaseUrl, diagnosticSqlPath, 'diagnostic');
+    throw new Error(
+      `schema equivalence failed\n${JSON.stringify({ differences, diagnostic }, null, 2)}`,
+    );
   }
 
   return {
