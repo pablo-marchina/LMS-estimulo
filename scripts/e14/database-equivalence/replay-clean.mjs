@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const canonicalDirectory = path.join(repositoryRoot, 'supabase/canonical-migrations');
 const migrationsDirectory = path.join(repositoryRoot, 'supabase/migrations');
+const bootstrapRolesFile = path.join(
+  repositoryRoot,
+  'scripts/e14/database-equivalence/bootstrap-roles.sql',
+);
 const applicationSchemas = [
   'app_private',
   'assessment',
@@ -100,6 +104,15 @@ function assertCleanDatabase(databaseUrl) {
   if (output !== '0') fail(`clean replay requires an empty application schema set; found ${output}`);
 }
 
+function provisionRolePrerequisites(databaseUrl) {
+  process.stdout.write('[bootstrap] cluster roles app_readonly, app_runtime, app_worker\n');
+  try {
+    runPsql(databaseUrl, ['--quiet', '--file', bootstrapRolesFile]);
+  } catch (error) {
+    fail(`role bootstrap failed: ${path.relative(repositoryRoot, bootstrapRolesFile)}\n${error.message}`);
+  }
+}
+
 function applyMigration(databaseUrl, migration, index, total) {
   const relativePath = path.relative(repositoryRoot, migration.file).replaceAll('\\', '/');
   process.stdout.write(`[${index + 1}/${total}] ${migration.source} ${relativePath}\n`);
@@ -113,10 +126,12 @@ function applyMigration(databaseUrl, migration, index, total) {
 export async function replayCleanDatabase(databaseUrl) {
   if (!databaseUrl) fail('DATABASE_URL is required');
   assertCleanDatabase(databaseUrl);
+  provisionRolePrerequisites(databaseUrl);
   const plan = await buildReplayPlan();
   plan.forEach((migration, index) => applyMigration(databaseUrl, migration, index, plan.length));
   return {
     status: 'replayed',
+    role_prerequisites: ['app_readonly', 'app_runtime', 'app_worker'],
     migration_files: plan.length,
     canonical_m00_m12: 13,
     recovered_m13: 165,
