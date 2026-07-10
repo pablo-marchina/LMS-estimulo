@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const fixtureFile = path.join(repositoryRoot, 'scripts/e14/backend-e2e/setup-runtime-fixture.sql');
+const eventSchemaIdsFile = path.join(repositoryRoot, 'scripts/e14/backend-e2e/normalize-event-schema-ids.sql');
 const sqlFile = path.join(repositoryRoot, 'scripts/e14/backend-e2e/backend-e2e.sql');
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -18,6 +19,7 @@ const result = spawnSync(
     '--no-psqlrc',
     '--set', 'ON_ERROR_STOP=1',
     '--file', fixtureFile,
+    '--file', eventSchemaIdsFile,
     '--file', sqlFile,
   ],
   {
