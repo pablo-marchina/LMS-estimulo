@@ -42,6 +42,29 @@ jobs:
             --output .artifacts/pre-m13-history.local.jsonl
           test "$(wc -l < .artifacts/pre-m13-history.local.jsonl)" -eq 76
 
+      - name: Remove conflicting local carriers explicitly
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile, unlink } from 'node:fs/promises';
+          import path from 'node:path';
+
+          const source = await readFile('.artifacts/pre-m13-history.local.jsonl', 'utf8');
+          const records = source.split(/\r?\n/).filter(Boolean).map(JSON.parse);
+          let removed = 0;
+          for (const record of records) {
+            const file = path.join('supabase/migrations', `${record.version}_${record.name}.sql`);
+            try {
+              await unlink(file);
+              removed += 1;
+            } catch (error) {
+              if (error.code !== 'ENOENT') throw error;
+            }
+          }
+          process.stdout.write(`${JSON.stringify({ target_records: records.length, conflicting_files_removed: removed })}\n`);
+          NODE
+
       - name: Materialize exact remote history
         id: materialize
         shell: bash
