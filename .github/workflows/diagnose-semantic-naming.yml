@@ -1,0 +1,50 @@
+name: Diagnose semantic naming migration
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'refactor/neutral-repository-naming'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Execute transformation in a disposable copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .artifacts /tmp/semantic-naming-test
+          cp -a . /tmp/semantic-naming-test/repository
+          python - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/apply-semantic-naming.yml').read_text(encoding='utf-8')
+          start = workflow.index("          from pathlib import Path\n")
+          end = workflow.index("          PY\n", start)
+          lines = workflow[start:end].splitlines()
+          script = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines) + '\n'
+          Path('/tmp/semantic-naming-test/transform.py').write_text(script, encoding='utf-8')
+          PY
+          set +e
+          (
+            cd /tmp/semantic-naming-test/repository
+            python /tmp/semantic-naming-test/transform.py
+          ) > .artifacts/semantic-naming-diagnostic.log 2>&1
+          status=$?
+          set -e
+          cat .artifacts/semantic-naming-diagnostic.log
+          echo "exit_status=$status"
+          exit "$status"
+      - name: Upload diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-naming-diagnostic-${{ github.run_id }}
+          path: .artifacts/semantic-naming-diagnostic.log
+          if-no-files-found: warn
+          retention-days: 3
