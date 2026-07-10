@@ -106,6 +106,9 @@ jobs:
       - name: Validate recovered runtime history
         run: npm run validate:e14-runtime-history
 
+      - name: Validate opaque helper containment
+        run: npm run validate:e14-opaque-helper-containment
+
       - name: Confirm recovery artifacts remain ignored
         shell: bash
         run: |
