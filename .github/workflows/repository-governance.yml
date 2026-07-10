@@ -74,7 +74,7 @@ jobs:
             fi
 
             if [[ "$path" == supabase/migrations/*.sql ]]; then
-              migration_pattern='^[0-9]{14}_m[0-9]+[a-z]?_[a-z0-9_]+\.sql$'
+              migration_pattern='^[0-9]{14}_m[0-9]+[a-z0-9]*_[a-z0-9_]+\.sql$'
               if [[ ! "$filename" =~ $migration_pattern ]]; then
                 echo "Invalid migration filename: $path"
                 invalid=1
@@ -96,6 +96,9 @@ jobs:
 
       - name: Test runtime recovery tooling
         run: npm run test:e14-runtime-recovery
+
+      - name: Validate recovered runtime history
+        run: npm run validate:e14-runtime-history
 
       - name: Confirm recovery artifacts remain ignored
         shell: bash
