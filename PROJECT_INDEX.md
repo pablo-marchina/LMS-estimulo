@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 3.0  
+**Versão:** 3.1  
 **Data:** 2026-07-10  
-**Status:** E14 em execução; runtime reproduzível e legado opaco contido; modelo físico HubSpot bloqueado pelo inventário da conta
+**Status:** E14 em execução; M15 aplicada e reconciliada; modelo físico HubSpot bloqueado pelo inventário da conta
 
 ## 1. Hierarquia de referência
 
@@ -53,15 +53,15 @@ O repositório contém:
 - aplicação Next.js em `apps/web`;
 - seis rotas iniciais para participante e operação;
 - bridge de identidade e camada de RPCs no servidor;
-- 76 migrations M00–M12, 165 migrations M13 e 2 migrations M14/M14b recuperadas;
-- 243 migrations executáveis, manifests, fingerprints e SQL canônico;
+- 76 migrations M00–M12, 165 migrations M13, 2 migrations M14/M14b e 1 migration M15 recuperadas;
+- 244 migrations executáveis, manifests, fingerprints e SQL canônico;
 - gate de CI em PostgreSQL 17.6 com equivalência estrutural;
 - contrato congelado dos 18 RPCs públicos;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - porta `HubSpotDataGateway`, adapter em memória e gate `write → readback → use` testados sem acesso à conta real;
 - motor lógico configurável de formulário, arquétipos, classificação e ativações;
 - `package-lock.json` v3 e instalações reproduzíveis em Ubuntu e Windows;
-- baseline de 107 helpers privados e 8 RPCs públicos opacos, com expansão bloqueada e aliases da aplicação isolados;
+- baseline de 106 helpers privados e 8 RPCs públicos opacos, com expansão bloqueada e aliases da aplicação isolados;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
 O runtime atual comprova a fundação técnica, mas ainda usa estruturas PostgreSQL que não satisfazem a autoridade HubSpot recém-definida. Essas estruturas serão réplica técnica, cache ou serão descontinuadas após a transição.
@@ -72,7 +72,7 @@ Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER
 
 Permanecem dois P0:
 
-1. substituir e remover incrementalmente as 115 funções com argumentos opacos já inventariadas, sem ampliar o legado;
+1. substituir e remover incrementalmente as 114 funções com argumentos opacos ainda inventariadas, sem ampliar o legado;
 2. inventariar a conta HubSpot, aprovar o modelo físico e provar o adapter real.
 
 ```text
@@ -82,6 +82,8 @@ public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 reproducible_install_passed = true
 opaque_helper_containment_passed = true
+first_semantic_helper_applied_to_remote = true
+first_semantic_helper_materialized_in_git = true
 opaque_helper_physical_replacement_complete = false
 hubspot_authoritative_source_decided = true
 hubspot_gateway_contract_defined = true
@@ -164,6 +166,7 @@ new_functional_migration_authorized = false
 - [Manifest M00–M12 recuperado](supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json)
 - [Manifest M13 recuperado](supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json)
 - [Manifest M14 recuperado](supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json)
+- [Manifest M15 recuperado](supabase/canonical-migrations/M15_RUNTIME_MANIFEST.json)
 
 ### Fundação técnica do ambiente de teste
 
