@@ -96,3 +96,10 @@ jobs:
 
       - name: Test runtime recovery tooling
         run: npm run test:e14-runtime-recovery
+
+      - name: Confirm recovery artifacts remain ignored
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fx '**/*.local.jsonl' .gitignore
+          grep -Fx '.artifacts/' .gitignore
