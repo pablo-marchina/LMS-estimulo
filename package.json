@@ -15,7 +15,7 @@
     "validate:e14-runtime-history": "node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260708220357_m00_m12_runtime_canonical.sql && node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql && node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709183504_m14_application_canonical.sql",
     "validate:e14-schema-equivalence": "node scripts/e14/database-equivalence/validate-equivalence.mjs",
     "validate:e14-public-contracts": "node scripts/e14/public-contracts/validate-contracts.mjs",
-    "validate:e14-opaque-helper-containment": "node scripts/e14/opaque-helpers/inventory.mjs",
+    "validate:e14-opaque-helper-containment": "node scripts/e14/opaque-helpers/inventory.mjs && node scripts/e14/opaque-helpers/validate-application-boundary.mjs",
     "replay:e14-clean": "node scripts/e14/database-equivalence/replay-clean.mjs",
     "test:e14-backend-e2e": "node scripts/e14/backend-e2e/run-backend-e2e.mjs",
     "test:e14-hubspot-contracts": "node scripts/e14/hubspot-contracts/run-tests.mjs",
