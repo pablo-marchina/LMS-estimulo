@@ -1,0 +1,188 @@
+name: Apply semantic repository naming
+
+on:
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.head_ref == 'refactor/neutral-repository-naming'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Rename phase-based artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          mappings = {
+            '.github/workflows/e14-clean-replay.yml': '.github/workflows/database-gates.yml',
+            '.github/workflows/e14-step5-web.yml': '.github/workflows/web-ci.yml',
+            'apps/web/lib/e14/contracts.ts': 'apps/web/lib/journey-runtime/contracts.ts',
+            'apps/web/lib/e14/legacy-rpc-arguments.ts': 'apps/web/lib/journey-runtime/legacy-rpc-arguments.ts',
+            'apps/web/lib/e14/navigation.ts': 'apps/web/lib/journey-runtime/navigation.ts',
+            'apps/web/lib/e14/rpc.ts': 'apps/web/lib/journey-runtime/rpc.ts',
+            'config/e12/.env.example': 'config/supabase-test/.env.example',
+            'docs/architecture/E12_AWS_OPERATIONS_MAPPING.md': 'docs/architecture/AWS_OPERATIONS_MAPPING.md',
+            'docs/architecture/E12_EXECUTABLE_MIGRATIONS.md': 'docs/architecture/EXECUTABLE_MIGRATIONS.md',
+            'docs/architecture/E12_IDENTITY_BRIDGE.md': 'docs/architecture/IDENTITY_BRIDGE.md',
+            'docs/architecture/E12_OBSERVABILITY_AND_ALERTS.md': 'docs/architecture/OBSERVABILITY_AND_ALERTS.md',
+            'docs/architecture/E12_QUEUE_ARCHITECTURE.md': 'docs/architecture/QUEUE_ARCHITECTURE.md',
+            'docs/architecture/E12_QUEUE_AWS_SQS_MAPPING.md': 'docs/architecture/QUEUE_AWS_SQS_MAPPING.md',
+            'docs/architecture/E12_RECONCILIATION_AND_RECOVERY.md': 'docs/architecture/RECONCILIATION_AND_RECOVERY.md',
+            'docs/architecture/E12_RLS_IMPLEMENTATION.md': 'docs/architecture/RLS_IMPLEMENTATION.md',
+            'docs/architecture/E12_SCHEDULER_DISPATCHER_ARCHITECTURE.md': 'docs/architecture/SCHEDULER_DISPATCHER_ARCHITECTURE.md',
+            'docs/architecture/E12_STORAGE_ARCHITECTURE.md': 'docs/architecture/STORAGE_ARCHITECTURE.md',
+            'docs/architecture/E12_STORAGE_AWS_MAPPING.md': 'docs/architecture/STORAGE_AWS_MAPPING.md',
+            'docs/architecture/E12_TRANSACTIONAL_OUTBOX.md': 'docs/architecture/TRANSACTIONAL_OUTBOX.md',
+            'docs/decisions/ADR-002-E14-REBASELINE-NEW-PREMISES.md': 'docs/decisions/ADR-002-REBASELINE-NEW-PREMISES.md',
+            'docs/implementation/E14_BACKEND_E2E.md': 'docs/implementation/BACKEND_E2E.md',
+            'docs/implementation/E14_BLOCKER_REGISTER.md': 'docs/implementation/DELIVERY_BLOCKERS.md',
+            'docs/implementation/E14_CONFIGURABLE_PRODUCT_ENGINE.md': 'docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md',
+            'docs/implementation/E14_OPAQUE_HELPER_CONTAINMENT.md': 'docs/implementation/OPAQUE_HELPER_CONTAINMENT.md',
+            'docs/implementation/E14_PREMISE_TRACEABILITY_MATRIX.md': 'docs/implementation/PREMISE_TRACEABILITY_MATRIX.md',
+            'docs/implementation/E14_PUBLIC_RPC_CONTRACTS.md': 'docs/implementation/PUBLIC_RPC_CONTRACTS.md',
+            'docs/implementation/E14_STEP5_APP_FOUNDATION.md': 'docs/implementation/APPLICATION_FOUNDATION.md',
+            'docs/implementation/RUNTIME_GAP_E14.md': 'docs/implementation/RUNTIME_GAP.md',
+            'docs/implementation/e14-opaque-helper-baseline-v1.json': 'docs/implementation/opaque-helper-baseline-v1.json',
+            'docs/implementation/e14-public-rpc-contracts-v1.json': 'docs/implementation/public-rpc-contracts-v1.json',
+            'docs/security/E13_SECURITY_PRIVACY_ARCHITECTURE.md': 'docs/security/SECURITY_PRIVACY_ARCHITECTURE.md',
+            'scripts/e12/supabase-ddl-transaction-smoke.sh': 'scripts/database/supabase-ddl-transaction-smoke.sh',
+            'scripts/e14/backend-e2e/backend-e2e-autocommit.sql': 'scripts/database/backend-e2e/backend-e2e-autocommit.sql',
+            'scripts/e14/backend-e2e/normalize-event-schema-ids.sql': 'scripts/database/backend-e2e/normalize-event-schema-ids.sql',
+            'scripts/e14/backend-e2e/run-backend-e2e.mjs': 'scripts/database/backend-e2e/run-backend-e2e.mjs',
+            'scripts/e14/backend-e2e/setup-runtime-fixture.sql': 'scripts/database/backend-e2e/setup-runtime-fixture.sql',
+            'scripts/e14/configurable-product/configurable-product.test.mts': 'scripts/product/configurable-product/configurable-product.test.mts',
+            'scripts/e14/configurable-product/run-tests.mjs': 'scripts/product/configurable-product/run-tests.mjs',
+            'scripts/e14/configurable-product/tsconfig.json': 'scripts/product/configurable-product/tsconfig.json',
+            'scripts/e14/database-equivalence/bootstrap-provider-catalog.sql': 'scripts/database/equivalence/bootstrap-provider-catalog.sql',
+            'scripts/e14/database-equivalence/diagnostic.sql': 'scripts/database/equivalence/diagnostic.sql',
+            'scripts/e14/database-equivalence/inventory.sql': 'scripts/database/equivalence/inventory.sql',
+            'scripts/e14/database-equivalence/replay-clean.mjs': 'scripts/database/equivalence/replay-clean.mjs',
+            'scripts/e14/database-equivalence/validate-equivalence.mjs': 'scripts/database/equivalence/validate-equivalence.mjs',
+            'scripts/e14/hubspot-contracts/hubspot-contracts.test.mts': 'scripts/integrations/hubspot-contracts/hubspot-contracts.test.mts',
+            'scripts/e14/hubspot-contracts/run-tests.mjs': 'scripts/integrations/hubspot-contracts/run-tests.mjs',
+            'scripts/e14/hubspot-contracts/tsconfig.json': 'scripts/integrations/hubspot-contracts/tsconfig.json',
+            'scripts/e14/opaque-helpers/inventory.mjs': 'scripts/database/legacy-rpc/inventory.mjs',
+            'scripts/e14/opaque-helpers/inventory.test.mjs': 'scripts/database/legacy-rpc/inventory.test.mjs',
+            'scripts/e14/opaque-helpers/legacy-rpc-arguments.test.mts': 'scripts/database/legacy-rpc/legacy-rpc-arguments.test.mts',
+            'scripts/e14/opaque-helpers/run-tests.mjs': 'scripts/database/legacy-rpc/run-tests.mjs',
+            'scripts/e14/opaque-helpers/tsconfig.json': 'scripts/database/legacy-rpc/tsconfig.json',
+            'scripts/e14/opaque-helpers/validate-application-boundary.mjs': 'scripts/database/legacy-rpc/validate-application-boundary.mjs',
+            'scripts/e14/public-contracts/inventory.sql': 'scripts/database/public-rpc-contracts/inventory.sql',
+            'scripts/e14/public-contracts/validate-contracts.mjs': 'scripts/database/public-rpc-contracts/validate-contracts.mjs',
+            'scripts/e14/public-contracts/validate-contracts.test.mjs': 'scripts/database/public-rpc-contracts/validate-contracts.test.mjs',
+            'scripts/e14/runtime-source-recovery/README.md': 'scripts/database/migration-history/README.md',
+            'scripts/e14/runtime-source-recovery/materialize-migration-history.mjs': 'scripts/database/migration-history/materialize-migration-history.mjs',
+            'scripts/e14/runtime-source-recovery/materialize-migration-history.test.mjs': 'scripts/database/migration-history/materialize-migration-history.test.mjs',
+            'scripts/e14/runtime-source-recovery/validate-recovered-history.mjs': 'scripts/database/migration-history/validate-recovered-history.mjs',
+            'scripts/e14/runtime-source-recovery/validate-recovered-history.test.mjs': 'scripts/database/migration-history/validate-recovered-history.test.mjs',
+            'scripts/e14/validate-step5-app-foundation.mjs': 'scripts/application/validate-foundation.mjs',
+            'scripts/e14/validate-step5-app-foundation.test.mjs': 'scripts/application/validate-foundation.test.mjs',
+            'supabase/canonical-migrations/E14_REMOTE_SCHEMA_BASELINE.json': 'supabase/canonical-migrations/REMOTE_SCHEMA_BASELINE.json',
+            'supabase/tests/database/e12_identity_rls_outbox_test.sql': 'supabase/tests/database/identity_rls_outbox_test.sql',
+            'supabase/tests/database/e12_storage_lifecycle_test.sql': 'supabase/tests/database/storage_lifecycle_test.sql',
+          }
+
+          delete_paths = [Path('docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md')]
+
+          for old, new in mappings.items():
+              source = Path(old)
+              target = Path(new)
+              if source.exists():
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  source.rename(target)
+
+          for path in delete_paths:
+              if path.exists():
+                  path.unlink()
+
+          replacements = dict(mappings)
+          replacements.update({
+            'validate:e14-step5': 'validate:application-foundation',
+            'validate:e14-runtime-history': 'validate:migration-history',
+            'validate:e14-schema-equivalence': 'validate:schema-equivalence',
+            'validate:e14-public-contracts': 'validate:public-rpc-contracts',
+            'validate:e14-opaque-helper-containment': 'validate:legacy-rpc-containment',
+            'replay:e14-clean': 'replay:database-clean',
+            'test:e14-backend-e2e': 'test:backend-e2e',
+            'test:e14-hubspot-contracts': 'test:hubspot-contracts',
+            'test:e14-configurable-product': 'test:configurable-product',
+            'test:e14-opaque-helper-containment': 'test:legacy-rpc-containment',
+            'test:e14-clean-replay': 'test:database-clean-replay',
+            'test:e14-database-gates': 'test:database-gates',
+            'test:e14-step5': 'test:application-foundation',
+            'test:e14-runtime-recovery': 'test:migration-history',
+            'test:e14-public-contracts': 'test:public-rpc-contracts',
+            'E14_M00_M12_EXPECTED': 'M00_M12_EXPECTED',
+            'E14_M13_EXPECTED': 'M13_EXPECTED',
+            'E14_M14_EXPECTED': 'M14_EXPECTED',
+            'E14_M15_EXPECTED': 'M15_EXPECTED',
+            'E14RpcError': 'JourneyRpcError',
+            'E14_REMOTE_SCHEMA_BASELINE': 'REMOTE_SCHEMA_BASELINE',
+            'E14_E2E_ASSERTION_FAILED': 'RUNTIME_E2E_ASSERTION_FAILED',
+            'E14_E2E_EXPECTED_ERROR_NOT_RAISED': 'RUNTIME_E2E_EXPECTED_ERROR_NOT_RAISED',
+            'e14_public_rpc_contracts': 'public_rpc_contracts',
+            'e14_opaque_helper_baseline': 'opaque_helper_baseline',
+            'e14_runtime_validation_journey': 'runtime_validation_journey',
+          })
+
+          basename_replacements = {}
+          for old, new in mappings.items():
+              old_name = Path(old).name
+              new_name = Path(new).name
+              if old_name != new_name:
+                  basename_replacements[old_name] = new_name
+          replacements.update(basename_replacements)
+
+          skip_prefixes = (
+            'supabase/migrations/',
+            'supabase/canonical-migrations/202',
+          )
+          binary_suffixes = {'.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.zip', '.woff', '.woff2', '.ttf'}
+          for path in sorted(Path('.').rglob('*')):
+              if not path.is_file() or '.git' in path.parts or path.suffix.lower() in binary_suffixes:
+                  continue
+              rel = path.as_posix().removeprefix('./')
+              if rel.startswith(skip_prefixes):
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              updated = text
+              for old, new in sorted(replacements.items(), key=lambda item: len(item[0]), reverse=True):
+                  updated = updated.replace(old, new)
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+
+          # Remove phase labels from active document titles without altering legacy database identifiers.
+          for path in list(Path('docs').rglob('*.md')) + [Path('README.md'), Path('PROJECT_INDEX.md')]:
+              if not path.exists():
+                  continue
+              text = path.read_text(encoding='utf-8')
+              text = re.sub(r'^(#{1,6})\s+E(?:12|13|14)\s+[—-]\s+', r'\1 ', text, flags=re.MULTILINE)
+              text = text.replace('workstream **E14**', 'desenvolvimento ativo')
+              text = text.replace('### E14', '### Implementação atual')
+              path.write_text(text, encoding='utf-8')
+          PY
+
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Semantic naming already applied."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "refactor(repository): replace phase-based artifact names"
+          git push origin "HEAD:${{ github.head_ref }}"
