@@ -1,6 +1,6 @@
 # E14 — registro de bloqueadores
 
-**Versão:** 0.8  
+**Versão:** 0.9  
 **Data:** 2026-07-10  
 **Status:** Ativo
 
@@ -20,7 +20,7 @@
 | E14-B004 | P1 | Browser E2E | fluxo pelo navegador e acessibilidade não foram comprovados | conclusão da vertical | E2E com contas técnicas e auditoria de acessibilidade |
 | E14-B005 | P1 | Product inputs | conteúdo externo e configuração inicial dos arquétipos ainda não foram aprovados | implementação final | entradas oficiais versionadas e aprovadas |
 | E14-B006 | P1 | Test adapters | storage/scan estão ativos no Supabase de teste sem consumidor atual | gate operacional | integrar com E2E ou remover integralmente função, scheduler e dependências |
-| E14-B007 | P0 | HubSpot authority | a porta, o adapter de teste e o gate `write → readback → use` foram definidos, mas a conta, o modelo físico e o adapter real ainda não foram inventariados e comprovados | modelo físico, novas migrations e implementação final de formulário/arquétipos | inventário completo, modelo físico aprovado, adapter real testado e matriz campo→HubSpot completa |
+| E14-B007 | P0 | HubSpot authority | contratos, adapter de teste, gate de origem e motor lógico configurável foram comprovados, mas a conta, o modelo físico e o adapter real ainda não foram inventariados | modelo físico, migrations dependentes do provider e ativação final | inventário completo, modelo físico aprovado, adapter real testado e matriz campo→HubSpot completa |
 
 ## Gates encerrados
 
@@ -38,7 +38,7 @@ idempotency_and_concurrency_passed = true
 events_and_outbox_passed = true
 ```
 
-### Subgate independente de E14-B007
+### Subgate de integração independente de E14-B007
 
 ```text
 hubspot_gateway_contract_defined = true
@@ -48,30 +48,45 @@ raw_request_payload_used_for_business_decision = false
 local_only_data_used_for_business_decision = false
 ```
 
-Esse subgate reduz o trabalho bloqueado pelo acesso, mas não encerra E14-B007 porque ainda não prova a conta nem a API reais.
+### Subgate de produto configurável independente de E14-B007
+
+```text
+configurable_form_contract_defined = true
+variable_archetype_count_supported = true
+published_configuration_required = true
+classification_abstention_supported = true
+fabricated_confidence_generated = false
+assignment_history_append_only = true
+recalculation_reads_existing_hubspot_submission = true
+override_audited = true
+activation_rules_versioned = true
+activation_execution_persisted_in_hubspot = true
+```
+
+Esses subgates reduzem o trabalho bloqueado pelo acesso, mas não encerram E14-B007 porque ainda não provam a conta, os limites, os objetos nem a API reais.
 
 ## Dependências
 
 ```text
 E14-B007
-  → porta e adapter de teste = concluídos
+  → porta, adapter de teste e motor lógico = concluídos
   → inventariar a conta HubSpot
   → escolher objetos, propriedades, associações e eventos
   → implementar adapter real com write + readback
   → validar scopes, limites, webhooks e reconciliação
-  → concluir o delta físico
-  → somente então autorizar migrations técnicas
+  → mapear contratos lógicos para o modelo físico
+  → somente então autorizar migrations dependentes do provider
 
 E14-B002
   → impedir novos helpers opacos
-  → novos componentes de HubSpot usam nomes e contratos semânticos
+  → novos componentes usam nomes e contratos semânticos
 
 E14-B003
   → tornar instalação e CI determinísticos
   → obrigatório antes do AWS staging
 
 E14-B004 + E14-B005
-  → fechar a vertical funcional
+  → fechar a vertical funcional e validar a configuração oficial
 
 E14-B006
   → eliminar runtime de teste sem consumidor
@@ -90,6 +105,8 @@ hubspot_authoritative_source_decided = true
 hubspot_gateway_contract_defined = true
 hubspot_test_adapter_implemented = true
 write_readback_use_gate_tested = true
+configurable_product_engine_implemented = true
+configurable_product_engine_tested = true
 hubspot_inventory_complete = false
 hubspot_physical_model_approved = false
 hubspot_real_adapter_implemented = false
@@ -98,4 +115,4 @@ supabase_production_authorized = false
 aws_staging_gate_required = true
 ```
 
-Enquanto não houver acesso, o desenvolvimento pode avançar sobre a porta e o adapter de teste. Nenhuma propriedade, object type ID, associação ou migration dependente do modelo físico será inventada.
+Enquanto não houver acesso, o desenvolvimento pode avançar sobre contratos lógicos, interface administrativa local, preview sintético, lockfile, browser E2E e contenção dos helpers opacos. Nenhuma propriedade, object type ID, associação ou migration dependente do modelo físico será inventada.
