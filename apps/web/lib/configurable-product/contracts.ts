@@ -191,6 +191,7 @@ export type ArchetypeAssignmentPayload = {
   supersedesAssignmentId: string | null;
   scores: ArchetypeScore[];
   inputSnapshotHashes: string[];
+  decisionRequestSnapshotHash: string;
   createdAt: string;
   override: AssignmentOverride | null;
 };
