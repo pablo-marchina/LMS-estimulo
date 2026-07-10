@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 
-begin;
+-- setup-runtime-fixture.sql already opened this rollback-only transaction.
 set local statement_timeout = '120s';
 set local lock_timeout = '10s';
 
@@ -17,6 +17,23 @@ begin
   if coalesce(p_condition, false) is not true then
     raise exception 'E14_E2E_ASSERTION_FAILED: %', p_message;
   end if;
+end;
+$$;
+
+create or replace function pg_temp.e14_expect_error(p_sql text, p_expected_message text)
+returns void
+language plpgsql
+as $$
+begin
+  begin
+    execute p_sql;
+  exception when others then
+    if sqlerrm = p_expected_message then
+      return;
+    end if;
+    raise;
+  end;
+  raise exception 'E14_E2E_EXPECTED_ERROR_NOT_RAISED: %', p_expected_message;
 end;
 $$;
 
@@ -77,44 +94,27 @@ select 'publish_replay', public.e14_publish_vertical(
 select pg_temp.e14_assert((select value->>'replayed' = 'true' from e14_test_results where name='publish_replay'), 'publish replay flag must be true');
 select pg_temp.e14_assert((select count(*) - :'e14_events_before'::bigint = 4 from eventing.events), 'publish replay must not append events');
 
-do $$
-begin
-  begin
-    perform public.e14_publish_vertical(
-      :'e14_operator_id'::uuid,
-      :'e14_organization_id'::uuid,
-      :'e14_journey_version_id'::uuid,
-      repeat('0', 64),
-      'e14-e2e-publish-v1'
-    );
-    raise exception 'expected IDEMPOTENCY_KEY_REUSED';
-  exception when others then
-    if sqlerrm <> 'IDEMPOTENCY_KEY_REUSED' then raise; end if;
-  end;
-
-  begin
-    perform public.e14_publish_vertical(
-      :'e14_participant_id'::uuid,
-      :'e14_organization_id'::uuid,
-      :'e14_journey_version_id'::uuid,
-      :'e14_journey_content_hash',
-      'e14-e2e-forbidden-publish'
-    );
-    raise exception 'expected FORBIDDEN';
-  exception when others then
-    if sqlerrm <> 'FORBIDDEN' then raise; end if;
-  end;
-
-  begin
-    update catalog.journey_versions
-    set title = title || ' altered'
-    where id = :'e14_journey_version_id'::uuid;
-    raise exception 'expected PUBLISHED_VERSION_IMMUTABLE';
-  exception when others then
-    if sqlerrm <> 'PUBLISHED_VERSION_IMMUTABLE' then raise; end if;
-  end;
-end;
-$$;
+select pg_temp.e14_expect_error(
+  format(
+    'select public.e14_publish_vertical(%L::uuid,%L::uuid,%L::uuid,%L,%L)',
+    :'e14_operator_id', :'e14_organization_id', :'e14_journey_version_id', repeat('0',64), 'e14-e2e-publish-v1'
+  ),
+  'IDEMPOTENCY_KEY_REUSED'
+);
+select pg_temp.e14_expect_error(
+  format(
+    'select public.e14_publish_vertical(%L::uuid,%L::uuid,%L::uuid,%L,%L)',
+    :'e14_participant_id', :'e14_organization_id', :'e14_journey_version_id', :'e14_journey_content_hash', 'e14-e2e-forbidden-publish'
+  ),
+  'FORBIDDEN'
+);
+select pg_temp.e14_expect_error(
+  format(
+    'update catalog.journey_versions set title=title||'' altered'' where id=%L::uuid',
+    :'e14_journey_version_id'
+  ),
+  'PUBLISHED_VERSION_IMMUTABLE'
+);
 
 insert into e14_test_results(name, value)
 select 'enrollment', public.e14_create_enrollment(
@@ -138,22 +138,13 @@ select 'start_journey', public.e14_start_journey(
   'e14-e2e-start-journey-v1'
 );
 select pg_temp.e14_assert((select value->>'replayed' = 'false' from e14_test_results where name='start_journey'), 'journey start must not be replayed');
-
-do $$
-begin
-  begin
-    perform public.e14_start_journey(
-      :'e14_participant_id'::uuid,
-      :'e14_journey_instance_id'::uuid,
-      0,
-      'e14-e2e-stale-journey-v1'
-    );
-    raise exception 'expected AGGREGATE_VERSION_CONFLICT';
-  exception when others then
-    if sqlerrm <> 'AGGREGATE_VERSION_CONFLICT' then raise; end if;
-  end;
-end;
-$$;
+select pg_temp.e14_expect_error(
+  format(
+    'select public.e14_start_journey(%L::uuid,%L::uuid,0,%L)',
+    :'e14_participant_id', :'e14_journey_instance_id', 'e14-e2e-stale-journey-v1'
+  ),
+  'AGGREGATE_VERSION_CONFLICT'
+);
 
 insert into e14_test_results(name, value)
 select 'start_diagnostic', public.e14_start_diagnostic(
@@ -217,19 +208,13 @@ select value#>>'{s,step_instance_id}' as step_instance_id,
 from e14_test_results where name='state_after_diagnostic'
 \gset e14_
 
-do $$
-begin
-  begin
-    perform public.e14_get_participant_state(
-      :'e14_operator_id'::uuid,
-      :'e14_journey_instance_id'::uuid
-    );
-    raise exception 'expected FORBIDDEN';
-  exception when others then
-    if sqlerrm <> 'FORBIDDEN' then raise; end if;
-  end;
-end;
-$$;
+select pg_temp.e14_expect_error(
+  format(
+    'select public.e14_get_participant_state(%L::uuid,%L::uuid)',
+    :'e14_operator_id', :'e14_journey_instance_id'
+  ),
+  'FORBIDDEN'
+);
 
 insert into e14_test_results(name, value)
 select 'start_activity', public.e14_start_activity(
@@ -385,45 +370,42 @@ select pg_temp.e14_assert((select count(*) = 35 from eventing.outbox o join even
 select pg_temp.e14_assert((select count(*) = 8 from eventing.events where correlation_id = :'e14_successful_submit_request_id'::uuid), 'successful submission must atomically emit eight correlated events');
 select pg_temp.e14_assert((select count(*) = 2 and sum(amount)=7 from engagement.point_ledger where journey_instance_id = :'e14_journey_instance_id'::uuid), 'points ledger must remain exact');
 
+-- RLS checks are evaluated under the runtime role, with normal psql variable
+-- expansion outside dollar-quoted procedural blocks.
 set local role app_runtime;
 select set_config('app.user_account_id', :'e14_participant_id', true);
 select set_config('app.organization_id', :'e14_organization_id', true);
 select set_config('app.request_id', 'e14-e2e-rls-own', true);
 select set_config('app.actor_type', 'user', true);
-do $$
-begin
-  if (select count(*) from core.entrepreneurs where id=:'e14_entrepreneur_id'::uuid) <> 1 then
-    raise exception 'RLS participant cannot read own entrepreneur';
-  end if;
-  if (select count(*) from orchestration.journey_instances where id=:'e14_journey_instance_id'::uuid) <> 1 then
-    raise exception 'RLS participant cannot read own journey instance';
-  end if;
-end;
-$$;
+select pg_temp.e14_assert((select count(*) = 1 from core.entrepreneurs where id=:'e14_entrepreneur_id'::uuid), 'RLS participant cannot read own entrepreneur');
+select pg_temp.e14_assert((select count(*) = 1 from orchestration.journey_instances where id=:'e14_journey_instance_id'::uuid), 'RLS participant cannot read own journey instance');
+
 select set_config('app.user_account_id', :'e14_unauthorized_user_id', true);
 select set_config('app.organization_id', '', true);
 select set_config('app.request_id', 'e14-e2e-rls-denied', true);
-do $$
-declare affected integer;
-begin
-  if (select count(*) from core.entrepreneurs where id=:'e14_entrepreneur_id'::uuid) <> 0 then
-    raise exception 'RLS exposed entrepreneur to unrelated actor';
-  end if;
-  if (select count(*) from orchestration.journey_instances where id=:'e14_journey_instance_id'::uuid) <> 0 then
-    raise exception 'RLS exposed journey instance to unrelated actor';
-  end if;
-  update orchestration.journey_instances set status='paused' where id=:'e14_journey_instance_id'::uuid;
-  get diagnostics affected = row_count;
-  if affected <> 0 then raise exception 'RLS allowed unrelated write'; end if;
-end;
-$$;
+select pg_temp.e14_assert((select count(*) = 0 from core.entrepreneurs where id=:'e14_entrepreneur_id'::uuid), 'RLS exposed entrepreneur to unrelated actor');
+select pg_temp.e14_assert((select count(*) = 0 from orchestration.journey_instances where id=:'e14_journey_instance_id'::uuid), 'RLS exposed journey instance to unrelated actor');
+with changed as (
+  update orchestration.journey_instances
+  set status='paused'
+  where id=:'e14_journey_instance_id'::uuid
+  returning 1
+)
+select pg_temp.e14_assert((select count(*) = 0 from changed), 'RLS allowed unrelated write');
 reset role;
 
+-- Persist test identifiers in local GUCs so the privilege check can execute
+-- inside a dollar-quoted block without psql interpolation.
+select set_config('e14.test.participant_id', :'e14_participant_id', true);
+select set_config('e14.test.journey_instance_id', :'e14_journey_instance_id', true);
 set local role authenticated;
 do $$
 begin
   begin
-    perform public.e14_get_participant_state(:'e14_participant_id'::uuid, :'e14_journey_instance_id'::uuid);
+    perform public.e14_get_participant_state(
+      current_setting('e14.test.participant_id')::uuid,
+      current_setting('e14.test.journey_instance_id')::uuid
+    );
     raise exception 'authenticated role unexpectedly executed server-only RPC';
   exception when insufficient_privilege then
     null;
