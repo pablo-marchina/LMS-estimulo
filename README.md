@@ -25,6 +25,8 @@ A decisão atual exige:
 
 A porta `HubSpotDataGateway`, o adapter determinístico de teste e o gate `write → readback → use` estão implementados. O motor lógico configurável também suporta formulários versionados, quantidade variável de arquétipos, classificação declarativa com abstenção, recálculo, override append-only e ativações persistidas. O bloqueio prioritário permanece o inventário da conta HubSpot, o modelo físico e o adapter real.
 
+O legado de helpers E14 também está contido: 107 helpers privados e 8 RPCs públicos com argumentos opacos foram inventariados, congelados e isolados atrás de uma fronteira semântica. A remoção física permanece incremental.
+
 ## Estrutura
 
 ```text
@@ -55,6 +57,7 @@ npm run typecheck:web
 npm run test:e14-step5
 npm run test:e14-hubspot-contracts
 npm run test:e14-configurable-product
+npm run test:e14-opaque-helper-containment
 npm run build:web
 ```
 
@@ -67,10 +70,12 @@ npm run validate:repository
 npm run validate:dependency-lock
 npm run validate:e14-runtime-history
 npm run validate:e14-public-contracts
+npm run validate:e14-opaque-helper-containment
 npm run test:e14-backend-e2e
 npm run test:e14-database-gates
 npm run test:e14-hubspot-contracts
 npm run test:e14-configurable-product
+npm run test:e14-opaque-helper-containment
 npm run validate:e14-step5
 npm run test:e14-step5
 npm run test:e14-runtime-recovery
@@ -87,6 +92,8 @@ npm run build:web
 
 `npm run test:e14-configurable-product` também não exige acesso ao HubSpot. Ele prova publicação, respostas, número variável de arquétipos, abstenção, retirada operacional, recálculo, override, histórico append-only e persistência das ativações.
 
+`npm run validate:e14-opaque-helper-containment` congela o inventário das funções com argumentos de uma letra e garante que os oito RPCs públicos legados só sejam chamados pela fronteira semântica da aplicação.
+
 ## Documentação
 
 - [Índice atual do projeto](PROJECT_INDEX.md)
@@ -96,6 +103,7 @@ npm run build:web
 - [Registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
 - [Delta de schema E14](docs/implementation/SCHEMA_DELTA_E14.md)
 - [Motor configurável E14](docs/implementation/E14_CONFIGURABLE_PRODUCT_ENGINE.md)
+- [Contenção dos helpers opacos](docs/implementation/E14_OPAQUE_HELPER_CONTAINMENT.md)
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Inventário bloqueante do HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
