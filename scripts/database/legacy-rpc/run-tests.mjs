@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(currentDir, "../../..");
-const outputDir = resolve(repositoryRoot, ".tmp/e14-opaque-helpers");
+const outputDir = resolve(repositoryRoot, ".tmp/legacy-rpc");
 const tsconfigPath = resolve(currentDir, "tsconfig.json");
 const compiledTestPath = resolve(
   outputDir,
-  "scripts/e14/opaque-helpers/legacy-rpc-arguments.test.mjs"
+  "scripts/database/legacy-rpc/legacy-rpc-arguments.test.mjs"
 );
 const inventoryTestPath = resolve(currentDir, "inventory.test.mjs");
 
