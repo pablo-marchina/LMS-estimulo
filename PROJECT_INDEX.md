@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 2.8  
+**Versão:** 2.9  
 **Data:** 2026-07-10  
-**Status:** E14 em execução; HubSpot definido como fonte autoritativa; modelo físico bloqueado pelo inventário da conta
+**Status:** E14 em execução; contrato HubSpot e adapter de teste comprovados; modelo físico bloqueado pelo inventário da conta
 
 ## 1. Hierarquia de referência
 
@@ -58,6 +58,7 @@ O repositório contém:
 - gate de CI em PostgreSQL 17.6 com equivalência estrutural;
 - contrato congelado dos 18 RPCs públicos;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
+- porta `HubSpotDataGateway`, adapter em memória e gate `write → readback → use` testados sem acesso à conta real;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
 O runtime atual comprova a fundação técnica, mas ainda usa estruturas PostgreSQL que não satisfazem a autoridade HubSpot recém-definida. Essas estruturas serão réplica técnica, cache ou serão descontinuadas após a transição.
@@ -66,10 +67,10 @@ O runtime atual comprova a fundação técnica, mas ainda usa estruturas Postgre
 
 Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
 
-Os gates de banco foram concluídos. Permanecem dois P0:
+Os gates de banco e o contrato independente do provider foram concluídos. Permanecem dois P0:
 
 1. impedir expansão dos helpers opacos;
-2. inventariar a conta HubSpot e aprovar o modelo físico autoritativo.
+2. inventariar a conta HubSpot, aprovar o modelo físico e provar o adapter real.
 
 ```text
 clean_replay_passed = true
@@ -77,8 +78,12 @@ schema_equivalence_passed = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 hubspot_authoritative_source_decided = true
+hubspot_gateway_contract_defined = true
+hubspot_test_adapter_implemented = true
+write_readback_use_gate_tested = true
 hubspot_inventory_complete = false
 hubspot_physical_model_approved = false
+hubspot_real_adapter_implemented = false
 new_functional_migration_authorized = false
 ```
 
@@ -183,6 +188,7 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 ### Integrações e ambientes
 
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Inventário bloqueante HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 - [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
 - [Portas e adapters](docs/architecture/PROVIDER_PORTS_AND_ADAPTERS.md)
@@ -218,14 +224,15 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 3. congelar contratos públicos — concluído;
 4. reproduzir backend E2E — concluído;
 5. formalizar HubSpot como autoridade — concluído;
-6. inventariar sandbox, plano, objetos, propriedades, associações, scopes, webhooks e limites HubSpot;
-7. aprovar o modelo físico e contratos de write/readback/cache;
-8. conter os helpers opacos e concluir o delta final;
-9. implementar formulário, arquétipos e regras editáveis HubSpot-sourced;
-10. integrar conteúdo externo;
-11. executar E2E completo no Supabase de teste;
-12. provisionar e validar AWS staging;
-13. somente então avaliar produção.
+6. definir a porta, o adapter de teste e o gate `write → readback → use` — concluído;
+7. inventariar sandbox, plano, objetos, propriedades, associações, scopes, webhooks e limites HubSpot;
+8. aprovar o modelo físico e implementar o adapter real;
+9. conter os helpers opacos e concluir o delta final;
+10. implementar formulário, arquétipos e regras editáveis HubSpot-sourced;
+11. integrar conteúdo externo;
+12. executar E2E completo no Supabase de teste;
+13. provisionar e validar AWS staging;
+14. somente então avaliar produção.
 
 ## 8. Regra de conclusão
 
@@ -235,8 +242,12 @@ migrations_are_replayable = true
 structural_schema_equivalence = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
+hubspot_gateway_contract_defined = true
+hubspot_test_adapter_implemented = true
+write_readback_use_gate_tested = true
 hubspot_inventory_complete = false
 hubspot_physical_model_approved = false
+hubspot_real_adapter_implemented = false
 all_collected_data_persisted_in_hubspot = false
 all_business_reads_have_hubspot_origin = false
 security_and_data_gates_pass = false

@@ -23,12 +23,13 @@ A decisão atual exige:
 - formulário, arquétipos, políticas e regras de uso editáveis e versionados no HubSpot;
 - quantidade e nomes de arquétipos sem hardcode.
 
-O bloqueio prioritário agora é inventariar o sandbox HubSpot e aprovar o modelo físico.
+A porta `HubSpotDataGateway`, o adapter determinístico de teste e o gate `write → readback → use` já estão implementados e testados. O bloqueio prioritário permanece o inventário da conta HubSpot, o modelo físico e o adapter real.
 
 ## Estrutura
 
 ```text
 apps/web/                         aplicação Next.js
+apps/web/lib/hubspot/             contratos e porta HubSpot autoritativa
 supabase/migrations/              histórico executável de migrations
 supabase/canonical-migrations/    SQL canônico, manifests e baseline estrutural
 supabase/functions/               adapters ativos apenas no Supabase de teste
@@ -51,6 +52,7 @@ cp apps/web/.env.example apps/web/.env.local
 npm install --ignore-scripts
 npm run typecheck:web
 npm run test:e14-step5
+npm run test:e14-hubspot-contracts
 npm run build:web
 ```
 
@@ -64,6 +66,7 @@ npm run validate:e14-runtime-history
 npm run validate:e14-public-contracts
 npm run test:e14-backend-e2e
 npm run test:e14-database-gates
+npm run test:e14-hubspot-contracts
 npm run validate:e14-step5
 npm run test:e14-step5
 npm run test:e14-runtime-recovery
@@ -74,6 +77,8 @@ npm run build:web
 
 `npm run test:e14-database-gates` exige PostgreSQL 17.6 compatível com o Supabase e executa manifests, replay, equivalência, contratos públicos e backend E2E.
 
+`npm run test:e14-hubspot-contracts` não exige acesso ao HubSpot. Ele compila os contratos TypeScript e prova origem, readback, idempotência, retry, consistência eventual, concorrência e rejeição de snapshots inválidos.
+
 ## Documentação
 
 - [Índice atual do projeto](PROJECT_INDEX.md)
@@ -83,6 +88,7 @@ npm run build:web
 - [Registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
 - [Delta de schema E14](docs/implementation/SCHEMA_DELTA_E14.md)
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Inventário bloqueante do HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 - [Backend E2E E14](docs/implementation/E14_BACKEND_E2E.md)
 - [Estratégia Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
