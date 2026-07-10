@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260709184749
+-- Remote name: m14b_step5_operator_workspace
+-- Remote SQL SHA-256: 9b4b9b387778ee174c01aaf700d638e6df157065a167c585624e8a1ad3e1fe69
+-- Do not edit after reconciliation; corrections require a new migration.
+
 create or replace function public.e14_get_operator_workspace(
   p_actor_user_account_id uuid,
   p_organization_id uuid

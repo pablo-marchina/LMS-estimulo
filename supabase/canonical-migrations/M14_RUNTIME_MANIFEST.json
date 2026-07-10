@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_runtime_migration_recovery_manifest",
+  "source": "supabase_migrations.schema_migrations",
+  "first_version": "20260709183504",
+  "last_version": "20260709184749",
+  "migration_count": 2,
+  "total_remote_sql_bytes": 12045,
+  "combined_remote_fingerprint_sha256": "8b3cb9b361f2bbff69d784ef92767de14795f761c1159321e8b163ccde96fde0",
+  "canonical_file": "20260709183504_m14_application_canonical.sql",
+  "canonical_file_sha256": "3e919a75e8fc0cabe7c4ba1f2beafef3b8c700ea811b5b81c27639b0af236290",
+  "migrations": [
+    {
+      "version": "20260709183504",
+      "name": "m14_step5_application_read_surfaces",
+      "file": "20260709183504_m14_step5_application_read_surfaces.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 10164,
+      "remote_sql_sha256": "464263feab785f9ae35d95ad89c215e9794f473e89f5d7d36a0f1c371d1c328d",
+      "materialized_file_sha256": "c692eab79e8411ff08c49a5e779d404462e58338ccc58a7305a4f6ce14032d28"
+    },
+    {
+      "version": "20260709184749",
+      "name": "m14b_step5_operator_workspace",
+      "file": "20260709184749_m14b_step5_operator_workspace.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1881,
+      "remote_sql_sha256": "9b4b9b387778ee174c01aaf700d638e6df157065a167c585624e8a1ad3e1fe69",
+      "materialized_file_sha256": "000077a9d87d18396a0732b55cf1625e885a0eafd55484a0ee15c6dc47f0f7a6"
+    }
+  ]
+}
