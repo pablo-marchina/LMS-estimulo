@@ -3,7 +3,7 @@
 create temporary table e14_event_schema_ids(
   id uuid primary key,
   event_name text unique not null
-) on commit drop;
+) on commit preserve rows;
 
 insert into e14_event_schema_ids(id,event_name) values
 ('e85a6dae-d34f-45cb-9171-f67ce9a0d217','assessment.answer.recorded'),
@@ -38,31 +38,20 @@ insert into e14_event_schema_ids(id,event_name) values
 
 delete from eventing.event_schemas es
 using e14_event_schema_ids mapping
-where es.event_name=mapping.event_name
-  and es.event_version=1;
+where es.event_name=mapping.event_name and es.event_version=1;
 
 with documents as (
-  select
-    mapping.id,
-    mapping.event_name,
-    jsonb_build_object(
-      'type','object',
-      'title',mapping.event_name,
-      '$schema','https://json-schema.org/draft/2020-12/schema',
-      'additionalProperties',true
-    ) as schema_document
+  select mapping.id,mapping.event_name,jsonb_build_object(
+    'type','object','title',mapping.event_name,
+    '$schema','https://json-schema.org/draft/2020-12/schema',
+    'additionalProperties',true
+  ) as schema_document
   from e14_event_schema_ids mapping
 )
 insert into eventing.event_schemas(
   id,event_name,event_version,schema_uri,schema_document,schema_hash,status,published_at
 )
-select
-  id,
-  event_name,
-  1,
-  'urn:estimulo:event:' || event_name || ':1',
-  schema_document,
-  app_private.e14_request_hash(schema_document),
-  'published',
-  '2026-07-09T05:10:56.317612Z'::timestamptz
+select id,event_name,1,'urn:estimulo:event:'||event_name||':1',schema_document,
+       app_private.e14_request_hash(schema_document),'published',
+       '2026-07-09T05:10:56.317612Z'::timestamptz
 from documents;
