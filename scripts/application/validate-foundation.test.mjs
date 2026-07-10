@@ -39,7 +39,7 @@ test('seis rotas do contrato existem', async () => {
 
 test('service role permanece server-only', async () => {
   const admin = await read('apps/web/lib/supabase/admin.ts');
-  const actions = await read('apps/web/app/actions/journeyRuntime.ts');
+  const actions = await read('apps/web/app/actions/journey.ts');
   assert.ok(admin.includes('import "server-only"'));
   assert.ok(!actions.includes('SUPABASE_SERVICE_ROLE_KEY'));
 });
@@ -116,7 +116,7 @@ test('atividade renderiza o heading real do conteúdo versionado', async () => {
 });
 
 test('tentativa reprovada retorna para revisão da atividade', async () => {
-  const actions = await read('apps/web/app/actions/journeyRuntime.ts');
+  const actions = await read('apps/web/app/actions/journey.ts');
   assert.ok(actions.includes('updated.state.q?.passed'));
   assert.ok(actions.includes('/empreendedor/atividade/${step}'));
 });
