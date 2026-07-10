@@ -6,7 +6,7 @@
 
 ## Resultado
 
-A vertical técnica E14 foi reproduzida depois do replay das 243 migrations, sem consultar nem alterar o Supabase remoto durante a execução comportamental.
+A vertical técnica atual foi reproduzida depois do replay das 244 migrations, sem consultar nem alterar o Supabase remoto durante a execução comportamental.
 
 ```text
 clean_replay_passed = true
@@ -24,10 +24,10 @@ cleanup = ephemeral_postgres_container
 3. matrícula sintética;
 4. início da jornada;
 5. diagnóstico com quatro respostas;
-6. atribuição do caminho `standard`, sem baixa confiança;
+6. atribuição do caminho `standard`;
 7. início de atividade;
 8. confirmação de quatro seções sem duplicação;
-9. primeira tentativa de quick check reprovada, sem progresso ou pontos;
+9. primeira tentativa de quick check reprovada;
 10. segunda tentativa aprovada;
 11. conclusão de etapa, caminho e jornada;
 12. projeção final para participante e operador.
@@ -59,9 +59,9 @@ O replay da submissão aprovada preserva o mesmo resultado e não cria novos eve
 - ator não relacionado não lê nem altera empreendedor ou instância de jornada por RLS;
 - role `authenticated` não executa RPCs exclusivos do servidor.
 
-## Dados de referência ausentes do histórico
+## Dados de referência ausentes do histórico original
 
-O replay estrutural revelou que o Supabase de teste contém dados operacionais criados fora de `supabase_migrations.schema_migrations`:
+O replay estrutural revelou configurações no Supabase de teste que não foram criadas pelo histórico original:
 
 - quatro itens diagnósticos;
 - dezesseis opções;
@@ -69,9 +69,7 @@ O replay estrutural revelou que o Supabase de teste contém dados operacionais c
 - duas etapas de caminho;
 - vinte e nove IDs canônicos de schemas de eventos.
 
-Esses registros foram materializados como fixtures explícitas em `scripts/e14/backend-e2e`, somente no PostgreSQL efêmero. Eles não foram transformados retroativamente em migrations e nenhuma escrita foi realizada no Supabase remoto.
-
-A próxima revisão do delta de schema deve decidir quais desses registros são configuração oficial do produto e quais permanecem exclusivamente como dados sintéticos de teste.
+Esses registros são materializados como fixtures explícitas em `scripts/database/backend-e2e`, somente no PostgreSQL efêmero. Eles não foram transformados retroativamente em migrations.
 
 ## Execução
 
@@ -79,8 +77,8 @@ A próxima revisão do delta de schema deve decidir quais desses registros são 
 npm run test:database-gates
 ```
 
-O comando valida os manifests, reproduz as 243 migrations, compara o schema, congela os 18 RPCs e executa este E2E.
+O comando valida os quatro manifests, reproduz as 244 migrations, compara o schema, congela os 18 RPCs e executa este E2E.
 
 ## Limite
 
-A conclusão da E14-R1d fecha o bloqueio de fonte, replay, contratos e comportamento do runtime atual. Ela não autoriza automaticamente uma nova migration funcional: ainda é necessário concluir o delta final de schema e impedir expansão dos helpers opacos existentes.
+Esta prova fecha o bloqueio de fonte, replay, contratos e comportamento do runtime atual. Ela não autoriza automaticamente migrations funcionais nem transforma o PostgreSQL em autoridade dos dados de negócio.
