@@ -16,6 +16,8 @@ import { createArchetypeAssignment } from "./classification-engine.js";
 import {
   type ActivationExecutionBatchPayload,
   type ArchetypeAssignmentPayload,
+  type AssignmentOverride,
+  type AssignmentReason,
   type ConfigurableProductResult,
   type DecisionRequestPayload,
   type FormSubmissionPayload,
@@ -35,21 +37,38 @@ export type HubSpotRecordInput<T extends JsonObject> =
     };
 
 export type SubmissionInput = HubSpotRecordInput<FormSubmissionPayload>;
-export type DecisionRequestInput = HubSpotRecordInput<DecisionRequestPayload>;
 
 export type ConfigurableProductExecution = {
   gateway: HubSpotDataGateway;
   configurationQuery: HubSpotSnapshotQuery;
   submissionInput: SubmissionInput;
-  decisionRequestInput: DecisionRequestInput;
+  decisionRequestTarget?: HubSpotWriteTarget;
   assignmentTarget: HubSpotWriteTarget;
   activationTarget: HubSpotWriteTarget | null;
   assignmentId: string;
   activationBatchId: string;
+  reason: AssignmentReason;
+  supersedesAssignmentId: string | null;
+  override: AssignmentOverride | null;
+  overrideArchetypeVersionId: string | null;
   now?: () => Date;
   maxSnapshotAgeMs?: number;
   retry?: HubSpotRetryPolicy;
 };
+
+function decisionRequestWrite(
+  target: HubSpotWriteTarget,
+  payload: DecisionRequestPayload
+): HubSpotWriteCommand<DecisionRequestPayload> {
+  return {
+    idempotencyKey: target.idempotencyKey,
+    kind: "collected_data",
+    objectType: target.objectType,
+    objectId: target.objectId,
+    expectedVersion: target.expectedVersion,
+    payload
+  };
+}
 
 function assignmentWrite(
   target: HubSpotWriteTarget,
@@ -103,7 +122,24 @@ export async function executeConfigurableProductFlow(
     execution.configurationQuery
   );
   const submissionSnapshot = await resolveInput(context, execution.submissionInput);
-  const decisionRequestSnapshot = await resolveInput(context, execution.decisionRequestInput);
+
+  const decisionRequestTarget = execution.decisionRequestTarget ?? {
+    objectType: "logical_decision_request",
+    objectId: `decision-request-${execution.assignmentId}`,
+    idempotencyKey: `${execution.assignmentTarget.idempotencyKey}:decision-request`,
+    expectedVersion: "0"
+  };
+  const decisionRequestSnapshot = await writeAndConfirmHubSpotRecord(
+    context,
+    decisionRequestWrite(decisionRequestTarget, {
+      requestId: decisionRequestTarget.objectId,
+      reason: execution.reason,
+      supersedesAssignmentId: execution.supersedesAssignmentId,
+      override: execution.override,
+      overrideArchetypeVersionId: execution.overrideArchetypeVersionId,
+      requestedAt: context.now().toISOString()
+    })
+  );
   const decisionRequest = decisionRequestSnapshot.payload;
 
   const createdAt = context.now().toISOString();
@@ -117,9 +153,9 @@ export async function executeConfigurableProductFlow(
       submission: submissionSnapshot.payload,
       inputSnapshotHashes: [
         configurationSnapshot.source.snapshotHash,
-        submissionSnapshot.source.snapshotHash,
-        decisionRequestSnapshot.source.snapshotHash
+        submissionSnapshot.source.snapshotHash
       ],
+      decisionRequestSnapshotHash: decisionRequestSnapshot.source.snapshotHash,
       createdAt,
       override: decisionRequest.override
     },
