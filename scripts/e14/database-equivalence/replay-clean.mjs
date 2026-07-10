@@ -6,10 +6,6 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const canonicalDirectory = path.join(repositoryRoot, 'supabase/canonical-migrations');
 const migrationsDirectory = path.join(repositoryRoot, 'supabase/migrations');
-const bootstrapRolesFile = path.join(
-  repositoryRoot,
-  'scripts/e14/database-equivalence/bootstrap-roles.sql',
-);
 const applicationSchemas = [
   'app_private',
   'assessment',
@@ -66,29 +62,39 @@ function safeFileName(value, field) {
   return value;
 }
 
+function manifestEntries(manifest, source) {
+  return manifest.migrations.map((migration) => ({
+    version: safeFileName(migration.version, `${source} version`),
+    file: path.join(migrationsDirectory, safeFileName(migration.file, `${source} migration file`)),
+    source,
+  }));
+}
+
 async function buildReplayPlan() {
-  const baselineManifest = await readJson(path.join(canonicalDirectory, 'MIGRATION_MANIFEST.json'));
+  const m00M12Manifest = await readJson(
+    path.join(canonicalDirectory, 'M00_M12_RUNTIME_MANIFEST.json'),
+  );
   const m13Manifest = await readJson(path.join(canonicalDirectory, 'M13_RUNTIME_MANIFEST.json'));
   const m14Manifest = await readJson(path.join(canonicalDirectory, 'M14_RUNTIME_MANIFEST.json'));
 
-  const baseline = baselineManifest.migrations.map((migration) => ({
-    version: safeFileName(migration.file.split('_', 1)[0], 'baseline version'),
-    file: path.join(canonicalDirectory, safeFileName(migration.file, 'baseline migration file')),
-    source: 'canonical-m00-m12',
-  }));
-  const recovered = [...m13Manifest.migrations, ...m14Manifest.migrations].map((migration) => ({
-    version: safeFileName(migration.version, 'recovered version'),
-    file: path.join(migrationsDirectory, safeFileName(migration.file, 'recovered migration file')),
-    source: migration.version <= m13Manifest.last_version ? 'recovered-m13' : 'recovered-m14',
-  }));
+  const plan = [
+    ...manifestEntries(m00M12Manifest, 'recovered-m00-m12'),
+    ...manifestEntries(m13Manifest, 'recovered-m13'),
+    ...manifestEntries(m14Manifest, 'recovered-m14'),
+  ].sort((left, right) => left.version.localeCompare(right.version));
 
-  const plan = [...baseline, ...recovered].sort((left, right) => left.version.localeCompare(right.version));
   const versions = plan.map((migration) => migration.version);
   if (new Set(versions).size !== versions.length) fail('replay plan contains duplicate versions');
-  if (baseline.length !== 13) fail(`expected 13 M00-M12 migrations, found ${baseline.length}`);
-  if (m13Manifest.migration_count !== 165) fail(`expected 165 M13 migrations, found ${m13Manifest.migration_count}`);
-  if (m14Manifest.migration_count !== 2) fail(`expected 2 M14 migrations, found ${m14Manifest.migration_count}`);
-  if (plan.length !== 180) fail(`expected 180 replay files, found ${plan.length}`);
+  if (m00M12Manifest.migration_count !== 76) {
+    fail(`expected 76 M00-M12 migrations, found ${m00M12Manifest.migration_count}`);
+  }
+  if (m13Manifest.migration_count !== 165) {
+    fail(`expected 165 M13 migrations, found ${m13Manifest.migration_count}`);
+  }
+  if (m14Manifest.migration_count !== 2) {
+    fail(`expected 2 M14 migrations, found ${m14Manifest.migration_count}`);
+  }
+  if (plan.length !== 243) fail(`expected 243 replay files, found ${plan.length}`);
 
   return plan;
 }
@@ -104,15 +110,6 @@ function assertCleanDatabase(databaseUrl) {
   if (output !== '0') fail(`clean replay requires an empty application schema set; found ${output}`);
 }
 
-function provisionRolePrerequisites(databaseUrl) {
-  process.stdout.write('[bootstrap] cluster roles app_readonly, app_runtime, app_worker\n');
-  try {
-    runPsql(databaseUrl, ['--quiet', '--file', bootstrapRolesFile]);
-  } catch (error) {
-    fail(`role bootstrap failed: ${path.relative(repositoryRoot, bootstrapRolesFile)}\n${error.message}`);
-  }
-}
-
 function applyMigration(databaseUrl, migration, index, total) {
   const relativePath = path.relative(repositoryRoot, migration.file).replaceAll('\\', '/');
   process.stdout.write(`[${index + 1}/${total}] ${migration.source} ${relativePath}\n`);
@@ -126,14 +123,12 @@ function applyMigration(databaseUrl, migration, index, total) {
 export async function replayCleanDatabase(databaseUrl) {
   if (!databaseUrl) fail('DATABASE_URL is required');
   assertCleanDatabase(databaseUrl);
-  provisionRolePrerequisites(databaseUrl);
   const plan = await buildReplayPlan();
   plan.forEach((migration, index) => applyMigration(databaseUrl, migration, index, plan.length));
   return {
     status: 'replayed',
-    role_prerequisites: ['app_readonly', 'app_runtime', 'app_worker'],
     migration_files: plan.length,
-    canonical_m00_m12: 13,
+    recovered_m00_m12: 76,
     recovered_m13: 165,
     recovered_m14: 2,
     first_version: plan[0].version,
