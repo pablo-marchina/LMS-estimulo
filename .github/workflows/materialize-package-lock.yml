@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Install pinned npm
+        run: npm install --global npm@10.9.2 --no-audit --no-fund
+
       - name: Confirm npm version
         shell: bash
         run: |
