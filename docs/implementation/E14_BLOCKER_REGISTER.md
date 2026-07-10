@@ -1,6 +1,6 @@
 # E14 — registro de bloqueadores
 
-**Versão:** 1.0  
+**Versão:** 1.1  
 **Data:** 2026-07-10  
 **Status:** Ativo
 
@@ -15,7 +15,7 @@
 
 | ID | Severidade | Área | Descrição | Bloqueia | Critério de encerramento |
 |---|---|---|---|---|---|
-| E14-B002 | P0 | Maintainability | helpers privados E14 possuem nomes opacos e aliases extensos | expansão do padrão opaco | substituição incremental sem quebra dos 18 RPCs, resultados, eventos ou outbox |
+| E14-B002 | P0 | Maintainability | 107 helpers privados e 8 RPCs públicos ainda possuem argumentos opacos; o conjunto está inventariado e congelado | criação de novos aliases opacos e expansão do legado | substituição e remoção incremental sem quebra dos 18 RPCs, resultados, eventos ou outbox |
 | E14-B004 | P1 | Browser E2E | fluxo pelo navegador e acessibilidade não foram comprovados | conclusão da vertical | E2E com contas técnicas e auditoria de acessibilidade |
 | E14-B005 | P1 | Product inputs | conteúdo externo e configuração inicial dos arquétipos ainda não foram aprovados | implementação final | entradas oficiais versionadas e aprovadas |
 | E14-B006 | P1 | Test adapters | storage/scan estão ativos no Supabase de teste sem consumidor atual | gate operacional | integrar com E2E ou remover integralmente função, scheduler e dependências |
@@ -51,6 +51,22 @@ lockfile_drift_check_enabled = true
 ```
 
 O lockfile é validado pela governança e por um workflow matricial Ubuntu/Windows. Alterações em manifests sem atualização compatível do lockfile falham em `npm ci`.
+
+### Subgate de contenção de E14-B002
+
+```text
+legacy_database_surface_inventoried = true
+legacy_function_count = 115
+legacy_private_helper_count = 107
+legacy_public_rpc_count = 8
+opaque_helper_inventory_frozen = true
+legacy_public_rpc_aliases_isolated = true
+application_direct_alias_construction_allowed = false
+new_opaque_database_helpers_allowed = false
+physical_legacy_replacement_complete = false
+```
+
+A contenção impede crescimento da dívida e corrige a fronteira da aplicação, mas não encerra E14-B002. O encerramento ainda exige substituir e remover os helpers legados com equivalência comprovada.
 
 ### Subgate de integração independente de E14-B007
 
@@ -92,8 +108,12 @@ E14-B007
   → somente então autorizar migrations dependentes do provider
 
 E14-B002
-  → impedir novos helpers opacos
-  → novos componentes usam nomes e contratos semânticos
+  → inventário e bloqueio de expansão = concluídos
+  → fronteira semântica dos oito RPCs públicos = concluída
+  → escolher cadeia privada com consumidores conhecidos
+  → criar substituto semântico em migration autorizada
+  → provar equivalência, eventos e outbox
+  → remover helper antigo e reduzir o baseline
 
 E14-B004 + E14-B005
   → fechar a vertical funcional e validar a configuração oficial
@@ -112,6 +132,8 @@ schema_equivalence_passed = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 reproducible_install_passed = true
+opaque_helper_containment_passed = true
+opaque_helper_physical_replacement_complete = false
 hubspot_authoritative_source_decided = true
 hubspot_gateway_contract_defined = true
 hubspot_test_adapter_implemented = true
@@ -126,4 +148,4 @@ supabase_production_authorized = false
 aws_staging_gate_required = true
 ```
 
-Enquanto não houver acesso, o desenvolvimento pode avançar sobre interface administrativa local, preview sintético, browser E2E, acessibilidade e contenção dos helpers opacos. Nenhuma propriedade, object type ID, associação ou migration dependente do modelo físico será inventada.
+Enquanto não houver acesso, o desenvolvimento pode avançar sobre interface administrativa local, preview sintético, browser E2E, acessibilidade e substituições técnicas que não inventem o modelo físico do HubSpot. Nenhuma propriedade, object type ID, associação ou migration dependente do provider será inventada.
