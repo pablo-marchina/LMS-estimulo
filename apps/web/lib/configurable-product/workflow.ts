@@ -15,37 +15,36 @@ import { createArchetypeAssignment } from "./classification-engine.js";
 import {
   type ActivationExecutionBatchPayload,
   type ArchetypeAssignmentPayload,
-  type AssignmentOverride,
-  type AssignmentReason,
   type ConfigurableProductResult,
+  type DecisionRequestPayload,
   type FormSubmissionPayload,
   type HubSpotWriteTarget,
   type ProductConfigurationPayload
 } from "./contracts.js";
 import { ConfigurableProductError } from "./validation.js";
 
-export type SubmissionInput =
+export type HubSpotRecordInput<T extends Record<string, unknown>> =
   | {
       mode: "write";
-      command: HubSpotWriteCommand<FormSubmissionPayload>;
+      command: HubSpotWriteCommand<T>;
     }
   | {
       mode: "read";
       query: HubSpotSnapshotQuery;
     };
 
+export type SubmissionInput = HubSpotRecordInput<FormSubmissionPayload>;
+export type DecisionRequestInput = HubSpotRecordInput<DecisionRequestPayload>;
+
 export type ConfigurableProductExecution = {
   gateway: HubSpotDataGateway;
   configurationQuery: HubSpotSnapshotQuery;
   submissionInput: SubmissionInput;
+  decisionRequestInput: DecisionRequestInput;
   assignmentTarget: HubSpotWriteTarget;
   activationTarget: HubSpotWriteTarget | null;
   assignmentId: string;
   activationBatchId: string;
-  reason: AssignmentReason;
-  supersedesAssignmentId: string | null;
-  override: AssignmentOverride | null;
-  overrideArchetypeVersionId: string | null;
   now?: () => Date;
   maxSnapshotAgeMs?: number;
   retry?: HubSpotRetryPolicy;
@@ -79,6 +78,15 @@ function activationWrite(
   };
 }
 
+async function resolveInput<T extends Record<string, unknown>>(
+  context: HubSpotVerificationContext,
+  input: HubSpotRecordInput<T>
+): Promise<HubSpotSnapshot<T>> {
+  return input.mode === "write"
+    ? writeAndConfirmHubSpotRecord(context, input.command)
+    : readVerifiedHubSpotSnapshot<T>(context, input.query);
+}
+
 export async function executeConfigurableProductFlow(
   execution: ConfigurableProductExecution
 ): Promise<ConfigurableProductResult> {
@@ -93,30 +101,28 @@ export async function executeConfigurableProductFlow(
     context,
     execution.configurationQuery
   );
-  const submissionSnapshot = execution.submissionInput.mode === "write"
-    ? await writeAndConfirmHubSpotRecord(context, execution.submissionInput.command)
-    : await readVerifiedHubSpotSnapshot<FormSubmissionPayload>(
-        context,
-        execution.submissionInput.query
-      );
+  const submissionSnapshot = await resolveInput(context, execution.submissionInput);
+  const decisionRequestSnapshot = await resolveInput(context, execution.decisionRequestInput);
+  const decisionRequest = decisionRequestSnapshot.payload;
 
   const createdAt = context.now().toISOString();
   const assignment = createArchetypeAssignment(
     {
       assignmentId: execution.assignmentId,
       submissionObjectId: submissionSnapshot.source.objectId,
-      reason: execution.reason,
-      supersedesAssignmentId: execution.supersedesAssignmentId,
+      reason: decisionRequest.reason,
+      supersedesAssignmentId: decisionRequest.supersedesAssignmentId,
       configuration: configurationSnapshot.payload,
       submission: submissionSnapshot.payload,
       inputSnapshotHashes: [
         configurationSnapshot.source.snapshotHash,
-        submissionSnapshot.source.snapshotHash
+        submissionSnapshot.source.snapshotHash,
+        decisionRequestSnapshot.source.snapshotHash
       ],
       createdAt,
-      override: execution.override
+      override: decisionRequest.override
     },
-    execution.overrideArchetypeVersionId
+    decisionRequest.overrideArchetypeVersionId
   );
 
   const assignmentSnapshot = await writeAndConfirmHubSpotRecord(
@@ -132,6 +138,7 @@ export async function executeConfigurableProductFlow(
     inputSnapshotHashes: [
       configurationSnapshot.source.snapshotHash,
       submissionSnapshot.source.snapshotHash,
+      decisionRequestSnapshot.source.snapshotHash,
       assignmentSnapshot.source.snapshotHash
     ],
     executedAt: context.now().toISOString()
@@ -157,6 +164,7 @@ export async function executeConfigurableProductFlow(
     evidence: {
       configurationSource: configurationSnapshot.source,
       submissionSource: submissionSnapshot.source,
+      decisionRequestSource: decisionRequestSnapshot.source,
       assignmentSource: assignmentSnapshot.source,
       activationSource: activationSnapshot?.source ?? null
     }
