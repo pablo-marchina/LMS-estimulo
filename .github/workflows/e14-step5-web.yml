@@ -7,6 +7,7 @@ on:
       - "apps/web/**"
       - "package.json"
       - "scripts/e14/validate-step5-app-foundation*"
+      - "scripts/e14/hubspot-contracts/**"
       - "supabase/migrations/*_m14*_step5_*.sql"
 
 permissions:
@@ -40,6 +41,9 @@ jobs:
 
       - name: Run application foundation tests
         run: npm run test:e14-step5
+
+      - name: Test HubSpot authoritative data contracts
+        run: npm run test:e14-hubspot-contracts
 
       - name: Typecheck web application
         run: npm run typecheck:web
