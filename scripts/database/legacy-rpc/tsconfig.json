@@ -2,7 +2,7 @@
   "extends": "../../../apps/web/tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
-    "outDir": "../../../.tmp/e14-opaque-helpers",
+    "outDir": "../../../.tmp/legacy-rpc",
     "rootDir": "../../..",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
