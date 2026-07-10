@@ -6,6 +6,10 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const canonicalDirectory = path.join(repositoryRoot, 'supabase/canonical-migrations');
 const migrationsDirectory = path.join(repositoryRoot, 'supabase/migrations');
+const providerBootstrapFile = path.join(
+  repositoryRoot,
+  'scripts/e14/database-equivalence/bootstrap-provider-catalog.sql',
+);
 const applicationSchemas = [
   'app_private',
   'assessment',
@@ -110,6 +114,17 @@ function assertCleanDatabase(databaseUrl) {
   if (output !== '0') fail(`clean replay requires an empty application schema set; found ${output}`);
 }
 
+function provisionProviderCatalog(databaseUrl) {
+  process.stdout.write('[bootstrap] provider catalog supabase_migrations.schema_migrations\n');
+  try {
+    runPsql(databaseUrl, ['--quiet', '--single-transaction', '--file', providerBootstrapFile]);
+  } catch (error) {
+    fail(
+      `provider catalog bootstrap failed: ${path.relative(repositoryRoot, providerBootstrapFile)}\n${error.message}`,
+    );
+  }
+}
+
 function applyMigration(databaseUrl, migration, index, total) {
   const relativePath = path.relative(repositoryRoot, migration.file).replaceAll('\\', '/');
   process.stdout.write(`[${index + 1}/${total}] ${migration.source} ${relativePath}\n`);
@@ -123,11 +138,13 @@ function applyMigration(databaseUrl, migration, index, total) {
 export async function replayCleanDatabase(databaseUrl) {
   if (!databaseUrl) fail('DATABASE_URL is required');
   assertCleanDatabase(databaseUrl);
+  provisionProviderCatalog(databaseUrl);
   const plan = await buildReplayPlan();
   plan.forEach((migration, index) => applyMigration(databaseUrl, migration, index, plan.length));
   return {
     status: 'replayed',
     transaction_mode: 'one_transaction_per_migration',
+    provider_prerequisites: ['supabase_migrations.schema_migrations'],
     migration_files: plan.length,
     recovered_m00_m12: 76,
     recovered_m13: 165,
