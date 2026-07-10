@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220623
+-- Remote name: m06_eventing_integration
+-- Remote SQL SHA-256: 7ae07bf05f8d07214839523e4c81e6f4474137d7c0d361ef8c163b447147cef1
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M06 — canonical events, transactional outbox and external integrations
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

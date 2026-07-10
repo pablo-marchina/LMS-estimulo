@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220646
+-- Remote name: m07_intelligence_governance
+-- Remote SQL SHA-256: a7d38985210f460913a90579a828453bd6d6c3ee0d80bb774e07598d961b4f7b
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M07 — behavioral intelligence, score research and governance
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220445
+-- Remote name: m02_catalog
+-- Remote SQL SHA-256: 36a84b7aec22327e2ff3ebc0125905ba225bee1ed269bb69861cd33b12c15da4
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M02 — multi-journey versioned catalog
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

@@ -1,3 +1,86 @@
--- E14 migration-history compatibility marker.
--- The final schema effect is represented by the canonical M00-M12 carrier migrations.
--- Intentionally no-op. Keep this file so Supabase can reconcile the remote migration version.
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708221428
+-- Remote name: m08c_foreign_keys_part_1
+-- Remote SQL SHA-256: eb21882015dd49e168eb68f4c4d115e8da465f456068f1043e426ca3a5916d8a
+-- Do not edit after reconciliation; corrections require a new migration.
+
+set lock_timeout = '5s';
+set statement_timeout = '5min';
+
+alter table iam.external_identities add constraint fk_iam_external_identities_user_account_id_iam_user_accounts foreign key (user_account_id) references iam.user_accounts(id);
+alter table iam.organization_memberships add constraint fk_iam_organization_memberships_organization_id_iam_87edb784 foreign key (organization_id) references iam.organizations(id);
+alter table iam.organization_memberships add constraint fk_iam_organization_memberships_user_account_id_iam_ebf86e2b foreign key (user_account_id) references iam.user_accounts(id);
+alter table iam.role_definitions add constraint fk_iam_role_definitions_organization_id_iam_organizations foreign key (organization_id) references iam.organizations(id);
+alter table iam.role_permissions add constraint fk_iam_role_permissions_role_id_iam_role_definitions foreign key (role_id) references iam.role_definitions(id);
+alter table iam.role_permissions add constraint fk_iam_role_permissions_permission_id_iam_permissio_ea8b4ade foreign key (permission_id) references iam.permission_definitions(id);
+alter table iam.membership_roles add constraint fk_iam_membership_roles_membership_id_iam_organizat_e9b49a9c foreign key (membership_id) references iam.organization_memberships(id);
+alter table iam.membership_roles add constraint fk_iam_membership_roles_role_id_iam_role_definitions foreign key (role_id) references iam.role_definitions(id);
+alter table core.entrepreneurs add constraint fk_core_entrepreneurs_user_account_id_iam_user_accounts foreign key (user_account_id) references iam.user_accounts(id);
+alter table core.business_memberships add constraint fk_core_business_memberships_entrepreneur_id_core_e_b6d59fd4 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table core.business_memberships add constraint fk_core_business_memberships_business_id_core_businesses foreign key (business_id) references core.businesses(id);
+alter table core.file_objects add constraint fk_core_file_objects_owner_organization_id_iam_organizations foreign key (owner_organization_id) references iam.organizations(id);
+alter table catalog.programs add constraint fk_catalog_programs_owner_organization_id_iam_organizations foreign key (owner_organization_id) references iam.organizations(id);
+alter table catalog.journey_definitions add constraint fk_catalog_journey_definitions_program_id_catalog_programs foreign key (program_id) references catalog.programs(id);
+alter table catalog.journey_definitions add constraint fk_catalog_journey_definitions_owner_organization_i_126993ee foreign key (owner_organization_id) references iam.organizations(id);
+alter table catalog.journey_versions add constraint fk_catalog_journey_versions_journey_definition_id_c_74ed390b foreign key (journey_definition_id) references catalog.journey_definitions(id);
+alter table catalog.journey_versions add constraint fk_catalog_journey_versions_created_by_iam_user_accounts foreign key (created_by) references iam.user_accounts(id);
+alter table catalog.course_definitions add constraint fk_catalog_course_definitions_owner_organization_id_52b90a54 foreign key (owner_organization_id) references iam.organizations(id);
+alter table catalog.course_versions add constraint fk_catalog_course_versions_course_definition_id_cat_6e130313 foreign key (course_definition_id) references catalog.course_definitions(id);
+alter table catalog.course_versions add constraint fk_catalog_course_versions_created_by_iam_user_accounts foreign key (created_by) references iam.user_accounts(id);
+alter table catalog.modules add constraint fk_catalog_modules_course_version_id_catalog_course_versions foreign key (course_version_id) references catalog.course_versions(id);
+alter table catalog.activity_definitions add constraint fk_catalog_activity_definitions_owner_organization__274e5a8c foreign key (owner_organization_id) references iam.organizations(id);
+alter table catalog.activity_versions add constraint fk_catalog_activity_versions_activity_definition_id_f6975b0a foreign key (activity_definition_id) references catalog.activity_definitions(id);
+alter table catalog.activity_versions add constraint fk_catalog_activity_versions_created_by_iam_user_accounts foreign key (created_by) references iam.user_accounts(id);
+alter table catalog.module_activities add constraint fk_catalog_module_activities_module_id_catalog_modules foreign key (module_id) references catalog.modules(id);
+alter table catalog.module_activities add constraint fk_catalog_module_activities_activity_version_id_ca_06762018 foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table catalog.content_assets add constraint fk_catalog_content_assets_activity_version_id_catal_ac36c890 foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table catalog.content_assets add constraint fk_catalog_content_assets_file_object_id_core_file_objects foreign key (file_object_id) references core.file_objects(id);
+alter table catalog.competencies add constraint fk_catalog_competencies_owner_organization_id_iam_o_e91b917c foreign key (owner_organization_id) references iam.organizations(id);
+alter table catalog.journey_competencies add constraint fk_catalog_journey_competencies_journey_version_id__4acc22a4 foreign key (journey_version_id) references catalog.journey_versions(id);
+alter table catalog.journey_competencies add constraint fk_catalog_journey_competencies_competency_id_catal_4c2abdb3 foreign key (competency_id) references catalog.competencies(id);
+alter table catalog.activity_competencies add constraint fk_catalog_activity_competencies_activity_version_i_cc2019cb foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table catalog.activity_competencies add constraint fk_catalog_activity_competencies_competency_id_cata_893b9256 foreign key (competency_id) references catalog.competencies(id);
+alter table catalog.content_contributors add constraint fk_catalog_content_contributors_activity_version_id_8f878bcc foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table catalog.content_contributors add constraint fk_catalog_content_contributors_course_version_id_c_9a1abd7f foreign key (course_version_id) references catalog.course_versions(id);
+alter table catalog.content_contributors add constraint fk_catalog_content_contributors_organization_id_iam_affbdf06 foreign key (organization_id) references iam.organizations(id);
+alter table catalog.content_contributors add constraint fk_catalog_content_contributors_user_account_id_iam_52edaddf foreign key (user_account_id) references iam.user_accounts(id);
+alter table orchestration.rule_definitions add constraint fk_orchestration_rule_definitions_owner_organizatio_f46ccd50 foreign key (owner_organization_id) references iam.organizations(id);
+alter table orchestration.rule_versions add constraint fk_orchestration_rule_versions_rule_definition_id_o_cc0dd15a foreign key (rule_definition_id) references orchestration.rule_definitions(id);
+alter table orchestration.path_templates add constraint fk_orchestration_path_templates_journey_version_id__e525ccbc foreign key (journey_version_id) references catalog.journey_versions(id);
+alter table orchestration.path_steps add constraint fk_orchestration_path_steps_path_template_id_orches_a982ee73 foreign key (path_template_id) references orchestration.path_templates(id);
+alter table orchestration.path_steps add constraint fk_orchestration_path_steps_activity_version_id_cat_533a31c8 foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table orchestration.path_steps add constraint fk_orchestration_path_steps_availability_rule_versi_19155afc foreign key (availability_rule_version_id) references orchestration.rule_versions(id);
+alter table orchestration.path_steps add constraint fk_orchestration_path_steps_completion_rule_version_d8dfcd04 foreign key (completion_rule_version_id) references orchestration.rule_versions(id);
+alter table orchestration.path_transitions add constraint fk_orchestration_path_transitions_path_template_id__d6610985 foreign key (path_template_id) references orchestration.path_templates(id);
+alter table orchestration.path_transitions add constraint fk_orchestration_path_transitions_from_step_id_orch_693a6b81 foreign key (from_step_id) references orchestration.path_steps(id);
+alter table orchestration.path_transitions add constraint fk_orchestration_path_transitions_to_step_id_orches_27224bc1 foreign key (to_step_id) references orchestration.path_steps(id);
+alter table orchestration.path_transitions add constraint fk_orchestration_path_transitions_condition_rule_ve_96b30cdd foreign key (condition_rule_version_id) references orchestration.rule_versions(id);
+alter table orchestration.assignment_policies add constraint fk_orchestration_assignment_policies_journey_versio_b6416c55 foreign key (journey_version_id) references catalog.journey_versions(id);
+alter table orchestration.assignment_policies add constraint fk_orchestration_assignment_policies_rule_version_i_6bdb3248 foreign key (rule_version_id) references orchestration.rule_versions(id);
+alter table orchestration.cohorts add constraint fk_orchestration_cohorts_program_id_catalog_programs foreign key (program_id) references catalog.programs(id);
+alter table orchestration.cohorts add constraint fk_orchestration_cohorts_journey_version_id_catalog_c7745cf2 foreign key (journey_version_id) references catalog.journey_versions(id);
+alter table orchestration.enrollments add constraint fk_orchestration_enrollments_entrepreneur_id_core_e_eb3c5521 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table orchestration.enrollments add constraint fk_orchestration_enrollments_business_id_core_businesses foreign key (business_id) references core.businesses(id);
+alter table orchestration.enrollments add constraint fk_orchestration_enrollments_journey_version_id_cat_f50004d3 foreign key (journey_version_id) references catalog.journey_versions(id);
+alter table orchestration.enrollments add constraint fk_orchestration_enrollments_cohort_id_orchestration_cohorts foreign key (cohort_id) references orchestration.cohorts(id);
+alter table orchestration.journey_instances add constraint fk_orchestration_journey_instances_enrollment_id_or_5de599f4 foreign key (enrollment_id) references orchestration.enrollments(id);
+alter table orchestration.path_assignments add constraint fk_orchestration_path_assignments_journey_instance__26a36a39 foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table orchestration.path_assignments add constraint fk_orchestration_path_assignments_path_template_id__c389efa0 foreign key (path_template_id) references orchestration.path_templates(id);
+alter table orchestration.path_assignments add constraint fk_orchestration_path_assignments_assignment_policy_9b7b73ab foreign key (assignment_policy_id) references orchestration.assignment_policies(id);
+alter table orchestration.step_instances add constraint fk_orchestration_step_instances_path_assignment_id__8defdeca foreign key (path_assignment_id) references orchestration.path_assignments(id);
+alter table orchestration.step_instances add constraint fk_orchestration_step_instances_path_step_id_orches_6a3a0be0 foreign key (path_step_id) references orchestration.path_steps(id);
+alter table orchestration.step_instances add constraint fk_orchestration_step_instances_activity_version_id_0a907532 foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table orchestration.activity_sessions add constraint fk_orchestration_activity_sessions_step_instance_id_a7da53cb foreign key (step_instance_id) references orchestration.step_instances(id);
+alter table orchestration.activity_sessions add constraint fk_orchestration_activity_sessions_entrepreneur_id__b75ddfc1 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table orchestration.progress_projections add constraint fk_orchestration_progress_projections_journey_insta_2edfd8ec foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table orchestration.progress_projections add constraint fk_orchestration_progress_projections_current_step__cf465542 foreign key (current_step_id) references orchestration.path_steps(id);
+alter table orchestration.personalization_decisions add constraint fk_orchestration_personalization_decisions_entrepre_979bca38 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table orchestration.personalization_decisions add constraint fk_orchestration_personalization_decisions_journey__d02ddadb foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table orchestration.personalization_decisions add constraint fk_orchestration_personalization_decisions_rule_ver_b46873e6 foreign key (rule_version_id) references orchestration.rule_versions(id);
+alter table diagnostics.diagnostic_definitions add constraint fk_diagnostics_diagnostic_definitions_owner_organiz_c2b3033f foreign key (owner_organization_id) references iam.organizations(id);
+alter table diagnostics.diagnostic_versions add constraint fk_diagnostics_diagnostic_versions_diagnostic_defin_0572b12d foreign key (diagnostic_definition_id) references diagnostics.diagnostic_definitions(id);
+alter table diagnostics.dimensions add constraint fk_diagnostics_dimensions_diagnostic_version_id_dia_d32e5139 foreign key (diagnostic_version_id) references diagnostics.diagnostic_versions(id);
+alter table diagnostics.items add constraint fk_diagnostics_items_diagnostic_version_id_diagnost_a2e8673e foreign key (diagnostic_version_id) references diagnostics.diagnostic_versions(id);
+alter table diagnostics.items add constraint fk_diagnostics_items_dimension_id_diagnostics_dimensions foreign key (dimension_id) references diagnostics.dimensions(id);
+alter table diagnostics.item_options add constraint fk_diagnostics_item_options_item_id_diagnostics_items foreign key (item_id) references diagnostics.items(id);
+alter table diagnostics.sessions add constraint fk_diagnostics_sessions_diagnostic_version_id_diagn_a1b24324 foreign key (diagnostic_version_id) references diagnostics.diagnostic_versions(id);

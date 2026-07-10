@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220505
+-- Remote name: m03_orchestration
+-- Remote SQL SHA-256: ad536714d9ff7ca1571ea7469f242a32cb351fe6749abee81343455243f1dc8a
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M03 — rules, paths, cohorts, enrollments and runtime state
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

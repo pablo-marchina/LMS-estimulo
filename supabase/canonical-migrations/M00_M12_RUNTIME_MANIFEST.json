@@ -1,0 +1,698 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_runtime_migration_recovery_manifest",
+  "source": "supabase_migrations.schema_migrations",
+  "first_version": "20260708220357",
+  "last_version": "20260709030140",
+  "migration_count": 76,
+  "total_remote_sql_bytes": 411340,
+  "combined_remote_fingerprint_sha256": "663173105a16924db650127f437900de0ad3422b2f7bf50a5e804f19d1a570a3",
+  "canonical_file": "20260708220357_m00_m12_runtime_canonical.sql",
+  "canonical_file_sha256": "df85892d5134b15a268193e981eb53e1d9d53cdd4b6ae75db37b96d55ad75600",
+  "migrations": [
+    {
+      "version": "20260708220357",
+      "name": "m00_extensions_schemas_context",
+      "file": "20260708220357_m00_extensions_schemas_context.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 3382,
+      "remote_sql_sha256": "1a8bf965c41f2a58c83ffdd00323b528d05e33c0750b9cd4b4dff3fec25db497",
+      "materialized_file_sha256": "92aa1152f3d4b18ae8ada83a4b741ee6d3906fdb0c4345193fd80756c5c938f4"
+    },
+    {
+      "version": "20260708220419",
+      "name": "m01_identity_core",
+      "file": "20260708220419_m01_identity_core.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 5795,
+      "remote_sql_sha256": "e9676126a0a73fe1c12d776f80efccf08612989be1c7e27551229f093effe2c9",
+      "materialized_file_sha256": "e9523c8f2f3931a042fab4f7eab0d60d4b0edc4ed7e06162042d2a5a51796f8a"
+    },
+    {
+      "version": "20260708220445",
+      "name": "m02_catalog",
+      "file": "20260708220445_m02_catalog.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 7370,
+      "remote_sql_sha256": "36a84b7aec22327e2ff3ebc0125905ba225bee1ed269bb69861cd33b12c15da4",
+      "materialized_file_sha256": "ffffce23d897a969e08267e8a18e2c2c8cc25c19963da41f26446bf08959d57c"
+    },
+    {
+      "version": "20260708220505",
+      "name": "m03_orchestration",
+      "file": "20260708220505_m03_orchestration.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 7199,
+      "remote_sql_sha256": "ad536714d9ff7ca1571ea7469f242a32cb351fe6749abee81343455243f1dc8a",
+      "materialized_file_sha256": "cdaf8893168ca3b143511749305af2add529995756cb807651997bc72d46c55f"
+    },
+    {
+      "version": "20260708220536",
+      "name": "m04_diagnostics_assessment",
+      "file": "20260708220536_m04_diagnostics_assessment.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 13446,
+      "remote_sql_sha256": "44e80d92e19876d7bf97fd656c9fc870510a4e98a4805c2338b54fa4eae243fc",
+      "materialized_file_sha256": "99e117984b3dc1912415ac8e6d2b34ae5d7f38c961f8c331816bc74cdacda9b8"
+    },
+    {
+      "version": "20260708220558",
+      "name": "m05_engagement_intervention",
+      "file": "20260708220558_m05_engagement_intervention.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 8125,
+      "remote_sql_sha256": "be397638ff58ce8fefeb4b20b67469d41e566d30a28f50f0b4356e5ce320cada",
+      "materialized_file_sha256": "6ec92a363c3d24c692f5960f6a49d41d7a8d5218d7be3f0c74a5989153a970ec"
+    },
+    {
+      "version": "20260708220623",
+      "name": "m06_eventing_integration",
+      "file": "20260708220623_m06_eventing_integration.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 9652,
+      "remote_sql_sha256": "7ae07bf05f8d07214839523e4c81e6f4474137d7c0d361ef8c163b447147cef1",
+      "materialized_file_sha256": "29080067fbc9c41a5c3de9cfb4b49a045dca941c55b276a91c1feff10f0a7d42"
+    },
+    {
+      "version": "20260708220646",
+      "name": "m07_intelligence_governance",
+      "file": "20260708220646_m07_intelligence_governance.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 9297,
+      "remote_sql_sha256": "a7d38985210f460913a90579a828453bd6d6c3ee0d80bb774e07598d961b4f7b",
+      "materialized_file_sha256": "b34cc9e3017c8ffee7817b089f956315ab0f471eb01750aac5c1da7ef1914344"
+    },
+    {
+      "version": "20260708220719",
+      "name": "m08a_enable_rls",
+      "file": "20260708220719_m08a_enable_rls.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 3248,
+      "remote_sql_sha256": "9c6de9fcf70bca1da6b3949f7955968ff6f257a27dbcf6c0bf9acde94641afd1",
+      "materialized_file_sha256": "0b387b2ddda544e6644ee6ddabe97f52d6902f3edcf6f332b81d9977c16c614d"
+    },
+    {
+      "version": "20260708220755",
+      "name": "m08b_harden_trigger_functions",
+      "file": "20260708220755_m08b_harden_trigger_functions.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 427,
+      "remote_sql_sha256": "ad4360c6a1c02e27f196e1a2e4075d1fbadb46c542863ffa200e52b829f17710",
+      "materialized_file_sha256": "dbec48cd96050caea63402d4e3f94ed4400c9dd793cff3a16c0682a90f79cd5f"
+    },
+    {
+      "version": "20260708221428",
+      "name": "m08c_foreign_keys_part_1",
+      "file": "20260708221428_m08c_foreign_keys_part_1.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 14315,
+      "remote_sql_sha256": "eb21882015dd49e168eb68f4c4d115e8da465f456068f1043e426ca3a5916d8a",
+      "materialized_file_sha256": "0bb5b0a9b6bbe93548b28948c48031a04cb5871ad33fe0cd7c7f1394201c3817"
+    },
+    {
+      "version": "20260708221457",
+      "name": "m08c_foreign_keys_part_2",
+      "file": "20260708221457_m08c_foreign_keys_part_2.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 15024,
+      "remote_sql_sha256": "b1ebab75a01f1fb12f43832a56f4e0bad934857e8e3fcc204b46bd9da7e8c2f0",
+      "materialized_file_sha256": "9b21f5a855dfa76f95fd7ee5f1a62af3d295f4dfcae588748daed3b031abf71d"
+    },
+    {
+      "version": "20260708221522",
+      "name": "m08c_foreign_keys_part_3",
+      "file": "20260708221522_m08c_foreign_keys_part_3.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 10397,
+      "remote_sql_sha256": "1a9c24a07f933bd03eb445e687dfe53e23da20ea9ad4ece03203333c9a26f7c6",
+      "materialized_file_sha256": "2ea65fd83950ada3ea3a9167adf372ed23510ab83168b549854a25b1450c1aa8"
+    },
+    {
+      "version": "20260708221551",
+      "name": "m08d_integrity_indexes_triggers",
+      "file": "20260708221551_m08d_integrity_indexes_triggers.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 15973,
+      "remote_sql_sha256": "330fb16615e12da05acaed982a5fe0097c99b5438924c885aed94d5c1575c5da",
+      "materialized_file_sha256": "ad501bdb9e2c9897206d270a554207752a913090638a4c5d0ac781f12e595b65"
+    },
+    {
+      "version": "20260708221622",
+      "name": "m08e_identity_authorization",
+      "file": "20260708221622_m08e_identity_authorization.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 13910,
+      "remote_sql_sha256": "db0ef63b122e574d7faa8c745bf5fb46441306825f377c32385fef4d8cc8a5db",
+      "materialized_file_sha256": "3f437ea7eca5904e5c36aea1f9440e81406d205b0dad24435dba303290aa73f9"
+    },
+    {
+      "version": "20260708221643",
+      "name": "m08f_rls_identity_core",
+      "file": "20260708221643_m08f_rls_identity_core.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 6121,
+      "remote_sql_sha256": "16dfed0e72dd6911192c62653094403932f5e682f8a45e83e50de2de0d419049",
+      "materialized_file_sha256": "e6266bec7a7df502abdbbfdbad186227714368cd6d7224da74dd0c0522ea06ec"
+    },
+    {
+      "version": "20260708221703",
+      "name": "m08g_rls_journey_diagnostics",
+      "file": "20260708221703_m08g_rls_journey_diagnostics.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 6008,
+      "remote_sql_sha256": "7ae226a69937dc86c74d4bc16fff499167ef7179dc12b064c811728fcd3e847b",
+      "materialized_file_sha256": "bf21c50fb0237e1e5d670201f189203426a41bdc1afbc631010ad2ab3118ce66"
+    },
+    {
+      "version": "20260708221724",
+      "name": "m08h_rls_assessment_engagement_intervention",
+      "file": "20260708221724_m08h_rls_assessment_engagement_intervention.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 6399,
+      "remote_sql_sha256": "b7f48db0ef41065fe3e5a203a397591d308b385471b9fe980eab9ed1b122b560",
+      "materialized_file_sha256": "16bd6ab782c76d0e9b874580893914e771e65967a25cdf68af9d322d92a75cc2"
+    },
+    {
+      "version": "20260708221743",
+      "name": "m08i_rls_integration_intelligence_governance",
+      "file": "20260708221743_m08i_rls_integration_intelligence_governance.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 3702,
+      "remote_sql_sha256": "e8f4bc7978ab888a8b78f182662a44172cdcc3639861b0c8141ac978944b789d",
+      "materialized_file_sha256": "a53bdfa3dd89e3297c4603fa04ccd29171917db92f0dbd114eb817bd48d1b5df"
+    },
+    {
+      "version": "20260708221802",
+      "name": "m08j_transactional_outbox_privileges",
+      "file": "20260708221802_m08j_transactional_outbox_privileges.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 7229,
+      "remote_sql_sha256": "5fe3f65c6222ce593581b4d97760bd77114d657ad3e029e7e569bcd0ce25cbc8",
+      "materialized_file_sha256": "9bd732dec69abe8a3e39f7eea92a7e28d649ce38beae46c47d89c361aa6ad2aa"
+    },
+    {
+      "version": "20260708221848",
+      "name": "m08k_runtime_roles_and_grants",
+      "file": "20260708221848_m08k_runtime_roles_and_grants.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2785,
+      "remote_sql_sha256": "737264369069bfefe5914fc0ca3b27443911ae721adcf4e08b86996ce908f0dd",
+      "materialized_file_sha256": "b1b5e1082a40f16a13344720498691bfdf75ea2e3f9eee0cef83d496632e3360"
+    },
+    {
+      "version": "20260708221922",
+      "name": "m08l_test_executor_role_membership",
+      "file": "20260708221922_m08l_test_executor_role_membership.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 92,
+      "remote_sql_sha256": "e41d21398a23274c8ca82871e1ca80b8c18279410182a03b22deafef9425aec9",
+      "materialized_file_sha256": "d5e72b915316004082d7eeaf292acee62d0863b603f78e4b11771c35a2588ec6"
+    },
+    {
+      "version": "20260708222008",
+      "name": "m08m_fix_pgcrypto_schema_qualification",
+      "file": "20260708222008_m08m_fix_pgcrypto_schema_qualification.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2496,
+      "remote_sql_sha256": "40742b7d1fff809b59c18f7b946ca3f379fe67ef6f96631de97ae2dce676279e",
+      "materialized_file_sha256": "374905b91d7ce35e0b3a17bd69443aa1a06f2c310099c08051068f1145ebcdd1"
+    },
+    {
+      "version": "20260708222033",
+      "name": "m08n_grant_pgcrypto_digest_to_worker",
+      "file": "20260708222033_m08n_grant_pgcrypto_digest_to_worker.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 119,
+      "remote_sql_sha256": "29ec9039107a8a0bad8dd51f2da38cc31b18388b35c41bebda251089e26b01e8",
+      "materialized_file_sha256": "922aa4da03272ee73f4e27ded0f5207cdc9b020ec01c2ad4d9f2a0c7643a6758"
+    },
+    {
+      "version": "20260708222345",
+      "name": "m08o_split_all_policies_by_command",
+      "file": "20260708222345_m08o_split_all_policies_by_command.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2113,
+      "remote_sql_sha256": "db578e51bbe6fa7c175e50a880fde000703b96e4870ef2cc1682f54d7d4eb5db",
+      "materialized_file_sha256": "47843751c200221f77d713470576e3322cec6064dcf5e6f80f08b9e68d8a92b4"
+    },
+    {
+      "version": "20260708222355",
+      "name": "m08p_cover_unindexed_foreign_keys",
+      "file": "20260708222355_m08p_cover_unindexed_foreign_keys.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1595,
+      "remote_sql_sha256": "5c9d3b4adca307754e9d923f0e6fe43d486f5ec7dfad4df36a511a3ef3394f3e",
+      "materialized_file_sha256": "2ff4eef3a9335f2163d4421f5951c74e0c89a9a28d85048381d539c710460dab"
+    },
+    {
+      "version": "20260708223937",
+      "name": "m09_storage_lifecycle",
+      "file": "20260708223937_m09_storage_lifecycle.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 28163,
+      "remote_sql_sha256": "7f0d6033bdc9de4cd6ad38d45868a7f60cc474504098508a6a25ff9293564ce8",
+      "materialized_file_sha256": "b8b4d55368ef7eb4d7a56ba1b6e18de16e4fe674c8b7544722b8728f8b3fd186"
+    },
+    {
+      "version": "20260708224117",
+      "name": "m09a_enable_pg_net_for_storage_proof",
+      "file": "20260708224117_m09a_enable_pg_net_for_storage_proof.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 61,
+      "remote_sql_sha256": "720ec83cb404dd730aac48a345a1c23e26773a93a221da0f686c24bb208f46a9",
+      "materialized_file_sha256": "04b958e58a18fb566836814cec6d804056c6028cbed1850754afe1985a5e9e99"
+    },
+    {
+      "version": "20260708224236",
+      "name": "m09b_enable_http_for_storage_proof",
+      "file": "20260708224236_m09b_enable_http_for_storage_proof.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 59,
+      "remote_sql_sha256": "b5b79f616c8cc09827b263ca33c134a193821285b414e16488b6bd533cd7480b",
+      "materialized_file_sha256": "d9ff623ebb315764f1a1a643ffd1715fb8ff04c4836967cce2364bffdf2ff576"
+    },
+    {
+      "version": "20260708224455",
+      "name": "m09c_remove_proof_http_extensions",
+      "file": "20260708224455_m09c_remove_proof_http_extensions.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 63,
+      "remote_sql_sha256": "dccc897da942e079038b31c0f2aae10e58fe6f859bcf11ef812835aba9f27d57",
+      "materialized_file_sha256": "2a5ee4f36b1f48af5b6ceaf2fd22324bbb6d2f55f238fcecad5e9efc299edba7"
+    },
+    {
+      "version": "20260708224520",
+      "name": "m09d_cover_storage_foreign_keys",
+      "file": "20260708224520_m09d_cover_storage_foreign_keys.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 364,
+      "remote_sql_sha256": "78e8e84263973af7ea7e83c40906493a9dc34fdefbc797ebf0dd8c56da8e7293",
+      "materialized_file_sha256": "4d899455eddfe9f9f8641c821b4ecf698c7bc6db1810d46086aedfaf5d04c1c1"
+    },
+    {
+      "version": "20260708230247",
+      "name": "m10a_enable_pgmq",
+      "file": "20260708230247_m10a_enable_pgmq.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 36,
+      "remote_sql_sha256": "1b4e9c677d47ebe58edbcd0c920bd8ee2712f2953cc0ab28fe98cf52a5989d24",
+      "materialized_file_sha256": "b2fef48aed58d3f4ecd2a346284a4415ace7d497b9e11d5285d74d441b72d19d"
+    },
+    {
+      "version": "20260708230607",
+      "name": "m10b_queue_schema",
+      "file": "20260708230607_m10b_queue_schema.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 11065,
+      "remote_sql_sha256": "5f5bb7178e4192d462b0bc269bcd5eae383a24dedad9af13ce88b8e4223e98f6",
+      "materialized_file_sha256": "a22e5b78e3cbecc83c2bd175476ac96a02205830dc23256bd1ae19d627053e49"
+    },
+    {
+      "version": "20260708230651",
+      "name": "m10c_queue_publish_deadletter",
+      "file": "20260708230651_m10c_queue_publish_deadletter.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 7005,
+      "remote_sql_sha256": "a66415c99a4066518459941b7f32ca53091416d946ece09a5aeef870d1000b9f",
+      "materialized_file_sha256": "153c3ab9581eea76692295daf9be821ad10e188f188246cb6741655f3e2111e0"
+    },
+    {
+      "version": "20260708230712",
+      "name": "m10d_queue_receive",
+      "file": "20260708230712_m10d_queue_receive.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 4765,
+      "remote_sql_sha256": "ade1a65c27b61bf803096dc5806be9ed704b79ad8f91ed9677cbd86157aaa97d",
+      "materialized_file_sha256": "3de1faef42875d038876e0f09d8ea19f44638857a55c0866bdbb186defe091b9"
+    },
+    {
+      "version": "20260708230740",
+      "name": "m10e_queue_lifecycle",
+      "file": "20260708230740_m10e_queue_lifecycle.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 9567,
+      "remote_sql_sha256": "5fc6f06cedde66ce423d2a8e98f3ab381a2a430fe54333b9d86f4a82f6cc8d02",
+      "materialized_file_sha256": "63ec4642c5fe035e099a3f4abc8929c721ccf8b6cbfa5b4026addcbbd0a316f0"
+    },
+    {
+      "version": "20260708230837",
+      "name": "m10f_file_scan_integration",
+      "file": "20260708230837_m10f_file_scan_integration.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 7948,
+      "remote_sql_sha256": "6753dde95e3c828f9a0fe22099c709ac6eba76857c8c5a949a6f07697c49684b",
+      "materialized_file_sha256": "85cc590ba32825cbae4a54663b3daebffa939e3a0f95e21cf56e1330d80e9a4f"
+    },
+    {
+      "version": "20260708230901",
+      "name": "m10g_queue_rpc_security",
+      "file": "20260708230901_m10g_queue_rpc_security.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 8895,
+      "remote_sql_sha256": "adc3a2b26cb8c0082242fe46b089e3d93d2c733e3e82a9501f85894cc3c8ce23",
+      "materialized_file_sha256": "0d2b1827d75641c41f02102f24c6c75dc76d1755d31a88c1ce4f385f8b78f44a"
+    },
+    {
+      "version": "20260708231057",
+      "name": "m10h_queue_enqueue_rpc",
+      "file": "20260708231057_m10h_queue_enqueue_rpc.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 835,
+      "remote_sql_sha256": "a6ddc71c097585d7e10051b55860c2e89f678921e11d6f6547f1d1eb3494de6f",
+      "materialized_file_sha256": "b95e8ff5eb1f5e576c9b72d474efdeadd6c8ea8d77ba6b6d2164d4c0f8dd60bf"
+    },
+    {
+      "version": "20260708231628",
+      "name": "m10i_enable_http_for_worker_proof",
+      "file": "20260708231628_m10i_enable_http_for_worker_proof.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 59,
+      "remote_sql_sha256": "b5b79f616c8cc09827b263ca33c134a193821285b414e16488b6bd533cd7480b",
+      "materialized_file_sha256": "9ddcbc4bb1466300ed984bbfff90f6d95fb93fadc674ab9b14462dba63d1f253"
+    },
+    {
+      "version": "20260708232000",
+      "name": "m10j_cleanup_worker_runtime_proof",
+      "file": "20260708232000_m10j_cleanup_worker_runtime_proof.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1448,
+      "remote_sql_sha256": "b6ff5f22abf727ea4a8e49922b7e263c4c96fad4bf5bff9bb0789f797fd7cfb7",
+      "materialized_file_sha256": "b1b32d0ff221dda2ba3affc63d558f7169873df0ef9b1b52f7cf668b2b9d08ad"
+    },
+    {
+      "version": "20260708233706",
+      "name": "m11a_enable_scheduler_extensions",
+      "file": "20260708233706_m11a_enable_scheduler_extensions.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 227,
+      "remote_sql_sha256": "3a7f5431ac718b1d4854073c083529c17edd62eede70763d5c00699b00a347ff",
+      "materialized_file_sha256": "d49562b9be3be10eeddf5c06221888e025573a15eea42da10f4c63029f5c2f56"
+    },
+    {
+      "version": "20260708233810",
+      "name": "m11b_worker_schedule_tables",
+      "file": "20260708233810_m11b_worker_schedule_tables.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2856,
+      "remote_sql_sha256": "c8ea568d18f724d62b9a0032baa8a73caf7181c76bd398f38e28a8d7894395a3",
+      "materialized_file_sha256": "b98bb23200d5e0f08fec02255f2b9e79e206adf0bfaf3d3b8a84b11c2798a776"
+    },
+    {
+      "version": "20260708233826",
+      "name": "m11c_observability_tables",
+      "file": "20260708233826_m11c_observability_tables.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 4975,
+      "remote_sql_sha256": "71063d5d267dc69feeab106c0d95509b987f6c39136323ef4c5011182e349981",
+      "materialized_file_sha256": "8ac4f0a827a5084355e4341ac5ffcdcd3989ac98eae5177bb76ea5eb8cc68296"
+    },
+    {
+      "version": "20260708233840",
+      "name": "m11d_observability_rls_grants",
+      "file": "20260708233840_m11d_observability_rls_grants.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 4257,
+      "remote_sql_sha256": "f781c2fd93a69adfef38f0d9c2ab94348e936407812a790ecffb9e66564dc1b6",
+      "materialized_file_sha256": "652947b22ec63ec30134a962b456abadd5d04a74bd632ae8956dbb6219fc0632"
+    },
+    {
+      "version": "20260708233850",
+      "name": "m11e_scheduler_alert_seed",
+      "file": "20260708233850_m11e_scheduler_alert_seed.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2148,
+      "remote_sql_sha256": "f59a95a36f58258658d8cd0703eb023856afe66462c3fbe22e381a8c31c10336",
+      "materialized_file_sha256": "0eaf0bb7e8b68360b858f2151eb4d92635735780984554d494b8ed00de5622a9"
+    },
+    {
+      "version": "20260708233907",
+      "name": "m11f_dispatch_token_functions",
+      "file": "20260708233907_m11f_dispatch_token_functions.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 3165,
+      "remote_sql_sha256": "b32c753d1ef9770bda6cd51f4cef2e956bb91b67a27241f80a30af1783991a25",
+      "materialized_file_sha256": "8c411e06c3c85346faa51fb97b5a851f62c028c26f70420837ebf9ed7e4bedcf"
+    },
+    {
+      "version": "20260708233930",
+      "name": "m11g_worker_dispatcher",
+      "file": "20260708233930_m11g_worker_dispatcher.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 5791,
+      "remote_sql_sha256": "78be4b254d0095a4f07e63180ccd08659564e504f85ebb5e0e7f85e6596d4318",
+      "materialized_file_sha256": "ef435e248a9eec7da17f71ba03be85733cfa566b267409bf21f9b2e3840ab787"
+    },
+    {
+      "version": "20260708234002",
+      "name": "m11h_idempotent_worker_recovery",
+      "file": "20260708234002_m11h_idempotent_worker_recovery.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 3281,
+      "remote_sql_sha256": "93662e9018fff757e89af171c778029c21882e99efaf40f7c7913bb242ee5fad",
+      "materialized_file_sha256": "1dc6742e24badaf6ee33aecac256b6adc2c9db1d63463a1943ed1c8025189c9f"
+    },
+    {
+      "version": "20260708234024",
+      "name": "m11i_queue_reconciliation_helpers",
+      "file": "20260708234024_m11i_queue_reconciliation_helpers.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2641,
+      "remote_sql_sha256": "94cc24e56d31603e72e299114a085079a31e98a92a7518c12d2ee1cd4082a327",
+      "materialized_file_sha256": "96af5244fb875c1b9ac0dcc40bf16d15eacfda47fc626538b672bebca5de3a9f"
+    },
+    {
+      "version": "20260708234034",
+      "name": "m11j_dispatch_response_reconciliation",
+      "file": "20260708234034_m11j_dispatch_response_reconciliation.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1543,
+      "remote_sql_sha256": "0798681010fa95ba9e8ae9c0314b9472284bc1e7d2f6e3c556c38bf8d6c9b7cb",
+      "materialized_file_sha256": "8da0d093462e5513eb99ef9a42cdee059e949e16fd428732fcac234e6a709664"
+    },
+    {
+      "version": "20260708234100",
+      "name": "m11k_queue_reconciliation",
+      "file": "20260708234100_m11k_queue_reconciliation.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 6730,
+      "remote_sql_sha256": "3078c4db66af24831cc99ff8e4bc0c83d6b8832e38770ad8b1d205897f1884a8",
+      "materialized_file_sha256": "8831dd2268e4e23691afb43b6610ae0e91d4ab6a2ec47ced5e67dbb47fa470fb"
+    },
+    {
+      "version": "20260708234123",
+      "name": "m11l_queue_metrics_alerts",
+      "file": "20260708234123_m11l_queue_metrics_alerts.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 6718,
+      "remote_sql_sha256": "2b65f7d82d2cfebce73726cd98f4cdca05285737a8cbfd22a2b19bfa56d22846",
+      "materialized_file_sha256": "c2da90b8066b582b5bbbf94e0b4a0f69c8e43f94468fdc6c5e1ae92605d479b6"
+    },
+    {
+      "version": "20260708234311",
+      "name": "m11m_operational_status_cleanup",
+      "file": "20260708234311_m11m_operational_status_cleanup.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2819,
+      "remote_sql_sha256": "3f12b04a9e2fb1f0a9c556be866df35a0c5d458289142c2a26b6e068fe27575e",
+      "materialized_file_sha256": "43f2874454f96055ea9f15677a2b84f720293ca7e24b6d4151a553669008a397"
+    },
+    {
+      "version": "20260708234404",
+      "name": "m11n_activate_continuous_scheduler",
+      "file": "20260708234404_m11n_activate_continuous_scheduler.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 590,
+      "remote_sql_sha256": "b573e89c076431115cfa8f7cf19c721cc5cf62fcbf1b4c5d83d0610ed78db377",
+      "materialized_file_sha256": "82072615c0214f6f6e699c06e3c7b404857911174efaca9fc7846bab0a6d91b2"
+    },
+    {
+      "version": "20260708234709",
+      "name": "m11o_cleanup_concurrency_proof",
+      "file": "20260708234709_m11o_cleanup_concurrency_proof.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1637,
+      "remote_sql_sha256": "5f167778143ececb975340f18d97048164a3914faefeb917950574ed0a9265b6",
+      "materialized_file_sha256": "53c5988ab8f4006cf0a8a3604fc34a547d144e35fd35513f36bbe86cfdc7aa3d"
+    },
+    {
+      "version": "20260708234933",
+      "name": "m11p_fix_scan_state_ambiguity",
+      "file": "20260708234933_m11p_fix_scan_state_ambiguity.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1418,
+      "remote_sql_sha256": "c92e4200412ba6260c1c9493e03c00724cf2d1bb56c740d58e62656cc4d4ec44",
+      "materialized_file_sha256": "fbf69a5404334dd400c9252598fc985a5df7e24cf864e8dbe79c188c3ea66749"
+    },
+    {
+      "version": "20260708235115",
+      "name": "m11q_cover_scheduler_foreign_keys",
+      "file": "20260708235115_m11q_cover_scheduler_foreign_keys.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 239,
+      "remote_sql_sha256": "43c3d96ea7a3646451f459a6f0d4f2287c4ec53bf1fd543d27e1ca75f8e1431a",
+      "materialized_file_sha256": "cf0d80165a9c869a08ab899cae62a5157b77f40fc7d8548566880108e141b8cd"
+    },
+    {
+      "version": "20260709000740",
+      "name": "m12a_privacy_governance_catalogs",
+      "file": "20260709000740_m12a_privacy_governance_catalogs.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 12188,
+      "remote_sql_sha256": "e6e9dd447c08c3a4979db5d6d8442c0e5e19b323b014fd48725eb055f08e412b",
+      "materialized_file_sha256": "917ab17eaa5da97fad1a0bac4ca4e02b89d13c11930976561adf848a2dbc856b"
+    },
+    {
+      "version": "20260709000855",
+      "name": "m12b_privacy_rights_retention",
+      "file": "20260709000855_m12b_privacy_rights_retention.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 7421,
+      "remote_sql_sha256": "ab50dced63ffcf96cdd94277e001c04b9c9e3fa0c7611cdb2a4a461ef089629e",
+      "materialized_file_sha256": "7a4132d35a8de54a8c9973034a3b39666f1df1904e6d5299859396ddf05340e2"
+    },
+    {
+      "version": "20260709000921",
+      "name": "m12c_security_operations_registry",
+      "file": "20260709000921_m12c_security_operations_registry.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 9698,
+      "remote_sql_sha256": "d12b9c81b69097e1d6b015de3275cb2adfcbe0a50f4071b055c165cbcc00bafb",
+      "materialized_file_sha256": "0efbdf54004d5dc3f040d322334b22d33fbcee72afdc46e8c0f4cea4504b6435"
+    },
+    {
+      "version": "20260709000947",
+      "name": "m12d_log_redaction_and_consent_evidence",
+      "file": "20260709000947_m12d_log_redaction_and_consent_evidence.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 5002,
+      "remote_sql_sha256": "1bde842a58aff3d1f56ac469e3f2103f1b7ce11d819fdc6a27c5373963ae6520",
+      "materialized_file_sha256": "0d4fcee25220045c0d2377b836802443538eb107a3cca4f1013ea9b0e5f94f77"
+    },
+    {
+      "version": "20260709001026",
+      "name": "m12e_privacy_incident_readiness_workflows",
+      "file": "20260709001026_m12e_privacy_incident_readiness_workflows.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 12979,
+      "remote_sql_sha256": "85d4598f1aed0bd615a3c332e8498eabb19b99acaf3f215d939ebe42f884f8d1",
+      "materialized_file_sha256": "a9005afe5fb1ea4c2a341c8ebddbe8a03408f4e4c3016c7f78a66f38e33c08e1"
+    },
+    {
+      "version": "20260709001113",
+      "name": "m12f_internal_rls_and_default_privileges",
+      "file": "20260709001113_m12f_internal_rls_and_default_privileges.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 6608,
+      "remote_sql_sha256": "b16c89986b8aad67c328f34c2edac23d99cbbfa07064cedd58dd327838a33fa5",
+      "materialized_file_sha256": "16fe32260f36e6c39a32868ad0ad8ea65592ae330ae24c556c82d75a8befb047"
+    },
+    {
+      "version": "20260709001215",
+      "name": "m12g_governance_catalog_and_readiness_seed",
+      "file": "20260709001215_m12g_governance_catalog_and_readiness_seed.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 21805,
+      "remote_sql_sha256": "628e9a1a6e50bb0c0fc46c430223caf4f56a9f9c7c43d96dc062b3be2fb5809e",
+      "materialized_file_sha256": "07ee771c6e1b2ccc2c36c3935c86969e27d6afcc10e159647c09a9184c92905e"
+    },
+    {
+      "version": "20260709001254",
+      "name": "m12h_cover_governance_foreign_keys",
+      "file": "20260709001254_m12h_cover_governance_foreign_keys.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1255,
+      "remote_sql_sha256": "37a67fa2d401dd4912bbdb2ad967ab559e82cb3a739a260cfaace73c56ec7070",
+      "materialized_file_sha256": "16b5a2f3cdedf972e034828c44834fdca8ba4cabe1e193de832c4b2b3a7c6c1e"
+    },
+    {
+      "version": "20260709001355",
+      "name": "m12i_payload_redaction_hash_integrity",
+      "file": "20260709001355_m12i_payload_redaction_hash_integrity.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 6318,
+      "remote_sql_sha256": "2437fd3a252a3739d9082b4a36cf3c9c1fbddcc8a00982c4bbc52aca35cff7ca",
+      "materialized_file_sha256": "122ca6aabd17b97207dd790fef35b796e39056c0098181db2e57c1bddf2f6ddd"
+    },
+    {
+      "version": "20260709001438",
+      "name": "m12j_fix_purpose_updated_at",
+      "file": "20260709001438_m12j_fix_purpose_updated_at.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 103,
+      "remote_sql_sha256": "c043fc40e6b1ba42fc24b5c055f99c9b7b1b68951267c36fca4f7d579f9a828c",
+      "materialized_file_sha256": "cb5f2ba65ce4196e3b206d8f098bfdc914846c96f247047637125a2d166ec80c"
+    },
+    {
+      "version": "20260709001551",
+      "name": "m12k_complete_internal_rls",
+      "file": "20260709001551_m12k_complete_internal_rls.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 2648,
+      "remote_sql_sha256": "babb6e3aef5c11212ff22e7bf3be0b8f4f786883f83f1c61e494258c50fbd7ef",
+      "materialized_file_sha256": "9164892788b43e3575687ec8d34b9cd8adb74d10bf70771f569b3461e3265cb6"
+    },
+    {
+      "version": "20260709001702",
+      "name": "m12l_processing_assets_and_parties",
+      "file": "20260709001702_m12l_processing_assets_and_parties.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 12224,
+      "remote_sql_sha256": "14d70bca5f2ecb2c86b077aa57fde9981172d3ff32aa05fbbb6091075180390b",
+      "materialized_file_sha256": "a3fb9b08d9ca8af88ece6a021ff4d27f5f0c1eaf1832d0dc6366544d9c6cbbd1"
+    },
+    {
+      "version": "20260709015643",
+      "name": "m00_extensions_schemas_context",
+      "file": "20260709015643_m00_extensions_schemas_context.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 3382,
+      "remote_sql_sha256": "1a8bf965c41f2a58c83ffdd00323b528d05e33c0750b9cd4b4dff3fec25db497",
+      "materialized_file_sha256": "d7c61a0f64e7b5ce64993a1028af5d80a277cbeee1f970ae4b9c6fa12b560178"
+    },
+    {
+      "version": "20260709025331",
+      "name": "e14_create_migration_history_export_rpc",
+      "file": "20260709025331_e14_create_migration_history_export_rpc.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 923,
+      "remote_sql_sha256": "6b5adffa542620aefacd84f7246a1c6382c73f6d7eacc2f625980ec7321d6d46",
+      "materialized_file_sha256": "21654e89a1fb726e771b665fd4bc886ca47c747f7efbec5f56009c4b5a115a52"
+    },
+    {
+      "version": "20260709025423",
+      "name": "e14_drop_migration_history_export_rpc",
+      "file": "20260709025423_e14_drop_migration_history_export_rpc.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 165,
+      "remote_sql_sha256": "f2ffefeb7cb4335e701ad2f8c150edd0f2ae4e3d4f6dd4bf4988b5476e7ccf5f",
+      "materialized_file_sha256": "d6f19ad7b6827f1acc019a2924c77bd45bd30ebf16c645996a8c093643d20a6c"
+    },
+    {
+      "version": "20260709025512",
+      "name": "e14_create_service_only_migration_export_rpc",
+      "file": "20260709025512_e14_create_service_only_migration_export_rpc.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 711,
+      "remote_sql_sha256": "7c20fd2a3cfffb3231ba2157415c074006f8d5c957d66e94dbbefbab7bcab2a9",
+      "materialized_file_sha256": "c5a012531a4e3236fb7ad84e8e5dba5a7280a17b130131d69426194197200b14"
+    },
+    {
+      "version": "20260709025917",
+      "name": "e14_drop_service_only_migration_export_rpc",
+      "file": "20260709025917_e14_drop_service_only_migration_export_rpc.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 177,
+      "remote_sql_sha256": "d705fb553c1c289c5e5233bed073fb525da03db14649dc5e36afeda658ed1c22",
+      "materialized_file_sha256": "0ea2287b5b993d8471e895f4858146cb005864b6f678a29aa4b3d06529b91fdc"
+    },
+    {
+      "version": "20260709030140",
+      "name": "e14_harden_governance_trigger_search_path",
+      "file": "20260709030140_e14_harden_governance_trigger_search_path.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 146,
+      "remote_sql_sha256": "49aa81dd7ab3311d54915110e13292bfac7b5e6e41eae14cb330697d753b5df1",
+      "materialized_file_sha256": "39fef97fb6741dda7e55fabee3fc7471945088a198e475748794ef1ab4f986fd"
+    }
+  ]
+}

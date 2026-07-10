@@ -1,3 +1,9 @@
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708220357
+-- Remote name: m00_extensions_schemas_context
+-- Remote SQL SHA-256: 1a8bf965c41f2a58c83ffdd00323b528d05e33c0750b9cd4b4dff3fec25db497
+-- Do not edit after reconciliation; corrections require a new migration.
+
 -- Plataforma Estímulo — M00 — extensions, schemas and provider-neutral request context
 -- Generated from the approved v0.2 baseline. Do not edit a migration after it has been applied.
 set lock_timeout = '5s';

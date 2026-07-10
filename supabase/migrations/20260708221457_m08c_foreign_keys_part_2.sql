@@ -1,3 +1,89 @@
--- E14 migration-history compatibility marker.
--- The final schema effect is represented by the canonical M00-M12 carrier migrations.
--- Intentionally no-op. Keep this file so Supabase can reconcile the remote migration version.
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708221457
+-- Remote name: m08c_foreign_keys_part_2
+-- Remote SQL SHA-256: b1ebab75a01f1fb12f43832a56f4e0bad934857e8e3fcc204b46bd9da7e8c2f0
+-- Do not edit after reconciliation; corrections require a new migration.
+
+set lock_timeout = '5s';
+set statement_timeout = '5min';
+
+alter table diagnostics.sessions add constraint fk_diagnostics_sessions_entrepreneur_id_core_entrepreneurs foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table diagnostics.sessions add constraint fk_diagnostics_sessions_business_id_core_businesses foreign key (business_id) references core.businesses(id);
+alter table diagnostics.sessions add constraint fk_diagnostics_sessions_journey_instance_id_orchest_8961bb03 foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table diagnostics.responses add constraint fk_diagnostics_responses_session_id_diagnostics_sessions foreign key (session_id) references diagnostics.sessions(id);
+alter table diagnostics.responses add constraint fk_diagnostics_responses_item_id_diagnostics_items foreign key (item_id) references diagnostics.items(id);
+alter table diagnostics.responses add constraint fk_diagnostics_responses_supersedes_response_id_dia_29d8e638 foreign key (supersedes_response_id) references diagnostics.responses(id);
+alter table diagnostics.responses add constraint fk_diagnostics_responses_source_event_id_eventing_events foreign key (source_event_id) references eventing.events(event_id);
+alter table diagnostics.results add constraint fk_diagnostics_results_session_id_diagnostics_sessions foreign key (session_id) references diagnostics.sessions(id);
+alter table diagnostics.dimension_results add constraint fk_diagnostics_dimension_results_result_id_diagnost_47456731 foreign key (result_id) references diagnostics.results(id);
+alter table diagnostics.dimension_results add constraint fk_diagnostics_dimension_results_dimension_id_diagn_b63b7b0c foreign key (dimension_id) references diagnostics.dimensions(id);
+alter table diagnostics.segment_definitions add constraint fk_diagnostics_segment_definitions_owner_organizati_57a7ebec foreign key (owner_organization_id) references iam.organizations(id);
+alter table diagnostics.segment_versions add constraint fk_diagnostics_segment_versions_segment_definition__6b342786 foreign key (segment_definition_id) references diagnostics.segment_definitions(id);
+alter table diagnostics.segment_versions add constraint fk_diagnostics_segment_versions_rule_version_id_orc_c6498325 foreign key (rule_version_id) references orchestration.rule_versions(id);
+alter table diagnostics.segment_assignments add constraint fk_diagnostics_segment_assignments_segment_version__6eaaa781 foreign key (segment_version_id) references diagnostics.segment_versions(id);
+alter table diagnostics.segment_assignments add constraint fk_diagnostics_segment_assignments_entrepreneur_id__afecec0a foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table diagnostics.segment_assignments add constraint fk_diagnostics_segment_assignments_journey_instance_e7b3828f foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table diagnostics.archetype_definitions add constraint fk_diagnostics_archetype_definitions_owner_organiza_82282af8 foreign key (owner_organization_id) references iam.organizations(id);
+alter table diagnostics.archetype_versions add constraint fk_diagnostics_archetype_versions_archetype_definit_ca801bee foreign key (archetype_definition_id) references diagnostics.archetype_definitions(id);
+alter table diagnostics.archetype_assignments add constraint fk_diagnostics_archetype_assignments_entrepreneur_i_266cfb25 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table diagnostics.archetype_assignments add constraint fk_diagnostics_archetype_assignments_journey_instan_f66e7835 foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table diagnostics.archetype_assignments add constraint fk_diagnostics_archetype_assignments_primary_archet_388121a0 foreign key (primary_archetype_version_id) references diagnostics.archetype_versions(id);
+alter table diagnostics.archetype_assignments add constraint fk_diagnostics_archetype_assignments_secondary_arch_3a1ef2c7 foreign key (secondary_archetype_version_id) references diagnostics.archetype_versions(id);
+alter table assessment.assessment_specs add constraint fk_assessment_assessment_specs_activity_version_id__6ff746cf foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table assessment.questions add constraint fk_assessment_questions_activity_version_id_catalog_e5a87850 foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table assessment.answer_options add constraint fk_assessment_answer_options_question_id_assessment_282e9ef8 foreign key (question_id) references assessment.questions(id);
+alter table assessment.attempts add constraint fk_assessment_attempts_step_instance_id_orchestrati_c32496c0 foreign key (step_instance_id) references orchestration.step_instances(id);
+alter table assessment.attempts add constraint fk_assessment_attempts_activity_version_id_catalog__418603bb foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table assessment.attempts add constraint fk_assessment_attempts_entrepreneur_id_core_entrepreneurs foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table assessment.responses add constraint fk_assessment_responses_attempt_id_assessment_attempts foreign key (attempt_id) references assessment.attempts(id);
+alter table assessment.responses add constraint fk_assessment_responses_question_id_assessment_questions foreign key (question_id) references assessment.questions(id);
+alter table assessment.responses add constraint fk_assessment_responses_source_event_id_eventing_events foreign key (source_event_id) references eventing.events(event_id);
+alter table assessment.results add constraint fk_assessment_results_attempt_id_assessment_attempts foreign key (attempt_id) references assessment.attempts(id);
+alter table assessment.practice_specs add constraint fk_assessment_practice_specs_activity_version_id_ca_d07c94dc foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table assessment.rubric_definitions add constraint fk_assessment_rubric_definitions_owner_organization_56ac8a0c foreign key (owner_organization_id) references iam.organizations(id);
+alter table assessment.rubric_versions add constraint fk_assessment_rubric_versions_rubric_definition_id__8a2c6cdd foreign key (rubric_definition_id) references assessment.rubric_definitions(id);
+alter table assessment.rubric_criteria add constraint fk_assessment_rubric_criteria_rubric_version_id_ass_3d2af844 foreign key (rubric_version_id) references assessment.rubric_versions(id);
+alter table assessment.submissions add constraint fk_assessment_submissions_step_instance_id_orchestr_31f68ed1 foreign key (step_instance_id) references orchestration.step_instances(id);
+alter table assessment.submissions add constraint fk_assessment_submissions_activity_version_id_catal_ecb732c7 foreign key (activity_version_id) references catalog.activity_versions(id);
+alter table assessment.submissions add constraint fk_assessment_submissions_entrepreneur_id_core_entrepreneurs foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table assessment.submission_evidence add constraint fk_assessment_submission_evidence_submission_id_ass_056e6335 foreign key (submission_id) references assessment.submissions(id);
+alter table assessment.submission_evidence add constraint fk_assessment_submission_evidence_file_object_id_co_6b2855fc foreign key (file_object_id) references core.file_objects(id);
+alter table assessment.reviews add constraint fk_assessment_reviews_submission_id_assessment_submissions foreign key (submission_id) references assessment.submissions(id);
+alter table assessment.reviews add constraint fk_assessment_reviews_reviewer_user_account_id_iam__ef77c869 foreign key (reviewer_user_account_id) references iam.user_accounts(id);
+alter table assessment.reviews add constraint fk_assessment_reviews_rubric_version_id_assessment__0d071d24 foreign key (rubric_version_id) references assessment.rubric_versions(id);
+alter table assessment.reviews add constraint fk_assessment_reviews_source_event_id_eventing_events foreign key (source_event_id) references eventing.events(event_id);
+alter table assessment.review_scores add constraint fk_assessment_review_scores_review_id_assessment_reviews foreign key (review_id) references assessment.reviews(id);
+alter table assessment.review_scores add constraint fk_assessment_review_scores_rubric_criterion_id_ass_a018d990 foreign key (rubric_criterion_id) references assessment.rubric_criteria(id);
+alter table engagement.point_rule_definitions add constraint fk_engagement_point_rule_definitions_owner_organiza_c83f6184 foreign key (owner_organization_id) references iam.organizations(id);
+alter table engagement.point_rule_versions add constraint fk_engagement_point_rule_versions_point_rule_defini_54260805 foreign key (point_rule_definition_id) references engagement.point_rule_definitions(id);
+alter table engagement.point_rule_versions add constraint fk_engagement_point_rule_versions_eligibility_rule__30221a96 foreign key (eligibility_rule_version_id) references orchestration.rule_versions(id);
+alter table engagement.point_ledger add constraint fk_engagement_point_ledger_entrepreneur_id_core_ent_505ff6f7 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table engagement.point_ledger add constraint fk_engagement_point_ledger_journey_instance_id_orch_52d2b09a foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table engagement.point_ledger add constraint fk_engagement_point_ledger_point_rule_version_id_en_7425cf03 foreign key (point_rule_version_id) references engagement.point_rule_versions(id);
+alter table engagement.point_ledger add constraint fk_engagement_point_ledger_source_event_id_eventing_events foreign key (source_event_id) references eventing.events(event_id);
+alter table engagement.point_ledger add constraint fk_engagement_point_ledger_reverses_entry_id_engage_ebcab170 foreign key (reverses_entry_id) references engagement.point_ledger(id);
+alter table engagement.point_balance_projections add constraint fk_engagement_point_balance_projections_entrepreneu_08149cd5 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table engagement.point_balance_projections add constraint fk_engagement_point_balance_projections_journey_ins_92a3ae7e foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table engagement.point_balance_projections add constraint fk_engagement_point_balance_projections_last_ledger_68964fcc foreign key (last_ledger_entry_id) references engagement.point_ledger(id);
+alter table engagement.badge_definitions add constraint fk_engagement_badge_definitions_owner_organization__1c31e77b foreign key (owner_organization_id) references iam.organizations(id);
+alter table engagement.badge_versions add constraint fk_engagement_badge_versions_badge_definition_id_en_e8ae5c03 foreign key (badge_definition_id) references engagement.badge_definitions(id);
+alter table engagement.badge_versions add constraint fk_engagement_badge_versions_criteria_rule_version__d8ebaeb1 foreign key (criteria_rule_version_id) references orchestration.rule_versions(id);
+alter table engagement.badge_versions add constraint fk_engagement_badge_versions_asset_file_object_id_c_6c35fbf5 foreign key (asset_file_object_id) references core.file_objects(id);
+alter table engagement.badge_awards add constraint fk_engagement_badge_awards_entrepreneur_id_core_ent_ad8d34db foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table engagement.badge_awards add constraint fk_engagement_badge_awards_journey_instance_id_orch_1fcf3c81 foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table engagement.badge_awards add constraint fk_engagement_badge_awards_badge_version_id_engagem_0cffb905 foreign key (badge_version_id) references engagement.badge_versions(id);
+alter table engagement.badge_awards add constraint fk_engagement_badge_awards_source_event_id_eventing_events foreign key (source_event_id) references eventing.events(event_id);
+alter table engagement.certificate_definitions add constraint fk_engagement_certificate_definitions_owner_organiz_b145cad9 foreign key (owner_organization_id) references iam.organizations(id);
+alter table engagement.certificate_versions add constraint fk_engagement_certificate_versions_certificate_defi_95e48c24 foreign key (certificate_definition_id) references engagement.certificate_definitions(id);
+alter table engagement.certificate_versions add constraint fk_engagement_certificate_versions_journey_version__5dfee49c foreign key (journey_version_id) references catalog.journey_versions(id);
+alter table engagement.certificate_versions add constraint fk_engagement_certificate_versions_requirements_rul_72cf8726 foreign key (requirements_rule_version_id) references orchestration.rule_versions(id);
+alter table engagement.certificate_versions add constraint fk_engagement_certificate_versions_template_file_ob_53a1fcda foreign key (template_file_object_id) references core.file_objects(id);
+alter table engagement.certificate_issuances add constraint fk_engagement_certificate_issuances_entrepreneur_id_f877e78c foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table engagement.certificate_issuances add constraint fk_engagement_certificate_issuances_journey_instanc_42eef2e8 foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table engagement.certificate_issuances add constraint fk_engagement_certificate_issuances_certificate_ver_c4519751 foreign key (certificate_version_id) references engagement.certificate_versions(id);
+alter table engagement.certificate_issuances add constraint fk_engagement_certificate_issuances_source_event_id_0c2f9b81 foreign key (source_event_id) references eventing.events(event_id);
+alter table engagement.certificate_issuances add constraint fk_engagement_certificate_issuances_document_file_o_e1ff3432 foreign key (document_file_object_id) references core.file_objects(id);
+alter table engagement.streak_projections add constraint fk_engagement_streak_projections_entrepreneur_id_co_27fc3578 foreign key (entrepreneur_id) references core.entrepreneurs(id);
+alter table engagement.streak_projections add constraint fk_engagement_streak_projections_journey_instance_i_1ad87f78 foreign key (journey_instance_id) references orchestration.journey_instances(id);
+alter table intervention.definitions add constraint fk_intervention_definitions_owner_organization_id_i_ea4bb4fd foreign key (owner_organization_id) references iam.organizations(id);
+alter table intervention.versions add constraint fk_intervention_versions_intervention_definition_id_29b19ce5 foreign key (intervention_definition_id) references intervention.definitions(id);

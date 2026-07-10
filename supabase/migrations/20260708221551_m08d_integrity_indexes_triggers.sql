@@ -1,3 +1,123 @@
--- E14 migration-history compatibility marker.
--- The final schema effect is represented by the canonical M00-M12 carrier migrations.
--- Intentionally no-op. Keep this file so Supabase can reconcile the remote migration version.
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260708221551
+-- Remote name: m08d_integrity_indexes_triggers
+-- Remote SQL SHA-256: 330fb16615e12da05acaed982a5fe0097c99b5438924c885aed94d5c1575c5da
+-- Do not edit after reconciliation; corrections require a new migration.
+
+set lock_timeout = '5s';
+set statement_timeout = '5min';
+
+alter table catalog.journey_versions add constraint ck_catalog_journey_versions_version_positive check (version_number > 0);
+alter table catalog.course_versions add constraint ck_catalog_course_versions_version_positive check (version_number > 0);
+alter table catalog.activity_versions add constraint ck_catalog_activity_versions_version_positive check (version_number > 0);
+alter table orchestration.rule_versions add constraint ck_orchestration_rule_versions_version_positive check (version_number > 0);
+alter table diagnostics.diagnostic_versions add constraint ck_diagnostics_diagnostic_versions_version_positive check (version_number > 0);
+alter table diagnostics.dimensions add constraint ck_diagnostics_dimensions_answer_ratio check (minimum_answer_ratio between 0 and 1);
+alter table diagnostics.dimension_results add constraint ck_diagnostics_dimension_results_dimension_range check (answered_ratio between 0 and 1 and (score is null or score between 0 and 100));
+alter table diagnostics.segment_assignments add constraint ck_diagnostics_segment_assignments_confidence_range check (confidence is null or confidence between 0 and 1);
+alter table diagnostics.archetype_assignments add constraint ck_diagnostics_archetype_assignments_probability_range check ((probability is null or probability between 0 and 1) and (secondary_probability is null or secondary_probability between 0 and 1));
+alter table assessment.assessment_specs add constraint ck_assessment_assessment_specs_assessment_limits check ((passing_score is null or passing_score between 0 and 100) and (max_attempts is null or max_attempts > 0));
+alter table assessment.attempts add constraint ck_assessment_attempts_attempt_positive check (attempt_number > 0);
+alter table assessment.results add constraint ck_assessment_results_normalized_score check (normalized_score between 0 and 100);
+alter table assessment.practice_specs add constraint ck_assessment_practice_specs_submission_limit check (max_submissions is null or max_submissions > 0);
+alter table assessment.submissions add constraint ck_assessment_submissions_submission_positive check (submission_number > 0);
+alter table engagement.point_rule_versions add constraint ck_engagement_point_rule_versions_nonzero_amount check (amount <> 0);
+alter table engagement.point_ledger add constraint ck_engagement_point_ledger_nonzero_amount check (amount <> 0);
+alter table engagement.badge_versions add constraint ck_engagement_badge_versions_version_positive check (version_number > 0);
+alter table engagement.certificate_versions add constraint ck_engagement_certificate_versions_version_positive check (version_number > 0);
+alter table eventing.event_schemas add constraint ck_eventing_event_schemas_event_version_positive check (event_version > 0);
+alter table eventing.events add constraint ck_eventing_events_event_versions check (event_version > 0 and (aggregate_version is null or aggregate_version >= 0));
+alter table eventing.outbox add constraint ck_eventing_outbox_attempt_nonnegative check (attempt_count >= 0);
+alter table eventing.consumer_inbox add constraint ck_eventing_consumer_inbox_attempt_nonnegative check (attempt_count >= 0);
+alter table integration.mapping_versions add constraint ck_integration_mapping_versions_version_positive check (version_number > 0);
+alter table integration.sync_jobs add constraint ck_integration_sync_jobs_attempt_nonnegative check (attempt_count >= 0);
+alter table intelligence.feature_versions add constraint ck_intelligence_feature_versions_version_positive check (version_number > 0);
+alter table intelligence.feature_values add constraint ck_intelligence_feature_values_single_value check ((numeric_value is not null)::int + (text_value is not null)::int + (json_value is not null)::int = 1);
+alter table intelligence.score_versions add constraint ck_intelligence_score_versions_version_positive check (version_number > 0);
+alter table intelligence.score_results add constraint ck_intelligence_score_results_uncertainty_range check (uncertainty is null or uncertainty between 0 and 1);
+alter table core.file_objects add constraint ck_core_file_objects_size_nonnegative check (size_bytes >= 0);
+alter table catalog.modules add constraint ck_catalog_modules_module_values check (position > 0 and estimated_minutes >= 0);
+alter table catalog.activity_versions add constraint ck_catalog_activity_versions_duration_nonnegative check (estimated_minutes >= 0);
+alter table catalog.content_assets add constraint ck_catalog_content_assets_asset_location check (position > 0 and ((file_object_id is not null)::int + (external_url is not null)::int = 1));
+alter table catalog.content_contributors add constraint ck_catalog_content_contributors_contributor_target check (((activity_version_id is not null)::int + (course_version_id is not null)::int = 1) and ((organization_id is not null)::int + (user_account_id is not null)::int >= 1));
+alter table orchestration.path_transitions add constraint ck_orchestration_path_transitions_transition_endpoint check (from_step_id is not null or to_step_id is not null);
+alter table orchestration.enrollments add constraint ck_orchestration_enrollments_enrollment_dates check (expires_at is null or expires_at >= assigned_at);
+alter table orchestration.path_assignments add constraint ck_orchestration_path_assignments_assignment_dates check (valid_until is null or valid_until > valid_from);
+alter table diagnostics.responses add constraint ck_diagnostics_responses_response_values check (revision > 0 and (response_time_ms is null or response_time_ms >= 0));
+alter table engagement.certificate_issuances add constraint ck_engagement_certificate_issuances_certificate_dates check (expires_at is null or expires_at > issued_at);
+alter table intervention.delivery_attempts add constraint ck_intervention_delivery_attempts_attempt_positive check (attempt_number > 0);
+alter table integration.sync_attempts add constraint ck_integration_sync_attempts_attempt_positive check (attempt_number > 0);
+
+create unique index uq_iam_global_role_code on iam.role_definitions(code) where organization_id is null;
+create unique index uq_iam_org_role_code on iam.role_definitions(organization_id, code) where organization_id is not null;
+create unique index uq_orchestration_enrollment_scope on orchestration.enrollments(entrepreneur_id, coalesce(business_id, '00000000-0000-0000-0000-000000000000'::uuid), journey_version_id, coalesce(cohort_id, '00000000-0000-0000-0000-000000000000'::uuid));
+create unique index uq_engagement_point_balance_scope on engagement.point_balance_projections(entrepreneur_id, coalesce(journey_instance_id, '00000000-0000-0000-0000-000000000000'::uuid));
+create unique index uq_engagement_streak_scope on engagement.streak_projections(entrepreneur_id, coalesce(journey_instance_id, '00000000-0000-0000-0000-000000000000'::uuid), streak_type);
+create unique index uq_eventing_aggregate_version on eventing.events(aggregate_type, aggregate_id, aggregate_version) where aggregate_id is not null and aggregate_version is not null;
+create unique index uq_integration_provider_event on integration.webhook_receipts(connection_id, provider_event_id) where provider_event_id is not null;
+
+create index ix_iam_external_identities_user_account_id on iam.external_identities (user_account_id);
+create index ix_core_entrepreneurs_email_normalized on core.entrepreneurs (email_normalized);
+create index ix_core_entrepreneurs_phone_e164 on core.entrepreneurs (phone_e164);
+create index ix_core_business_memberships_business_id_valid_until on core.business_memberships (business_id, valid_until);
+create index ix_core_business_memberships_entrepreneur_id_valid_until on core.business_memberships (entrepreneur_id, valid_until);
+create index ix_catalog_journey_versions_journey_definition_id_status on catalog.journey_versions (journey_definition_id, status);
+create index ix_catalog_activity_versions_activity_definition_id_status on catalog.activity_versions (activity_definition_id, status);
+create index ix_orchestration_enrollments_entrepreneur_id_status on orchestration.enrollments (entrepreneur_id, status);
+create index ix_orchestration_enrollments_journey_version_id_status on orchestration.enrollments (journey_version_id, status);
+create index ix_orchestration_journey_instances_status_updated_at on orchestration.journey_instances (status, updated_at);
+create index ix_orchestration_step_instances_path_assignment_id_status on orchestration.step_instances (path_assignment_id, status);
+create index ix_orchestration_step_instances_activity_version_id_status on orchestration.step_instances (activity_version_id, status);
+create index ix_orchestration_activity_sessions_entrepreneur_id__396f60cf on orchestration.activity_sessions (entrepreneur_id, started_at desc);
+create index ix_diagnostics_sessions_entrepreneur_id_started_at on diagnostics.sessions (entrepreneur_id, started_at desc);
+create index ix_diagnostics_responses_session_id_item_id_revision on diagnostics.responses (session_id, item_id, revision desc);
+create index ix_diagnostics_segment_assignments_entrepreneur_id__729ee0e6 on diagnostics.segment_assignments (entrepreneur_id, valid_until);
+create index ix_assessment_attempts_entrepreneur_id_started_at on assessment.attempts (entrepreneur_id, started_at desc);
+create index ix_assessment_submissions_entrepreneur_id_submitted_at on assessment.submissions (entrepreneur_id, submitted_at desc);
+create index ix_engagement_point_ledger_entrepreneur_id_occurred_at on engagement.point_ledger (entrepreneur_id, occurred_at desc);
+create index ix_engagement_badge_awards_entrepreneur_id_awarded_at on engagement.badge_awards (entrepreneur_id, awarded_at desc);
+create index ix_engagement_certificate_issuances_entrepreneur_id_af0fcf8f on engagement.certificate_issuances (entrepreneur_id, issued_at desc);
+create index ix_intervention_instances_entrepreneur_id_status_sc_e77cc4c4 on intervention.instances (entrepreneur_id, status, scheduled_at);
+create index ix_eventing_events_received_at on eventing.events (received_at desc);
+create index ix_eventing_events_event_name_received_at on eventing.events (event_name, received_at desc);
+create index ix_eventing_events_subject_type_subject_id_received_at on eventing.events (subject_type, subject_id, received_at desc);
+create index ix_eventing_events_journey_instance_id_received_at on eventing.events (journey_instance_id, received_at desc);
+create index ix_eventing_events_correlation_id on eventing.events (correlation_id);
+create index ix_eventing_events_causation_id on eventing.events (causation_id);
+create index ix_eventing_outbox_status_available_at on eventing.outbox (status, available_at);
+create index ix_eventing_consumer_inbox_consumer_id_status_received_at on eventing.consumer_inbox (consumer_id, status, received_at);
+create index ix_eventing_dead_letters_status_created_at on eventing.dead_letters (status, created_at);
+create index ix_integration_external_object_mappings_internal_en_a15fbc86 on integration.external_object_mappings (internal_entity_type, internal_entity_id);
+create index ix_integration_sync_jobs_status_scheduled_at on integration.sync_jobs (status, scheduled_at);
+create index ix_integration_conflicts_status_detected_at on integration.conflicts (status, detected_at);
+create index ix_integration_webhook_receipts_status_received_at on integration.webhook_receipts (status, received_at);
+create index ix_intelligence_feature_values_subject_type_subject_id_as_of on intelligence.feature_values (subject_type, subject_id, as_of desc);
+create index ix_intelligence_feature_values_journey_instance_id_as_of on intelligence.feature_values (journey_instance_id, as_of desc);
+create index ix_intelligence_score_results_subject_type_subject__e9659ee4 on intelligence.score_results (subject_type, subject_id, calculated_at desc);
+create index ix_governance_consent_records_entrepreneur_id_purpo_deed4eac on governance.consent_records (entrepreneur_id, purpose_id, captured_at desc);
+create index ix_governance_audit_log_occurred_at on governance.audit_log (occurred_at desc);
+create index ix_governance_audit_log_resource_type_resource_id_o_b53ffe95 on governance.audit_log (resource_type, resource_id, occurred_at desc);
+
+create trigger trg_iam_user_accounts_updated_at before update on iam.user_accounts for each row execute function governance.set_updated_at();
+create trigger trg_iam_external_identities_updated_at before update on iam.external_identities for each row execute function governance.set_updated_at();
+create trigger trg_iam_organizations_updated_at before update on iam.organizations for each row execute function governance.set_updated_at();
+create trigger trg_core_entrepreneurs_updated_at before update on core.entrepreneurs for each row execute function governance.set_updated_at();
+create trigger trg_core_businesses_updated_at before update on core.businesses for each row execute function governance.set_updated_at();
+create trigger trg_catalog_programs_updated_at before update on catalog.programs for each row execute function governance.set_updated_at();
+create trigger trg_catalog_journey_definitions_updated_at before update on catalog.journey_definitions for each row execute function governance.set_updated_at();
+create trigger trg_catalog_course_definitions_updated_at before update on catalog.course_definitions for each row execute function governance.set_updated_at();
+create trigger trg_catalog_activity_definitions_updated_at before update on catalog.activity_definitions for each row execute function governance.set_updated_at();
+create trigger trg_orchestration_journey_instances_updated_at before update on orchestration.journey_instances for each row execute function governance.set_updated_at();
+create trigger trg_orchestration_step_instances_updated_at before update on orchestration.step_instances for each row execute function governance.set_updated_at();
+create trigger trg_orchestration_progress_projections_updated_at before update on orchestration.progress_projections for each row execute function governance.set_updated_at();
+create trigger trg_engagement_point_balance_projections_updated_at before update on engagement.point_balance_projections for each row execute function governance.set_updated_at();
+create trigger trg_engagement_streak_projections_updated_at before update on engagement.streak_projections for each row execute function governance.set_updated_at();
+create trigger trg_eventing_projection_checkpoints_updated_at before update on eventing.projection_checkpoints for each row execute function governance.set_updated_at();
+create trigger trg_integration_connections_updated_at before update on integration.connections for each row execute function governance.set_updated_at();
+create trigger trg_diagnostics_responses_append_only before update or delete on diagnostics.responses for each row execute function governance.reject_mutation();
+create trigger trg_engagement_point_ledger_append_only before update or delete on engagement.point_ledger for each row execute function governance.reject_mutation();
+create trigger trg_eventing_events_append_only before update or delete on eventing.events for each row execute function governance.reject_mutation();
+create trigger trg_eventing_delivery_attempts_append_only before update or delete on eventing.delivery_attempts for each row execute function governance.reject_mutation();
+create trigger trg_integration_sync_attempts_append_only before update or delete on integration.sync_attempts for each row execute function governance.reject_mutation();
+create trigger trg_governance_consent_records_append_only before update or delete on governance.consent_records for each row execute function governance.reject_mutation();
+create trigger trg_governance_audit_log_append_only before update or delete on governance.audit_log for each row execute function governance.reject_mutation();
