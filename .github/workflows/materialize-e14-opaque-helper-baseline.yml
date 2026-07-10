@@ -1,0 +1,47 @@
+name: Materialize E14 opaque helper baseline
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/materialize-e14-opaque-helper-baseline.yml"
+      - "scripts/e14/opaque-helpers/**"
+      - "supabase/migrations/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-e14-opaque-helper-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Materialize deterministic baseline
+        run: node scripts/e14/opaque-helpers/inventory.mjs --write docs/implementation/e14-opaque-helper-baseline-v1.json
+
+      - name: Commit baseline when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- docs/implementation/e14-opaque-helper-baseline-v1.json; then
+            echo "Opaque helper baseline is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/implementation/e14-opaque-helper-baseline-v1.json
+          git commit -m "test(e14): materialize M15 opaque helper baseline"
+          git push origin "HEAD:${{ github.head_ref }}"
