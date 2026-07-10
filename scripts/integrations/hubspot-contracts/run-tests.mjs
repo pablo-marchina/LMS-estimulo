@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(currentDir, "../../..");
-const outputDir = resolve(repositoryRoot, ".tmp/e14-hubspot-contracts");
+const outputDir = resolve(repositoryRoot, ".tmp/hubspot-contracts");
 const tsconfigPath = resolve(currentDir, "tsconfig.json");
 const testPath = resolve(
   outputDir,
-  "scripts/e14/hubspot-contracts/hubspot-contracts.test.mjs"
+  "scripts/integrations/hubspot-contracts/hubspot-contracts.test.mjs"
 );
 
 const compilerCandidates = [
@@ -19,7 +19,7 @@ const compilerCandidates = [
 const compilerPath = compilerCandidates.find((candidate) => existsSync(candidate));
 
 if (!compilerPath) {
-  throw new Error("TypeScript compiler was not found. Run npm install before this test.");
+  throw new Error("TypeScript compiler was not found. Run npm ci before this test.");
 }
 
 rmSync(outputDir, { recursive: true, force: true });
