@@ -154,7 +154,7 @@ backend_e2e_replayed = false
 - [Arquitetura de filas](docs/architecture/E12_QUEUE_ARCHITECTURE.md)
 - [Scheduler e dispatcher](docs/architecture/E12_SCHEDULER_DISPATCHER_ARCHITECTURE.md)
 - [Reconciliação e recuperação](docs/architecture/E12_RECONCILIATION_AND_RECOVERY.md)
-- [Observabilidade e alertas](docs/architecture/E12_OBSERVABILITY_ALERTING.md)
+- [Observabilidade e alertas](docs/architecture/E12_OBSERVABILITY_AND_ALERTS.md)
 
 Esses componentes são adapters e provas do Supabase de teste, não arquitetura produtiva AWS.
 
