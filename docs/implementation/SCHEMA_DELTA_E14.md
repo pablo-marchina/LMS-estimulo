@@ -1,274 +1,263 @@
-# E14-R1 — Delta de schema e runtime
+# E14 — Delta final de schema e autoridade de dados
 
-**Versão:** 0.2  
-**Data:** 2026-07-09  
-**Status:** PARTIAL — delta estrutural identificado; nova migration bloqueada  
-**Ambiente inspecionado:** Supabase de desenvolvimento/teste `cfpfeavjlgheqqiaqtzv`  
+**Versão:** 0.3  
+**Data:** 2026-07-10  
+**Status:** Modelo lógico definido; materialização física HubSpot bloqueada por inventário do sandbox  
 **DDL aplicado nesta etapa:** nenhum
 
-## 1. Objetivo
+## 1. Decisão superior
 
-Determinar o que deve ser reutilizado, estendido ou recuperado antes de criar qualquer nova migration funcional. Esta análise segue o `Estimulo_all`, o ADR-002 e a regra de que Supabase é somente desenvolvimento/teste; estruturas aprovadas devem permanecer PostgreSQL-portáveis e ser validadas no AWS staging.
+O ADR-003 estabelece:
 
-## 2. Bloqueio P0 de fonte de verdade
+```text
+all_collected_business_data_persisted_in_hubspot = true
+all_business_reads_have_hubspot_origin = true
+postgresql_is_independent_user_data_authority = false
+```
 
-O runtime remoto contém 165 versões M13, totalizando 123.636 bytes de SQL, que não estão integralmente versionadas no Git. Também existem nove versões temporárias de transporte/exportação e duas versões M14.
+Consequentemente, o delta não criará um novo subsistema PostgreSQL canônico para formulário, respostas, arquétipos ou regras de uso. O HubSpot será a autoridade desses dados.
 
-Os identificadores M14 divergem:
+## 2. Estado técnico comprovado
 
-| Capacidade | Supabase | Git |
+```text
+recovered_migration_count = 243
+clean_replay_passed = true
+schema_equivalence_passed = true
+public_rpc_contracts_passed = true
+backend_e2e_replayed = true
+```
+
+O replay também comprovou configurações existentes no Supabase fora do histórico de migrations:
+
+```text
+4 diagnostic items
+16 diagnostic options
+2 path templates
+2 path steps
+29 canonical event schema identifiers
+```
+
+Esses dados não podem ser tratados como configuração oficial futura. Permanecem apenas como fixtures técnicas até classificação e migração explícita para o HubSpot.
+
+## 3. Modelo lógico autoritativo no HubSpot
+
+O modelo físico dependerá das capacidades reais da conta, mas o modelo lógico mínimo é obrigatório.
+
+### 3.1 Formulário
+
+```text
+FormDefinition
+FormVersion
+QuestionVersion
+QuestionOptionVersion
+FormSubmission
+FormAnswer
+```
+
+Requisitos:
+
+- rascunhos editáveis;
+- versões publicadas imutáveis;
+- perguntas e opções associadas à versão;
+- submissão vinculada à versão exata;
+- respostas completas armazenadas no HubSpot;
+- readback obrigatório antes da classificação;
+- nenhuma resposta recebida diretamente da requisição alimenta decisão de negócio.
+
+### 3.2 Arquétipos e classificação
+
+```text
+ArchetypeDefinition
+ArchetypeVersion
+ClassificationPolicyVersion
+ArchetypeAssignment
+```
+
+Requisitos:
+
+- quantidade de arquétipos sem limite hardcoded;
+- configuração inicial pode possuir quatro;
+- adição ou retirada cria nova versão da política;
+- retirada operacional não apaga histórico;
+- cada atribuição, recálculo ou override cria novo registro;
+- evidência e snapshots HubSpot usados ficam vinculados ao resultado;
+- estado atual é uma projeção do histórico.
+
+### 3.3 Utilização dos resultados
+
+```text
+ActivationRuleVersion
+ActivationExecution
+```
+
+Cada regra define:
+
+- dados HubSpot de entrada;
+- condições;
+- contexto de uso;
+- ação;
+- período de vigência;
+- política de reprocessamento;
+- versão e status.
+
+Cada execução registra os IDs e versões HubSpot usados, decisão, ação, horário e resultado.
+
+### 3.4 Mapeamento e governança
+
+```text
+HubSpotFieldMappingVersion
+DataUseDefinition
+```
+
+Todo dado coletado deve possuir destino HubSpot. Todo dado utilizado deve possuir finalidade e origem HubSpot.
+
+## 4. Classificação das estruturas PostgreSQL existentes
+
+### 4.1 Diagnóstico e arquétipos
+
+| Estrutura | Nova classificação | Regra |
 |---|---|---|
-| Application read surfaces | `20260709183504` | `20260709183000` |
-| Operator workspace | `20260709184749` | `20260709184500` |
+| `diagnostic_definitions` | `TECHNICAL_REPLICA_OR_DEPRECATE` | não pode ser autoridade da definição usada |
+| `diagnostic_versions` | `TECHNICAL_REPLICA_OR_DEPRECATE` | versão oficial deve vir do HubSpot |
+| `items` / `item_options` | `TECHNICAL_REPLICA_OR_DEPRECATE` | somente cache HubSpot-sourced ou fixture |
+| `sessions` / `responses` | `AUDIT_OR_TRANSIENT_ONLY` | respostas funcionais devem existir no HubSpot; leitura local não alimenta decisão |
+| `results` | `AUDIT_REPLICA_ONLY` | resultado oficial deve ser persistido e confirmado no HubSpot |
+| `archetype_definitions` / `archetype_versions` | `TECHNICAL_REPLICA_OR_DEPRECATE` | configuração autoritativa no HubSpot |
+| `archetype_assignments` | `AUDIT_REPLICA_ONLY` | histórico autoritativo no HubSpot; sem update/delete destrutivo |
 
-Consequências:
+Nenhuma dessas tabelas será removida antes de existir migração, reconciliação e prova de que todos os consumidores usam HubSpot.
 
-- o Git ainda não reconstrói o backend E14 comprovado;
-- não existe replay limpo equivalente ao ambiente testado;
-- migrations locais M14 podem ser interpretadas como ainda não aplicadas;
-- a portabilidade para AWS não está provada;
-- nova DDL ampliaria uma baseline não reproduzível.
+### 4.2 Integração
 
-O plano completo está em `RUNTIME_GAP_E14.md`.
+| Estrutura | Classificação | Delta |
+|---|---|---|
+| `integration.connections` | `REUSE_AS_IS` | conexão, ambiente, scopes e referência de segredo |
+| `mapping_definitions` / `mapping_versions` | `EXTEND_EXISTING` | mapear todos os dados coletados e utilizados |
+| `external_object_mappings` | `EXTEND_EXISTING` | suportar objetos de configuração e histórico HubSpot |
+| `sync_jobs` / `sync_attempts` | `REUSE_AS_IS` | write, readback, retry, backoff e DLQ |
+| `webhook_receipts` | `REUSE_AS_IS` | assinatura, replay e invalidação de cache |
+| `conflicts` | `REUSE_AS_IS` | conflito de versão e autoridade |
+| `reconciliation_runs` / `reconciliation_items` | `REUSE_AS_IS` | comparar HubSpot com réplicas técnicas |
+
+### 4.3 Eventos e outbox
+
+`eventing.events` e `eventing.outbox` permanecem como plano técnico. Porém:
+
+- qualquer fato de usuário usado por uma função deverá ser materializado no HubSpot;
+- nenhuma decisão poderá depender exclusivamente do event store local;
+- o evento técnico deve registrar o objeto HubSpot resultante ou o estado `pending_hubspot`;
+- readback e reconciliação são obrigatórios para fatos críticos.
+
+## 5. Linhagem HubSpot obrigatória
+
+Toda réplica, cache ou evidência local de dado de negócio deverá conter, direta ou indiretamente:
 
 ```text
-new_functional_migration_authorized = false
+hubspot_portal_id
+hubspot_object_type
+hubspot_object_id
+hubspot_source_version
+hubspot_updated_at
+retrieved_at
+source_snapshot_hash
+cache_expires_at
+readback_status
 ```
 
-## 3. Evidência do ambiente de teste
+Regras:
 
-### 3.1 Dados atuais
+- sem origem completa, o dado não pode ser usado;
+- cache expirado não pode alimentar decisão;
+- alteração local independente é proibida;
+- cada decisão registra os snapshots usados;
+- resultados são persistidos no HubSpot e confirmados antes de usos posteriores.
 
-| Relação | Linhas |
-|---|---:|
-| `diagnostics.diagnostic_definitions` | 1 |
-| `diagnostics.diagnostic_versions` | 1 |
-| `diagnostics.items` | 4 |
-| `diagnostics.item_options` | 16 |
-| `diagnostics.sessions` | 1 |
-| `diagnostics.responses` | 4 |
-| `diagnostics.results` | 1 |
-| `diagnostics.archetype_definitions` | 0 |
-| `diagnostics.archetype_versions` | 0 |
-| `diagnostics.archetype_assignments` | 0 |
-| `catalog.content_assets` | 0 |
-| `integration.connections` | 0 |
-| `integration.mapping_definitions` | 0 |
-| `integration.sync_jobs` | 0 |
-| `eventing.events` | 39 |
-| `eventing.outbox` | 39 |
-
-Não há dados de arquétipo, conteúdo ou HubSpot a migrar atualmente. Mudanças aditivas continuam exigindo replay e compatibilidade.
-
-### 3.2 Controles confirmados
-
-Todas as 24 tabelas auditadas possuem RLS. Também foram confirmados:
-
-- imutabilidade de `diagnostic_versions` publicados;
-- proteção de `items` e `item_options` quando a versão está publicada;
-- `responses` append-only;
-- revisão única por `(session_id, item_id, revision)`;
-- no máximo uma sessão `in_progress` por `journey_instance_id`;
-- `events` append-only com redaction/hash;
-- versão agregada única em eventos;
-- rota única por `(event_id, route_key)` na outbox;
-- idempotency key única em `integration.sync_jobs`;
-- tentativas de sincronização append-only;
-- mappings e integrações versionados.
-
-Esses controles devem ser preservados.
-
-## 4. Classificação final por capacidade
-
-### 4.1 Formulário e respostas
-
-| Estrutura | Classificação | Evidência | Delta necessário |
-|---|---|---|---|
-| `diagnostic_definitions` | `REUSE_AS_IS` | definição por organização, código, finalidade e status | nenhum |
-| `diagnostic_versions` | `EXTEND_EXISTING` | versão, configuração, hash e trigger de imutabilidade já existem | permitir ciclo draft/publicação consistente; `published_at` não deve ser obrigatório em draft |
-| `items` | `REUSE_AS_IS` | versão, tipo, prompt, configuração, posição e obrigatoriedade | validar tipos do formulário oficial |
-| `item_options` | `REUSE_AS_IS` | código, label, valor e posição por item | armazenar regra/peso em configuração versionada, sem hardcode |
-| `sessions` | `REUSE_AS_IS` | versão, empreendedor, jornada, estado e optimistic concurrency | formalizar estados e política de retomada nos comandos |
-| `responses` | `REUSE_AS_IS` | append-only, revision, supersessão, tempo e evento de origem | validar cadeia de revisão e idempotência no RPC |
-| `results` | `EXTEND_EXISTING` | resultado por sessão e versão de cálculo | ligação explícita ao resultado de arquétipo e evidência de cálculo |
-
-**Decisão:** não criar `forms`, `form_versions`, `answers` ou subsistema paralelo.
-
-### 4.2 Quatro arquétipos
-
-| Estrutura | Classificação | Evidência | Delta necessário |
-|---|---|---|---|
-| `archetype_definitions` | `REUSE_AS_IS` | definição configurável por organização; código único | cadastrar exatamente quatro definições ativas quando os nomes oficiais forem fornecidos |
-| `archetype_versions` | `EXTEND_EXISTING` | versão, referência de modelo, status e publicação | configuração versionada, hash, mensagens, critérios, associações de trilha e imutabilidade após publicação |
-| `archetype_assignments` | `EXTEND_EXISTING` | empreendedor, jornada, versão e probabilidades | origem, justificativa, evidência, tipo, autor, supersessão, override e evento de origem |
-
-Problema confirmado: `archetype_assignments` permite `UPDATE` e `DELETE` por worker e não possui trigger append-only. Isso contradiz histórico, recálculo e override auditável.
-
-Direção obrigatória:
-
-- cada atribuição, recálculo ou override cria uma nova linha;
-- atribuições anteriores nunca são sobrescritas;
-- uma cadeia `supersedes_assignment_id` preserva a evolução;
-- o estado atual é uma projeção da cadeia;
-- o RPC serializa concorrência e grava estado, evento e outbox atomicamente;
-- probabilidade/confiança permanece nula quando o método real não a sustentar.
-
-Campos candidatos, ainda sujeitos ao formulário oficial:
+## 6. Fluxo funcional obrigatório
 
 ```text
-diagnostic_session_id
-diagnostic_result_id
-assignment_strategy
-assignment_reason
-evidence_snapshot
-assigned_by_user_account_id
-supersedes_assignment_id
-override_reason
-source_event_id
-created_at
+1. carregar FormVersion do HubSpot
+2. exibir formulário
+3. receber respostas
+4. persistir FormSubmission e FormAnswer no HubSpot
+5. executar readback
+6. carregar ClassificationPolicyVersion e ArchetypeVersion do HubSpot
+7. classificar usando somente snapshots HubSpot
+8. persistir ArchetypeAssignment no HubSpot
+9. executar readback do resultado
+10. carregar ActivationRuleVersion do HubSpot
+11. executar usos configurados
+12. persistir ActivationExecution no HubSpot
+13. registrar auditoria técnica, eventos e reconciliação
 ```
 
-Não adicionar `effective_to` se ele exigir mutação da linha histórica; preferir cadeia append-only e projeção atual.
+## 7. Indisponibilidade
 
-### 4.3 Conteúdo próprio e de terceiros
+Quando HubSpot estiver indisponível:
 
-| Estrutura | Classificação | Evidência | Delta necessário |
-|---|---|---|---|
-| `catalog.content_assets` | `EXTEND_EXISTING` | exige exatamente um entre arquivo e URL externa; posição única por atividade | provider, direitos, embed, tracking, disponibilidade, conclusão e fallback |
+- dados podem permanecer tecnicamente `pending_hubspot`;
+- payload transitório deve ser criptografado e ter retenção curta;
+- classificação e uso ficam bloqueados;
+- retry é idempotente;
+- o estado `submitted` somente ocorre após write + readback;
+- nenhuma cópia local pendente pode alimentar decisão.
 
-Campos candidatos:
+## 8. Manutenibilidade
+
+O P0 E14-B002 permanece:
+
+- não ampliar helpers opacos;
+- novos componentes usam nomes semânticos;
+- os 18 RPCs públicos atuais permanecem congelados até uma transição explícita;
+- adapter HubSpot, repositórios de leitura, cache e orquestração devem possuir contratos próprios;
+- a nova arquitetura não será implementada como condicionais por nome ou quantidade de arquétipo.
+
+## 9. Bloqueio para modelo físico
+
+Antes de definir objetos e propriedades reais, é necessário inventariar:
 
 ```text
-ownership_type
-provider
-external_id
-canonical_url
-embed_policy
-rights_status
-license_reference
-availability_status
-tracking_capabilities jsonb
-completion_policy jsonb
-fallback_configuration jsonb
-metadata_version
+HubSpot account tier and hubs
+sandbox/test account
+existing standard and custom objects
+app objects availability
+existing properties and property limits
+associations
+workflows and pipelines
+private app or OAuth model
+scopes
+webhook capabilities
+API limits
+existing deduplication rules
+contact/company identifiers
 ```
 
-Antes da DDL, verificar se metadados equivalentes existem em outra estrutura do catálogo. A primeira integração usará um único provedor real autorizado.
+O HubSpot recomenda batch e cache para reduzir chamadas e webhooks para receber alterações. A estratégia concreta depende dos limites da conta.
 
-### 4.4 Eventos e outbox
-
-| Estrutura | Classificação | Evidência | Delta necessário |
-|---|---|---|---|
-| `eventing.event_schemas` | `REUSE_AS_IS` | schema, versão, hash e publicação | registrar novos contratos |
-| `eventing.events` | `REUSE_AS_IS` | append-only, contexto, ordenação, correlação, privacidade e redaction | nenhum delta estrutural previsto |
-| `eventing.outbox` | `REUSE_AS_IS` | rota, disponibilidade, claim, tentativa e erro | nenhum delta estrutural previsto |
-
-Novos contratos necessários:
+## 10. Gates
 
 ```text
-diagnostic.answer_revised
-diagnostic.archetype_assigned
-diagnostic.archetype_recalculated
-diagnostic.archetype_overridden
-content.opened
-content.started
-content.progress_observed
-content.completed
-integration.hubspot_projection_requested
-integration.hubspot_projection_succeeded
-integration.hubspot_projection_failed
-integration.hubspot_reconciled
-```
-
-Nomes finais devem ser reconciliados com o catálogo canônico antes de publicação.
-
-### 4.5 HubSpot e integrações
-
-| Estrutura | Classificação | Evidência | Delta necessário |
-|---|---|---|---|
-| `integration.connections` | `REUSE_AS_IS` | provider, ambiente, segredo por referência e configuração | conexão real após sandbox/scopes |
-| `mapping_definitions` / `mapping_versions` | `REUSE_AS_IS` | mapping versionado com schema e hash | materializar matriz User 360 |
-| `external_object_mappings` | `REUSE_AS_IS` | vínculo interno/externo | nenhum delta inicial |
-| `sync_jobs` / `sync_attempts` | `REUSE_AS_IS` | idempotência, scheduling, tentativas e erros | adapter, worker, backoff e política de DLQ |
-| `conflicts` | `REUSE_AS_IS` | conflito por campo e resolução | autoridade por campo |
-| `reconciliation_runs` / `reconciliation_items` | `REUSE_AS_IS` | readback e diferenças | implementação real |
-| `webhook_receipts` | `REUSE_AS_IS` | assinatura, replay, hash e normalização | ativar somente com necessidade real |
-
-**Decisão:** HubSpot não exige novo subsistema de persistência. A lacuna principal é adapter, configuração, projeção e operação.
-
-## 5. Lacuna de manutenibilidade das funções
-
-O runtime remoto contém helpers internos com nomes opacos, como:
-
-```text
-e14_apply_a
-e14_exec_c
-e14_write_c3
-e14_q1
-e14_q2
-```
-
-Nenhuma nova capacidade será implementada ampliando esse padrão.
-
-Depois de restaurar a fonte de verdade:
-
-1. manter RPCs públicos estáveis;
-2. criar helpers semânticos por contexto;
-3. migrar um caso de uso por vez;
-4. provar equivalência de estado, evento e outbox;
-5. remover aliases somente após análise de dependência.
-
-A refatoração não será misturada em um big bang com a implementação dos arquétipos.
-
-## 6. Sequência corrigida
-
-```text
-recuperar as 165 migrations M13 e os IDs exatos M14
-→ construir manifest com hashes
-→ executar replay em PostgreSQL limpo
-→ comparar schema e contratos públicos
-→ mapear ações das seis rotas
-→ concluir delta final
-→ definir a próxima migration funcional
-→ implementar arquétipos e conteúdo externo
-```
-
-A próxima migration não será chamada antecipadamente de M15. A numeração será decidida após reconciliação do histórico.
-
-## 7. Gaps que não exigem tabelas novas
-
-- formulário usa `diagnostic_*`, `items`, `item_options`, `sessions` e `responses`;
-- arquétipos estendem as três tabelas existentes;
-- HubSpot usa o schema `integration` existente;
-- eventos usam `event_schemas`, `events` e `outbox`;
-- AWS reutiliza as mesmas migrations PostgreSQL por adapters de infraestrutura.
-
-## 8. Próximas provas
-
-1. exportar statements M13/M14 do histórico remoto;
-2. criar manifest de versões, tamanhos e hashes;
-3. reconciliar carriers locais com timestamps remotos;
-4. executar replay limpo;
-5. comparar tabelas, colunas, constraints, índices, triggers, policies e funções;
-6. congelar contratos dos RPCs públicos;
-7. mapear as ações atuais de `apps/web` para o registro de interações;
-8. receber formulário, quatro arquétipos, conteúdo externo e inventário HubSpot oficiais;
-9. atualizar este documento para v0.3 e autorizar ou rejeitar a migration funcional.
-
-## 9. Status do gate E14-R1
-
-```text
-remote_schema_inventory_complete = true
-critical_constraints_reviewed = true
-critical_indexes_reviewed = true
-critical_triggers_reviewed = true
-critical_rls_reviewed = true
-remote_runtime_versions_missing_locally = 165
-m14_version_identifiers_match = false
-clean_replay_passed = false
-schema_equivalence_passed = false
-new_ddl_applied = false
-parallel_subsystems_created = false
+hubspot_inventory_complete = false
+hubspot_physical_model_approved = false
+all_collected_fields_have_hubspot_destination = false
+all_business_reads_have_hubspot_origin = false
+critical_writes_have_readback = false
+hubspot_unavailable_blocks_business_use = true
+hardcoded_archetype_count = false
 schema_delta_final = false
 new_functional_migration_authorized = false
+```
+
+## 11. Próxima sequência
+
+```text
+inventariar sandbox HubSpot
+→ escolher custom objects, app objects, propriedades, associações e eventos
+→ definir modelo físico e scopes
+→ definir contratos do adapter e do cache HubSpot-sourced
+→ atualizar interaction/data-use registry
+→ concluir delta final
+→ definir migrations técnicas mínimas de linhagem e integração
+→ implementar write + readback do formulário
+→ implementar classificação HubSpot-sourced
+→ implementar regras de ativação HubSpot-sourced
 ```

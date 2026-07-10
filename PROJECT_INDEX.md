@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 2.7  
+**Versão:** 2.8  
 **Data:** 2026-07-10  
-**Status:** E14 em execução; replay, equivalência, contratos e backend E2E comprovados; produção bloqueada
+**Status:** E14 em execução; HubSpot definido como fonte autoritativa; modelo físico bloqueado pelo inventário da conta
 
 ## 1. Hierarquia de referência
 
@@ -22,6 +22,7 @@ Documentos e outputs substituídos não permanecem na árvore ativa. O Git prese
 - branch principal: `main`;
 - Supabase de desenvolvimento/teste: `cfpfeavjlgheqqiaqtzv`;
 - staging e produção oficiais: AWS;
+- HubSpot: fonte autoritativa dos dados de negócio coletados e utilizados;
 - contribuição: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 O Supabase não será promovido a produção. Toda release deve passar pelo AWS staging.
@@ -32,17 +33,18 @@ O Supabase não será promovido a produção. Toda release deve passar pelo AWS 
 - plataforma multi-jornada;
 - monólito modular com contextos delimitados;
 - formulário configurável e versionado;
-- exatamente quatro arquétipos ativos na operação inicial, definidos como dados;
-- recálculo e override auditáveis, com histórico append-only;
+- quatro arquétipos na configuração inicial, sem limite estrutural fixo;
+- adição, retirada, recálculo e override versionados e auditáveis;
 - captura governada de ações relevantes;
-- PostgreSQL como fonte transacional e histórica;
-- HubSpot como centro da visão operacional integrada;
+- todo dado de negócio coletado é persistido no HubSpot;
+- toda função de negócio usa dados provenientes do HubSpot;
+- PostgreSQL é plano técnico de outbox, idempotência, cache HubSpot-sourced, auditoria e reconciliação;
 - conteúdo próprio e de terceiros por modelo unificado e adapters;
 - Supabase somente para desenvolvimento/teste;
 - AWS para staging e produção;
 - código, migrations, contratos, testes e documentação entregues juntos.
 
-Detalhes: [PREMISES_AND_SCOPE.md](docs/product/PREMISES_AND_SCOPE.md).
+Detalhes: [PREMISES_AND_SCOPE.md](docs/product/PREMISES_AND_SCOPE.md) e [ADR-003](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md).
 
 ## 4. Runtime atual
 
@@ -51,28 +53,32 @@ O repositório contém:
 - aplicação Next.js em `apps/web`;
 - seis rotas iniciais para participante e operação;
 - bridge de identidade e camada de RPCs no servidor;
-- 76 migrations M00–M12, 165 migrations M13 e 2 migrations M14/M14b recuperadas com identificadores remotos exatos;
-- 243 migrations executáveis, três manifests, fingerprints e SQL canônico consolidado;
-- gate de CI que reconstrói o banco em PostgreSQL 17.6 e compara nove categorias estruturais com o Supabase de teste;
+- 76 migrations M00–M12, 165 migrations M13 e 2 migrations M14/M14b recuperadas;
+- 243 migrations executáveis, manifests, fingerprints e SQL canônico;
+- gate de CI em PostgreSQL 17.6 com equivalência estrutural;
 - contrato congelado dos 18 RPCs públicos;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
-A aplicação está documentada em [E14_STEP5_APP_FOUNDATION.md](docs/implementation/E14_STEP5_APP_FOUNDATION.md). O runtime está em [RUNTIME_GAP_E14.md](docs/implementation/RUNTIME_GAP_E14.md) e [E14_BACKEND_E2E.md](docs/implementation/E14_BACKEND_E2E.md).
+O runtime atual comprova a fundação técnica, mas ainda usa estruturas PostgreSQL que não satisfazem a autoridade HubSpot recém-definida. Essas estruturas serão réplica técnica, cache ou serão descontinuadas após a transição.
 
 ## 5. Bloqueadores ativos
 
 Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
 
-A fonte remota, o replay limpo, a equivalência estrutural, os contratos públicos e o backend E2E já foram comprovados. O P0 remanescente é impedir a expansão dos helpers opacos enquanto o delta final de schema é concluído.
+Os gates de banco foram concluídos. Permanecem dois P0:
+
+1. impedir expansão dos helpers opacos;
+2. inventariar a conta HubSpot e aprovar o modelo físico autoritativo.
 
 ```text
-remote_versions_missing_locally = 0
-local_versions_not_expected_remotely = 0
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
+hubspot_authoritative_source_decided = true
+hubspot_inventory_complete = false
+hubspot_physical_model_approved = false
 new_functional_migration_authorized = false
 ```
 
@@ -163,7 +169,8 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 
 ### E14
 
-- [Rebaseline](docs/decisions/ADR-002-E14-REBASELINE-NEW-PREMISES.md)
+- [Rebaseline anterior](docs/decisions/ADR-002-E14-REBASELINE-NEW-PREMISES.md)
+- [HubSpot como fonte autoritativa](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
 - [Decisões](docs/decisions/DECISION_LOG.md)
 - [Plano](docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md)
 - [Rastreabilidade](docs/implementation/E14_PREMISE_TRACEABILITY_MATRIX.md)
@@ -175,7 +182,8 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 
 ### Integrações e ambientes
 
-- [HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Inventário bloqueante HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 - [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
 - [Portas e adapters](docs/architecture/PROVIDER_PORTS_AND_ADAPTERS.md)
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
@@ -206,17 +214,18 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 ## 7. Sequência obrigatória
 
 1. recuperar e materializar M00–M14 no Git — concluído;
-2. validar hashes, bytes, nomes e fingerprints — concluído;
-3. executar replay em PostgreSQL 17.6 limpo — concluído;
-4. comparar schema, RLS, índices, triggers, policies, funções e RPCs — concluído;
-5. mapear e congelar contratos públicos — concluído;
-6. reproduzir backend E2E e checks negativos — concluído;
-7. concluir o delta final de schema e conter helpers opacos;
-8. implementar formulário e quatro arquétipos;
-9. integrar conteúdo externo e HubSpot;
-10. executar E2E completo no Supabase de teste;
-11. provisionar e validar AWS staging;
-12. somente então avaliar produção.
+2. validar hashes, replay e equivalência — concluído;
+3. congelar contratos públicos — concluído;
+4. reproduzir backend E2E — concluído;
+5. formalizar HubSpot como autoridade — concluído;
+6. inventariar sandbox, plano, objetos, propriedades, associações, scopes, webhooks e limites HubSpot;
+7. aprovar o modelo físico e contratos de write/readback/cache;
+8. conter os helpers opacos e concluir o delta final;
+9. implementar formulário, arquétipos e regras editáveis HubSpot-sourced;
+10. integrar conteúdo externo;
+11. executar E2E completo no Supabase de teste;
+12. provisionar e validar AWS staging;
+13. somente então avaliar produção.
 
 ## 8. Regra de conclusão
 
@@ -226,6 +235,10 @@ migrations_are_replayable = true
 structural_schema_equivalence = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
+hubspot_inventory_complete = false
+hubspot_physical_model_approved = false
+all_collected_data_persisted_in_hubspot = false
+all_business_reads_have_hubspot_origin = false
 security_and_data_gates_pass = false
 ```
 

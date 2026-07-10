@@ -10,9 +10,20 @@ O projeto está no workstream **E14**. A aplicação Next.js e a fundação Post
 Supabase = desenvolvimento e teste
 AWS staging = gate obrigatório
 AWS produção = ambiente oficial futuro
+HubSpot = fonte autoritativa dos dados de negócio coletados e utilizados
 ```
 
-O histórico M00–M14 está materializado no Git. Replay das 243 migrations, equivalência estrutural, 18 contratos públicos e backend E2E passaram. O próximo bloqueio técnico é concluir o delta final de schema sem ampliar os helpers opacos existentes.
+O histórico M00–M14 está materializado no Git. Replay das 243 migrations, equivalência estrutural, 18 contratos públicos e backend E2E passaram.
+
+A decisão atual exige:
+
+- todo dado de negócio coletado persistido no HubSpot;
+- toda função de negócio usando dados provenientes do HubSpot;
+- PostgreSQL restrito a outbox, idempotência, cache HubSpot-sourced, auditoria e reconciliação;
+- formulário, arquétipos, políticas e regras de uso editáveis e versionados no HubSpot;
+- quantidade e nomes de arquétipos sem hardcode.
+
+O bloqueio prioritário agora é inventariar o sandbox HubSpot e aprovar o modelo físico.
 
 ## Estrutura
 
@@ -67,10 +78,12 @@ npm run build:web
 
 - [Índice atual do projeto](PROJECT_INDEX.md)
 - [Premissas e escopo](docs/product/PREMISES_AND_SCOPE.md)
+- [ADR HubSpot autoritativo](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
 - [Registro de decisões](docs/decisions/DECISION_LOG.md)
 - [Registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
-- [Runtime E14](docs/implementation/RUNTIME_GAP_E14.md)
-- [Contratos públicos E14](docs/implementation/E14_PUBLIC_RPC_CONTRACTS.md)
+- [Delta de schema E14](docs/implementation/SCHEMA_DELTA_E14.md)
+- [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Inventário bloqueante do HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 - [Backend E2E E14](docs/implementation/E14_BACKEND_E2E.md)
 - [Estratégia Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Guia de contribuição](CONTRIBUTING.md)
@@ -82,5 +95,6 @@ npm run build:web
 - fechar PRs substituídos e excluir branches depois do merge;
 - não versionar outputs gerados, dados pessoais, credenciais ou exports locais;
 - migrations aplicadas nunca são editadas;
+- nenhuma decisão de negócio usa dado local sem origem HubSpot comprovada;
 - nenhuma capacidade é concluída sem teste e evidência reproduzível;
 - Supabase nunca é produção oficial.
