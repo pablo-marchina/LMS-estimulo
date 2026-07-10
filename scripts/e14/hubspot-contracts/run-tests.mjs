@@ -29,13 +29,17 @@ try {
     cwd: repositoryRoot,
     stdio: "inherit"
   });
-  if (compile.status !== 0) process.exit(compile.status ?? 1);
+  if (compile.status !== 0) {
+    throw new Error(`HubSpot contract compilation failed with status ${compile.status ?? "unknown"}.`);
+  }
 
   const test = spawnSync(process.execPath, ["--test", testPath], {
     cwd: repositoryRoot,
     stdio: "inherit"
   });
-  if (test.status !== 0) process.exit(test.status ?? 1);
+  if (test.status !== 0) {
+    throw new Error(`HubSpot contract tests failed with status ${test.status ?? "unknown"}.`);
+  }
 } finally {
   rmSync(outputDir, { recursive: true, force: true });
 }
