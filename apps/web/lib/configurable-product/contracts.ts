@@ -1,8 +1,7 @@
 import type {
   HubSpotSource,
   JsonObject,
-  JsonPrimitive,
-  JsonValue
+  JsonPrimitive
 } from "../hubspot/contracts.js";
 
 export type VersionStatus = "draft" | "published" | "retired";
@@ -172,6 +171,15 @@ export type AssignmentOverride = {
   justification: string;
 };
 
+export type DecisionRequestPayload = {
+  requestId: string;
+  reason: AssignmentReason;
+  supersedesAssignmentId: string | null;
+  override: AssignmentOverride | null;
+  overrideArchetypeVersionId: string | null;
+  requestedAt: string;
+};
+
 export type ArchetypeAssignmentPayload = {
   assignmentId: string;
   submissionObjectId: string;
@@ -214,6 +222,7 @@ export type ClassificationDecision = {
 export type ConfigurableProductEvidence = {
   configurationSource: HubSpotSource;
   submissionSource: HubSpotSource;
+  decisionRequestSource: HubSpotSource;
   assignmentSource: HubSpotSource;
   activationSource: HubSpotSource | null;
 };
@@ -230,7 +239,3 @@ export type ConfigurableProductResult = {
   activationBatch: ActivationExecutionBatchPayload | null;
   evidence: ConfigurableProductEvidence;
 };
-
-export function asJsonValue(value: JsonValue): JsonValue {
-  return value;
-}
