@@ -1,0 +1,2347 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_opaque_helper_baseline",
+  "detection_rule": "final E14 function definitions with one-letter argument names",
+  "migration_source": "supabase/migrations",
+  "legacy_function_count": 115,
+  "legacy_private_helper_count": 107,
+  "legacy_public_rpc_count": 8,
+  "inventory_sha256": "9b4b81e184d40bd6385bf0c24dae401469150076c48d5da369cdec7aa0d3046b",
+  "functions": [
+    {
+      "key": "app_private.e14_af(uuid,uuid,jsonb,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_af",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054449_m13h5f_e14_af.sql",
+      "consumers": [
+        "app_private.e14_exec_f(uuid,uuid,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_apply_a(uuid,uuid,uuid,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_apply_a",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709052555_m13d2i_e14_apply_a.sql",
+      "consumers": [
+        "app_private.e14_cmd_start_diagnostic(uuid,uuid,uuid,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_apply_b(uuid,uuid,uuid,text,integer,integer,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_apply_b",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "integer",
+        "integer",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709052716_m13d3d_e14_apply_b.sql",
+      "consumers": [
+        "app_private.e14_exec_b(uuid,uuid,uuid,text,integer,integer,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)",
+      "schema": "app_private",
+      "name": "e14_apply_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "jsonb",
+        "jsonb",
+        "jsonb",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053343_m13e5h_e14_apply_c.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_apply_f(uuid,uuid,jsonb,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_apply_f",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054317_m13h5b_e14_apply_f.sql",
+      "consumers": [
+        "app_private.e14_af(uuid,uuid,jsonb,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_apply_h(uuid,uuid,uuid,text,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_apply_h",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054754_m13i8b_e14_apply_h.sql",
+      "consumers": [
+        "app_private.e14_exec_h(uuid,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_assert_no_answer(uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_assert_no_answer",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709054744_m13i8a_e14_assert_no_answer.sql",
+      "consumers": [
+        "app_private.e14_apply_h(uuid,uuid,uuid,text,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_attempt_number(uuid,integer)",
+      "schema": "app_private",
+      "name": "e14_attempt_number",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "integer"
+      ],
+      "definition_path": "supabase/migrations/20260709054229_m13h4a_e14_attempt_number.sql",
+      "consumers": [
+        "app_private.e14_apply_f(uuid,uuid,jsonb,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_branch_i0(uuid,uuid,jsonb,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_branch_i0",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055543_m13j12a_e14_branch_i0.sql",
+      "consumers": [
+        "app_private.e14_choose_i(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_children_c(uuid,uuid,jsonb,jsonb,jsonb)",
+      "schema": "app_private",
+      "name": "e14_children_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "jsonb",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709053533_m13e9_e14_children_c.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_choose_i(uuid,uuid,jsonb,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_choose_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055715_m13j14a_e14_choose_i.sql",
+      "consumers": [
+        "app_private.e14_ci(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_ci(uuid,uuid,jsonb,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_ci",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055755_m13j14e_e14_ci.sql",
+      "consumers": [
+        "app_private.e14_exec_i(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_close_activity_session(uuid)",
+      "schema": "app_private",
+      "name": "e14_close_activity_session",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055349_m13j8a_e14_close_activity_session.sql",
+      "consumers": [
+        "app_private.e14_i1_state(jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_complete_journey_state(uuid,bigint)",
+      "schema": "app_private",
+      "name": "e14_complete_journey_state",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709055413_m13j8d_e14_complete_journey_state.sql",
+      "consumers": [
+        "app_private.e14_i1_state(jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_complete_path_state(uuid)",
+      "schema": "app_private",
+      "name": "e14_complete_path_state",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055405_m13j8c_e14_complete_path_state.sql",
+      "consumers": [
+        "app_private.e14_i1_state(jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_complete_progress(uuid)",
+      "schema": "app_private",
+      "name": "e14_complete_progress",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055422_m13j8e_e14_complete_progress.sql",
+      "consumers": [
+        "app_private.e14_i1_state(jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_complete_session(uuid)",
+      "schema": "app_private",
+      "name": "e14_complete_session",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053211_m13e5a_e14_complete_session.sql",
+      "consumers": [
+        "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_complete_step_state(uuid,bigint)",
+      "schema": "app_private",
+      "name": "e14_complete_step_state",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709055357_m13j8b_e14_complete_step_state.sql",
+      "consumers": [
+        "app_private.e14_i1_state(jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_a(uuid,uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_context_a",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709052519_m13d2g_e14_generic_aliases.sql",
+      "consumers": [
+        "app_private.e14_apply_a(uuid,uuid,uuid,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_b(uuid,uuid,uuid,text)",
+      "schema": "app_private",
+      "name": "e14_context_b",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709052634_m13d3a_e14_response_context.sql",
+      "consumers": [
+        "app_private.e14_apply_b(uuid,uuid,uuid,text,integer,integer,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_c(uuid,uuid,bigint)",
+      "schema": "app_private",
+      "name": "e14_context_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709053109_m13e2_e14_complete_context.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_d(uuid)",
+      "schema": "app_private",
+      "name": "e14_context_d",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053735_m13f2_e14_context_d_raw.sql",
+      "consumers": [
+        "app_private.e14_exec_d(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_e(uuid)",
+      "schema": "app_private",
+      "name": "e14_context_e",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053955_m13g5_e14_context_e.sql",
+      "consumers": [
+        "app_private.e14_exec_e(uuid,uuid,text,boolean,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_f(uuid)",
+      "schema": "app_private",
+      "name": "e14_context_f",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709054140_m13h1_e14_context_f.sql",
+      "consumers": [
+        "app_private.e14_validate_f(uuid,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_g(uuid,uuid,uuid,text)",
+      "schema": "app_private",
+      "name": "e14_context_g",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054556_m13i2_e14_context_g.sql",
+      "consumers": [
+        "app_private.e14_apply_h(uuid,uuid,uuid,text,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_context_i_raw(uuid)",
+      "schema": "app_private",
+      "name": "e14_context_i_raw",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055223_m13j6e_e14_context_i_attempt.sql",
+      "consumers": [
+        "app_private.e14_validate_i(uuid,uuid,bigint)"
+      ]
+    },
+    {
+      "key": "app_private.e14_credit_i(uuid,jsonb,uuid,integer,uuid,integer,text)",
+      "schema": "app_private",
+      "name": "e14_credit_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "jsonb",
+        "uuid",
+        "integer",
+        "uuid",
+        "integer",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055433_m13j9_e14_credit_i.sql",
+      "consumers": [
+        "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_ec(uuid,uuid,integer,uuid,uuid,uuid,text,uuid,text,uuid,bigint,jsonb)",
+      "schema": "app_private",
+      "name": "e14_ec",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "integer",
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "uuid",
+        "text",
+        "uuid",
+        "bigint",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709053455_m13e7_e14_ec.sql",
+      "consumers": [
+        "app_private.e14_children_c(uuid,uuid,jsonb,jsonb,jsonb)",
+        "app_private.e14_credit_i(uuid,jsonb,uuid,integer,uuid,integer,text)",
+        "app_private.e14_ev4(uuid,uuid,jsonb)",
+        "app_private.e14_ev7(uuid,uuid,jsonb)",
+        "app_private.e14_ev8(uuid,uuid,jsonb)",
+        "app_private.e14_event_i2(uuid,uuid,jsonb,bigint,integer)",
+        "app_private.e14_event_i3(uuid,uuid,jsonb,bigint,uuid,boolean)",
+        "app_private.e14_event_i4(uuid,uuid,jsonb,bigint)"
+      ]
+    },
+    {
+      "key": "app_private.e14_emit_a(uuid,uuid,uuid,uuid,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_emit_a",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709052428_m13d2d_e14_emit_a.sql",
+      "consumers": [
+        "app_private.e14_apply_a(uuid,uuid,uuid,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_emit_b(uuid,uuid,uuid,uuid,uuid,uuid,integer,text,text)",
+      "schema": "app_private",
+      "name": "e14_emit_b",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "integer",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053022_m13d3m_e14_emit_b_version_fix.sql",
+      "consumers": [
+        "app_private.e14_apply_b(uuid,uuid,uuid,text,integer,integer,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_emit_f(uuid,uuid,jsonb,uuid,text,text,integer)",
+      "schema": "app_private",
+      "name": "e14_emit_f",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text",
+        "integer"
+      ],
+      "definition_path": "supabase/migrations/20260709054308_m13h5a_e14_emit_f.sql",
+      "consumers": [
+        "app_private.e14_apply_f(uuid,uuid,jsonb,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_emit_g(uuid,uuid,uuid,uuid,uuid,text,uuid,text,uuid,bigint,uuid,uuid,jsonb)",
+      "schema": "app_private",
+      "name": "e14_emit_g",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h",
+        "i",
+        "j",
+        "k",
+        "l",
+        "m"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "uuid",
+        "text",
+        "uuid",
+        "bigint",
+        "uuid",
+        "uuid",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709053059_m13e1_e14_generic_event_emitter.sql",
+      "consumers": [
+        "app_private.e14_ec(uuid,uuid,integer,uuid,uuid,uuid,text,uuid,text,uuid,bigint,jsonb)",
+        "app_private.e14_emit_f(uuid,uuid,jsonb,uuid,text,text,integer)",
+        "app_private.e14_emit_h(uuid,uuid,jsonb,uuid,uuid,text,text)",
+        "app_private.e14_event_i1(uuid,uuid,jsonb,bigint,text,text)",
+        "app_private.e14_exec_d(uuid,uuid,bigint,text)",
+        "app_private.e14_exec_e(uuid,uuid,text,boolean,text)",
+        "app_private.e14_first_c(uuid,uuid,jsonb,bigint,text,text)",
+        "app_private.e14_first_c(uuid,uuid,jsonb,uuid,bigint,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_emit_h(uuid,uuid,jsonb,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_emit_h",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054709_m13i5_e14_emit_h.sql",
+      "consumers": [
+        "app_private.e14_apply_h(uuid,uuid,uuid,text,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_ev4(uuid,uuid,jsonb)",
+      "schema": "app_private",
+      "name": "e14_ev4",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709055514_m13j11a_e14_ev4.sql",
+      "consumers": [
+        "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_ev7(uuid,uuid,jsonb)",
+      "schema": "app_private",
+      "name": "e14_ev7",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709055522_m13j11b_e14_ev7.sql",
+      "consumers": [
+        "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_ev8(uuid,uuid,jsonb)",
+      "schema": "app_private",
+      "name": "e14_ev8",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709055531_m13j11c_e14_ev8.sql",
+      "consumers": [
+        "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_event_i1(uuid,uuid,jsonb,bigint,text,text)",
+      "schema": "app_private",
+      "name": "e14_event_i1",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "bigint",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055136_m13j6a_e14_event_i1.sql",
+      "consumers": [
+        "app_private.e14_i0_events(uuid,uuid,jsonb,uuid,text,text)",
+        "app_private.e14_i1_events(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_event_i2(uuid,uuid,jsonb,bigint,integer)",
+      "schema": "app_private",
+      "name": "e14_event_i2",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "bigint",
+        "integer"
+      ],
+      "definition_path": "supabase/migrations/20260709055150_m13j6b_e14_event_i2.sql",
+      "consumers": [
+        "app_private.e14_i0_events(uuid,uuid,jsonb,uuid,text,text)",
+        "app_private.e14_i1_events(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_event_i3(uuid,uuid,jsonb,bigint,uuid,boolean)",
+      "schema": "app_private",
+      "name": "e14_event_i3",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "bigint",
+        "uuid",
+        "boolean"
+      ],
+      "definition_path": "supabase/migrations/20260709055158_m13j6c_e14_event_i3.sql",
+      "consumers": [
+        "app_private.e14_i0_events(uuid,uuid,jsonb,uuid,text,text)",
+        "app_private.e14_i1_events(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_event_i4(uuid,uuid,jsonb,bigint)",
+      "schema": "app_private",
+      "name": "e14_event_i4",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709055213_m13j6d_e14_event_i4.sql",
+      "consumers": [
+        "app_private.e14_i0_events(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_evidence(uuid)",
+      "schema": "app_private",
+      "name": "e14_evidence",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060233_m13k7_e14_evidence.sql",
+      "consumers": [
+        "app_private.e14_q2(uuid,uuid,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_exec_b(uuid,uuid,uuid,text,integer,integer,text)",
+      "schema": "app_private",
+      "name": "e14_exec_b",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "integer",
+        "integer",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709052811_m13d3g_e14_exec_b_final.sql",
+      "consumers": [
+        "public.e14_record_diagnostic_response(uuid,uuid,uuid,text,integer,integer,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_exec_c(uuid,uuid,bigint,text)",
+      "schema": "app_private",
+      "name": "e14_exec_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053556_m13e11_e14_exec_c.sql",
+      "consumers": [
+        "public.e14_rpc_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_exec_d(uuid,uuid,bigint,text)",
+      "schema": "app_private",
+      "name": "e14_exec_d",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053842_m13f7_e14_exec_d.sql",
+      "consumers": [
+        "public.e14_rpc_d(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_exec_e(uuid,uuid,text,boolean,text)",
+      "schema": "app_private",
+      "name": "e14_exec_e",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "text",
+        "boolean",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054008_m13g6_e14_exec_e.sql",
+      "consumers": [
+        "public.e14_rpc_e(uuid,uuid,text,boolean,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_exec_f(uuid,uuid,text)",
+      "schema": "app_private",
+      "name": "e14_exec_f",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054458_m13h5g_e14_exec_f_final.sql",
+      "consumers": [
+        "public.e14_rpc_f(uuid,uuid,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_exec_h(uuid,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_exec_h",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054804_m13i9_e14_exec_h.sql",
+      "consumers": [
+        "public.e14_rpc_h(uuid,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_exec_i(uuid,uuid,bigint,text)",
+      "schema": "app_private",
+      "name": "e14_exec_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055805_m13j14f_e14_exec_i.sql",
+      "consumers": [
+        "public.e14_rpc_i(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_first_c(uuid,uuid,jsonb,bigint,text,text)",
+      "schema": "app_private",
+      "name": "e14_first_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "bigint",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053509_m13e8_e14_first_c.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_first_c(uuid,uuid,jsonb,uuid,bigint,text,text)",
+      "schema": "app_private",
+      "name": "e14_first_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "bigint",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053519_m13e8a_e14_first_c_fix.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_i0_events(uuid,uuid,jsonb,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_i0_events",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055304_m13j7a_e14_i0_events.sql",
+      "consumers": [
+        "app_private.e14_branch_i0(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_i0_write(uuid,jsonb,uuid)",
+      "schema": "app_private",
+      "name": "e14_i0_write",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "jsonb",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055314_m13j7b_e14_i0_write.sql",
+      "consumers": [
+        "app_private.e14_branch_i0(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_i1_assess(uuid,uuid,jsonb,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_i1_assess",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055631_m13j12d_e14_i1_assess.sql",
+      "consumers": [
+        "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_i1_done",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055643_m13j12e_e14_i1_done.sql",
+      "consumers": [
+        "app_private.e14_choose_i(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_i1_events(uuid,uuid,jsonb,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_i1_events",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055322_m13j7c_e14_i1_events.sql",
+      "consumers": [
+        "app_private.e14_i1_assess(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_i1_state(jsonb,uuid)",
+      "schema": "app_private",
+      "name": "e14_i1_state",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "jsonb",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055617_m13j12c_e14_i1_state.sql",
+      "consumers": [
+        "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_i1_write(uuid,jsonb,uuid)",
+      "schema": "app_private",
+      "name": "e14_i1_write",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "jsonb",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055340_m13j7d_e14_i1_write.sql",
+      "consumers": [
+        "app_private.e14_i1_assess(uuid,uuid,jsonb,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_inc_e(uuid)",
+      "schema": "app_private",
+      "name": "e14_inc_e",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053945_m13g4_e14_inc_e.sql",
+      "consumers": [
+        "app_private.e14_exec_e(uuid,uuid,text,boolean,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_increment_attempt(uuid)",
+      "schema": "app_private",
+      "name": "e14_increment_attempt",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709054726_m13i7_e14_increment_attempt.sql",
+      "consumers": [
+        "app_private.e14_apply_h(uuid,uuid,uuid,text,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_insert_a(uuid,uuid,uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_insert_a",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709052519_m13d2g_e14_generic_aliases.sql",
+      "consumers": [
+        "app_private.e14_apply_a(uuid,uuid,uuid,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_insert_attempt(uuid,uuid,jsonb,integer)",
+      "schema": "app_private",
+      "name": "e14_insert_attempt",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "jsonb",
+        "integer"
+      ],
+      "definition_path": "supabase/migrations/20260709054241_m13h4b_e14_insert_attempt.sql",
+      "consumers": [
+        "app_private.e14_apply_f(uuid,uuid,jsonb,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_insert_h(uuid,uuid,uuid,jsonb,uuid,text)",
+      "schema": "app_private",
+      "name": "e14_insert_h",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "jsonb",
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054717_m13i6_e14_insert_h.sql",
+      "consumers": [
+        "app_private.e14_apply_h(uuid,uuid,uuid,text,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_path_c(uuid,jsonb)",
+      "schema": "app_private",
+      "name": "e14_path_c",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709053141_m13e4_e14_path_c.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_person_ref(uuid)",
+      "schema": "app_private",
+      "name": "e14_person_ref",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060241_m13k8_e14_person_ref.sql",
+      "consumers": [
+        "app_private.e14_q2(uuid,uuid,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_prepare_10(uuid,uuid,uuid,text,text)",
+      "schema": "app_private",
+      "name": "e14_prepare_10",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054625_m13i3a_e14_prepare_10_locked.sql",
+      "consumers": [
+        "app_private.e14_exec_h(uuid,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_prepare_a(uuid,uuid,uuid,text)",
+      "schema": "app_private",
+      "name": "e14_prepare_a",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709052612_m13d2k_e14_prepare_a_locked.sql",
+      "consumers": [
+        "app_private.e14_cmd_start_diagnostic(uuid,uuid,uuid,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_prepare_b(uuid,uuid,uuid,text,integer,integer,text)",
+      "schema": "app_private",
+      "name": "e14_prepare_b",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "integer",
+        "integer",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709052659_m13d3c_e14_prepare_b.sql",
+      "consumers": [
+        "app_private.e14_exec_b(uuid,uuid,uuid,text,integer,integer,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_prepare_c(uuid,uuid,bigint,text)",
+      "schema": "app_private",
+      "name": "e14_prepare_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053436_m13e6_e14_prepare_c.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_prepare_d(uuid,uuid,bigint,text)",
+      "schema": "app_private",
+      "name": "e14_prepare_d",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053811_m13f5_e14_prepare_d.sql",
+      "consumers": [
+        "app_private.e14_exec_d(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_prepare_f(uuid,uuid,text)",
+      "schema": "app_private",
+      "name": "e14_prepare_f",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054201_m13h2_e14_prepare_f.sql",
+      "consumers": [
+        "app_private.e14_exec_f(uuid,uuid,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_prepare_i(uuid,uuid,bigint,text)",
+      "schema": "app_private",
+      "name": "e14_prepare_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055012_m13j2_e14_prepare_i.sql",
+      "consumers": [
+        "app_private.e14_exec_i(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_q1(uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_q1",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060145_m13k3_e14_q1.sql",
+      "consumers": [
+        "public.e14_get_participant_experience(uuid,uuid)",
+        "public.e14_public_q1(uuid,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_q2(uuid,uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_q2",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060259_m13k9_e14_q2.sql",
+      "consumers": [
+        "public.e14_public_q2(uuid,uuid,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_result_i(uuid,boolean,uuid)",
+      "schema": "app_private",
+      "name": "e14_result_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "boolean",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055053_m13j4_e14_result_i.sql",
+      "consumers": [
+        "app_private.e14_i0_write(uuid,jsonb,uuid)",
+        "app_private.e14_i1_write(uuid,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_scores_c(uuid)",
+      "schema": "app_private",
+      "name": "e14_scores_c",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053127_m13e3_e14_scores_c.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_section_exists(uuid,text)",
+      "schema": "app_private",
+      "name": "e14_section_exists",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053920_m13g2_e14_section_exists.sql",
+      "consumers": [
+        "app_private.e14_exec_e(uuid,uuid,text,boolean,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_session_insert_d(uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_session_insert_d",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053800_m13f4_e14_session_insert.sql",
+      "consumers": [
+        "app_private.e14_exec_d(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_session_version(uuid)",
+      "schema": "app_private",
+      "name": "e14_session_version",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053005_m13d3l_e14_session_version.sql",
+      "consumers": [
+        "app_private.e14_emit_b(uuid,uuid,uuid,uuid,uuid,uuid,integer,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_set_attempt_count(uuid,integer)",
+      "schema": "app_private",
+      "name": "e14_set_attempt_count",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "integer"
+      ],
+      "definition_path": "supabase/migrations/20260709054250_m13h4c_e14_set_attempt_count.sql",
+      "consumers": [
+        "app_private.e14_apply_f(uuid,uuid,jsonb,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_set_current_step(uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_set_current_step",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053332_m13e5g_e14_set_current_step.sql",
+      "consumers": [
+        "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_set_i(uuid,text,bigint)",
+      "schema": "app_private",
+      "name": "e14_set_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "text",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709055115_m13j5_e14_set_i.sql",
+      "consumers": [
+        "app_private.e14_i0_write(uuid,jsonb,uuid)",
+        "app_private.e14_i1_write(uuid,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_si(uuid)",
+      "schema": "app_private",
+      "name": "e14_si",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055739_m13j14c_e14_si.sql",
+      "consumers": [
+        "app_private.e14_exec_i(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_snapshot_10(uuid)",
+      "schema": "app_private",
+      "name": "e14_snapshot_10",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709054700_m13i4a_e14_snapshot_10.sql",
+      "consumers": [
+        "app_private.e14_exec_h(uuid,uuid,uuid,text,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_snapshot_b(uuid)",
+      "schema": "app_private",
+      "name": "e14_snapshot_b",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709052726_m13d3e_e14_snapshot_b.sql",
+      "consumers": [
+        "app_private.e14_exec_b(uuid,uuid,uuid,text,integer,integer,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_snapshot_c(uuid)",
+      "schema": "app_private",
+      "name": "e14_snapshot_c",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053545_m13e10_e14_snapshot_c.sql",
+      "consumers": [
+        "app_private.e14_exec_c(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_snapshot_d(uuid)",
+      "schema": "app_private",
+      "name": "e14_snapshot_d",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053827_m13f6_e14_snapshot_d.sql",
+      "consumers": [
+        "app_private.e14_exec_d(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_snapshot_e(uuid)",
+      "schema": "app_private",
+      "name": "e14_snapshot_e",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053930_m13g3_e14_section_snapshot.sql",
+      "consumers": [
+        "app_private.e14_exec_e(uuid,uuid,text,boolean,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_snapshot_f(uuid)",
+      "schema": "app_private",
+      "name": "e14_snapshot_f",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709054211_m13h3_e14_snapshot_f.sql",
+      "consumers": [
+        "app_private.e14_apply_f(uuid,uuid,jsonb,uuid,uuid,text,text)",
+        "app_private.e14_exec_f(uuid,uuid,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_snapshot_i(uuid)",
+      "schema": "app_private",
+      "name": "e14_snapshot_i",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709055654_m13j13_e14_snapshot_i.sql",
+      "consumers": [
+        "app_private.e14_si(uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_state_all(uuid)",
+      "schema": "app_private",
+      "name": "e14_state_all",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060129_m13k2f_e14_state_all.sql",
+      "consumers": [
+        "app_private.e14_q1(uuid,uuid)",
+        "app_private.e14_q2(uuid,uuid,uuid)",
+        "public.e14_list_operator_instances(uuid,uuid)",
+        "public.e14_list_participant_journeys(uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_state_base(uuid)",
+      "schema": "app_private",
+      "name": "e14_state_base",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060029_m13k2a_e14_state_base.sql",
+      "consumers": [
+        "app_private.e14_q1(uuid,uuid)",
+        "app_private.e14_q2(uuid,uuid,uuid)",
+        "app_private.e14_state_all(uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_state_check(uuid)",
+      "schema": "app_private",
+      "name": "e14_state_check",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060103_m13k2d_e14_state_check.sql",
+      "consumers": [
+        "app_private.e14_state_all(uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_state_diag(uuid)",
+      "schema": "app_private",
+      "name": "e14_state_diag",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060038_m13k2b_e14_state_diag.sql",
+      "consumers": [
+        "app_private.e14_state_all(uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_state_points(uuid)",
+      "schema": "app_private",
+      "name": "e14_state_points",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060113_m13k2e_e14_state_points.sql",
+      "consumers": [
+        "app_private.e14_state_all(uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_state_step(uuid)",
+      "schema": "app_private",
+      "name": "e14_state_step",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060054_m13k2c_e14_state_step.sql",
+      "consumers": [
+        "app_private.e14_state_all(uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_step_transition(uuid,bigint)",
+      "schema": "app_private",
+      "name": "e14_step_transition",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709053746_m13f3_e14_step_transition.sql",
+      "consumers": [
+        "app_private.e14_exec_d(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_sum_i(jsonb)",
+      "schema": "app_private",
+      "name": "e14_sum_i",
+      "argument_names": [
+        "a"
+      ],
+      "argument_types": [
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709055449_m13j10a_e14_sum_i.sql",
+      "consumers": [
+        "app_private.e14_i1_state(jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_upsert_i(jsonb,uuid,integer)",
+      "schema": "app_private",
+      "name": "e14_upsert_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "jsonb",
+        "uuid",
+        "integer"
+      ],
+      "definition_path": "supabase/migrations/20260709055458_m13j10b_e14_upsert_i.sql",
+      "consumers": [
+        "app_private.e14_i1_state(jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_validate_f(uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_validate_f",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709054337_m13h5c_e14_validate_f.sql",
+      "consumers": [
+        "app_private.e14_vf(uuid,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_validate_i(uuid,uuid,bigint)",
+      "schema": "app_private",
+      "name": "e14_validate_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709055042_m13j3a_e14_validate_i.sql",
+      "consumers": [
+        "app_private.e14_vi(uuid,uuid,bigint)"
+      ]
+    },
+    {
+      "key": "app_private.e14_vf(uuid,uuid)",
+      "schema": "app_private",
+      "name": "e14_vf",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709054441_m13h5e_e14_vf.sql",
+      "consumers": [
+        "app_private.e14_exec_f(uuid,uuid,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_vi(uuid,uuid,bigint)",
+      "schema": "app_private",
+      "name": "e14_vi",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint"
+      ],
+      "definition_path": "supabase/migrations/20260709055747_m13j14d_e14_vi.sql",
+      "consumers": [
+        "app_private.e14_exec_i(uuid,uuid,bigint,text)"
+      ]
+    },
+    {
+      "key": "app_private.e14_write_c1(uuid,jsonb,jsonb,uuid)",
+      "schema": "app_private",
+      "name": "e14_write_c1",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "jsonb",
+        "jsonb",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053227_m13e5b_e14_write_c1.sql",
+      "consumers": [
+        "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_write_c3(jsonb,jsonb,jsonb)",
+      "schema": "app_private",
+      "name": "e14_write_c3",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "jsonb",
+        "jsonb",
+        "jsonb"
+      ],
+      "definition_path": "supabase/migrations/20260709053252_m13e5d_e14_write_c3.sql",
+      "consumers": [
+        "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_write_c4(jsonb,jsonb,uuid)",
+      "schema": "app_private",
+      "name": "e14_write_c4",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "jsonb",
+        "jsonb",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053301_m13e5e_e14_write_c4.sql",
+      "consumers": [
+        "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_write_dimension(uuid,uuid,integer,numeric)",
+      "schema": "app_private",
+      "name": "e14_write_dimension",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "integer",
+        "numeric"
+      ],
+      "definition_path": "supabase/migrations/20260709053243_m13e5c_e14_write_dimension.sql",
+      "consumers": [
+        "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "app_private.e14_write_step(jsonb,uuid)",
+      "schema": "app_private",
+      "name": "e14_write_step",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "jsonb",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709053323_m13e5f_e14_write_step.sql",
+      "consumers": [
+        "app_private.e14_apply_c(uuid,jsonb,jsonb,jsonb,uuid)"
+      ]
+    },
+    {
+      "key": "public.e14_public_q1(uuid,uuid)",
+      "schema": "public",
+      "name": "e14_public_q1",
+      "argument_names": [
+        "a",
+        "b"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060153_m13k4_e14_public_q1.sql",
+      "consumers": []
+    },
+    {
+      "key": "public.e14_public_q2(uuid,uuid,uuid)",
+      "schema": "public",
+      "name": "e14_public_q2",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid"
+      ],
+      "definition_path": "supabase/migrations/20260709060310_m13k10_e14_public_q2.sql",
+      "consumers": []
+    },
+    {
+      "key": "public.e14_rpc_c(uuid,uuid,bigint,text)",
+      "schema": "public",
+      "name": "e14_rpc_c",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053629_m13e13_e14_rpc_c.sql",
+      "consumers": []
+    },
+    {
+      "key": "public.e14_rpc_d(uuid,uuid,bigint,text)",
+      "schema": "public",
+      "name": "e14_rpc_d",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709053850_m13f8_e14_start_activity_rpc.sql",
+      "consumers": []
+    },
+    {
+      "key": "public.e14_rpc_e(uuid,uuid,text,boolean,text)",
+      "schema": "public",
+      "name": "e14_rpc_e",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "text",
+        "boolean",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054022_m13g7_e14_rpc_e.sql",
+      "consumers": []
+    },
+    {
+      "key": "public.e14_rpc_f(uuid,uuid,text)",
+      "schema": "public",
+      "name": "e14_rpc_f",
+      "argument_names": [
+        "a",
+        "b",
+        "c"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054513_m13h6_e14_rpc_f.sql",
+      "consumers": []
+    },
+    {
+      "key": "public.e14_rpc_h(uuid,uuid,uuid,text,text)",
+      "schema": "public",
+      "name": "e14_rpc_h",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "uuid",
+        "text",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709054856_m13i10_e14_rpc_h.sql",
+      "consumers": []
+    },
+    {
+      "key": "public.e14_rpc_i(uuid,uuid,bigint,text)",
+      "schema": "public",
+      "name": "e14_rpc_i",
+      "argument_names": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "argument_types": [
+        "uuid",
+        "uuid",
+        "bigint",
+        "text"
+      ],
+      "definition_path": "supabase/migrations/20260709055814_m13j15_e14_rpc_i.sql",
+      "consumers": []
+    }
+  ]
+}
