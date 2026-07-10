@@ -1,0 +1,109 @@
+name: Temporary pre-M13 history recovery
+
+on:
+  push:
+    branches:
+      - test/e14-clean-replay-equivalence
+    paths:
+      - ".github/workflows/e14-pre-m13-recovery.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temporary-pre-m13-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: test/e14-clean-replay-equivalence
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download authorized read-only export
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .artifacts
+          curl --fail --silent --show-error \
+            --header "x-export-scope: pre-m13-76" \
+            "https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/e14-migration-export" \
+            --output .artifacts/pre-m13-history.local.jsonl
+          test "$(wc -l < .artifacts/pre-m13-history.local.jsonl)" -eq 76
+
+      - name: Materialize exact remote history
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/e14/runtime-source-recovery/materialize-migration-history.mjs \
+            --input .artifacts/pre-m13-history.local.jsonl \
+            --migrations-dir supabase/migrations \
+            --canonical-file supabase/canonical-migrations/20260708220357_m00_m12_runtime_canonical.sql \
+            --manifest supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json \
+            --from-version 20260708220357 \
+            --to-version 20260709030140
+
+      - name: Validate authorized inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import { createHash } from 'node:crypto';
+
+          const manifest = JSON.parse(
+            await readFile('supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json', 'utf8'),
+          );
+          const expected = {
+            first: '20260708220357',
+            last: '20260709030140',
+            count: 76,
+            bytes: 411340,
+            fingerprint: '663173105a16924db650127f437900de0ad3422b2f7bf50a5e804f19d1a570a3',
+          };
+          const input = manifest.migrations
+            .map((item) => `${item.version}:${item.remote_sql_sha256}`)
+            .join('\n');
+          const fingerprint = createHash('sha256').update(input).digest('hex');
+
+          if (manifest.first_version !== expected.first) throw new Error('unexpected first version');
+          if (manifest.last_version !== expected.last) throw new Error('unexpected last version');
+          if (manifest.migration_count !== expected.count) throw new Error('unexpected migration count');
+          if (manifest.total_remote_sql_bytes !== expected.bytes) throw new Error('unexpected SQL byte total');
+          if (fingerprint !== expected.fingerprint) throw new Error('unexpected combined fingerprint');
+          if (manifest.combined_remote_fingerprint_sha256 !== expected.fingerprint) {
+            throw new Error('manifest fingerprint differs');
+          }
+          NODE
+
+      - name: Remove superseded aggregate baseline and transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -r '.migrations[].file' supabase/canonical-migrations/MIGRATION_MANIFEST.json |
+            while IFS= read -r file; do
+              git rm "supabase/canonical-migrations/$file"
+            done
+          git rm supabase/canonical-migrations/MIGRATION_MANIFEST.json
+          git rm .github/workflows/e14-pre-m13-recovery.yml
+          rm -rf .artifacts
+
+      - name: Commit exact history
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations supabase/canonical-migrations
+          git commit -m "fix(database): recover exact M00-M12 runtime history"
+          git push origin HEAD:test/e14-clean-replay-equivalence
