@@ -3,6 +3,15 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+export const E14_M00_M12_EXPECTED = Object.freeze({
+  firstVersion: '20260708220357',
+  lastVersion: '20260709030140',
+  migrationCount: 76,
+  totalRemoteSqlBytes: 411340,
+  combinedRemoteFingerprint:
+    '663173105a16924db650127f437900de0ad3422b2f7bf50a5e804f19d1a570a3',
+});
+
 export const E14_M13_EXPECTED = Object.freeze({
   firstVersion: '20260709051056',
   lastVersion: '20260709060330',
@@ -22,6 +31,7 @@ export const E14_M14_EXPECTED = Object.freeze({
 });
 
 const EXPECTED_BY_FIRST_VERSION = new Map([
+  [E14_M00_M12_EXPECTED.firstVersion, E14_M00_M12_EXPECTED],
   [E14_M13_EXPECTED.firstVersion, E14_M13_EXPECTED],
   [E14_M14_EXPECTED.firstVersion, E14_M14_EXPECTED],
 ]);
