@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 2.4  
-**Data:** 2026-07-09  
-**Status:** E14 em execução; fonte de migrations recuperada; produção bloqueada
+**Versão:** 2.5  
+**Data:** 2026-07-10  
+**Status:** E14 em execução; replay e equivalência estrutural comprovados; produção bloqueada
 
 ## 1. Hierarquia de referência
 
@@ -51,9 +51,9 @@ O repositório contém:
 - aplicação Next.js em `apps/web`;
 - seis rotas iniciais para participante e operação;
 - bridge de identidade e camada de RPCs no servidor;
-- migrations M00–M12 canônicas;
-- 165 migrations M13 e 2 migrations M14/M14b recuperadas com identificadores remotos exatos;
-- manifests, fingerprints e SQL canônico para validação permanente do histórico E14;
+- 76 migrations M00–M12, 165 migrations M13 e 2 migrations M14/M14b recuperadas com identificadores remotos exatos;
+- 243 migrations executáveis, três manifests, fingerprints e SQL canônico consolidado;
+- gate de CI que reconstrói o banco em PostgreSQL 17.6 e compara nove categorias estruturais com o Supabase de teste;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
 A aplicação atual está documentada em [E14_STEP5_APP_FOUNDATION.md](docs/implementation/E14_STEP5_APP_FOUNDATION.md). A reconciliação do runtime está em [RUNTIME_GAP_E14.md](docs/implementation/RUNTIME_GAP_E14.md).
@@ -62,15 +62,15 @@ A aplicação atual está documentada em [E14_STEP5_APP_FOUNDATION.md](docs/impl
 
 Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
 
-A fonte M13/M14 já está materializada no Git. O bloqueio P0 restante é provar replay limpo e equivalência antes de qualquer nova migration funcional:
+A fonte remota, o replay limpo e a equivalência estrutural já foram comprovados. O P0 de database/runtime permanece aberto até congelar os contratos públicos e reproduzir o backend E2E com checks negativos:
 
 ```text
 remote_versions_missing_locally = 0
 local_versions_not_expected_remotely = 0
 clean_replay_passed = true
 schema_equivalence_passed = true
-public_rpc_contracts_passed = true
-backend_e2e_replayed = true
+public_rpc_contracts_passed = false
+backend_e2e_replayed = false
 ```
 
 ## 6. Documentação canônica
@@ -141,7 +141,7 @@ backend_e2e_replayed = true
 - [Features comportamentais](docs/data/database/BEHAVIORAL_FEATURE_MODEL.md)
 - [Score experimental e guardrails](docs/data/database/EXPERIMENTAL_SCORE_MODEL.md)
 - [Migrations M00–M12](docs/architecture/E12_EXECUTABLE_MIGRATIONS.md)
-- [Manifest M00–M12](supabase/canonical-migrations/MIGRATION_MANIFEST.json)
+- [Manifest M00–M12 recuperado](supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json)
 - [Manifest M13 recuperado](supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json)
 - [Manifest M14 recuperado](supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json)
 
@@ -154,7 +154,7 @@ backend_e2e_replayed = true
 - [Arquitetura de filas](docs/architecture/E12_QUEUE_ARCHITECTURE.md)
 - [Scheduler e dispatcher](docs/architecture/E12_SCHEDULER_DISPATCHER_ARCHITECTURE.md)
 - [Reconciliação e recuperação](docs/architecture/E12_RECONCILIATION_AND_RECOVERY.md)
-- [Observabilidade e alertas](docs/architecture/E12_OBSERVABILITY_AND_ALERTS.md)
+- [Observabilidade e alertas](docs/architecture/E12_OBSERVABILITY_ALERTING.md)
 
 Esses componentes são adapters e provas do Supabase de teste, não arquitetura produtiva AWS.
 
@@ -200,25 +200,28 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 
 ## 7. Sequência obrigatória
 
-1. recuperar e materializar M13/M14 no Git — concluído;
+1. recuperar e materializar M00–M14 no Git — concluído;
 2. validar permanentemente hashes, bytes, nomes e fingerprints — concluído;
-3. executar replay em PostgreSQL limpo;
-4. comparar schema, RLS, índices, triggers, funções e RPCs;
-5. concluir o delta de schema;
-6. implementar formulário e quatro arquétipos;
-7. integrar conteúdo externo e HubSpot;
-8. executar E2E completo no Supabase de teste;
-9. provisionar e validar AWS staging;
-10. somente então avaliar produção.
+3. executar replay transacional em PostgreSQL 17.6 limpo — concluído;
+4. comparar schema, RLS, índices, triggers, policies, funções e RPCs — concluído no nível estrutural;
+5. mapear e congelar contratos públicos;
+6. reproduzir backend E2E e checks negativos de RLS, idempotência e concorrência;
+7. concluir o delta de schema;
+8. implementar formulário e quatro arquétipos;
+9. integrar conteúdo externo e HubSpot;
+10. executar E2E completo no Supabase de teste;
+11. provisionar e validar AWS staging;
+12. somente então avaliar produção.
 
 ## 8. Regra de conclusão
 
 ```text
 code_matches_documentation = true
 migrations_are_replayable = true
-tests_pass = true
-runtime_evidence_is_reproducible = true
-security_and_data_gates_pass = true
+structural_schema_equivalence = true
+public_rpc_contracts_passed = false
+backend_e2e_replayed = false
+security_and_data_gates_pass = false
 ```
 
 Outputs locais, relatórios gerados, provas antigas e componentes sem consumidor não permanecem na árvore ativa.
