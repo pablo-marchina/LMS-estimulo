@@ -91,6 +91,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Validate dependency lock
+        run: npm run validate:dependency-lock
+
       - name: Validate repository hygiene
         run: node scripts/repository/validate-hygiene.mjs
 
