@@ -83,6 +83,7 @@ npm run build:web
 - [Registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
 - [Delta de schema E14](docs/implementation/SCHEMA_DELTA_E14.md)
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Inventário bloqueante do HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 - [Backend E2E E14](docs/implementation/E14_BACKEND_E2E.md)
 - [Estratégia Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Guia de contribuição](CONTRIBUTING.md)
