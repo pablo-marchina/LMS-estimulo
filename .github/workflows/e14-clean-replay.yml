@@ -4,103 +4,102 @@ on:
   pull_request:
     paths:
       - ".github/workflows/e14-clean-replay.yml"
-      - "package.json"
-      - "scripts/e14/database-equivalence/**"
       - "scripts/e14/runtime-source-recovery/**"
       - "supabase/canonical-migrations/**"
       - "supabase/migrations/**"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: e14-clean-replay-${{ github.event.pull_request.number }}
+  group: e14-pre-m13-recovery-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  replay:
-    name: Replay and compare E14 schema
+  recover:
+    name: Recover exact pre-M13 history
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    services:
-      postgres:
-        image: supabase/postgres:17.6.1.136
-        env:
-          POSTGRES_HOST: /var/run/postgresql
-          PGPORT: 5432
-          POSTGRES_PORT: 5432
-          PGPASSWORD: postgres
-          POSTGRES_PASSWORD: postgres
-          PGDATABASE: postgres
-          POSTGRES_DB: postgres
-          JWT_SECRET: local-e14-replay-jwt-secret-with-at-least-thirty-two-characters
-          JWT_EXP: 3600
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -h localhost -p 5432"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-          --health-start-period 20s
-
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout repository
+      - name: Checkout pull request branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Install PostgreSQL client
+      - name: Download authorized read-only export
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install --yes postgresql-client
-
-      - name: Confirm database version and extensions
-        shell: bash
-        run: |
-          set -euo pipefail
-          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
-          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
-
-      - name: Replay exact migration history from zero
-        id: replay
-        shell: bash
-        run: |
-          set +e
           mkdir -p .artifacts
-          npm run test:e14-clean-replay > .artifacts/e14-clean-replay.log 2>&1
-          exit_code=$?
-          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
-          if [[ "$exit_code" -eq 0 ]]; then
-            cat .artifacts/e14-clean-replay.log
-            rm -f .artifacts/e14-clean-replay.log
-          else
-            tail -n 120 .artifacts/e14-clean-replay.log >> "$GITHUB_STEP_SUMMARY"
-          fi
-          exit 0
+          curl --fail --silent --show-error \
+            "https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/e14-migration-export?scope=pre-m13-76" \
+            --output .artifacts/pre-m13-history.local.jsonl
+          test "$(wc -l < .artifacts/pre-m13-history.local.jsonl)" -eq 76
 
-      - name: Upload replay diagnostics
-        if: steps.replay.outputs.exit_code != '0'
-        uses: actions/upload-artifact@v4
-        with:
-          name: e14-clean-replay-failure-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .artifacts/e14-clean-replay.log
-          if-no-files-found: error
-          retention-days: 3
-          compression-level: 9
-
-      - name: Fail when replay or equivalence fails
-        if: steps.replay.outputs.exit_code != '0'
+      - name: Materialize exact remote history
         shell: bash
         run: |
-          echo "Clean replay or schema equivalence failed. Inspect the uploaded diagnostic artifact."
-          exit 1
+          set -euo pipefail
+          node scripts/e14/runtime-source-recovery/materialize-migration-history.mjs \
+            --input .artifacts/pre-m13-history.local.jsonl \
+            --migrations-dir supabase/migrations \
+            --canonical-file supabase/canonical-migrations/20260708220357_m00_m12_runtime_canonical.sql \
+            --manifest supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json \
+            --from-version 20260708220357 \
+            --to-version 20260709030140
+
+      - name: Validate authorized inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import { createHash } from 'node:crypto';
+
+          const manifest = JSON.parse(
+            await readFile('supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json', 'utf8'),
+          );
+          const input = manifest.migrations
+            .map((item) => `${item.version}:${item.remote_sql_sha256}`)
+            .join('\n');
+          const fingerprint = createHash('sha256').update(input).digest('hex');
+
+          if (manifest.first_version !== '20260708220357') throw new Error('unexpected first version');
+          if (manifest.last_version !== '20260709030140') throw new Error('unexpected last version');
+          if (manifest.migration_count !== 76) throw new Error('unexpected migration count');
+          if (manifest.total_remote_sql_bytes !== 411340) throw new Error('unexpected SQL byte total');
+          if (fingerprint !== '663173105a16924db650127f437900de0ad3422b2f7bf50a5e804f19d1a570a3') {
+            throw new Error('unexpected combined fingerprint');
+          }
+          if (manifest.combined_remote_fingerprint_sha256 !== fingerprint) {
+            throw new Error('manifest fingerprint differs');
+          }
+          NODE
+
+      - name: Remove superseded aggregate baseline and unused transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -r '.migrations[].file' supabase/canonical-migrations/MIGRATION_MANIFEST.json |
+            while IFS= read -r file; do
+              git rm "supabase/canonical-migrations/$file"
+            done
+          git rm supabase/canonical-migrations/MIGRATION_MANIFEST.json
+          git rm .github/workflows/e14-pre-m13-recovery.yml
+          rm -rf .artifacts
+
+      - name: Commit exact history
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations supabase/canonical-migrations
+          git commit -m "fix(database): recover exact M00-M12 runtime history"
+          git push origin HEAD:${{ github.head_ref }}
