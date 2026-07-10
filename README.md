@@ -45,12 +45,12 @@ Artefatos de execução, outputs de testes, relatórios locais e exports de banc
 Pré-requisitos:
 
 - Node.js 22 ou superior;
-- npm;
+- npm 10.9.2, conforme `packageManager`;
 - projeto Supabase autorizado somente para desenvolvimento/teste.
 
 ```bash
 cp apps/web/.env.example apps/web/.env.local
-npm install --ignore-scripts
+npm ci --ignore-scripts
 npm run typecheck:web
 npm run test:e14-step5
 npm run test:e14-hubspot-contracts
@@ -58,12 +58,13 @@ npm run test:e14-configurable-product
 npm run build:web
 ```
 
-A instalação ainda não é totalmente determinística porque o repositório não possui lockfile canônico.
+O `package-lock.json` v3 é canônico. A configuração `.npmrc` omite URLs específicas de registry, e o CI prova `npm ci` limpo com a mesma árvore de dependências em Ubuntu e Windows.
 
 ## Validações
 
 ```bash
 npm run validate:repository
+npm run validate:dependency-lock
 npm run validate:e14-runtime-history
 npm run validate:e14-public-contracts
 npm run test:e14-backend-e2e
@@ -77,6 +78,8 @@ npm run test:e14-public-contracts
 npm run typecheck:web
 npm run build:web
 ```
+
+`npm run validate:dependency-lock` confirma lockfile v3, sincronização com os manifests e ausência de URLs HTTP de registry ou mirror.
 
 `npm run test:e14-database-gates` exige PostgreSQL 17.6 compatível com o Supabase e executa manifests, replay, equivalência, contratos públicos e backend E2E.
 
