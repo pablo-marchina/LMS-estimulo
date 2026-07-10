@@ -73,7 +73,7 @@ jobs:
               fi
             fi
 
-            if [[ "$path" == supabase/migrations/*.sql ]]; then
+            if [[ "$path" == supabase/migrations/*.sql || "$path" == supabase/pending-migrations/*.sql ]]; then
               migration_pattern='^[0-9]{14}_m[0-9]+[a-z0-9]*_[a-z0-9_]+\.sql$'
               if [[ ! "$filename" =~ $migration_pattern ]]; then
                 echo "Invalid migration filename: $path"

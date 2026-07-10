@@ -21,8 +21,9 @@
     "test:e14-hubspot-contracts": "node scripts/e14/hubspot-contracts/run-tests.mjs",
     "test:e14-configurable-product": "node scripts/e14/configurable-product/run-tests.mjs",
     "test:e14-opaque-helper-containment": "node scripts/e14/opaque-helpers/run-tests.mjs",
+    "test:e14-first-semantic-replacement": "node scripts/e14/opaque-helpers/apply-first-semantic-replacement.mjs",
     "test:e14-clean-replay": "npm run validate:e14-runtime-history && npm run replay:e14-clean && npm run validate:e14-schema-equivalence && npm run validate:e14-public-contracts",
-    "test:e14-database-gates": "npm run test:e14-clean-replay && npm run test:e14-backend-e2e",
+    "test:e14-database-gates": "npm run test:e14-clean-replay && npm run test:e14-first-semantic-replacement && npm run validate:e14-public-contracts && npm run test:e14-backend-e2e",
     "test:e14-step5": "node --test scripts/e14/validate-step5-app-foundation.test.mjs",
     "test:e14-runtime-recovery": "node --test scripts/e14/runtime-source-recovery/*.test.mjs",
     "test:e14-public-contracts": "node --test scripts/e14/public-contracts/*.test.mjs"

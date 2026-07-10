@@ -9,10 +9,12 @@ on:
       - "docs/implementation/e14-public-rpc-contracts-v1.json"
       - "scripts/e14/backend-e2e/**"
       - "scripts/e14/database-equivalence/**"
+      - "scripts/e14/opaque-helpers/**"
       - "scripts/e14/public-contracts/**"
       - "scripts/e14/runtime-source-recovery/**"
       - "supabase/canonical-migrations/**"
       - "supabase/migrations/**"
+      - "supabase/pending-migrations/**"
 
 permissions:
   contents: read
@@ -75,7 +77,7 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
 
-      - name: Replay history and verify schema, contracts and backend E2E
+      - name: Replay history and verify schema, contracts, semantic delta and backend E2E
         id: database_gates
         shell: bash
         run: |
@@ -106,5 +108,5 @@ jobs:
         if: steps.database_gates.outputs.exit_code != '0'
         shell: bash
         run: |
-          echo "Replay, equivalence, public contracts or backend E2E failed. Inspect the uploaded diagnostic artifact."
+          echo "Replay, equivalence, public contracts, semantic helper delta or backend E2E failed. Inspect the uploaded diagnostic artifact."
           exit 1
