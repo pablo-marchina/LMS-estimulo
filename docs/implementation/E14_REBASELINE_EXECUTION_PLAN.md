@@ -1,383 +1,423 @@
-# E14 — Plano de execução rebaselineado
+# E14 — Plano de ação vigente
 
-**Versão:** 1.0  
-**Data:** 2026-07-09  
+**Versão:** 2.0  
+**Data:** 2026-07-10  
 **Status:** Em execução  
-**Referência máxima:** `Estimulo_all` + ADR-002
+**Referência máxima:** `Estimulo_all`, ADR-003, estado comprovado do runtime e decisões explícitas posteriores
 
-## 1. Estado de partida confirmado
+## 1. Decisões que não podem ser reinterpretadas
 
-O repositório oficial já contém:
+1. O HubSpot é a fonte autoritativa de todos os dados de negócio coletados e utilizados.
+2. Uma informação recebida pela aplicação somente pode alimentar decisão de negócio depois de `write → readback` no HubSpot.
+3. PostgreSQL é plano técnico de outbox, idempotência, cache HubSpot-sourced, auditoria, reconciliação e execução transitória; não é autoridade independente dos dados de usuário.
+4. Formulários, perguntas, opções, arquétipos, políticas de classificação, regras de ativação e seus usos são configuráveis e versionados.
+5. A configuração inicial pode possuir quatro arquétipos, mas nomes e quantidade não são hardcoded.
+6. Versões publicadas são imutáveis. Alterações criam nova versão; histórico não é sobrescrito.
+7. Supabase é apenas desenvolvimento/teste. AWS staging é gate obrigatório e AWS será o ambiente oficial de produção.
+8. Nenhuma migration ou remoção remota é executada sem prova em ambiente efêmero e autorização explícita.
+9. Apenas um PR de desenvolvimento permanece ativo por vez.
+10. Código, banco, testes, documentação e evidência de runtime devem concordar para uma etapa ser concluída.
 
-- backend real da vertical técnica E14 executado no Supabase de desenvolvimento/teste;
-- migrations canônicas e histórico remoto reconciliado;
-- aplicação Next.js em `apps/web`;
-- seis rotas iniciais;
-- bridge de identidade e camada de aplicação de servidor;
-- build e typecheck aprovados no CI da fundação atual;
-- eventos, outbox, idempotência, concorrência e pontos comprovados na vertical técnica.
+## 2. Estado comprovado em 10 de julho de 2026
 
-Esse estado é uma fundação, não a conclusão do produto. Permanecem incompatibilidades com as premissas atuais:
-
-- caminho genérico no lugar dos quatro arquétipos configuráveis;
-- formulário e atribuição ainda não atendem ao ciclo completo de versão, recalculação e override;
-- integração HubSpot real não está concluída;
-- não existe registro completo de todas as ações ativas da interface;
-- conteúdo externo ainda não é parte comprovada da vertical;
-- E2E no navegador com sessão real e acessibilidade permanece pendente;
-- AWS staging e produção ainda não foram provisionados e validados.
-
-## 2. Objetivo da fase
-
-Entregar uma vertical funcional e auditável em que:
+### 2.1 Banco e runtime
 
 ```text
-operador configura quatro arquétipos
-→ cria e publica uma versão de formulário
-→ cadastra conteúdo próprio ou externo
-→ publica uma jornada versionada
-→ participante autentica
-→ responde e envia o formulário
-→ motor atribui um dos quatro arquétipos
-→ resultado e justificativa são preservados
-→ estado relevante é projetado no HubSpot
-→ participante recebe trilha compatível
-→ consome conteúdo e realiza atividade/quick check
-→ ações geram eventos estruturados
-→ progresso e pontos são persistidos
-→ operador consulta histórico, override e sincronização
+remote_migration_count = 244
+git_migration_count = 244
+clean_replay_passed = true
+schema_equivalence_passed = true
+public_rpc_count = 18
+public_rpc_contracts_passed = true
+backend_e2e_replayed = true
+rls_negative_checks_passed = true
+idempotency_and_concurrency_passed = true
+events_and_outbox_passed = true
 ```
 
-A vertical será comprovada no Supabase de teste. Ela somente será candidata a deploy oficial depois da prova equivalente no AWS staging.
+### 2.2 Build e governança
 
-## 3. Sequência obrigatória
+```text
+canonical_package_lock_present = true
+package_manager = npm@10.9.2
+web_ci_uses_npm_ci = true
+clean_install_linux_passed = true
+clean_install_windows_passed = true
+repository_hygiene_gate_enabled = true
+```
 
-### E14-R0 — Rebaseline de decisões e documentação
+### 2.3 HubSpot e produto configurável
 
-**Objetivo:** eliminar premissas contraditórias antes de mudar o schema ou o código.
+```text
+hubspot_authoritative_source_decided = true
+hubspot_gateway_contract_defined = true
+hubspot_test_adapter_implemented = true
+write_readback_use_gate_tested = true
+configurable_form_contract_defined = true
+variable_archetype_count_supported = true
+classification_abstention_supported = true
+assignment_history_append_only = true
+recalculation_and_override_audited = true
+activation_rules_versioned = true
+hubspot_real_adapter_implemented = false
+```
 
-Entregas:
+### 2.4 Legado opaco
 
-- ADR-002;
-- atualização de premissas e escopo;
-- atualização do Decision Log;
-- matriz de rastreabilidade das novas premissas;
-- inventário de documentos superados;
-- plano de execução atual.
+```text
+legacy_function_count = 114
+legacy_private_helper_count = 106
+legacy_public_rpc_count = 8
+new_opaque_helpers_allowed = false
+first_semantic_replacement_applied_and_reconciled = true
+```
+
+A M15a substituiu o primeiro helper opaco de baixo risco. A próxima etapa não será renomear funções cegamente: primeiro será decidido quais componentes ainda existirão depois da transição HubSpot.
+
+## 3. Bloqueadores ativos
+
+| ID | Severidade | Estado | Encerramento |
+|---|---|---|---|
+| E14-B002 | P0 | 106 helpers privados e 8 RPCs públicos opacos permanecem | eliminar aliases do runtime retido e remover integralmente componentes legados substituídos |
+| E14-B007 | P0 | conta, modelo físico e adapter HubSpot real indisponíveis | inventário, modelo aprovado, adapter real, matriz campo→HubSpot e E2E no sandbox |
+| E14-B004 | P1 | browser E2E e acessibilidade não comprovados | fluxos críticos automatizados com contas técnicas e auditoria de acessibilidade |
+| E14-B005 | P1 | configuração inicial e conteúdo real não aprovados | formulário, arquétipos, conteúdo e direitos versionados e aprovados |
+| E14-B006 | P1 | `file-storage` e `file-scan-worker` ativos sem consumidor atual | integrar comprovadamente ou remover função, scheduler, configuração e dependências |
+
+## 4. Estratégia de execução
+
+O trabalho será dividido em três trilhas, com dependências explícitas.
+
+```text
+TRILHA A — independente do acesso HubSpot
+  limpeza e classificação do legado
+  aplicação web sobre adapter de teste
+  browser E2E e acessibilidade
+  registro de interações e usos de dados
+  contrato de conteúdo externo
+
+TRILHA B — exige acesso HubSpot
+  inventário da conta
+  modelo físico
+  adapter real
+  migração/configuração
+  vertical completa no sandbox
+
+TRILHA C — ambiente oficial
+  AWS staging por IaC
+  paridade de adapters
+  segurança, restore, carga e custo
+  prontidão de produção
+```
+
+As trilhas podem ser planejadas em paralelo, mas o repositório mantém apenas um PR ativo por vez.
+
+## 5. Trilha A — trabalho executável sem HubSpot real
+
+### E14-A1 — Classificar o legado antes de novas substituições
+
+**Objetivo:** evitar gastar tempo renomeando funções que serão apagadas quando o fluxo HubSpot substituir a vertical PostgreSQL antiga.
+
+Gerar o grafo das 114 funções legadas e classificar cada componente em:
+
+- `KEEP_AND_RENAME` — permanece no plano técnico e precisa de contrato semântico;
+- `REPLACE_BY_HUBSPOT_FLOW` — será substituído pelo novo caso de uso HubSpot-sourced;
+- `DELETE_WITH_LEGACY_VERTICAL` — não terá função depois do cutover;
+- `PUBLIC_COMPATIBILITY_ONLY` — RPC público mantido temporariamente até migração dos consumidores.
+
+Pontuação de risco por componente:
+
+```text
+direct_consumers
+in_degree / out_degree
+betweenness / centrality
+tables_read
+tables_mutated
+event_or_outbox_dependency
+public_exposure
+business_result_effect
+existing_e2e_coverage
+```
 
 Gate:
 
 ```text
-contradictory_active_premises = 0
-supabase_production_claims = 0
-aws_staging_production_target_explicit = true
-four_archetypes_target_explicit = true
-hubspot_user360_rule_explicit = true
-external_content_requirement_explicit = true
+legacy_functions_unclassified = 0
+helpers_renamed_despite_future_deletion = 0
+components_without_cutover_decision = 0
+next_replacement_wave_has_quantitative_rationale = true
 ```
 
-### E14-R1 — Auditoria de lacunas do runtime e schema
+As próximas migrations técnicas serão feitas por componentes ou ondas coerentes, não necessariamente uma função por PR. Cada escrita remota continuará exigindo autorização explícita.
 
-**Objetivo:** reaproveitar o que já existe e impedir duplicação de tabelas ou regras.
+### E14-A2 — Eliminar adapters de teste sem consumidor
 
-Auditar M00–M14b, RPCs, `apps/web`, eventos e documentos nas áreas:
+**Objetivo:** encerrar E14-B006 e reduzir superfície remota inútil.
 
-1. formulário e versionamento;
-2. questões, opções e regras;
-3. submissões, revisões e retomada;
-4. quatro arquétipos e versões;
-5. atribuições, histórico, justificativa, confiança e override;
-6. conteúdo externo e direitos;
-7. interação, eventos e outbox;
-8. HubSpot mapping, jobs, retry, DLQ, reconciliação e readback;
-9. portabilidade Supabase → AWS;
-10. telas e ações ativas.
-
-Cada estrutura será classificada como:
-
-- `REUSE_AS_IS`;
-- `EXTEND_EXISTING`;
-- `MIGRATE_DATA`;
-- `DEPRECATE`;
-- `REMOVE`;
-- `NEW_STRUCTURE_REQUIRED`.
-
-Entregas:
-
-- `SCHEMA_DELTA_E14.md`;
-- `RUNTIME_GAP_E14.md`;
-- `LEGACY_DEPRECATION_REGISTER.md`;
-- migration M15 apenas se a auditoria comprovar necessidade.
+1. confirmar consumidores, schedulers, secrets, buckets, filas e políticas ligados a `file-storage` e `file-scan-worker`;
+2. decidir `INTEGRATE` ou `REMOVE` com evidência;
+3. na ausência de consumidor, preparar remoção integral;
+4. testar replay e ausência de referências;
+5. solicitar autorização antes da exclusão remota;
+6. reconciliar Git e Supabase depois da remoção.
 
 Gate:
 
 ```text
-new_tables_without_gap_evidence = 0
-runtime_sources_of_truth_per_capability = 1
-legacy_runtime_instructions = 0
-supabase_specific_domain_dependencies = 0
-aws_specific_domain_dependencies = 0
+active_test_runtime_without_consumer = 0
+orphan_scheduler_or_secret_reference = 0
+remote_and_git_state_reconciled = true
 ```
 
-### E14-R2 — Formulário e quatro arquétipos configuráveis
+### E14-A3 — Integrar o motor configurável à aplicação
 
-**Objetivo:** substituir o caminho genérico pela regra de negócio real sem hardcode.
-
-Backend:
-
-- definição e versão do formulário;
-- questões, opções e ordenação versionadas;
-- drafts editáveis e publicação imutável;
-- submissão incremental, retomada e idempotência;
-- revisão de respostas com nova revision;
-- quatro arquétipos ativos configurados como dados;
-- interface `ArchetypeAssignmentStrategy`;
-- resultado com versão, regra aplicada, evidências e justificativa;
-- recalculação explícita;
-- override autorizado com motivo e auditoria;
-- eventos e outbox atômicos.
+**Objetivo:** transformar contratos e engine já testados em fluxos utilizáveis sobre o adapter HubSpot de teste.
 
 Frontend administrativo:
 
-- criar/clonar/editar/publicar formulário;
-- configurar quatro arquétipos;
-- configurar regra de atribuição;
-- consultar versões e histórico;
-- recalcular e realizar override conforme permissão.
+- criar, clonar e versionar formulários;
+- adicionar, remover e ordenar perguntas e opções;
+- publicar versões imutáveis;
+- criar, retirar e versionar qualquer quantidade de arquétipos;
+- editar política de classificação e critérios de abstenção;
+- editar regras de ativação;
+- visualizar dependências entre versões;
+- executar preview com dados sintéticos;
+- consultar atribuições, recálculos e overrides.
 
 Frontend participante:
 
-- iniciar, salvar, retomar e enviar formulário;
-- receber resultado e mensagem configurada;
-- revisar respostas quando permitido.
+- carregar formulário publicado pelo gateway;
+- salvar, retomar e enviar respostas;
+- bloquear classificação antes do readback;
+- apresentar resultado confirmado;
+- tratar abstenção, indisponibilidade, conflito e retry.
+
+Frontend operacional:
+
+- consultar estado atual e histórico;
+- solicitar recálculo;
+- executar override autorizado;
+- acompanhar write, readback, retry e reconciliação.
 
 Gate:
 
 ```text
-active_archetypes = 4
+business_decision_from_raw_request = 0
+business_decision_from_local_only_data = 0
 hardcoded_archetype_names = 0
-published_form_mutations = 0
-assignment_without_form_version = 0
-assignment_without_rule_version = 0
-override_without_reason = 0
-historical_assignment_overwrites = 0
+hardcoded_archetype_count = 0
+published_configuration_mutations = 0
+history_overwrites = 0
 ```
 
-### E14-R3 — Conteúdo próprio e externo
+O adapter em memória é aceito somente para esta prova pré-acesso; ele não encerra E14-B007.
 
-**Objetivo:** operar conteúdo de terceiros por um contrato comum.
+### E14-A4 — Browser E2E, acessibilidade e registro de interações
 
-Implementar:
+**Objetivo:** fechar a experiência navegável antes da integração física do CRM.
 
-- modelo unificado de conteúdo;
-- `ownership_type` e metadados de direitos;
-- adapter de um provedor real;
-- URL canônica, embed e fallback;
-- disponibilidade e health check;
-- capacidades de tracking declaradas;
-- política de conclusão compatível com o provedor;
-- eventos de abertura, início, progresso observável e conclusão comprovável.
+Fluxos automatizados:
 
-A primeira implementação deve escolher apenas um entre YouTube, Vimeo ou Generic Web Embed, conforme o primeiro conteúdo autorizado real.
+1. operador cria formulário e arquétipos;
+2. publica configuração compatível;
+3. participante responde e envia;
+4. write/readback libera classificação;
+5. atribuição e ativações são confirmadas;
+6. operador consulta histórico, recalcula e executa override;
+7. replay não duplica efeitos;
+8. falhas `401`, `403`, `409`, `429`, timeout e `5xx` são apresentadas corretamente.
 
-Gate:
+Acessibilidade:
 
-```text
-external_content_without_provider_contract = 0
-external_content_without_rights_metadata = 0
-completion_inferred_beyond_provider_capability = 0
-provider_specific_logic_in_domain = 0
-```
-
-### E14-R4 — Registro integral das ações ativas
-
-**Objetivo:** garantir que toda ação relevante disponível no produto gere dado governável.
-
-Criar o `UI_INTERACTION_REGISTRY` com:
-
-- ação;
-- ator;
-- rota/componente;
-- comando ou observação;
-- evento canônico;
-- finalidade;
-- classificação;
-- retenção;
-- campos obrigatórios;
-- projeção HubSpot;
-- testes.
-
-Eventos mínimos da vertical:
-
-- `diagnostic.form_started`;
-- `diagnostic.answer_saved`;
-- `diagnostic.answer_revised`;
-- `diagnostic.submitted`;
-- `diagnostic.archetype_assigned`;
-- `diagnostic.archetype_recalculated`;
-- `diagnostic.archetype_overridden`;
-- `content.opened`;
-- `content.started`;
-- `content.progress_observed` quando suportado;
-- `content.completed` quando comprovável;
-- `assessment.started`;
-- `assessment.answer_saved`;
-- `assessment.submitted`;
-- `activity.completed`;
-- `progress.changed`;
-- `gamification.points_awarded`;
-- eventos de falha/replay de integração sem dados excessivos.
-
-Gate CI:
-
-```text
-active_user_actions_without_registry = 0
-registered_actions_without_event_contract = 0
-events_without_purpose = 0
-events_without_retention_class = 0
-events_without_schema_validation = 0
-```
-
-### E14-R5 — HubSpot User 360 real
-
-**Objetivo:** tornar o CRM a visão integrada do usuário sem transformá-lo no banco transacional.
-
-Pré-requisitos:
-
-- sandbox HubSpot;
-- private app e scopes;
-- inventário de objetos, propriedades, pipelines e workflows;
-- política de deduplicação;
-- identificação do proprietário operacional;
-- limites de API e licença.
-
-Implementar:
-
-- matriz de projeção para todos os dados de usuário;
-- mapping versionado;
-- adapter HubSpot;
-- worker assíncrono;
-- idempotência;
-- retry com backoff;
-- DLQ;
-- reconciliação;
-- readback e comparação;
-- painel de status e erros;
-- replay autorizado.
-
-Projeção inicial esperada:
-
-| Dado | Representação HubSpot |
-|---|---|
-| Identidade do empreendedor | Contact |
-| Negócio beneficiário | Company + associação |
-| Matrícula/jornada atual | propriedade ou custom object |
-| Formulário concluído | custom event |
-| Versão do formulário | propriedade do evento |
-| Arquétipo atual | propriedade atual do Contact |
-| Histórico de atribuição/recalculo/override | custom events |
-| Progresso atual | propriedade ou custom object |
-| Conteúdo concluído | custom event |
-| Última ação relevante | propriedade agregada |
-| Status de sincronização | painel interno e referência técnica controlada |
-
-Gate:
-
-```text
-user_domain_fields_without_projection_decision = 0
-synchronous_business_dependency_on_hubspot = 0
-hubspot_jobs_without_idempotency = 0
-failed_jobs_without_retry_or_dlq = 0
-successful_sync_without_readback = 0
-```
-
-### E14-R6 — Experiência completa e acessibilidade
-
-**Objetivo:** ligar os casos de uso reais às interfaces sem lógica de negócio no navegador.
-
-Regras:
-
-- navegador → Next.js server/BFF → aplicação → domínio → portas/adapters;
-- nenhuma service role ou segredo no cliente;
-- frontend não calcula arquétipo, pontos ou conclusão;
-- estados loading, vazio, erro, não autorizado, conflito, replay e sucesso;
-- navegação completa por teclado;
-- foco e mensagens anunciadas;
+- teclado completo;
+- foco previsível;
+- labels e nomes acessíveis;
+- mensagens anunciadas;
 - status não comunicado somente por cor;
-- responsividade sem perda funcional.
+- contraste e responsividade;
+- auditoria automatizada e revisão manual dos fluxos críticos.
+
+Criar `UI_INTERACTION_REGISTRY` e `DATA_USE_REGISTRY` com:
+
+- ação e ator;
+- rota/componente;
+- finalidade;
+- dado HubSpot necessário;
+- evento canônico;
+- retenção e classificação;
+- teste associado.
 
 Gate:
 
 ```text
-browser_direct_database_writes = 0
-browser_direct_hubspot_writes = 0
-business_rules_in_ui = 0
-critical_routes_without_accessibility_proof = 0
+critical_browser_flows_without_e2e = 0
+critical_accessibility_failures = 0
+active_user_actions_without_registry = 0
+business_data_use_without_hubspot_source = 0
 ```
 
-### E14-R7 — E2E controlado no Supabase de teste
+### E14-A5 — Conteúdo próprio e externo
 
-Executar sem edições manuais no banco:
+**Objetivo:** preparar um contrato unificado sem escolher um provedor real antes de existir conteúdo autorizado.
 
-1. operador configura quatro arquétipos;
-2. operador publica formulário e jornada;
-3. operador registra conteúdo externo real autorizado;
-4. participante autentica com conta técnica;
-5. participante responde e envia;
-6. sistema atribui arquétipo;
-7. participante recebe trilha;
-8. participante consome conteúdo e completa quick check;
-9. eventos, outbox, progresso e pontos são persistidos;
-10. HubSpot sandbox recebe projeções e readback confirma;
-11. participante revisa respostas e gera nova atribuição;
-12. operador executa override autorizado;
-13. histórico anterior permanece íntegro;
-14. replay não duplica efeitos.
+Implementar:
 
-Repetir fluxos concorrentes e de falha.
+- contrato lógico de conteúdo;
+- `ownership_type` e metadados de direitos;
+- capacidades declaradas de embed e tracking;
+- política de conclusão compatível com a capacidade observável;
+- adapter sintético para E2E;
+- adapter real somente quando houver conteúdo e direitos aprovados.
+
+Gate pré-acesso:
+
+```text
+provider_specific_logic_in_domain = 0
+completion_inferred_beyond_provider_capability = 0
+external_content_without_rights_contract = 0
+```
+
+O encerramento de E14-B005 depende de entradas oficiais da Estímulo.
+
+## 6. Trilha B — trabalho bloqueado pelo acesso HubSpot
+
+### E14-H1 — Inventário da conta
+
+Levantar:
+
+- account/portal ID, hubs e tiers;
+- sandbox ou test account;
+- objetos padrão, custom objects e app objects disponíveis;
+- propriedades, limites e associações;
+- pipelines, workflows e webhooks;
+- autenticação, scopes e limites de API;
+- regras atuais de deduplicação de contatos e empresas.
 
 Gate:
 
 ```text
+hubspot_inventory_complete = true
+unknown_required_capabilities = 0
+```
+
+### E14-H2 — Modelo físico e governança
+
+Mapear os contratos lógicos para objetos e propriedades reais:
+
+```text
+FormDefinition / FormVersion
+QuestionVersion / QuestionOptionVersion
+FormSubmission / FormAnswer
+ArchetypeDefinition / ArchetypeVersion
+ClassificationPolicyVersion
+ArchetypeAssignment
+ActivationRuleVersion / ActivationExecution
+HubSpotFieldMappingVersion
+DataUseDefinition
+```
+
+Definir associações, índices lógicos, propriedade de estado atual, histórico, versionamento, deduplicação, retenção e permissões.
+
+Gate:
+
+```text
+logical_entities_without_physical_mapping = 0
+collected_fields_without_hubspot_destination = 0
+business_reads_without_hubspot_origin = 0
+hubspot_physical_model_approved = true
+```
+
+### E14-H3 — Adapter HubSpot real
+
+Implementar:
+
+- autenticação e scopes mínimos;
+- criação, atualização, batch e associações;
+- write receipt e readback;
+- idempotência e optimistic concurrency;
+- retry com backoff e tratamento de `429`/`5xx`;
+- webhooks, invalidação de cache e eventos fora de ordem;
+- reconciliação e replay autorizado;
+- observabilidade sem dados pessoais excessivos.
+
+Gate:
+
+```text
+real_adapter_contract_parity = true
+critical_write_without_readback = 0
+failed_job_without_retry_or_dlq = 0
+stale_snapshot_used_for_decision = 0
+```
+
+### E14-H4 — Cutover dos casos de uso
+
+1. persistir configurações oficiais no HubSpot;
+2. persistir todas as respostas e submissões;
+3. reler antes da classificação;
+4. persistir e reler atribuições;
+5. carregar regras de ativação do HubSpot;
+6. persistir execuções e estado atual;
+7. classificar tabelas PostgreSQL existentes como cache, auditoria ou remoção;
+8. eliminar consumidores locais incompatíveis com a autoridade HubSpot.
+
+Gate:
+
+```text
+production_path_using_test_adapter = 0
+business_decision_from_postgresql_authority = 0
+hubspot_reconciliation_mismatches = 0
+legacy_component_without_cutover_state = 0
+```
+
+### E14-H5 — E2E completo no sandbox HubSpot
+
+Provar com contas técnicas:
+
+- configuração editável e publicação;
+- quantidade variável de arquétipos;
+- submissão, readback e classificação;
+- abstenção, recálculo e override;
+- regras de ativação;
+- conteúdo autorizado;
+- eventos, outbox, retry e reconciliação;
+- browser E2E e acessibilidade;
+- histórico íntegro e replay sem duplicação.
+
+Gate:
+
+```text
+hubspot_sandbox_e2e_passed = true
 manual_database_edits_in_e2e = 0
 duplicate_effects_after_replay = 0
 lost_assignment_history = 0
-hubspot_reconciliation_mismatches = 0
-critical_accessibility_failures = 0
 ```
 
-### E14-R8 — AWS staging e prontidão de produção
+## 7. Trilha C — AWS staging e produção
 
-**Objetivo:** provar a mesma release no ambiente oficial de deploy antes da produção.
+### E14-C1 — AWS staging por infraestrutura como código
 
-Implementar por infraestrutura como código:
+Provisionar conforme arquitetura aprovada:
 
-- rede e sub-redes;
+- rede, sub-redes e segurança;
 - RDS/Aurora PostgreSQL;
-- Cognito;
-- S3;
-- SQS e DLQ;
-- Lambda/ECS conforme workers;
-- ECR;
-- Secrets Manager/SSM;
-- KMS;
-- CloudWatch/X-Ray/OpenTelemetry;
-- WAF/CDN/load balancer conforme arquitetura final;
-- backup, restore e disaster recovery;
-- alarmes, SLOs e runbooks.
+- autenticação oficial;
+- storage, filas e DLQ;
+- workers, imagens e secrets;
+- observabilidade;
+- backup, restore e disaster recovery.
 
-Provas obrigatórias:
+### E14-C2 — Paridade e prontidão
 
-- replay das mesmas migrations em PostgreSQL limpo;
-- testes de contrato dos adapters Supabase e AWS;
-- autenticação Cognito → identidade interna;
-- autorização e isolamento equivalentes;
-- upload/storage equivalente;
-- fila, retry e DLQ equivalentes;
-- HubSpot sandbox ou ambiente autorizado;
-- restore real;
-- teste de carga e custo;
-- E2E completo da vertical.
+Provar:
+
+- replay das migrations em PostgreSQL limpo;
+- contratos equivalentes dos adapters;
+- identidade e autorização;
+- fila, retry e DLQ;
+- integração HubSpot;
+- E2E completo;
+- carga, custo, segurança e restore.
 
 Gate:
 
@@ -390,31 +430,45 @@ adapter_contract_parity_passed = true
 production_readiness_gate_ready = true
 ```
 
-## 4. Ordem imediata de trabalho
+## 8. Ordem imediata de trabalho
 
-1. concluir E14-R0;
-2. auditar schema/runtime e produzir o delta E14-R1;
-3. não criar M15 antes do delta aprovado;
-4. implementar formulário e arquétipos E14-R2;
-5. implementar um provedor externo E14-R3;
-6. completar o registro de interações E14-R4;
-7. implementar HubSpot real E14-R5;
-8. fechar frontend e acessibilidade E14-R6;
-9. executar E2E no Supabase de teste E14-R7;
-10. provisionar e provar AWS staging E14-R8;
-11. somente então avaliar promoção para produção.
+```text
+1. atualizar e aprovar este plano
+2. gerar o mapa de disposição dos 114 componentes legados
+3. auditar e preparar remoção de file-storage/file-scan-worker
+4. integrar o motor configurável às interfaces usando o adapter de teste
+5. executar browser E2E, acessibilidade e registrar interações/usos
+6. implementar contrato de conteúdo e adapter sintético
+7. coletar e aprovar formulário, arquétipos e conteúdo iniciais
+8. quando houver acesso, executar H1 → H5
+9. provisionar e provar AWS staging
+10. avaliar produção somente após todos os gates
+```
 
-## 5. Itens explicitamente adiados
+O próximo trabalho após este plano é o item 2, não uma segunda migration de renomeação isolada.
 
-- uso decisório de score para crédito;
-- múltiplos provedores externos sem demanda real;
-- ativação de todos os 118 eventos apenas por completude de catálogo;
-- microserviços;
-- produção no Supabase;
-- migração automática de participantes entre versões;
-- cópia de logs técnicos para HubSpot;
-- decisões de AWS não sustentadas por carga, segurança ou custo medidos.
+## 9. Intervenções futuras necessárias
 
-## 6. Regra de conclusão
+Nenhuma intervenção é necessária para o próximo item. O usuário será chamado apenas quando houver:
 
-Uma etapa somente será marcada como concluída quando código, banco, testes, documentação e evidência de runtime concordarem. Documento, migration aplicada manualmente ou tela isolada não constituem conclusão por si só.
+1. remoção remota de `file-storage`/`file-scan-worker` pronta e comprovada;
+2. nova migration técnica pronta para escrita no Supabase;
+3. necessidade de aprovação do formulário, quatro arquétipos iniciais, conteúdo e direitos;
+4. acesso à conta ou sandbox HubSpot;
+5. acesso e autorização de custo para AWS staging.
+
+Não compartilhar tokens, client secrets, cookies ou dados de participantes.
+
+## 10. Regra de conclusão
+
+Uma fase somente é concluída quando:
+
+```text
+code_complete = true
+tests_reproducible = true
+documentation_current = true
+runtime_evidence_available = true
+remote_and_git_state_reconciled = true
+```
+
+Mocks e adapters sintéticos podem concluir subgates pré-acesso, mas nunca substituem a prova do adapter real, do sandbox HubSpot ou do AWS staging.
