@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 2.3  
+**Versão:** 2.4  
 **Data:** 2026-07-09  
-**Status:** E14 em execução; produção bloqueada
+**Status:** E14 em execução; fonte de migrations recuperada; produção bloqueada
 
 ## 1. Hierarquia de referência
 
@@ -52,17 +52,17 @@ O repositório contém:
 - seis rotas iniciais para participante e operação;
 - bridge de identidade e camada de RPCs no servidor;
 - migrations M00–M12 canônicas;
-- migrations locais M14/M14b ainda pendentes de reconciliação com os identificadores remotos;
-- ferramentas read-only para recuperar o histórico M13/M14;
+- 165 migrations M13 e 2 migrations M14/M14b recuperadas com identificadores remotos exatos;
+- manifests, fingerprints e SQL canônico para validação permanente do histórico E14;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
-A aplicação atual está documentada em [E14_STEP5_APP_FOUNDATION.md](docs/implementation/E14_STEP5_APP_FOUNDATION.md).
+A aplicação atual está documentada em [E14_STEP5_APP_FOUNDATION.md](docs/implementation/E14_STEP5_APP_FOUNDATION.md). A reconciliação do runtime está em [RUNTIME_GAP_E14.md](docs/implementation/RUNTIME_GAP_E14.md).
 
 ## 5. Bloqueadores ativos
 
 Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
 
-O principal bloqueio é recuperar e validar as 165 migrations M13 aplicadas remotamente. Nenhuma nova migration funcional está autorizada antes dos gates:
+A fonte M13/M14 já está materializada no Git. O bloqueio P0 restante é provar replay limpo e equivalência antes de qualquer nova migration funcional:
 
 ```text
 remote_versions_missing_locally = 0
@@ -141,7 +141,9 @@ backend_e2e_replayed = true
 - [Features comportamentais](docs/data/database/BEHAVIORAL_FEATURE_MODEL.md)
 - [Score experimental e guardrails](docs/data/database/EXPERIMENTAL_SCORE_MODEL.md)
 - [Migrations M00–M12](docs/architecture/E12_EXECUTABLE_MIGRATIONS.md)
-- [Manifest canônico](supabase/canonical-migrations/MIGRATION_MANIFEST.json)
+- [Manifest M00–M12](supabase/canonical-migrations/MIGRATION_MANIFEST.json)
+- [Manifest M13 recuperado](supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json)
+- [Manifest M14 recuperado](supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json)
 
 ### Fundação técnica do ambiente de teste
 
@@ -198,17 +200,16 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 
 ## 7. Sequência obrigatória
 
-1. publicar o workflow auditado de recuperação;
-2. exportar M13/M14 em modo read-only;
-3. materializar as versões remotas exatas no Git;
-4. executar replay em PostgreSQL limpo;
-5. comparar schema, RLS, índices, triggers, funções e RPCs;
-6. concluir o delta de schema;
-7. implementar formulário e quatro arquétipos;
-8. integrar conteúdo externo e HubSpot;
-9. executar E2E completo no Supabase de teste;
-10. provisionar e validar AWS staging;
-11. somente então avaliar produção.
+1. recuperar e materializar M13/M14 no Git — concluído;
+2. validar permanentemente hashes, bytes, nomes e fingerprints — concluído;
+3. executar replay em PostgreSQL limpo;
+4. comparar schema, RLS, índices, triggers, funções e RPCs;
+5. concluir o delta de schema;
+6. implementar formulário e quatro arquétipos;
+7. integrar conteúdo externo e HubSpot;
+8. executar E2E completo no Supabase de teste;
+9. provisionar e validar AWS staging;
+10. somente então avaliar produção.
 
 ## 8. Regra de conclusão
 
