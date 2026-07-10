@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 2.6  
+**Versão:** 2.7  
 **Data:** 2026-07-10  
-**Status:** E14 em execução; replay, equivalência e contratos públicos comprovados; produção bloqueada
+**Status:** E14 em execução; replay, equivalência, contratos e backend E2E comprovados; produção bloqueada
 
 ## 1. Hierarquia de referência
 
@@ -54,16 +54,17 @@ O repositório contém:
 - 76 migrations M00–M12, 165 migrations M13 e 2 migrations M14/M14b recuperadas com identificadores remotos exatos;
 - 243 migrations executáveis, três manifests, fingerprints e SQL canônico consolidado;
 - gate de CI que reconstrói o banco em PostgreSQL 17.6 e compara nove categorias estruturais com o Supabase de teste;
-- contrato congelado dos 18 RPCs públicos, incluindo assinatura, corpo, grants, segurança e mapa da aplicação;
+- contrato congelado dos 18 RPCs públicos;
+- backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
-A aplicação atual está documentada em [E14_STEP5_APP_FOUNDATION.md](docs/implementation/E14_STEP5_APP_FOUNDATION.md). A reconciliação do runtime está em [RUNTIME_GAP_E14.md](docs/implementation/RUNTIME_GAP_E14.md).
+A aplicação está documentada em [E14_STEP5_APP_FOUNDATION.md](docs/implementation/E14_STEP5_APP_FOUNDATION.md). O runtime está em [RUNTIME_GAP_E14.md](docs/implementation/RUNTIME_GAP_E14.md) e [E14_BACKEND_E2E.md](docs/implementation/E14_BACKEND_E2E.md).
 
 ## 5. Bloqueadores ativos
 
 Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
 
-A fonte remota, o replay limpo, a equivalência estrutural e os contratos públicos já foram comprovados. O P0 de database/runtime permanece aberto até reproduzir o backend E2E com checks negativos:
+A fonte remota, o replay limpo, a equivalência estrutural, os contratos públicos e o backend E2E já foram comprovados. O P0 remanescente é impedir a expansão dos helpers opacos enquanto o delta final de schema é concluído.
 
 ```text
 remote_versions_missing_locally = 0
@@ -71,7 +72,8 @@ local_versions_not_expected_remotely = 0
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
-backend_e2e_replayed = false
+backend_e2e_replayed = true
+new_functional_migration_authorized = false
 ```
 
 ## 6. Documentação canônica
@@ -167,8 +169,9 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 - [Rastreabilidade](docs/implementation/E14_PREMISE_TRACEABILITY_MATRIX.md)
 - [Bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
 - [Delta de schema](docs/implementation/SCHEMA_DELTA_E14.md)
-- [Lacuna do runtime](docs/implementation/RUNTIME_GAP_E14.md)
+- [Runtime](docs/implementation/RUNTIME_GAP_E14.md)
 - [Contratos públicos de RPC](docs/implementation/E14_PUBLIC_RPC_CONTRACTS.md)
+- [Backend E2E](docs/implementation/E14_BACKEND_E2E.md)
 
 ### Integrações e ambientes
 
@@ -203,12 +206,12 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 ## 7. Sequência obrigatória
 
 1. recuperar e materializar M00–M14 no Git — concluído;
-2. validar permanentemente hashes, bytes, nomes e fingerprints — concluído;
-3. executar replay transacional em PostgreSQL 17.6 limpo — concluído;
-4. comparar schema, RLS, índices, triggers, policies, funções e RPCs — concluído no nível estrutural;
+2. validar hashes, bytes, nomes e fingerprints — concluído;
+3. executar replay em PostgreSQL 17.6 limpo — concluído;
+4. comparar schema, RLS, índices, triggers, policies, funções e RPCs — concluído;
 5. mapear e congelar contratos públicos — concluído;
-6. reproduzir backend E2E e checks negativos de RLS, idempotência e concorrência;
-7. concluir o delta de schema;
+6. reproduzir backend E2E e checks negativos — concluído;
+7. concluir o delta final de schema e conter helpers opacos;
 8. implementar formulário e quatro arquétipos;
 9. integrar conteúdo externo e HubSpot;
 10. executar E2E completo no Supabase de teste;
@@ -222,7 +225,7 @@ code_matches_documentation = true
 migrations_are_replayable = true
 structural_schema_equivalence = true
 public_rpc_contracts_passed = true
-backend_e2e_replayed = false
+backend_e2e_replayed = true
 security_and_data_gates_pass = false
 ```
 
