@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "types": ["node"],
     "rootDir": "../../..",
-    "outDir": "../../../.tmp/e14-hubspot-contracts",
+    "outDir": "../../../.tmp/hubspot-contracts",
     "noEmit": false,
     "declaration": false,
     "sourceMap": false
