@@ -94,20 +94,23 @@ jobs:
       - name: Validate dependency lock
         run: npm run validate:dependency-lock
 
-      - name: Validate repository hygiene
-        run: node scripts/repository/validate-hygiene.mjs
+      - name: Validate semantic naming
+        run: npm run validate:semantic-naming
 
-      - name: Test runtime recovery tooling
-        run: npm run test:e14-runtime-recovery
+      - name: Validate repository hygiene
+        run: npm run validate:repository
+
+      - name: Test migration history tooling
+        run: npm run test:migration-history
 
       - name: Test public RPC contract tooling
-        run: npm run test:e14-public-contracts
+        run: npm run test:public-rpc-contracts
 
-      - name: Validate recovered runtime history
-        run: npm run validate:e14-runtime-history
+      - name: Validate migration history
+        run: npm run validate:migration-history
 
-      - name: Validate opaque helper containment
-        run: npm run validate:e14-opaque-helper-containment
+      - name: Validate legacy RPC containment
+        run: npm run validate:legacy-rpc-containment
 
       - name: Confirm recovery artifacts remain ignored
         shell: bash
