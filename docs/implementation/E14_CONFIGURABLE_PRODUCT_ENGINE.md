@@ -1,25 +1,26 @@
 # E14 — motor configurável de formulário, arquétipo e ativação
 
-**Versão:** 0.1  
+**Versão:** 0.2  
 **Data:** 2026-07-10  
 **Status:** Implementado sobre o adapter HubSpot de teste; modelo físico e adapter real permanecem bloqueados pelo inventário da conta
 
 ## 1. Objetivo
 
-Implementar o comportamento de produto que pode ser provado sem acesso ao HubSpot real:
+Implementar o comportamento de produto comprovável sem acesso ao HubSpot real:
 
 ```text
 configuração confirmada no HubSpot
 + submissão confirmada no HubSpot
++ pedido de classificação/recálculo/override confirmado no HubSpot
 → classificação declarativa
 → atribuição persistida e confirmada no HubSpot
 → avaliação de regras de ativação
 → execuções persistidas e confirmadas no HubSpot
 ```
 
-Nenhuma entidade lógica deste documento determina `objectTypeId`, propriedade, associação, scope ou recurso contratado do HubSpot.
+Nenhuma entidade lógica determina `objectTypeId`, propriedade, associação, scope ou recurso contratado da conta real.
 
-## 2. Modelo lógico implementado
+## 2. Modelo lógico
 
 ```text
 FormDefinition
@@ -32,6 +33,7 @@ ArchetypeVersion
 
 ClassificationPolicyVersion
 ClassificationRule
+DecisionRequest
 ArchetypeAssignment
 
 ActivationRuleVersion
@@ -43,44 +45,36 @@ As estruturas estão em `apps/web/lib/configurable-product`.
 ## 3. Formulário e versões
 
 - uma submissão referencia uma versão específica do formulário;
-- apenas versões `published` podem ser usadas;
+- somente versões `published` podem ser usadas;
 - versão publicada exige `publishedAt`;
-- perguntas possuem identidade e versão próprias;
-- IDs e códigos de perguntas e opções são únicos dentro da configuração;
-- perguntas obrigatórias precisam ser respondidas;
-- respostas são validadas conforme `single_select`, `number`, `boolean` ou `text`;
+- perguntas e opções possuem identidade versionada;
+- IDs e códigos são únicos dentro da configuração;
+- respostas obrigatórias e seus tipos são validados;
 - opções removidas em versões futuras não alteram submissões históricas.
 
-A implementação atual executa uma configuração ativa por snapshot HubSpot. A edição e publicação administrativa serão adicionadas em incremento separado.
+A edição e a publicação administrativa serão adicionadas em incremento separado.
 
 ## 4. Arquétipos variáveis
-
-A quantidade de arquétipos é determinada exclusivamente pela configuração:
 
 ```text
 hardcoded_archetype_count = false
 hardcoded_archetype_names = false
 ```
 
-A política possui uma lista de versões elegíveis. Um arquétipo:
+A política define suas versões elegíveis. Um arquétipo:
 
-- pode ser adicionado por uma nova definição/versão e nova versão da política;
-- pode ser retirado de classificações futuras ao sair da lista de elegíveis;
-- não pode ser elegível se estiver em `draft` ou `retired`;
-- permanece interpretável em atribuições históricas após retirada operacional.
+- pode ser adicionado por nova definição/versão e nova política;
+- pode ser retirado das classificações futuras;
+- não pode ser elegível quando está `draft` ou `retired`;
+- continua interpretável nos resultados históricos.
 
-O teste automatizado adiciona um quinto arquétipo sem mudar o classificador.
+O teste adiciona um quinto arquétipo sem mudar o classificador.
 
-## 5. Política declarativa de classificação
+## 5. Classificação declarativa
 
-A política é composta por regras com:
+Cada regra contém condições sobre respostas e efeitos de pontuação por `archetypeVersionId`.
 
-```text
-condições sobre respostas
-→ efeitos de pontuação por archetypeVersionId
-```
-
-Operadores suportados:
+Operadores:
 
 - `equals`;
 - `in`;
@@ -88,46 +82,60 @@ Operadores suportados:
 - `number_lte`;
 - `answered`.
 
-A seleção considera:
+A seleção usa:
 
 - `minimumScore`;
 - `minimumMargin`;
 - `tieBreakStrategy` igual a `abstain` ou `priority`.
 
-Quando a evidência não separa os resultados, a classificação pode retornar:
+Quando a evidência é insuficiente ou ambígua:
 
 ```text
 archetypeVersionId = null
 ```
 
-A implementação não inventa uma confiança. `confidence` permanece `null` até que uma metodologia de confiança seja definida, validada e versionada.
+`confidence` permanece `null`. O sistema não inventa confiança sem metodologia validada e versionada.
 
-## 6. Histórico append-only
+## 6. Pedido de decisão também é HubSpot-sourced
+
+Motivo, atribuição supersedida, alvo do override, ator e justificativa chegam como comando, mas não são usados diretamente.
+
+O fluxo obrigatório é:
+
+```text
+payload do comando
+→ gravação do DecisionRequest no gateway
+→ readback confirmado
+→ uso exclusivo do snapshot confirmado
+```
+
+A atribuição registra `decisionRequestSnapshotHash`, além dos hashes da configuração e da submissão. Assim, recálculo e override obedecem à mesma regra de origem aplicada às respostas.
+
+O destino padrão é um tipo lógico de teste; o adapter real deverá receber o mapeamento físico após o inventário da conta.
+
+## 7. Histórico append-only
 
 Toda atribuição possui:
 
 - ID próprio;
-- versão do formulário;
-- versão da política;
+- versões do formulário e da política;
 - versão do arquétipo ou abstenção;
-- scores calculados;
-- hashes dos snapshots HubSpot utilizados;
+- scores;
+- hashes dos snapshots HubSpot;
 - razão `classified`, `recalculated` ou `override`;
-- referência opcional à atribuição anterior;
+- referência à atribuição anterior quando aplicável;
 - timestamp;
-- ator e justificativa quando houver override.
+- ator e justificativa no override.
 
 Regras:
 
 - classificação inicial não supersede outra atribuição;
-- recálculo e override precisam referenciar a atribuição substituída;
-- uma atribuição não pode ser alterada ou reutilizar ID;
+- recálculo e override precisam superseder uma atribuição existente;
+- IDs não podem ser reutilizados;
 - uma atribuição não pode ter múltiplos sucessores ativos;
-- override exige ator, justificativa e arquétipo publicado e elegível.
+- override exige ator, justificativa e alvo publicado e elegível.
 
-## 7. Recálculo
-
-O fluxo suporta duas entradas:
+## 8. Recálculo
 
 ```text
 write
@@ -136,20 +144,20 @@ write
 
 read
 → submissão já existente no HubSpot
-→ releitura verificada para recálculo ou override
+→ releitura verificada
 ```
 
-Recálculo não reutiliza o payload original da requisição e não reenvia silenciosamente a submissão. Ele relê o objeto HubSpot e registra nova atribuição.
+O recálculo não reenvia nem usa silenciosamente o payload original. Ele relê a submissão, persiste o pedido de recálculo e cria uma nova atribuição.
 
-## 8. Regras de ativação
+## 9. Ativações
 
-As regras de ativação são versionadas e declarativas. Podem consultar:
+Regras versionadas podem consultar:
 
-- versão do arquétipo atribuído;
+- versão do arquétipo;
 - confiança, quando existir;
-- respostas confirmadas da submissão.
+- respostas confirmadas.
 
-Ações lógicas suportadas:
+Ações lógicas:
 
 - `assign_journey`;
 - `recommend_content`;
@@ -157,74 +165,52 @@ Ações lógicas suportadas:
 - `set_segment`;
 - `emit_event`.
 
-Versões em `draft` não executam. Regras publicadas são avaliadas por prioridade e cada execução registra:
+Versões `draft` não executam. Cada execução registra regra, atribuição, hashes de entrada, ação, timestamp e estado `planned`. Regra correspondente sem destino de persistência HubSpot bloqueia o fluxo.
 
-- versão da regra;
-- atribuição de origem;
-- hashes dos snapshots usados;
-- ação e parâmetros;
-- timestamp;
-- estado `planned`.
-
-Se uma regra casar, a execução precisa ser persistida e confirmada no HubSpot. O motor rejeita o fluxo quando não recebe um destino de escrita.
-
-## 9. Linhagem HubSpot obrigatória
-
-O fluxo utiliza as primitivas:
+## 10. Ordem e linhagem
 
 ```text
-readVerified
-writeAndConfirm
+1. readVerified da configuração;
+2. writeAndConfirm ou readVerified da submissão;
+3. writeAndConfirm do pedido de decisão;
+4. classificação usando apenas os três snapshots confirmados;
+5. writeAndConfirm da atribuição;
+6. avaliação usando a atribuição confirmada;
+7. writeAndConfirm das ativações.
 ```
 
-A ordem é:
+A evidência final contém as fontes HubSpot de configuração, submissão, pedido de decisão, atribuição e ativação.
 
-```text
-1. ler e validar a configuração HubSpot;
-2. escrever+confirmar ou reler a submissão HubSpot;
-3. classificar;
-4. escrever+confirmar a atribuição;
-5. usar a atribuição confirmada para avaliar ativações;
-6. escrever+confirmar as execuções de ativação.
-```
-
-A evidência final contém as fontes HubSpot de configuração, submissão, atribuição e ativação.
-
-## 10. Testes automatizados
+## 11. Testes
 
 `npm run test:e14-configurable-product` cobre:
 
-1. classificação e ativação somente após readbacks;
-2. adição de um quinto arquétipo sem mudança de código;
-3. retirada operacional com preservação do histórico;
-4. recálculo a partir de submissão relida do HubSpot;
+1. classificação e ativação após readbacks;
+2. quinto arquétipo sem mudança de código;
+3. retirada operacional e preservação histórica;
+4. recálculo a partir da submissão relida;
 5. bloqueio de política em rascunho;
 6. bloqueio de resposta obrigatória ausente;
 7. abstenção por empate/margem insuficiente;
 8. override append-only com ator e justificativa;
-9. obrigação de persistir ativações no HubSpot.
+9. persistência obrigatória das ativações.
 
-O gate compila junto:
+O gate compila os contratos HubSpot, o adapter em memória, o motor e os testes TypeScript.
 
-- contratos HubSpot;
-- adapter em memória;
-- motor configurável;
-- testes TypeScript.
-
-## 11. Limites atuais
+## 12. Limites
 
 Ainda não implementados:
 
-- interface administrativa;
+- interface administrativa e preview;
 - workflow de draft, revisão e publicação;
-- modelo físico de objetos/propriedades HubSpot;
+- modelo físico HubSpot;
 - adapter da API real;
-- scopes, webhooks, rate limits e reconciliação reais;
+- scopes, webhooks, limites e reconciliação reais;
 - configuração oficial do formulário e dos arquétipos;
-- aplicação do motor às rotas produtivas existentes;
+- aplicação às rotas produtivas existentes;
 - migration técnica de integração.
 
-## 12. Gates
+## 13. Gates
 
 ```text
 configurable_form_contract_defined = true
@@ -232,6 +218,7 @@ variable_archetype_count_supported = true
 published_configuration_required = true
 classification_abstention_supported = true
 fabricated_confidence_generated = false
+decision_request_write_readback_required = true
 assignment_history_append_only = true
 recalculation_reads_existing_hubspot_submission = true
 override_audited = true
