@@ -1,0 +1,62 @@
+name: Dependency reproducibility
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/dependency-reproducibility.yml"
+      - ".npmrc"
+      - "package.json"
+      - "package-lock.json"
+      - "apps/*/package.json"
+      - "scripts/repository/validate-package-lock.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-reproducibility-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  clean-install:
+    name: Clean install (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install pinned npm
+        run: npm install --global npm@10.9.2 --no-audit --no-fund
+
+      - name: Confirm toolchain
+        run: |
+          node --version
+          npm --version
+
+      - name: Validate dependency lock
+        run: npm run validate:dependency-lock
+
+      - name: Install dependencies from lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Validate installed dependency tree
+        run: npm ls --all
+
+      - name: Confirm lockfile remains unchanged
+        run: git diff --exit-code -- package-lock.json
+
+      - name: Typecheck web workspace
+        run: npm run typecheck:web
