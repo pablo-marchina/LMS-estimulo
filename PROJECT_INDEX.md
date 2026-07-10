@@ -68,7 +68,7 @@ O runtime atual comprova a fundação técnica, mas ainda usa estruturas Postgre
 
 ## 5. Bloqueadores ativos
 
-Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
+Fonte única: [DELIVERY_BLOCKERS.md](docs/implementation/DELIVERY_BLOCKERS.md).
 
 Permanecem dois P0:
 
@@ -162,7 +162,7 @@ new_functional_migration_authorized = false
 - [Ledger de gamificação](docs/data/database/GAMIFICATION_LEDGER_MODEL.md)
 - [Features comportamentais](docs/data/database/BEHAVIORAL_FEATURE_MODEL.md)
 - [Score experimental e guardrails](docs/data/database/EXPERIMENTAL_SCORE_MODEL.md)
-- [Migrations M00–M12](docs/architecture/E12_EXECUTABLE_MIGRATIONS.md)
+- [Migrations M00–M12](docs/architecture/EXECUTABLE_MIGRATIONS.md)
 - [Manifest M00–M12 recuperado](supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json)
 - [Manifest M13 recuperado](supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json)
 - [Manifest M14 recuperado](supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json)
@@ -170,31 +170,29 @@ new_functional_migration_authorized = false
 
 ### Fundação técnica do ambiente de teste
 
-- [Bridge de identidade](docs/architecture/E12_IDENTITY_BRIDGE.md)
-- [Implementação de RLS](docs/architecture/E12_RLS_IMPLEMENTATION.md)
-- [Transactional outbox](docs/architecture/E12_TRANSACTIONAL_OUTBOX.md)
-- [Arquitetura de storage](docs/architecture/E12_STORAGE_ARCHITECTURE.md)
-- [Arquitetura de filas](docs/architecture/E12_QUEUE_ARCHITECTURE.md)
-- [Scheduler e dispatcher](docs/architecture/E12_SCHEDULER_DISPATCHER_ARCHITECTURE.md)
-- [Reconciliação e recuperação](docs/architecture/E12_RECONCILIATION_AND_RECOVERY.md)
-- [Observabilidade e alertas](docs/architecture/E12_OBSERVABILITY_AND_ALERTS.md)
+- [Bridge de identidade](docs/architecture/IDENTITY_BRIDGE.md)
+- [Implementação de RLS](docs/architecture/RLS_IMPLEMENTATION.md)
+- [Transactional outbox](docs/architecture/TRANSACTIONAL_OUTBOX.md)
+- [Arquitetura de storage](docs/architecture/STORAGE_ARCHITECTURE.md)
+- [Arquitetura de filas](docs/architecture/QUEUE_ARCHITECTURE.md)
+- [Scheduler e dispatcher](docs/architecture/SCHEDULER_DISPATCHER_ARCHITECTURE.md)
+- [Reconciliação e recuperação](docs/architecture/RECONCILIATION_AND_RECOVERY.md)
+- [Observabilidade e alertas](docs/architecture/OBSERVABILITY_AND_ALERTS.md)
 
 Esses componentes são adapters e provas do Supabase de teste, não arquitetura produtiva AWS.
 
-### E14
-
-- [Rebaseline anterior](docs/decisions/ADR-002-E14-REBASELINE-NEW-PREMISES.md)
+### [Rebaseline anterior](docs/decisions/ADR-002-REBASELINE-NEW-PREMISES.md)
 - [HubSpot como fonte autoritativa](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
 - [Decisões](docs/decisions/DECISION_LOG.md)
 - [Plano](docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md)
-- [Rastreabilidade](docs/implementation/E14_PREMISE_TRACEABILITY_MATRIX.md)
-- [Bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
+- [Rastreabilidade](docs/implementation/PREMISE_TRACEABILITY_MATRIX.md)
+- [Bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md)
 - [Delta de schema](docs/implementation/SCHEMA_DELTA_E14.md)
-- [Runtime](docs/implementation/RUNTIME_GAP_E14.md)
-- [Contratos públicos de RPC](docs/implementation/E14_PUBLIC_RPC_CONTRACTS.md)
-- [Backend E2E](docs/implementation/E14_BACKEND_E2E.md)
-- [Motor configurável](docs/implementation/E14_CONFIGURABLE_PRODUCT_ENGINE.md)
-- [Contenção de helpers opacos](docs/implementation/E14_OPAQUE_HELPER_CONTAINMENT.md)
+- [Runtime](docs/implementation/RUNTIME_GAP.md)
+- [Contratos públicos de RPC](docs/implementation/PUBLIC_RPC_CONTRACTS.md)
+- [Backend E2E](docs/implementation/BACKEND_E2E.md)
+- [Motor configurável](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
+- [Contenção de helpers opacos](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
 
 ### Integrações e ambientes
 
@@ -206,14 +204,14 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
 - [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Arquitetura AWS](docs/architecture/AWS_PRODUCTION_REFERENCE_ARCHITECTURE.md)
-- [Mapeamento storage → AWS](docs/architecture/E12_STORAGE_AWS_MAPPING.md)
-- [Mapeamento filas → SQS](docs/architecture/E12_QUEUE_AWS_SQS_MAPPING.md)
-- [Mapeamento operacional → AWS](docs/architecture/E12_AWS_OPERATIONS_MAPPING.md)
+- [Mapeamento storage → AWS](docs/architecture/STORAGE_AWS_MAPPING.md)
+- [Mapeamento filas → SQS](docs/architecture/QUEUE_AWS_SQS_MAPPING.md)
+- [Mapeamento operacional → AWS](docs/architecture/AWS_OPERATIONS_MAPPING.md)
 - [ADR Supabase teste / AWS produção](docs/decisions/ADR-001-SUPABASE-TEST-AWS-PRODUCTION.md)
 
 ### Segurança e operação
 
-- [Arquitetura de segurança e privacidade](docs/security/E13_SECURITY_PRIVACY_ARCHITECTURE.md)
+- [Arquitetura de segurança e privacidade](docs/security/SECURITY_PRIVACY_ARCHITECTURE.md)
 - [Classificação](docs/security/DATA_CLASSIFICATION_AND_HANDLING.md)
 - [Registro de tratamentos](docs/security/RECORD_OF_PROCESSING_ACTIVITIES.md)
 - [Bases legais e consentimento](docs/security/LEGAL_BASIS_AND_CONSENT_GOVERNANCE.md)
@@ -230,4 +228,4 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 
 ## 7. Sequência obrigatória
 
-A sequência vigente está no [plano E14](docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md) e no [registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md). Nenhuma migration dependente do modelo físico HubSpot pode ser criada antes do inventário e da aprovação desse modelo.
+A sequência vigente está no [plano E14](docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md) e no [registro de bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md). Nenhuma migration dependente do modelo físico HubSpot pode ser criada antes do inventário e da aprovação desse modelo.

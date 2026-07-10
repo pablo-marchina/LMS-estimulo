@@ -1,4 +1,4 @@
-# E14 — Delta final de schema e autoridade de dados
+# Delta final de schema e autoridade de dados
 
 **Versão:** 0.4  
 **Data:** 2026-07-10  

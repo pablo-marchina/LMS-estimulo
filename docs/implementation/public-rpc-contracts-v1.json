@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "artifact": "public_rpc_contracts",
+  "observed_at": "2026-07-10",
+  "database_contract": {
+    "rpc_count": 18,
+    "contract_sha256": "b751369fb873eb50a423ed7d74614a6c75e4480058e79e6a63006ec10920336f",
+    "required_grantees": ["app_worker", "postgres", "service_role"],
+    "forbidden_grantees": ["PUBLIC", "anon", "authenticated"],
+    "required_security_definer": true,
+    "required_search_path": "search_path=pg_catalog",
+    "signatures": [
+      "e14_acknowledge_section(uuid,uuid,text,boolean,text)",
+      "e14_complete_diagnostic(uuid,uuid,bigint,text)",
+      "e14_create_enrollment(uuid,uuid,uuid,uuid,text,text)",
+      "e14_get_operator_result(uuid,uuid,uuid)",
+      "e14_get_operator_workspace(uuid,uuid)",
+      "e14_get_participant_experience(uuid,uuid)",
+      "e14_get_participant_state(uuid,uuid)",
+      "e14_list_operator_instances(uuid,uuid)",
+      "e14_list_participant_journeys(uuid)",
+      "e14_publish_vertical(uuid,uuid,uuid,text,text)",
+      "e14_record_diagnostic_response(uuid,uuid,uuid,text,integer,integer,text)",
+      "e14_record_quick_check_answer(uuid,uuid,uuid,text,text)",
+      "e14_resolve_identity(text,text,text,text,boolean,text)",
+      "e14_start_activity(uuid,uuid,bigint,text)",
+      "e14_start_diagnostic(uuid,uuid,uuid,text)",
+      "e14_start_journey(uuid,uuid,bigint,text)",
+      "e14_start_quick_check(uuid,uuid,text)",
+      "e14_submit_quick_check(uuid,uuid,bigint,text)"
+    ]
+  },
+  "application_contract": {
+    "source_file": "apps/web/lib/journey-runtime/rpc.ts",
+    "method_to_rpc": {
+      "resolveIdentity": "e14_resolve_identity",
+      "listParticipantJourneys": "e14_list_participant_journeys",
+      "getParticipantExperience": "e14_get_participant_experience",
+      "listOperatorInstances": "e14_list_operator_instances",
+      "getOperatorWorkspace": "e14_get_operator_workspace",
+      "publishVertical": "e14_publish_vertical",
+      "createEnrollment": "e14_create_enrollment",
+      "startJourney": "e14_start_journey",
+      "startDiagnostic": "e14_start_diagnostic",
+      "recordDiagnosticResponse": "e14_record_diagnostic_response",
+      "completeDiagnostic": "e14_complete_diagnostic",
+      "startActivity": "e14_start_activity",
+      "acknowledgeSection": "e14_acknowledge_section",
+      "startQuickCheck": "e14_start_quick_check",
+      "recordQuickCheckAnswer": "e14_record_quick_check_answer",
+      "submitQuickCheck": "e14_submit_quick_check",
+      "getParticipantState": "e14_get_participant_state",
+      "getOperatorResult": "e14_get_operator_result"
+    },
+    "command_methods": [
+      "publishVertical",
+      "createEnrollment",
+      "startJourney",
+      "startDiagnostic",
+      "recordDiagnosticResponse",
+      "completeDiagnostic",
+      "startActivity",
+      "acknowledgeSection",
+      "startQuickCheck",
+      "recordQuickCheckAnswer",
+      "submitQuickCheck"
+    ],
+    "query_methods": [
+      "listParticipantJourneys",
+      "getParticipantExperience",
+      "listOperatorInstances",
+      "getOperatorWorkspace",
+      "getParticipantState",
+      "getOperatorResult"
+    ],
+    "identity_methods": ["resolveIdentity"],
+    "opaque_database_argument_rpcs": [
+      "e14_acknowledge_section",
+      "e14_complete_diagnostic",
+      "e14_get_operator_result",
+      "e14_get_participant_state",
+      "e14_record_quick_check_answer",
+      "e14_start_activity",
+      "e14_start_quick_check",
+      "e14_submit_quick_check"
+    ]
+  },
+  "observed_error_codes": [
+    "PUBLISHED_VERSION_IMMUTABLE",
+    "AGGREGATE_VERSION_CONFLICT",
+    "IDEMPOTENCY_KEY_REUSED",
+    "FORBIDDEN"
+  ],
+  "status": {
+    "database_surface_frozen": true,
+    "application_mapping_frozen": true,
+    "behavioral_replay_required": true,
+    "backend_e2e_replayed": false
+  }
+}

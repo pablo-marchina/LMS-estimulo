@@ -89,8 +89,8 @@ async function validateRequiredFiles() {
   }
   if (/#[0-9]+/.test(index)) errors.push('PROJECT_INDEX.md must not depend on transient issue or PR numbers');
 
-  const blockers = await readFile(path.join(root, 'docs/implementation/E14_BLOCKER_REGISTER.md'), 'utf8');
-  if (/#[0-9]+/.test(blockers)) errors.push('E14_BLOCKER_REGISTER.md must not depend on transient issue or PR numbers');
+  const blockers = await readFile(path.join(root, 'docs/implementation/DELIVERY_BLOCKERS.md'), 'utf8');
+  if (/#[0-9]+/.test(blockers)) errors.push('DELIVERY_BLOCKERS.md must not depend on transient issue or PR numbers');
 }
 
 async function validateEdgeFunctionSources() {

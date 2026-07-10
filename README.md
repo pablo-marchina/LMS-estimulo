@@ -4,7 +4,7 @@ Plataforma interna multi-jornada para desenvolvimento de empreendedores da Estí
 
 ## Estado atual
 
-O projeto está no workstream **E14**. A aplicação Next.js e a fundação PostgreSQL existem, mas o produto ainda não está autorizado para produção.
+O projeto está no desenvolvimento ativo. A aplicação Next.js e a fundação PostgreSQL existem, mas o produto ainda não está autorizado para produção.
 
 ```text
 Supabase = desenvolvimento e teste
@@ -54,10 +54,10 @@ Pré-requisitos:
 cp apps/web/.env.example apps/web/.env.local
 npm ci --ignore-scripts
 npm run typecheck:web
-npm run test:e14-step5
-npm run test:e14-hubspot-contracts
-npm run test:e14-configurable-product
-npm run test:e14-opaque-helper-containment
+npm run test:application-foundation
+npm run test:hubspot-contracts
+npm run test:configurable-product
+npm run test:legacy-rpc-containment
 npm run build:web
 ```
 
@@ -68,31 +68,31 @@ O `package-lock.json` v3 é canônico. A configuração `.npmrc` omite URLs espe
 ```bash
 npm run validate:repository
 npm run validate:dependency-lock
-npm run validate:e14-runtime-history
-npm run validate:e14-public-contracts
-npm run validate:e14-opaque-helper-containment
-npm run test:e14-backend-e2e
-npm run test:e14-database-gates
-npm run test:e14-hubspot-contracts
-npm run test:e14-configurable-product
-npm run test:e14-opaque-helper-containment
-npm run validate:e14-step5
-npm run test:e14-step5
-npm run test:e14-runtime-recovery
-npm run test:e14-public-contracts
+npm run validate:migration-history
+npm run validate:public-rpc-contracts
+npm run validate:legacy-rpc-containment
+npm run test:backend-e2e
+npm run test:database-gates
+npm run test:hubspot-contracts
+npm run test:configurable-product
+npm run test:legacy-rpc-containment
+npm run validate:application-foundation
+npm run test:application-foundation
+npm run test:migration-history
+npm run test:public-rpc-contracts
 npm run typecheck:web
 npm run build:web
 ```
 
 `npm run validate:dependency-lock` confirma lockfile v3, sincronização com os manifests e ausência de URLs HTTP de registry ou mirror.
 
-`npm run test:e14-database-gates` exige PostgreSQL 17.6 compatível com o Supabase. Ele executa as 244 migrations, prova equivalência estrutural, valida os 18 contratos públicos e reproduz o backend E2E.
+`npm run test:database-gates` exige PostgreSQL 17.6 compatível com o Supabase. Ele executa as 244 migrations, prova equivalência estrutural, valida os 18 contratos públicos e reproduz o backend E2E.
 
-`npm run test:e14-hubspot-contracts` não exige acesso ao HubSpot. Ele compila os contratos TypeScript e prova origem, readback, idempotência, retry, consistência eventual, concorrência e rejeição de snapshots inválidos.
+`npm run test:hubspot-contracts` não exige acesso ao HubSpot. Ele compila os contratos TypeScript e prova origem, readback, idempotência, retry, consistência eventual, concorrência e rejeição de snapshots inválidos.
 
-`npm run test:e14-configurable-product` também não exige acesso ao HubSpot. Ele prova publicação, respostas, número variável de arquétipos, abstenção, retirada operacional, recálculo, override, histórico append-only e persistência das ativações.
+`npm run test:configurable-product` também não exige acesso ao HubSpot. Ele prova publicação, respostas, número variável de arquétipos, abstenção, retirada operacional, recálculo, override, histórico append-only e persistência das ativações.
 
-`npm run validate:e14-opaque-helper-containment` congela o inventário das funções com argumentos de uma letra, processa redefinições e remoções e garante que os oito RPCs públicos legados só sejam chamados pela fronteira semântica da aplicação.
+`npm run validate:legacy-rpc-containment` congela o inventário das funções com argumentos de uma letra, processa redefinições e remoções e garante que os oito RPCs públicos legados só sejam chamados pela fronteira semântica da aplicação.
 
 ## Documentação
 
@@ -100,14 +100,14 @@ npm run build:web
 - [Premissas e escopo](docs/product/PREMISES_AND_SCOPE.md)
 - [ADR HubSpot autoritativo](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
 - [Registro de decisões](docs/decisions/DECISION_LOG.md)
-- [Registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
+- [Registro de bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md)
 - [Delta de schema E14](docs/implementation/SCHEMA_DELTA_E14.md)
-- [Motor configurável E14](docs/implementation/E14_CONFIGURABLE_PRODUCT_ENGINE.md)
-- [Contenção dos helpers opacos](docs/implementation/E14_OPAQUE_HELPER_CONTAINMENT.md)
+- [Motor configurável E14](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
+- [Contenção dos helpers opacos](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Inventário bloqueante do HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
-- [Backend E2E E14](docs/implementation/E14_BACKEND_E2E.md)
+- [Backend E2E E14](docs/implementation/BACKEND_E2E.md)
 - [Estratégia Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Guia de contribuição](CONTRIBUTING.md)
 

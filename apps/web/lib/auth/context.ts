@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { createSessionClient } from "@/lib/supabase/server";
-import { e14, E14RpcError } from "@/lib/e14/rpc";
+import { e14, JourneyRpcError } from "@/lib/e14/rpc";
 import type { IdentityContext } from "@/lib/e14/contracts";
 
 export type AuthContext =
@@ -35,7 +35,7 @@ export async function getAuthContext(): Promise<AuthContext> {
     });
     return { status: "authenticated", identity, email };
   } catch (error) {
-    const reason = error instanceof E14RpcError ? error.message : "IDENTITY_RESOLUTION_FAILED";
+    const reason = error instanceof JourneyRpcError ? error.message : "IDENTITY_RESOLUTION_FAILED";
     return { status: "identity_error", reason };
   }
 }
