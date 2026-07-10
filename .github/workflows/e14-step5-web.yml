@@ -1,23 +1,24 @@
-name: E14 Step 5 web
+name: Web CI
 
 on:
   pull_request:
     paths:
+      - ".github/workflows/e14-step5-web.yml"
       - "apps/web/**"
       - "package.json"
       - "scripts/e14/validate-step5-app-foundation*"
       - "supabase/migrations/*_m14*_step5_*.sql"
-  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: e14-step5-web-${{ github.ref }}
+  group: web-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   validate:
+    name: Validate web application
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

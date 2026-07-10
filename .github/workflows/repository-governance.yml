@@ -2,7 +2,7 @@ name: Repository governance
 
 on:
   pull_request:
-    types: [opened, edited, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -92,17 +92,14 @@ jobs:
           node-version: "22"
 
       - name: Validate repository hygiene
+        run: node scripts/repository/validate-hygiene.mjs
+
+      - name: Test runtime recovery tooling
+        run: npm run test:e14-runtime-recovery
+
+      - name: Confirm recovery artifacts remain ignored
         shell: bash
         run: |
-          set -o pipefail
-          mkdir -p .artifacts
-          node scripts/repository/validate-hygiene.mjs | tee .artifacts/repository-hygiene.json
-
-      - name: Publish repository hygiene report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: repository-hygiene-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .artifacts/repository-hygiene.json
-          if-no-files-found: error
-          retention-days: 3
+          set -euo pipefail
+          grep -Fx '**/*.local.jsonl' .gitignore
+          grep -Fx '.artifacts/' .gitignore
