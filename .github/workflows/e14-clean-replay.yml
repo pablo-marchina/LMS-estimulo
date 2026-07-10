@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref }}
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -43,16 +43,37 @@ jobs:
           test "$(wc -l < .artifacts/pre-m13-history.local.jsonl)" -eq 76
 
       - name: Materialize exact remote history
+        id: materialize
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
           node scripts/e14/runtime-source-recovery/materialize-migration-history.mjs \
             --input .artifacts/pre-m13-history.local.jsonl \
             --migrations-dir supabase/migrations \
             --canonical-file supabase/canonical-migrations/20260708220357_m00_m12_runtime_canonical.sql \
             --manifest supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json \
             --from-version 20260708220357 \
-            --to-version 20260709030140
+            --to-version 20260709030140 \
+            > .artifacts/materialize.log 2>&1
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload materialization diagnostic
+        if: steps.materialize.outputs.exit_code != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-m13-materialization-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/materialize.log
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Stop on materialization failure
+        if: steps.materialize.outputs.exit_code != '0'
+        shell: bash
+        run: |
+          cat .artifacts/materialize.log
+          exit 1
 
       - name: Validate authorized inventory
         shell: bash
