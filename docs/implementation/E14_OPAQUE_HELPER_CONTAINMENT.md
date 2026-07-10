@@ -1,12 +1,12 @@
 # E14 — contenção de helpers e aliases opacos
 
-**Versão:** 0.3  
+**Versão:** 0.4  
 **Data:** 2026-07-10  
-**Status:** Contenção implementada; primeiro delta técnico preparado e comprovado em banco efêmero
+**Status:** Contenção implementada; primeira substituição física aplicada e reconciliada
 
 ## Objetivo
 
-Conter e reduzir o legado E14 com nomes ou argumentos opacos sem alterar o histórico aplicado nem quebrar os 18 RPCs públicos.
+Conter e reduzir o legado E14 com nomes ou argumentos opacos sem quebrar os 18 RPCs públicos.
 
 ```text
 inventariar estado atual
@@ -16,18 +16,18 @@ inventariar estado atual
 → remover somente quando não houver consumidores
 ```
 
-## Baseline recuperado
+## Baseline atual
 
-O [baseline canônico](e14-opaque-helper-baseline-v1.json) é gerado deterministicamente a partir das 243 migrations executáveis já aplicadas no Supabase de teste.
+O [baseline canônico](e14-opaque-helper-baseline-v1.json) é gerado deterministicamente a partir das 244 migrations executáveis aplicadas no Supabase de desenvolvimento/teste.
 
 ```text
-legacy_function_count = 115
-legacy_private_helper_count = 107
+legacy_function_count = 114
+legacy_private_helper_count = 106
 legacy_public_rpc_count = 8
-inventory_sha256 = 9b4b81e184d40bd6385bf0c24dae401469150076c48d5da369cdec7aa0d3046b
+inventory_sha256 = 4970dd5691a824aafdfc70688addcdf63397df6903440e281e7233a1075d6aaf
 ```
 
-O baseline recuperado não é reescrito para fingir que um delta pendente já foi aplicado remotamente.
+O parser processa definições, redefinições e `DROP FUNCTION`, garantindo que funções fisicamente removidas não permaneçam artificialmente no inventário.
 
 ## Regra de detecção
 
@@ -69,7 +69,7 @@ idempotencyKey
 
 Nenhum outro arquivo pode construir objetos `{ a, b, c, ... }` para esses RPCs ou referenciar diretamente os oito nomes congelados.
 
-## Primeiro delta técnico
+## Primeira substituição física
 
 A primeira função escolhida foi:
 
@@ -87,9 +87,9 @@ public_exposure = false
 business_result_returned = false
 ```
 
-O único consumidor é `app_private.e14_i1_state(jsonb,uuid)`. A função apenas define `ended_at` e `last_seen_at` para uma sessão de atividade ainda aberta.
+O único consumidor era `app_private.e14_i1_state(jsonb,uuid)`. A função apenas definia `ended_at` e `last_seen_at` para uma sessão de atividade ainda aberta.
 
-O delta pendente:
+A migration M15a:
 
 1. cria `app_private.e14_close_completed_activity_session(p_activity_session_id uuid)`;
 2. mantém `SECURITY DEFINER` e `search_path=pg_catalog`;
@@ -97,17 +97,23 @@ O delta pendente:
 4. redireciona o único consumidor;
 5. remove `app_private.e14_close_activity_session(uuid)`;
 6. preserva os 18 RPCs públicos;
-7. executa o backend E2E completo após a substituição.
+7. preserva o backend E2E completo.
 
-Arquivo:
+Histórico executável:
 
 ```text
-supabase/pending-migrations/20260710160000_m15a_e14_semantic_activity_session_close.sql
+supabase/migrations/20260710165530_m15a_e14_semantic_activity_session_close.sql
 ```
 
-Ele é intencionalmente um delta pendente. O PR não aplica SQL no Supabase remoto.
+Registro remoto:
 
-### Resultado esperado e comprovado no PostgreSQL efêmero
+```text
+version = 20260710165530
+sql_bytes = 1536
+sql_sha256 = 8fbc1cc944fefa9e9bd5cfed4deb572c07d730162b5267b3074ce511fd867d96
+```
+
+### Resultado remoto e reproduzido
 
 ```text
 legacy_function_count = 114
@@ -115,8 +121,9 @@ legacy_private_helper_count = 106
 legacy_public_rpc_count = 8
 old_helper_exists = false
 semantic_replacement_exists = true
-public_rpc_fingerprint_changed = false
-backend_e2e_passed_after_delta = true
+public_rpc_count = 18
+public_rpc_contract_sha256 = b751369fb873eb50a423ed7d74614a6c75e4480058e79e6a63006ec10920336f
+backend_e2e_passed = true
 ```
 
 ## Estratégia de substituição
@@ -127,7 +134,8 @@ backend_e2e_passed_after_delta = true
 4. remover o helper antigo no mesmo delta;
 5. provar contratos públicos, comportamento, eventos e outbox;
 6. aplicar remotamente somente após autorização explícita;
-7. atualizar o baseline recuperado apenas depois que o remoto também contiver a mudança.
+7. materializar a versão remota exata no Git;
+8. atualizar o baseline e repetir a seleção para a próxima cadeia.
 
 A contenção impede crescimento da dívida, mas o E14-B002 permanece aberto até a substituição física incremental do restante do legado.
 
@@ -135,16 +143,16 @@ A contenção impede crescimento da dívida, mas o E14-B002 permanece aberto at�
 
 ```text
 legacy_database_surface_inventoried = true
-recovered_legacy_function_count = 115
-pending_delta_legacy_function_count = 114
-pending_delta_private_helper_count = 106
+recovered_migration_count = 244
+legacy_function_count = 114
+legacy_private_helper_count = 106
 legacy_public_rpc_count = 8
 new_opaque_database_helpers_allowed = false
 legacy_public_rpc_aliases_isolated = true
 application_direct_alias_construction_allowed = false
 public_rpc_count = 18
 public_rpc_fingerprint_changed = false
-pending_delta_tested_in_ephemeral_postgres = true
-pending_delta_applied_to_remote = false
+first_semantic_replacement_applied_to_remote = true
+first_semantic_replacement_materialized_in_git = true
 physical_legacy_replacement_complete = false
 ```

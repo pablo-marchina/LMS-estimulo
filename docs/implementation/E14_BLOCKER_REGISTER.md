@@ -1,6 +1,6 @@
 # E14 — registro de bloqueadores
 
-**Versão:** 1.2  
+**Versão:** 1.3  
 **Data:** 2026-07-10  
 **Status:** Ativo
 
@@ -15,7 +15,7 @@
 
 | ID | Severidade | Área | Descrição | Bloqueia | Critério de encerramento |
 |---|---|---|---|---|---|
-| E14-B002 | P0 | Maintainability | baseline remoto contém 107 helpers privados e 8 RPCs públicos com argumentos opacos; o primeiro delta reduz o runtime efêmero para 106 helpers privados | criação de novos aliases opacos e expansão do legado | substituição e remoção incremental sem quebra dos 18 RPCs, resultados, eventos ou outbox |
+| E14-B002 | P0 | Maintainability | 106 helpers privados e 8 RPCs públicos ainda possuem argumentos opacos; a primeira substituição física já foi aplicada e reconciliada | criação de novos aliases opacos e expansão do legado | substituição e remoção incremental sem quebra dos 18 RPCs, resultados, eventos ou outbox |
 | E14-B004 | P1 | Browser E2E | fluxo pelo navegador e acessibilidade não foram comprovados | conclusão da vertical | E2E com contas técnicas e auditoria de acessibilidade |
 | E14-B005 | P1 | Product inputs | conteúdo externo e configuração inicial dos arquétipos ainda não foram aprovados | implementação final | entradas oficiais versionadas e aprovadas |
 | E14-B006 | P1 | Test adapters | storage/scan estão ativos no Supabase de teste sem consumidor atual | gate operacional | integrar com E2E ou remover integralmente função, scheduler e dependências |
@@ -27,7 +27,7 @@
 
 ```text
 remote_migration_source_materialized = true
-recovered_migration_count = 243
+recovered_migration_count = 244
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
@@ -56,23 +56,23 @@ O lockfile é validado pela governança e por um workflow matricial Ubuntu/Windo
 
 ```text
 legacy_database_surface_inventoried = true
-recovered_legacy_function_count = 115
-recovered_legacy_private_helper_count = 107
+legacy_function_count = 114
+legacy_private_helper_count = 106
 legacy_public_rpc_count = 8
 opaque_helper_inventory_frozen = true
 legacy_public_rpc_aliases_isolated = true
 application_direct_alias_construction_allowed = false
 new_opaque_database_helpers_allowed = false
 first_semantic_replacement_selected = true
-pending_delta_legacy_function_count = 114
-pending_delta_legacy_private_helper_count = 106
-pending_delta_public_rpc_count = 8
-pending_delta_backend_e2e_passed = true
-pending_delta_applied_to_remote = false
+first_semantic_replacement_applied_to_remote = true
+first_semantic_replacement_materialized_in_git = true
+public_rpc_count = 18
+public_rpc_fingerprint_changed = false
+backend_e2e_passed_after_replacement = true
 physical_legacy_replacement_complete = false
 ```
 
-O primeiro delta substitui `e14_close_activity_session(uuid)` por `e14_close_completed_activity_session(p_activity_session_id uuid)`, redireciona seu único consumidor e remove o helper antigo. A prova acontece após o replay remoto e antes do backend E2E no PostgreSQL efêmero. O SQL não é aplicado remotamente por este PR.
+A M15a substitui `e14_close_activity_session(uuid)` por `e14_close_completed_activity_session(p_activity_session_id uuid)`, redireciona seu único consumidor e remove o helper antigo. O Supabase de desenvolvimento/teste, o histórico Git e o replay limpo agora representam o mesmo estado.
 
 ### Subgate de integração independente de E14-B007
 
@@ -116,10 +116,11 @@ E14-B007
 E14-B002
   → inventário e bloqueio de expansão = concluídos
   → fronteira semântica dos oito RPCs públicos = concluída
-  → primeiro helper de baixo risco substituído em delta pendente
-  → obter autorização explícita antes de aplicar o delta no Supabase de teste
-  → atualizar o baseline recuperado após aplicação remota
-  → repetir seleção quantitativa para as cadeias restantes
+  → primeira substituição física aplicada e reconciliada
+  → selecionar quantitativamente a próxima cadeia privada
+  → provar a substituição no PostgreSQL efêmero
+  → obter autorização explícita antes de nova escrita remota
+  → repetir até remover o legado restante
 
 E14-B004 + E14-B005
   → fechar a vertical funcional e validar a configuração oficial
@@ -139,8 +140,8 @@ public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 reproducible_install_passed = true
 opaque_helper_containment_passed = true
-first_semantic_helper_delta_tested = true
-first_semantic_helper_delta_applied_to_remote = false
+first_semantic_helper_applied_to_remote = true
+first_semantic_helper_materialized_in_git = true
 opaque_helper_physical_replacement_complete = false
 hubspot_authoritative_source_decided = true
 hubspot_gateway_contract_defined = true
@@ -156,4 +157,4 @@ supabase_production_authorized = false
 aws_staging_gate_required = true
 ```
 
-Enquanto não houver acesso ao HubSpot, o desenvolvimento pode avançar sobre interface administrativa local, preview sintético, browser E2E, acessibilidade e substituições técnicas independentes do modelo físico. Nenhum SQL pendente é aplicado remotamente sem autorização explícita.
+Enquanto não houver acesso ao HubSpot, o desenvolvimento pode avançar sobre interface administrativa local, preview sintético, browser E2E, acessibilidade e substituições técnicas independentes do modelo físico. Novas escritas remotas continuam exigindo autorização explícita.

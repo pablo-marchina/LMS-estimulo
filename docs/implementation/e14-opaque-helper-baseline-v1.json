@@ -3,10 +3,10 @@
   "artifact": "e14_opaque_helper_baseline",
   "detection_rule": "final E14 function definitions with one-letter argument names",
   "migration_source": "supabase/migrations",
-  "legacy_function_count": 115,
-  "legacy_private_helper_count": 107,
+  "legacy_function_count": 114,
+  "legacy_private_helper_count": 106,
   "legacy_public_rpc_count": 8,
-  "inventory_sha256": "9b4b81e184d40bd6385bf0c24dae401469150076c48d5da369cdec7aa0d3046b",
+  "inventory_sha256": "4970dd5691a824aafdfc70688addcdf63397df6903440e281e7233a1075d6aaf",
   "functions": [
     {
       "key": "app_private.e14_af(uuid,uuid,jsonb,uuid,uuid,text,text)",
@@ -304,21 +304,6 @@
       "definition_path": "supabase/migrations/20260709055755_m13j14e_e14_ci.sql",
       "consumers": [
         "app_private.e14_exec_i(uuid,uuid,bigint,text)"
-      ]
-    },
-    {
-      "key": "app_private.e14_close_activity_session(uuid)",
-      "schema": "app_private",
-      "name": "e14_close_activity_session",
-      "argument_names": [
-        "a"
-      ],
-      "argument_types": [
-        "uuid"
-      ],
-      "definition_path": "supabase/migrations/20260709055349_m13j8a_e14_close_activity_session.sql",
-      "consumers": [
-        "app_private.e14_i1_state(jsonb,uuid)"
       ]
     },
     {
@@ -1278,7 +1263,7 @@
         "jsonb",
         "uuid"
       ],
-      "definition_path": "supabase/migrations/20260709055617_m13j12c_e14_i1_state.sql",
+      "definition_path": "supabase/migrations/20260710165530_m15a_e14_semantic_activity_session_close.sql",
       "consumers": [
         "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
       ]

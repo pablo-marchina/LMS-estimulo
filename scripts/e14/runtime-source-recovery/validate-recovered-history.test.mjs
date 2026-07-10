@@ -8,6 +8,7 @@ import test from 'node:test';
 import {
   E14_M13_EXPECTED,
   E14_M14_EXPECTED,
+  E14_M15_EXPECTED,
   validateRecoveredHistory,
 } from './validate-recovered-history.mjs';
 
@@ -77,11 +78,13 @@ async function createFixture(root) {
   return { options: { manifestFile, migrationsDirectory, canonicalFile }, expected, manifest };
 }
 
-test('publishes trusted inventories for both recovered ranges', () => {
+test('publishes trusted inventories for recovered ranges through M15', () => {
   assert.equal(E14_M13_EXPECTED.migrationCount, 165);
   assert.equal(E14_M13_EXPECTED.totalRemoteSqlBytes, 123636);
   assert.equal(E14_M14_EXPECTED.migrationCount, 2);
   assert.equal(E14_M14_EXPECTED.totalRemoteSqlBytes, 12045);
+  assert.equal(E14_M15_EXPECTED.migrationCount, 1);
+  assert.equal(E14_M15_EXPECTED.totalRemoteSqlBytes, 1536);
 });
 
 test('accepts a complete deterministic recovered history', async () => {

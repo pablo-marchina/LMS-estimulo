@@ -37,6 +37,18 @@ test("keeps only the final definition for the same signature", () => {
   assert.equal(inventory.legacy_function_count, 0);
 });
 
+test("removes a dropped opaque function from the final inventory", () => {
+  const sql = `
+    create or replace function app_private.e14_old_helper(a uuid)
+    returns void language sql as $$ select null $$;
+
+    drop function app_private.e14_old_helper(uuid);
+  `;
+
+  const inventory = buildOpaqueInventory(parseE14Functions(sql, "synthetic.sql"));
+  assert.equal(inventory.legacy_function_count, 0);
+});
+
 test("does not classify semantic arguments as opaque", () => {
   const sql = `
     create or replace function app_private.e14_request_hash(p_payload jsonb)

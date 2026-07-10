@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "artifact": "e14_runtime_migration_recovery_manifest",
+  "source": "supabase_migrations.schema_migrations",
+  "first_version": "20260710165530",
+  "last_version": "20260710165530",
+  "migration_count": 1,
+  "total_remote_sql_bytes": 1536,
+  "combined_remote_fingerprint_sha256": "0fedbe5d3ca7d9e70b19e797269546c4183fe73a26a966cadeba70fb6bb866f8",
+  "canonical_file": "20260710165530_m15_semantic_helper_canonical.sql",
+  "canonical_file_sha256": "5d31855d5ca0298b61ea81bc15de5c92d6bb8870f4bc3308c239be3a11a2a262",
+  "migrations": [
+    {
+      "version": "20260710165530",
+      "name": "m15a_e14_semantic_activity_session_close",
+      "file": "20260710165530_m15a_e14_semantic_activity_session_close.sql",
+      "statement_count": 1,
+      "remote_sql_bytes": 1536,
+      "remote_sql_sha256": "8fbc1cc944fefa9e9bd5cfed4deb572c07d730162b5267b3074ce511fd867d96",
+      "materialized_file_sha256": "5079583819b46a3c8363e2dd013e3eaf8863eb126cd0419e05d56eaddccb84ca"
+    }
+  ]
+}

@@ -1,5 +1,8 @@
--- Pending technical migration. Not applied to Supabase by this repository change.
--- Purpose: replace one low-centrality opaque helper without changing public RPCs.
+-- Recovered from supabase_migrations.schema_migrations.
+-- Remote version: 20260710165530
+-- Remote name: m15a_e14_semantic_activity_session_close
+-- Remote SQL SHA-256: 8fbc1cc944fefa9e9bd5cfed4deb572c07d730162b5267b3074ce511fd867d96
+-- Do not edit after reconciliation; corrections require a new migration.
 
 set lock_timeout = '5s';
 set statement_timeout = '5min';
