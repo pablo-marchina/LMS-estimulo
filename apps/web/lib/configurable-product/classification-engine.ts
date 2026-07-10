@@ -48,20 +48,24 @@ function conditionMatches(
   return answer <= condition.value;
 }
 
+function priorityById(configuration: ProductConfigurationPayload): Map<string, number> {
+  return new Map(
+    configuration.archetypeVersions.map((version) => [version.id, version.priority])
+  );
+}
+
 function stableScores(
   scoreMap: Map<string, number>,
   configuration: ProductConfigurationPayload
 ): ArchetypeScore[] {
-  const priorityById = new Map(
-    configuration.archetypeVersions.map((version) => [version.id, version.priority])
-  );
+  const priorities = priorityById(configuration);
 
   return [...scoreMap.entries()]
     .map(([archetypeVersionId, score]) => ({ archetypeVersionId, score }))
     .sort((left, right) =>
       right.score - left.score ||
-      (priorityById.get(left.archetypeVersionId) ?? Number.MAX_SAFE_INTEGER) -
-        (priorityById.get(right.archetypeVersionId) ?? Number.MAX_SAFE_INTEGER) ||
+      (priorities.get(left.archetypeVersionId) ?? Number.MAX_SAFE_INTEGER) -
+        (priorities.get(right.archetypeVersionId) ?? Number.MAX_SAFE_INTEGER) ||
       left.archetypeVersionId.localeCompare(right.archetypeVersionId)
     );
 }
@@ -112,7 +116,16 @@ export function classifySubmission(
     };
   }
 
-  const selected = contenders[0] ?? best;
+  const priorities = priorityById(configuration);
+  const selected = policy.tieBreakStrategy === "priority"
+    ? [...contenders].sort((left, right) =>
+        (priorities.get(left.archetypeVersionId) ?? Number.MAX_SAFE_INTEGER) -
+          (priorities.get(right.archetypeVersionId) ?? Number.MAX_SAFE_INTEGER) ||
+        right.score - left.score ||
+        left.archetypeVersionId.localeCompare(right.archetypeVersionId)
+      )[0] ?? best
+    : best;
+
   return {
     archetypeVersionId: selected.archetypeVersionId,
     confidence: null,
@@ -129,6 +142,7 @@ export type AssignmentCreationInput = {
   configuration: ProductConfigurationPayload;
   submission: FormSubmissionPayload;
   inputSnapshotHashes: string[];
+  decisionRequestSnapshotHash: string;
   createdAt: string;
   override: AssignmentOverride | null;
 };
@@ -208,6 +222,7 @@ export function createArchetypeAssignment(
     supersedesAssignmentId: input.supersedesAssignmentId,
     scores: decision.scores,
     inputSnapshotHashes: [...input.inputSnapshotHashes],
+    decisionRequestSnapshotHash: input.decisionRequestSnapshotHash,
     createdAt: input.createdAt,
     override: input.override
   };
