@@ -5,7 +5,11 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-import { validateRecoveredHistory } from './validate-recovered-history.mjs';
+import {
+  E14_M13_EXPECTED,
+  E14_M14_EXPECTED,
+  validateRecoveredHistory,
+} from './validate-recovered-history.mjs';
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -58,6 +62,7 @@ async function createFixture(root) {
   const manifest = {
     schema_version: '1.0',
     artifact: 'e14_runtime_migration_recovery_manifest',
+    source: 'supabase_migrations.schema_migrations',
     first_version: expected.firstVersion,
     last_version: expected.lastVersion,
     migration_count: expected.migrationCount,
@@ -71,6 +76,13 @@ async function createFixture(root) {
 
   return { options: { manifestFile, migrationsDirectory, canonicalFile }, expected, manifest };
 }
+
+test('publishes trusted inventories for both recovered ranges', () => {
+  assert.equal(E14_M13_EXPECTED.migrationCount, 165);
+  assert.equal(E14_M13_EXPECTED.totalRemoteSqlBytes, 123636);
+  assert.equal(E14_M14_EXPECTED.migrationCount, 2);
+  assert.equal(E14_M14_EXPECTED.totalRemoteSqlBytes, 12045);
+});
 
 test('accepts a complete deterministic recovered history', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'estimulo-history-valid-'));
