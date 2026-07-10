@@ -23,18 +23,19 @@ A decisão atual exige:
 - formulário, arquétipos, políticas e regras de uso editáveis e versionados no HubSpot;
 - quantidade e nomes de arquétipos sem hardcode.
 
-A porta `HubSpotDataGateway`, o adapter determinístico de teste e o gate `write → readback → use` já estão implementados e testados. O bloqueio prioritário permanece o inventário da conta HubSpot, o modelo físico e o adapter real.
+A porta `HubSpotDataGateway`, o adapter determinístico de teste e o gate `write → readback → use` estão implementados. O motor lógico configurável também suporta formulários versionados, quantidade variável de arquétipos, classificação declarativa com abstenção, recálculo, override append-only e ativações persistidas. O bloqueio prioritário permanece o inventário da conta HubSpot, o modelo físico e o adapter real.
 
 ## Estrutura
 
 ```text
-apps/web/                         aplicação Next.js
-apps/web/lib/hubspot/             contratos e porta HubSpot autoritativa
-supabase/migrations/              histórico executável de migrations
-supabase/canonical-migrations/    SQL canônico, manifests e baseline estrutural
-supabase/functions/               adapters ativos apenas no Supabase de teste
-docs/                             documentação canônica atual
-scripts/e14/                      validação, replay, contratos e E2E
+apps/web/                              aplicação Next.js
+apps/web/lib/hubspot/                  contratos e porta HubSpot autoritativa
+apps/web/lib/configurable-product/     formulário, classificação e ativações configuráveis
+supabase/migrations/                   histórico executável de migrations
+supabase/canonical-migrations/         SQL canônico, manifests e baseline estrutural
+supabase/functions/                    adapters ativos apenas no Supabase de teste
+docs/                                  documentação canônica atual
+scripts/e14/                           validação, replay, contratos e E2E
 ```
 
 Artefatos de execução, outputs de testes, relatórios locais e exports de banco não são versionados.
@@ -53,6 +54,7 @@ npm install --ignore-scripts
 npm run typecheck:web
 npm run test:e14-step5
 npm run test:e14-hubspot-contracts
+npm run test:e14-configurable-product
 npm run build:web
 ```
 
@@ -67,6 +69,7 @@ npm run validate:e14-public-contracts
 npm run test:e14-backend-e2e
 npm run test:e14-database-gates
 npm run test:e14-hubspot-contracts
+npm run test:e14-configurable-product
 npm run validate:e14-step5
 npm run test:e14-step5
 npm run test:e14-runtime-recovery
@@ -79,6 +82,8 @@ npm run build:web
 
 `npm run test:e14-hubspot-contracts` não exige acesso ao HubSpot. Ele compila os contratos TypeScript e prova origem, readback, idempotência, retry, consistência eventual, concorrência e rejeição de snapshots inválidos.
 
+`npm run test:e14-configurable-product` também não exige acesso ao HubSpot. Ele prova publicação, respostas, número variável de arquétipos, abstenção, retirada operacional, recálculo, override, histórico append-only e persistência das ativações.
+
 ## Documentação
 
 - [Índice atual do projeto](PROJECT_INDEX.md)
@@ -87,6 +92,7 @@ npm run build:web
 - [Registro de decisões](docs/decisions/DECISION_LOG.md)
 - [Registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
 - [Delta de schema E14](docs/implementation/SCHEMA_DELTA_E14.md)
+- [Motor configurável E14](docs/implementation/E14_CONFIGURABLE_PRODUCT_ENGINE.md)
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Inventário bloqueante do HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
