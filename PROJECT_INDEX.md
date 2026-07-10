@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 2.9  
+**Versão:** 3.0  
 **Data:** 2026-07-10  
-**Status:** E14 em execução; contrato HubSpot e adapter de teste comprovados; modelo físico bloqueado pelo inventário da conta
+**Status:** E14 em execução; runtime reproduzível e legado opaco contido; modelo físico HubSpot bloqueado pelo inventário da conta
 
 ## 1. Hierarquia de referência
 
@@ -59,6 +59,9 @@ O repositório contém:
 - contrato congelado dos 18 RPCs públicos;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - porta `HubSpotDataGateway`, adapter em memória e gate `write → readback → use` testados sem acesso à conta real;
+- motor lógico configurável de formulário, arquétipos, classificação e ativações;
+- `package-lock.json` v3 e instalações reproduzíveis em Ubuntu e Windows;
+- baseline de 107 helpers privados e 8 RPCs públicos opacos, com expansão bloqueada e aliases da aplicação isolados;
 - duas Edge Functions ativas apenas no Supabase de teste: `file-storage` e `file-scan-worker`.
 
 O runtime atual comprova a fundação técnica, mas ainda usa estruturas PostgreSQL que não satisfazem a autoridade HubSpot recém-definida. Essas estruturas serão réplica técnica, cache ou serão descontinuadas após a transição.
@@ -67,9 +70,9 @@ O runtime atual comprova a fundação técnica, mas ainda usa estruturas Postgre
 
 Fonte única: [E14_BLOCKER_REGISTER.md](docs/implementation/E14_BLOCKER_REGISTER.md).
 
-Os gates de banco e o contrato independente do provider foram concluídos. Permanecem dois P0:
+Permanecem dois P0:
 
-1. impedir expansão dos helpers opacos;
+1. substituir e remover incrementalmente as 115 funções com argumentos opacos já inventariadas, sem ampliar o legado;
 2. inventariar a conta HubSpot, aprovar o modelo físico e provar o adapter real.
 
 ```text
@@ -77,6 +80,9 @@ clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
+reproducible_install_passed = true
+opaque_helper_containment_passed = true
+opaque_helper_physical_replacement_complete = false
 hubspot_authoritative_source_decided = true
 hubspot_gateway_contract_defined = true
 hubspot_test_adapter_implemented = true
@@ -184,6 +190,8 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 - [Runtime](docs/implementation/RUNTIME_GAP_E14.md)
 - [Contratos públicos de RPC](docs/implementation/E14_PUBLIC_RPC_CONTRACTS.md)
 - [Backend E2E](docs/implementation/E14_BACKEND_E2E.md)
+- [Motor configurável](docs/implementation/E14_CONFIGURABLE_PRODUCT_ENGINE.md)
+- [Contenção de helpers opacos](docs/implementation/E14_OPAQUE_HELPER_CONTAINMENT.md)
 
 ### Integrações e ambientes
 
@@ -219,38 +227,4 @@ Esses componentes são adapters e provas do Supabase de teste, não arquitetura 
 
 ## 7. Sequência obrigatória
 
-1. recuperar e materializar M00–M14 no Git — concluído;
-2. validar hashes, replay e equivalência — concluído;
-3. congelar contratos públicos — concluído;
-4. reproduzir backend E2E — concluído;
-5. formalizar HubSpot como autoridade — concluído;
-6. definir a porta, o adapter de teste e o gate `write → readback → use` — concluído;
-7. inventariar sandbox, plano, objetos, propriedades, associações, scopes, webhooks e limites HubSpot;
-8. aprovar o modelo físico e implementar o adapter real;
-9. conter os helpers opacos e concluir o delta final;
-10. implementar formulário, arquétipos e regras editáveis HubSpot-sourced;
-11. integrar conteúdo externo;
-12. executar E2E completo no Supabase de teste;
-13. provisionar e validar AWS staging;
-14. somente então avaliar produção.
-
-## 8. Regra de conclusão
-
-```text
-code_matches_documentation = true
-migrations_are_replayable = true
-structural_schema_equivalence = true
-public_rpc_contracts_passed = true
-backend_e2e_replayed = true
-hubspot_gateway_contract_defined = true
-hubspot_test_adapter_implemented = true
-write_readback_use_gate_tested = true
-hubspot_inventory_complete = false
-hubspot_physical_model_approved = false
-hubspot_real_adapter_implemented = false
-all_collected_data_persisted_in_hubspot = false
-all_business_reads_have_hubspot_origin = false
-security_and_data_gates_pass = false
-```
-
-Outputs locais, relatórios gerados, provas antigas e componentes sem consumidor não permanecem na árvore ativa.
+A sequência vigente está no [plano E14](docs/implementation/E14_REBASELINE_EXECUTION_PLAN.md) e no [registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md). Nenhuma migration dependente do modelo físico HubSpot pode ser criada antes do inventário e da aprovação desse modelo.

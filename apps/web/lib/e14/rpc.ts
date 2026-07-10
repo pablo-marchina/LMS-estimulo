@@ -9,6 +9,7 @@ import type {
   ParticipantJourneys,
   RpcEnvelope
 } from "@/lib/e14/contracts";
+import { legacyE14RpcArguments } from "@/lib/e14/legacy-rpc-arguments";
 
 export class E14RpcError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -104,53 +105,81 @@ export const e14 = {
       p_idempotency_key: key
     }),
 
-  completeDiagnostic: (actor: string, sessionId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>("e14_complete_diagnostic", {
-    p_actor_user_account_id: actor,
-    p_session_id: sessionId,
-    p_expected_aggregate_version: version,
-    p_idempotency_key: key
-  }),
+  completeDiagnostic: (actor: string, sessionId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
+    "e14_complete_diagnostic",
+    legacyE14RpcArguments.completeDiagnostic({
+      actorUserAccountId: actor,
+      sessionId,
+      expectedAggregateVersion: version,
+      idempotencyKey: key
+    })
+  ),
 
-  startActivity: (actor: string, stepId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>("e14_start_activity", {
-    a: actor,
-    b: stepId,
-    c: version,
-    d: key
-  }),
+  startActivity: (actor: string, stepId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
+    "e14_start_activity",
+    legacyE14RpcArguments.startActivity({
+      actorUserAccountId: actor,
+      stepInstanceId: stepId,
+      expectedAggregateVersion: version,
+      idempotencyKey: key
+    })
+  ),
 
-  acknowledgeSection: (actor: string, sessionId: string, sectionCode: string, key: string) => invoke<RpcEnvelope<unknown>>("e14_acknowledge_section", {
-    a: actor,
-    b: sessionId,
-    c: sectionCode,
-    d: true,
-    e: key
-  }),
+  acknowledgeSection: (actor: string, sessionId: string, sectionCode: string, key: string) => invoke<RpcEnvelope<unknown>>(
+    "e14_acknowledge_section",
+    legacyE14RpcArguments.acknowledgeSection({
+      actorUserAccountId: actor,
+      activitySessionId: sessionId,
+      sectionCode,
+      acknowledged: true,
+      idempotencyKey: key
+    })
+  ),
 
-  startQuickCheck: (actor: string, stepId: string, key: string) => invoke<RpcEnvelope<unknown>>("e14_start_quick_check", {
-    a: actor,
-    b: stepId,
-    c: key
-  }),
+  startQuickCheck: (actor: string, stepId: string, key: string) => invoke<RpcEnvelope<unknown>>(
+    "e14_start_quick_check",
+    legacyE14RpcArguments.startQuickCheck({
+      actorUserAccountId: actor,
+      stepInstanceId: stepId,
+      idempotencyKey: key
+    })
+  ),
 
-  recordQuickCheckAnswer: (actor: string, attemptId: string, questionId: string, optionCode: string, key: string) => invoke<RpcEnvelope<unknown>>("e14_record_quick_check_answer", {
-    a: actor,
-    b: attemptId,
-    c: questionId,
-    d: optionCode,
-    e: key
-  }),
+  recordQuickCheckAnswer: (actor: string, attemptId: string, questionId: string, optionCode: string, key: string) => invoke<RpcEnvelope<unknown>>(
+    "e14_record_quick_check_answer",
+    legacyE14RpcArguments.recordQuickCheckAnswer({
+      actorUserAccountId: actor,
+      attemptId,
+      questionId,
+      optionCode,
+      idempotencyKey: key
+    })
+  ),
 
-  submitQuickCheck: (actor: string, attemptId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>("e14_submit_quick_check", {
-    a: actor,
-    b: attemptId,
-    c: version,
-    d: key
-  }),
+  submitQuickCheck: (actor: string, attemptId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
+    "e14_submit_quick_check",
+    legacyE14RpcArguments.submitQuickCheck({
+      actorUserAccountId: actor,
+      attemptId,
+      expectedAggregateVersion: version,
+      idempotencyKey: key
+    })
+  ),
 
-  getParticipantState: (actor: string, instanceId: string) => invoke<JourneyState>("e14_get_participant_state", { a: actor, b: instanceId }),
-  getOperatorResult: (actor: string, organizationId: string, instanceId: string) => invoke<Record<string, unknown>>("e14_get_operator_result", {
-    a: actor,
-    b: organizationId,
-    c: instanceId
-  })
+  getParticipantState: (actor: string, instanceId: string) => invoke<JourneyState>(
+    "e14_get_participant_state",
+    legacyE14RpcArguments.getParticipantState({
+      actorUserAccountId: actor,
+      journeyInstanceId: instanceId
+    })
+  ),
+
+  getOperatorResult: (actor: string, organizationId: string, instanceId: string) => invoke<Record<string, unknown>>(
+    "e14_get_operator_result",
+    legacyE14RpcArguments.getOperatorResult({
+      actorUserAccountId: actor,
+      organizationId,
+      journeyInstanceId: instanceId
+    })
+  )
 };
