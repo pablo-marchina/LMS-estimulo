@@ -4,6 +4,7 @@ import {
   assertVerifiedHubSpotSource,
   type BusinessDecisionEvidence,
   type HubSpotSnapshot,
+  type HubSpotSnapshotQuery,
   type HubSpotWriteCommand,
   type HubSpotWriteReceipt,
   type JsonObject
@@ -45,6 +46,13 @@ export type HubSpotDecisionResult<
   evidence: BusinessDecisionEvidence;
 };
 
+export type HubSpotVerificationContext = {
+  gateway: HubSpotDataGateway;
+  now: () => Date;
+  maxSnapshotAgeMs: number;
+  retry: HubSpotRetryPolicy;
+};
+
 const defaultSleep = (delayMs: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, delayMs));
 
@@ -63,7 +71,7 @@ function validateRetryPolicy(policy: HubSpotRetryPolicy): void {
   }
 }
 
-async function withRetry<T>(
+export async function withHubSpotRetry<T>(
   operation: () => Promise<T>,
   policy: HubSpotRetryPolicy
 ): Promise<T> {
@@ -86,7 +94,7 @@ async function withRetry<T>(
   throw lastError;
 }
 
-function verifyReceiptMatchesSnapshot(
+export function verifyHubSpotWriteReceipt(
   receipt: HubSpotWriteReceipt,
   snapshot: HubSpotSnapshot,
   now: Date,
@@ -111,6 +119,42 @@ function verifyReceiptMatchesSnapshot(
   });
 }
 
+export async function writeAndConfirmHubSpotRecord<T extends JsonObject>(
+  context: HubSpotVerificationContext,
+  command: HubSpotWriteCommand<T>
+): Promise<HubSpotSnapshot<T>> {
+  const receipt = await withHubSpotRetry(
+    () => context.gateway.write(command),
+    context.retry
+  );
+  const snapshot = await withHubSpotRetry(
+    () => context.gateway.readBack<T>(receipt),
+    context.retry
+  );
+  verifyHubSpotWriteReceipt(
+    receipt,
+    snapshot,
+    context.now(),
+    context.maxSnapshotAgeMs
+  );
+  return snapshot;
+}
+
+export async function readVerifiedHubSpotSnapshot<T extends JsonObject>(
+  context: HubSpotVerificationContext,
+  query: HubSpotSnapshotQuery
+): Promise<HubSpotSnapshot<T>> {
+  const snapshot = await withHubSpotRetry(
+    () => context.gateway.read<T>(query),
+    context.retry
+  );
+  assertVerifiedHubSpotSource(snapshot.source, {
+    now: context.now(),
+    maxAgeMs: context.maxSnapshotAgeMs
+  });
+  return snapshot;
+}
+
 export async function executeHubSpotSourcedDecision<
   TInput extends JsonObject,
   TDecision extends JsonObject,
@@ -118,31 +162,22 @@ export async function executeHubSpotSourcedDecision<
 >(
   execution: HubSpotDecisionExecution<TInput, TDecision, TResult>
 ): Promise<HubSpotDecisionResult<TInput, TDecision, TResult>> {
-  const now = execution.now ?? (() => new Date());
-  const maxSnapshotAgeMs = execution.maxSnapshotAgeMs ?? 60_000;
-  const retry = execution.retry ?? { maxAttempts: 3, delayMs: 0 };
+  const context: HubSpotVerificationContext = {
+    gateway: execution.gateway,
+    now: execution.now ?? (() => new Date()),
+    maxSnapshotAgeMs: execution.maxSnapshotAgeMs ?? 60_000,
+    retry: execution.retry ?? { maxAttempts: 3, delayMs: 0 }
+  };
 
-  const inputReceipt = await withRetry(
-    () => execution.gateway.write(execution.inputWrite),
-    retry
+  const confirmedInput = await writeAndConfirmHubSpotRecord(
+    context,
+    execution.inputWrite
   );
-  const confirmedInput = await withRetry(
-    () => execution.gateway.readBack<TInput>(inputReceipt),
-    retry
-  );
-  verifyReceiptMatchesSnapshot(inputReceipt, confirmedInput, now(), maxSnapshotAgeMs);
-
   const decision = await execution.decide(confirmedInput);
-  const resultWrite = execution.buildResultWrite(decision, confirmedInput);
-  const resultReceipt = await withRetry(
-    () => execution.gateway.write(resultWrite),
-    retry
+  const confirmedResult = await writeAndConfirmHubSpotRecord(
+    context,
+    execution.buildResultWrite(decision, confirmedInput)
   );
-  const confirmedResult = await withRetry(
-    () => execution.gateway.readBack<TResult>(resultReceipt),
-    retry
-  );
-  verifyReceiptMatchesSnapshot(resultReceipt, confirmedResult, now(), maxSnapshotAgeMs);
 
   return {
     input: confirmedInput,
@@ -151,7 +186,7 @@ export async function executeHubSpotSourcedDecision<
     evidence: {
       decisionId: execution.decisionId,
       policyVersionId: execution.policyVersionId,
-      executedAt: now().toISOString(),
+      executedAt: context.now().toISOString(),
       inputSources: [confirmedInput.source],
       resultSource: confirmedResult.source
     }
