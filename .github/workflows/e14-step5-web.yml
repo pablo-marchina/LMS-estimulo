@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "scripts/e14/validate-step5-app-foundation*"
       - "scripts/e14/hubspot-contracts/**"
+      - "scripts/e14/configurable-product/**"
       - "supabase/migrations/*_m14*_step5_*.sql"
 
 permissions:
@@ -44,6 +45,9 @@ jobs:
 
       - name: Test HubSpot authoritative data contracts
         run: npm run test:e14-hubspot-contracts
+
+      - name: Test configurable product behavior
+        run: npm run test:e14-configurable-product
 
       - name: Typecheck web application
         run: npm run typecheck:web
