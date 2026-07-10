@@ -1,6 +1,6 @@
 # E14 — registro de bloqueadores
 
-**Versão:** 1.3  
+**Versão:** 1.4  
 **Data:** 2026-07-10  
 **Status:** Ativo
 
@@ -9,17 +9,19 @@
 - `P0` bloqueia mudanças que ampliem o runtime ou o schema afetado;
 - `P1` deve ser resolvido antes do gate de release;
 - encerramento exige prova executável e reproduzível;
-- decisões explícitas posteriores prevalecem sobre arquitetura anterior.
+- decisões explícitas posteriores prevalecem sobre arquitetura anterior;
+- não se renomeia componente destinado à remoção: primeiro se define o estado de cutover;
+- toda escrita remota exige prova efêmera e autorização explícita.
 
 ## Bloqueadores ativos
 
 | ID | Severidade | Área | Descrição | Bloqueia | Critério de encerramento |
 |---|---|---|---|---|---|
-| E14-B002 | P0 | Maintainability | 106 helpers privados e 8 RPCs públicos ainda possuem argumentos opacos; a primeira substituição física já foi aplicada e reconciliada | criação de novos aliases opacos e expansão do legado | substituição e remoção incremental sem quebra dos 18 RPCs, resultados, eventos ou outbox |
-| E14-B004 | P1 | Browser E2E | fluxo pelo navegador e acessibilidade não foram comprovados | conclusão da vertical | E2E com contas técnicas e auditoria de acessibilidade |
-| E14-B005 | P1 | Product inputs | conteúdo externo e configuração inicial dos arquétipos ainda não foram aprovados | implementação final | entradas oficiais versionadas e aprovadas |
-| E14-B006 | P1 | Test adapters | storage/scan estão ativos no Supabase de teste sem consumidor atual | gate operacional | integrar com E2E ou remover integralmente função, scheduler e dependências |
-| E14-B007 | P0 | HubSpot authority | contratos, adapter de teste, gate de origem e motor lógico configurável foram comprovados, mas a conta, o modelo físico e o adapter real ainda não foram inventariados | modelo físico, migrations dependentes do provider e ativação final | inventário completo, modelo físico aprovado, adapter real testado e matriz campo→HubSpot completa |
+| E14-B002 | P0 | Maintainability | 106 helpers privados e 8 RPCs públicos ainda possuem argumentos opacos; a primeira substituição física já foi aplicada e reconciliada | criação de novos aliases opacos e expansão do legado | aliases eliminados do runtime retido e componentes substituídos removidos integralmente, sem quebra dos 18 RPCs durante a compatibilidade, resultados, eventos ou outbox |
+| E14-B004 | P1 | Browser E2E | fluxo pelo navegador e acessibilidade não foram comprovados | conclusão da experiência navegável | E2E dos fluxos críticos com contas técnicas e auditoria de acessibilidade; a integração real HubSpot permanece em E14-B007 |
+| E14-B005 | P1 | Product inputs | conteúdo externo, formulário e configuração inicial dos arquétipos ainda não foram aprovados | implementação final e conteúdo real | entradas oficiais, direitos, versões e critérios de aceitação aprovados |
+| E14-B006 | P1 | Test adapters | storage/scan estão ativos no Supabase de teste sem consumidor atual | gate operacional | integrar com E2E ou remover integralmente função, scheduler, configuração, secrets e dependências |
+| E14-B007 | P0 | HubSpot authority | contratos, adapter de teste, gate de origem e motor lógico configurável foram comprovados, mas a conta, o modelo físico e o adapter real ainda não foram inventariados | modelo físico, migrations dependentes do provider e ativação final | inventário completo, modelo físico aprovado, adapter real testado, matriz campo→HubSpot completa e E2E no sandbox |
 
 ## Gates encerrados
 
@@ -104,6 +106,35 @@ Esses subgates reduzem o trabalho bloqueado pelo acesso, mas não encerram E14-B
 ## Dependências
 
 ```text
+E14-B002
+  → inventário e bloqueio de expansão = concluídos
+  → fronteira semântica dos oito RPCs públicos = concluída
+  → primeira substituição física aplicada e reconciliada
+  → classificar os 114 componentes em KEEP / REPLACE / DELETE / COMPATIBILITY
+  → não renomear componentes destinados à exclusão
+  → preparar ondas por componente com risco e cobertura mensurados
+  → provar cada onda no PostgreSQL efêmero
+  → obter autorização explícita antes de cada escrita remota
+  → remover aliases do runtime retido e eliminar componentes substituídos
+
+E14-B006
+  → inventariar consumidores, schedulers, secrets e dependências
+  → integrar se existir caso de uso comprovado
+  → caso contrário, preparar remoção integral
+  → obter autorização antes da exclusão remota
+  → reconciliar Git e Supabase
+
+E14-B004
+  → integrar motor configurável à aplicação usando adapter de teste
+  → browser E2E dos fluxos administrativos, participante e operação
+  → auditoria de acessibilidade
+  → registrar interações e usos de dados
+
+E14-B005
+  → preparar contrato de conteúdo e adapter sintético
+  → obter formulário, quatro arquétipos iniciais, conteúdo e direitos aprovados
+  → versionar entradas oficiais
+
 E14-B007
   → porta, adapter de teste e motor lógico = concluídos
   → inventariar a conta HubSpot
@@ -111,22 +142,21 @@ E14-B007
   → implementar adapter real com write + readback
   → validar scopes, limites, webhooks e reconciliação
   → mapear contratos lógicos para o modelo físico
+  → executar cutover e E2E no sandbox
   → somente então autorizar migrations dependentes do provider
+```
 
-E14-B002
-  → inventário e bloqueio de expansão = concluídos
-  → fronteira semântica dos oito RPCs públicos = concluída
-  → primeira substituição física aplicada e reconciliada
-  → selecionar quantitativamente a próxima cadeia privada
-  → provar a substituição no PostgreSQL efêmero
-  → obter autorização explícita antes de nova escrita remota
-  → repetir até remover o legado restante
+## Ordem operacional vigente
 
-E14-B004 + E14-B005
-  → fechar a vertical funcional e validar a configuração oficial
-
-E14-B006
-  → eliminar runtime de teste sem consumidor
+```text
+1. atualizar o plano de ação
+2. classificar o legado e definir o mapa de cutover
+3. auditar storage/scan e preparar integração ou remoção
+4. integrar o motor configurável às interfaces
+5. executar browser E2E, acessibilidade e registros de interação/uso
+6. preparar conteúdo externo e coletar entradas oficiais
+7. quando houver acesso, concluir o fluxo HubSpot real
+8. provar AWS staging
 ```
 
 ## Estado atual
@@ -142,6 +172,7 @@ reproducible_install_passed = true
 opaque_helper_containment_passed = true
 first_semantic_helper_applied_to_remote = true
 first_semantic_helper_materialized_in_git = true
+legacy_cutover_classification_complete = false
 opaque_helper_physical_replacement_complete = false
 hubspot_authoritative_source_decided = true
 hubspot_gateway_contract_defined = true
@@ -157,4 +188,4 @@ supabase_production_authorized = false
 aws_staging_gate_required = true
 ```
 
-Enquanto não houver acesso ao HubSpot, o desenvolvimento pode avançar sobre interface administrativa local, preview sintético, browser E2E, acessibilidade e substituições técnicas independentes do modelo físico. Novas escritas remotas continuam exigindo autorização explícita.
+Enquanto não houver acesso ao HubSpot, o desenvolvimento avança sobre classificação e remoção do legado, interface administrativa, preview sintético, browser E2E, acessibilidade, registro de interações e conteúdo provider-agnostic. Novas escritas remotas continuam exigindo autorização explícita.
