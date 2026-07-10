@@ -6,7 +6,7 @@
   "legacy_function_count": 115,
   "legacy_private_helper_count": 107,
   "legacy_public_rpc_count": 8,
-  "inventory_sha256": "9b4b81e184d40bd6385bf0c24dae401469150076c48d5da369cdec7aa0d3046b",
+  "inventory_sha256": "ac75bff6c96417cbbdd40e0ff33e7f3c13ea52e44944fdfb9144e97a9809b0bf",
   "functions": [
     {
       "key": "app_private.e14_af(uuid,uuid,jsonb,uuid,uuid,text,text)",
@@ -317,9 +317,7 @@
         "uuid"
       ],
       "definition_path": "supabase/migrations/20260709055349_m13j8a_e14_close_activity_session.sql",
-      "consumers": [
-        "app_private.e14_i1_state(jsonb,uuid)"
-      ]
+      "consumers": []
     },
     {
       "key": "app_private.e14_complete_journey_state(uuid,bigint)",
@@ -1278,7 +1276,7 @@
         "jsonb",
         "uuid"
       ],
-      "definition_path": "supabase/migrations/20260709055617_m13j12c_e14_i1_state.sql",
+      "definition_path": "supabase/migrations/20260710165530_m15a_e14_semantic_activity_session_close.sql",
       "consumers": [
         "app_private.e14_i1_done(uuid,uuid,jsonb,uuid,text,text)"
       ]
