@@ -25,7 +25,7 @@ A decisão atual exige:
 
 A porta `HubSpotDataGateway`, o adapter determinístico de teste e o gate `write → readback → use` estão implementados. O motor lógico configurável também suporta formulários versionados, quantidade variável de arquétipos, classificação declarativa com abstenção, recálculo, override append-only e ativações persistidas. O bloqueio prioritário permanece o inventário da conta HubSpot, o modelo físico e o adapter real.
 
-O legado de helpers E14 também está contido: 107 helpers privados e 8 RPCs públicos com argumentos opacos foram inventariados, congelados e isolados atrás de uma fronteira semântica. A remoção física permanece incremental.
+O legado de helpers E14 também está contido: 107 helpers privados e 8 RPCs públicos com argumentos opacos foram inventariados, congelados e isolados atrás de uma fronteira semântica. O primeiro delta técnico reduz o runtime efêmero para 106 helpers privados e preserva os contratos e o E2E, mas ainda não foi aplicado ao Supabase remoto.
 
 ## Estrutura
 
@@ -34,6 +34,7 @@ apps/web/                              aplicação Next.js
 apps/web/lib/hubspot/                  contratos e porta HubSpot autoritativa
 apps/web/lib/configurable-product/     formulário, classificação e ativações configuráveis
 supabase/migrations/                   histórico executável de migrations
+supabase/pending-migrations/           deltas técnicos testados, ainda não aplicados remotamente
 supabase/canonical-migrations/         SQL canônico, manifests e baseline estrutural
 supabase/functions/                    adapters ativos apenas no Supabase de teste
 docs/                                  documentação canônica atual
@@ -71,6 +72,7 @@ npm run validate:dependency-lock
 npm run validate:e14-runtime-history
 npm run validate:e14-public-contracts
 npm run validate:e14-opaque-helper-containment
+npm run test:e14-first-semantic-replacement
 npm run test:e14-backend-e2e
 npm run test:e14-database-gates
 npm run test:e14-hubspot-contracts
@@ -86,13 +88,15 @@ npm run build:web
 
 `npm run validate:dependency-lock` confirma lockfile v3, sincronização com os manifests e ausência de URLs HTTP de registry ou mirror.
 
-`npm run test:e14-database-gates` exige PostgreSQL 17.6 compatível com o Supabase e executa manifests, replay, equivalência, contratos públicos e backend E2E.
+`npm run test:e14-database-gates` exige PostgreSQL 17.6 compatível com o Supabase. Ele executa o histórico recuperado, prova equivalência e contratos, aplica o delta técnico pendente somente no banco efêmero e então repete os contratos públicos e o backend E2E.
 
 `npm run test:e14-hubspot-contracts` não exige acesso ao HubSpot. Ele compila os contratos TypeScript e prova origem, readback, idempotência, retry, consistência eventual, concorrência e rejeição de snapshots inválidos.
 
 `npm run test:e14-configurable-product` também não exige acesso ao HubSpot. Ele prova publicação, respostas, número variável de arquétipos, abstenção, retirada operacional, recálculo, override, histórico append-only e persistência das ativações.
 
 `npm run validate:e14-opaque-helper-containment` congela o inventário das funções com argumentos de uma letra e garante que os oito RPCs públicos legados só sejam chamados pela fronteira semântica da aplicação.
+
+`npm run test:e14-first-semantic-replacement` pressupõe o replay limpo já executado. Ele aplica o delta pendente no PostgreSQL efêmero, confirma a remoção do primeiro helper opaco e reduz o contador de 115 para 114.
 
 ## Documentação
 
@@ -118,6 +122,7 @@ npm run build:web
 - fechar PRs substituídos e excluir branches depois do merge;
 - não versionar outputs gerados, dados pessoais, credenciais ou exports locais;
 - migrations aplicadas nunca são editadas;
+- migrations pendentes não são aplicadas remotamente sem autorização explícita;
 - nenhuma decisão de negócio usa dado local sem origem HubSpot comprovada;
 - nenhuma capacidade é concluída sem teste e evidência reproduzível;
 - Supabase nunca é produção oficial.
