@@ -1,8 +1,8 @@
 # E14-R1 — Lacuna de fonte de verdade do runtime
 
-**Versão:** 0.3  
+**Versão:** 0.4  
 **Data:** 2026-07-10  
-**Status:** P0 — fonte, replay e equivalência estrutural concluídos; contratos e backend E2E pendentes  
+**Status:** P0 — fonte, replay, equivalência e contratos públicos concluídos; backend E2E pendente  
 **Ambiente inspecionado:** Supabase de desenvolvimento/teste `cfpfeavjlgheqqiaqtzv`
 
 ## 1. Histórico remoto recuperado
@@ -85,7 +85,36 @@ schema_equivalence_passed = true
 
 Objetos internos do provedor são excluídos do hash da aplicação. O catálogo mínimo do Supabase existe apenas para reproduzir migrations que criam e removem RPCs temporários de exportação.
 
-## 4. Integridade permanente
+## 4. Contratos públicos congelados
+
+A camada pública E14 possui 18 RPCs consumidos exclusivamente pelo servidor web:
+
+- 11 comandos transacionais;
+- 6 consultas;
+- 1 operação de resolução de identidade.
+
+O artefato `docs/implementation/e14-public-rpc-contracts-v1.json` registra as assinaturas e o mapa aplicativo→RPC. O gate `validate:e14-public-contracts` recalcula, após o replay limpo, um fingerprint que inclui:
+
+- assinatura e nomes/tipos dos argumentos;
+- tipo de retorno;
+- linguagem e volatilidade;
+- `SECURITY DEFINER`;
+- `search_path`;
+- grants;
+- SHA-256 da definição SQL.
+
+Resultado autorizado:
+
+```text
+public_rpc_count = 18
+public_rpc_contract_sha256 = b751369fb873eb50a423ed7d74614a6c75e4480058e79e6a63006ec10920336f
+application_rpc_mapping_matches = true
+public_rpc_contracts_passed = true
+```
+
+Os grants permanecem restritos a `postgres`, `service_role` e `app_worker`; `PUBLIC`, `anon` e `authenticated` não possuem execução. Oito RPCs preservam argumentos opacos como dívida técnica e não podem ser ampliados. Detalhes: `E14_PUBLIC_RPC_CONTRACTS.md`.
+
+## 5. Integridade permanente
 
 Cada migration recuperada contém cabeçalho de proveniência com versão, nome e hash remoto. Os manifests registram:
 
@@ -102,52 +131,53 @@ Comandos permanentes:
 npm run validate:e14-runtime-history
 npm run replay:e14-clean
 npm run validate:e14-schema-equivalence
+npm run validate:e14-public-contracts
 npm run test:e14-clean-replay
 ```
 
-O CI executa a validação de histórico em todo pull request e o replay completo quando migrations, manifests, scripts de equivalência ou o próprio workflow mudam.
+O CI executa a validação de histórico e os testes do tooling em todo pull request. O replay completo roda quando migrations, manifests, scripts de equivalência, contrato público, adapter RPC ou o próprio workflow mudam.
 
-## 5. Gates concluídos e pendentes
+## 6. Gates concluídos e pendentes
 
 ```text
 remote_versions_missing_locally = 0
 local_versions_not_expected_remotely = 0
 clean_replay_passed = true
 schema_equivalence_passed = true
-public_rpc_contracts_passed = false
+public_rpc_contracts_passed = true
 backend_e2e_replayed = false
 ```
 
-A equivalência estrutural não substitui testes comportamentais. Antes de nova migration funcional, ainda é obrigatório:
+A equivalência e o congelamento estrutural não substituem testes comportamentais. Antes de nova migration funcional, ainda é obrigatório:
 
-1. congelar assinaturas, grants, códigos de erro e invariantes dos RPCs públicos;
-2. executar testes de contrato positivos e negativos;
-3. reproduzir o backend E2E da vertical;
-4. comprovar RLS, idempotência, concorrência, eventos e outbox.
+1. executar contratos positivos e negativos com fixtures sintéticas;
+2. reproduzir o backend E2E da vertical;
+3. comprovar RLS, idempotência e concorrência;
+4. comparar respostas, eventos e outbox com as evidências esperadas.
 
-## 6. Dívida técnica preservada
+## 7. Dívida técnica preservada
 
-O runtime recuperado contém helpers privados `app_private.e14_*` com nomes opacos e aliases extensos. A recuperação preserva o comportamento comprovado e não autoriza ampliar esse padrão.
+O runtime recuperado contém helpers privados `app_private.e14_*` com nomes opacos e aliases extensos. O contrato congelado preserva o comportamento atual e não autoriza ampliar esse padrão.
 
-Depois dos contratos e do backend E2E:
+Depois do backend E2E:
 
-1. manter os RPCs públicos estáveis;
-2. mapear dependências com `pg_depend`;
+1. manter os 18 RPCs públicos estáveis;
+2. mapear dependências com `pg_depend` e inspeção de corpos SQL;
 3. introduzir helpers internos com nomes semânticos e ownership claro;
 4. migrar um caso de uso por vez;
 5. testar equivalência de resultado, evento e outbox;
 6. remover aliases somente quando não houver chamadas.
 
-## 7. Sequência obrigatória
+## 8. Sequência obrigatória
 
 ```text
 E14-R1a: recuperar M00–M14 no Git = concluído
 → E14-R1b: provar replay e equivalência estrutural = concluído
-→ E14-R1c: mapear e congelar contratos públicos = próximo passo
-→ E14-R1d: reproduzir backend E2E e checks negativos
+→ E14-R1c: mapear e congelar contratos públicos = concluído
+→ E14-R1d: reproduzir backend E2E e checks negativos = próximo passo
 → refatoração incremental de helpers opacos
 → delta final de schema para arquétipos e conteúdo externo
 → nova migration funcional
 ```
 
-A numeração da próxima migration funcional somente será definida depois dos contratos e do E2E. Supabase permanece restrito a desenvolvimento/teste; staging e produção permanecem na AWS.
+A numeração da próxima migration funcional somente será definida depois do E2E. Supabase permanece restrito a desenvolvimento/teste; staging e produção permanecem na AWS.
