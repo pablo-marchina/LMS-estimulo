@@ -4,8 +4,11 @@ on:
   pull_request:
     paths:
       - ".github/workflows/e14-step5-web.yml"
+      - ".npmrc"
       - "apps/web/**"
       - "package.json"
+      - "package-lock.json"
+      - "scripts/repository/validate-package-lock.mjs"
       - "scripts/e14/validate-step5-app-foundation*"
       - "scripts/e14/hubspot-contracts/**"
       - "scripts/e14/configurable-product/**"
@@ -30,9 +33,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies
-        run: npm install --ignore-scripts
+      - name: Install pinned npm
+        run: npm install --global npm@10.9.2 --no-audit --no-fund
+
+      - name: Validate dependency lock
+        run: npm run validate:dependency-lock
+
+      - name: Install dependencies from lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Confirm lockfile remains unchanged
+        run: git diff --exit-code -- package-lock.json
 
       - name: Audit production dependencies
         run: npm audit --omit=dev
