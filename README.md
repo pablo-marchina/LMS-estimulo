@@ -12,7 +12,7 @@ AWS staging = gate obrigatório
 AWS produção = ambiente oficial futuro
 ```
 
-O histórico remoto M00–M14 está materializado no Git. O replay transacional das 243 migrations e a equivalência estrutural passaram; o bloqueio técnico prioritário agora é congelar os contratos públicos e reproduzir o backend E2E com checks negativos de RLS, idempotência e concorrência.
+O histórico remoto M00–M14 está materializado no Git. O replay transacional das 243 migrations, a equivalência estrutural e o congelamento dos 18 RPCs públicos passaram; o bloqueio técnico prioritário agora é reproduzir o backend E2E com checks negativos de RLS, idempotência e concorrência.
 
 ## Estrutura
 
@@ -22,7 +22,7 @@ supabase/migrations/              histórico executável de migrations
 supabase/canonical-migrations/    SQL canônico, manifests e baseline estrutural
 supabase/functions/               adapters ativos apenas no Supabase de teste
 docs/                             documentação canônica atual
-scripts/e14/                      validação, replay e equivalência do workstream atual
+scripts/e14/                      validação, replay, equivalência e contratos do workstream atual
 ```
 
 Artefatos de execução, outputs de testes, relatórios locais e exports de banco não são versionados. O histórico Git é o arquivo de versões substituídas.
@@ -50,15 +50,17 @@ A instalação ainda não é totalmente determinística porque o repositório n�
 ```bash
 npm run validate:repository
 npm run validate:e14-runtime-history
+npm run validate:e14-public-contracts
 npm run test:e14-clean-replay
 npm run validate:e14-step5
 npm run test:e14-step5
 npm run test:e14-runtime-recovery
+npm run test:e14-public-contracts
 npm run typecheck:web
 npm run build:web
 ```
 
-`npm run test:e14-clean-replay` exige PostgreSQL 17.6 compatível com o ambiente Supabase e executa validação dos manifests, replay das 243 migrations e comparação estrutural.
+`npm run test:e14-clean-replay` exige PostgreSQL 17.6 compatível com o ambiente Supabase e executa validação dos manifests, replay das 243 migrations, comparação estrutural e verificação dos 18 contratos públicos.
 
 ## Documentação
 
@@ -67,6 +69,7 @@ npm run build:web
 - [Registro de decisões](docs/decisions/DECISION_LOG.md)
 - [Registro de bloqueadores](docs/implementation/E14_BLOCKER_REGISTER.md)
 - [Lacuna do runtime E14](docs/implementation/RUNTIME_GAP_E14.md)
+- [Contratos públicos E14](docs/implementation/E14_PUBLIC_RPC_CONTRACTS.md)
 - [Estratégia Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Guia de contribuição](CONTRIBUTING.md)
 
