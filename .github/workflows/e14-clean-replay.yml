@@ -1,0 +1,75 @@
+name: E14 clean replay
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/e14-clean-replay.yml"
+      - "package.json"
+      - "scripts/e14/database-equivalence/**"
+      - "scripts/e14/runtime-source-recovery/**"
+      - "supabase/canonical-migrations/**"
+      - "supabase/migrations/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e14-clean-replay-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  replay:
+    name: Replay and compare E14 schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: supabase/postgres:17.6.1.136
+        env:
+          POSTGRES_HOST: /var/run/postgresql
+          PGPORT: 5432
+          POSTGRES_PORT: 5432
+          PGPASSWORD: postgres
+          POSTGRES_PASSWORD: postgres
+          PGDATABASE: postgres
+          POSTGRES_DB: postgres
+          JWT_SECRET: local-e14-replay-jwt-secret-with-at-least-thirty-two-characters
+          JWT_EXP: 3600
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -h localhost -p 5432"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 20s
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Confirm database version and extensions
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
+
+      - name: Replay exact migration history from zero
+        run: npm run test:e14-clean-replay
