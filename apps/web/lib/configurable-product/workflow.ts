@@ -24,10 +24,20 @@ import {
 } from "./contracts.js";
 import { ConfigurableProductError } from "./validation.js";
 
+export type SubmissionInput =
+  | {
+      mode: "write";
+      command: HubSpotWriteCommand<FormSubmissionPayload>;
+    }
+  | {
+      mode: "read";
+      query: HubSpotSnapshotQuery;
+    };
+
 export type ConfigurableProductExecution = {
   gateway: HubSpotDataGateway;
   configurationQuery: HubSpotSnapshotQuery;
-  submissionWrite: HubSpotWriteCommand<FormSubmissionPayload>;
+  submissionInput: SubmissionInput;
   assignmentTarget: HubSpotWriteTarget;
   activationTarget: HubSpotWriteTarget | null;
   assignmentId: string;
@@ -83,10 +93,12 @@ export async function executeConfigurableProductFlow(
     context,
     execution.configurationQuery
   );
-  const submissionSnapshot = await writeAndConfirmHubSpotRecord(
-    context,
-    execution.submissionWrite
-  );
+  const submissionSnapshot = execution.submissionInput.mode === "write"
+    ? await writeAndConfirmHubSpotRecord(context, execution.submissionInput.command)
+    : await readVerifiedHubSpotSnapshot<FormSubmissionPayload>(
+        context,
+        execution.submissionInput.query
+      );
 
   const createdAt = context.now().toISOString();
   const assignment = createArchetypeAssignment(
