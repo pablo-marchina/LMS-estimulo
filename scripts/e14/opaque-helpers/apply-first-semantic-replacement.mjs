@@ -51,7 +51,7 @@ with replacement as (
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
   where n.nspname in ('app_private', 'public')
-    and p.proname like 'e14\_%' escape '\\'
+    and p.proname ~ '^e14_'
     and exists (
       select 1
       from unnest(coalesce(p.proargnames, array[]::text[])) as argument_name
