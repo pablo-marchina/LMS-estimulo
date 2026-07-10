@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { legacyRpcArguments } from "../../../apps/web/lib/e14/legacy-rpc-arguments.js";
+import { legacyRpcArguments } from "../../../apps/web/lib/journey-runtime/legacy-rpc-arguments.js";
 
 test("maps all eight frozen public RPC argument aliases", () => {
   assert.deepEqual(
