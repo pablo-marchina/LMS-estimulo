@@ -1,6 +1,7 @@
 {
   "name": "plataforma-estimulo",
   "private": true,
+  "packageManager": "npm@10.9.2",
   "workspaces": [
     "apps/*"
   ],
@@ -9,6 +10,7 @@
     "build:web": "npm --workspace @estimulo/web run build",
     "typecheck:web": "npm --workspace @estimulo/web run typecheck",
     "validate:repository": "node scripts/repository/validate-hygiene.mjs",
+    "validate:dependency-lock": "node scripts/repository/validate-package-lock.mjs",
     "validate:e14-step5": "node scripts/e14/validate-step5-app-foundation.mjs",
     "validate:e14-runtime-history": "node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260708220357_m00_m12_runtime_canonical.sql && node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql && node scripts/e14/runtime-source-recovery/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709183504_m14_application_canonical.sql",
     "replay:e14-clean": "node scripts/e14/database-equivalence/replay-clean.mjs",
