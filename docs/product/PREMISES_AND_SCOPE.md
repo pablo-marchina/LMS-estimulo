@@ -1,8 +1,8 @@
 # Premissas e escopo
 
-**Versão:** 0.5  
+**Versão:** 0.6  
 **Data:** 2026-07-14  
-**Status:** baseline alinhada às referências oficiais
+**Status:** baseline alinhada às referências oficiais; configuração diagnóstica ainda depende do pacote metodológico
 
 ## Hierarquia de referência
 
@@ -10,9 +10,11 @@
 2. alterações posteriores explicitamente aprovadas pela Estímulo;
 3. decisões de produto e arquitetura que apenas interpretam as referências;
 4. estado real do repositório e dos ambientes autorizados;
-5. documentação técnica, código e histórico legado.
+5. documentação técnica, código, protótipos e histórico legado.
 
 Um ADR não pode modificar silenciosamente um requisito oficial. Quando houver alteração de produto, ela deve identificar a referência afetada e a aprovação correspondente.
+
+Protótipos são evidência secundária e não podem alterar requisitos oficiais sem aprovação explícita.
 
 ## Problema central
 
@@ -45,7 +47,7 @@ Não haverá promoção direta do Supabase para produção.
 
 ## HubSpot e dados do produto
 
-- Identidade, informações do negócio, contexto de crédito autorizado, diagnóstico vigente, progresso agregado, conclusão e sinais aprovados deverão estar disponíveis no HubSpot.
+- Identidade, informações do negócio, contexto autorizado, diagnóstico vigente, progresso agregado, conclusão e sinais aprovados deverão estar disponíveis no HubSpot.
 - Eventos granulares e telemetria permanecem no event store, com projeção seletiva para o HubSpot.
 - A sincronização padrão usa outbox, retry idempotente e reconciliação.
 - Readback é obrigatório somente para escritas CRM críticas que precisem de confirmação antes de uso imediato.
@@ -57,7 +59,13 @@ Não haverá promoção direta do Supabase para produção.
 
 - Formulários seguem definição–versão–instância.
 - Rascunhos são editáveis; versões publicadas são imutáveis.
-- A operação inicial usa os quatro arquétipos oficiais.
+- A operação inicial usa Fazedor, Batalhador, Construtor e Navegador.
+- A versão 3 descrita na referência possui 12 perguntas e 5 dimensões.
+- As dimensões oficiais são Gestão financeira, Disciplina e hábito, Visão e planejamento, Perfil empreendedor e Relação com crédito e risco.
+- A maturidade operacional é um eixo separado do arquétipo.
+- A Q13 do protótipo Raio-X não integra o formulário oficial sem aprovação formal.
+- O scoring do protótipo não substitui a planilha/metodologia citada na referência.
+- Pesos, cortes, condicionais e regra de empate devem ser aprovados antes da publicação.
 - A arquitetura pode aceitar alterações futuras, mas isso não substitui a obrigação de publicar os quatro perfis definidos pela referência.
 - Arquétipos já atribuídos não são apagados do histórico.
 - Recálculo e override são explícitos, autorizados e auditáveis.
@@ -96,7 +104,9 @@ Ficam fora do escopo da primeira entrega:
 - decisão automática de crédito;
 - score produtivo de aprovação ou rejeição;
 - alteração automática de taxa, limite ou garantia;
-- uso de arquétipo ou interação educacional sem validação e governança específicas.
+- uso produtivo do arquétipo sem validação e governança específicas.
+
+A modelagem deve preservar dados para pesquisa futura, sem apresentar hipóteses como resultados validados.
 
 ## Fora do escopo necessário
 
@@ -119,3 +129,4 @@ Ficam fora do escopo da primeira entrega:
 6. Dívida técnica contida não bloqueia a entrega sem risco ou dependência concreta.
 7. Supabase é somente desenvolvimento/teste e AWS staging é gate de produção.
 8. Código, integrações, testes e documentação da mesma capacidade mudam juntos.
+9. Lacunas metodológicas não serão preenchidas por heurística silenciosa.
