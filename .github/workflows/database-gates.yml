@@ -8,6 +8,7 @@ on:
       - "apps/web/lib/journey-runtime/rpc.ts"
       - "docs/implementation/public-rpc-contracts-v1.json"
       - "scripts/database/backend-e2e/**"
+      - "scripts/database/configurable-product-persistence/**"
       - "scripts/database/equivalence/**"
       - "scripts/database/legacy-rpc/**"
       - "scripts/database/public-rpc-contracts/**"
@@ -89,7 +90,7 @@ jobs:
             cat .artifacts/database-gates.log
             rm -f .artifacts/database-gates.log
           else
-            tail -n 220 .artifacts/database-gates.log >> "$GITHUB_STEP_SUMMARY"
+            tail -n 260 .artifacts/database-gates.log >> "$GITHUB_STEP_SUMMARY"
           fi
           exit 0
 
@@ -107,5 +108,5 @@ jobs:
         if: steps.database_gates.outputs.exit_code != '0'
         shell: bash
         run: |
-          echo "Replay, equivalence, public contracts or backend E2E failed. Inspect the uploaded diagnostic artifact."
+          echo "Replay, equivalence, public contracts, backend E2E or configurable-product persistence failed. Inspect the uploaded diagnostic artifact."
           exit 1
