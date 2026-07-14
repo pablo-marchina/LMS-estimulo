@@ -7,10 +7,16 @@ const currentDir = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(currentDir, "../../..");
 const outputDir = resolve(repositoryRoot, ".tmp/configurable-product");
 const tsconfigPath = resolve(currentDir, "tsconfig.json");
-const testPath = resolve(
-  outputDir,
-  "scripts/product/configurable-product/configurable-product.test.mjs"
-);
+const testPaths = [
+  resolve(
+    outputDir,
+    "scripts/product/configurable-product/configurable-product.test.mjs"
+  ),
+  resolve(
+    outputDir,
+    "scripts/product/configurable-product/operational-workflow.test.mjs"
+  )
+];
 
 const compilerCandidates = [
   resolve(repositoryRoot, "node_modules/typescript/bin/tsc"),
@@ -31,7 +37,7 @@ try {
   });
   if (compile.status !== 0) process.exit(compile.status ?? 1);
 
-  const test = spawnSync(process.execPath, ["--test", testPath], {
+  const test = spawnSync(process.execPath, ["--test", ...testPaths], {
     cwd: repositoryRoot,
     stdio: "inherit"
   });
