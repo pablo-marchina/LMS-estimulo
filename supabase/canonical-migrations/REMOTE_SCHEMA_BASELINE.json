@@ -1,29 +1,8 @@
 {
   "schema_version": "1.0",
   "artifact": "e14_remote_schema_baseline",
-  "source": "Supabase development/test project cfpfeavjlgheqqiaqtzv",
-  "observed_at": "2026-07-10",
-  "database_transaction_mode": "read_only",
-  "scope": {
-    "application_schemas": [
-      "app_private",
-      "assessment",
-      "catalog",
-      "core",
-      "diagnostics",
-      "engagement",
-      "eventing",
-      "governance",
-      "iam",
-      "integration",
-      "intelligence",
-      "intervention",
-      "orchestration",
-      "reporting"
-    ],
-    "public_routines": "e14_*",
-    "provider_owned_objects_excluded": true
-  },
+  "source": "Supabase development and test environment",
+  "observed_at": "2026-07-14",
   "inventory": {
     "schema_version": "1.0",
     "postgres_major": 17,
@@ -33,12 +12,12 @@
         "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
       },
       "columns": {
-        "count": 1635,
-        "sha256": "54dfd1e2c206d32492a20ced198dff67b450a30461490376c8c9138c1c489a57"
+        "count": 1663,
+        "sha256": "21ef126ca90691bdfc21c81b9122efaee9d967dead87f63aace23c04a17948e4"
       },
       "indexes": {
-        "count": 516,
-        "sha256": "14fcc45b7c37a813b7ddf2d611a0dc0a5dc6fe2bf5acf6810627fd2d2360cc4b"
+        "count": 523,
+        "sha256": "57a74947b4c11621f880f213318b5384cd0da282dade07053d0088b2d69052c2"
       },
       "schemas": {
         "count": 14,
@@ -57,12 +36,12 @@
         "sha256": "5f829375309dd270f7f7685020469c3d41caa2f2d4395901298607ed10f33089"
       },
       "relations": {
-        "count": 163,
-        "sha256": "6d4119be5ff5e2b3d140036f30d8ae7901c29e56e5d0eb0ebf877360abf703a0"
+        "count": 165,
+        "sha256": "5d11cc994f0371ba9a65b03911d05b8629a65df802c0be5be07e0b0206d86496"
       },
       "constraints": {
-        "count": 742,
-        "sha256": "4d57e36c7af70de8c231f9d881e6900bf814fb77adc101953c2ab89b4015f542"
+        "count": 759,
+        "sha256": "c71e0a7ca37fecbd7a8088c0311924d5887e590792da46bd552d0d0be0f5dcce"
       }
     }
   }
