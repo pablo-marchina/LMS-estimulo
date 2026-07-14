@@ -141,9 +141,9 @@ IR-008 diagnóstico
 + IR-002 HubSpot
 
 EM PARALELO
-comentários #61
-+ uploads #64
-+ avaliações/selos/certificados #65
+comentários por aula
++ uploads de prática
++ avaliações, selos e certificados
 + frontend participante e administração mínima
 
 DEPOIS DAS ENTRADAS
