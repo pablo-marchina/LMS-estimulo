@@ -1,6 +1,6 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 3.0  
+**Versão:** 3.1  
 **Data:** 2026-07-14  
 **Status:** ativo
 
@@ -56,11 +56,15 @@ Nomenclatura semântica é recomendação de manutenção, não gate funcional d
 ### Banco e runtime
 
 ```text
-recovered_migration_count = 244
+recovered_migration_count = 245
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
+configurable_product_persistence_e2e_passed = true
+configurable_product_remote_migration_applied = true
+operational_persistence_transactional = true
+hubspot_projection_outbox_integrated = true
 rls_negative_checks_passed = true
 idempotency_and_concurrency_passed = true
 events_and_outbox_passed = true
@@ -85,6 +89,8 @@ hubspot_gateway_contract_defined = true
 hubspot_test_adapter_present = true
 configurable_form_contract_defined = true
 classification_engine_present = true
+operational_flow_without_hubspot_present = true
+operational_persistence_integrated = true
 assignment_history_append_only = true
 activation_rules_versioned = true
 ```

@@ -39,11 +39,21 @@ export const M15_EXPECTED = Object.freeze({
     '0fedbe5d3ca7d9e70b19e797269546c4183fe73a26a966cadeba70fb6bb866f8',
 });
 
+export const M16_EXPECTED = Object.freeze({
+  firstVersion: '20260714161338',
+  lastVersion: '20260714161338',
+  migrationCount: 1,
+  totalRemoteSqlBytes: 22333,
+  combinedRemoteFingerprint:
+    'cf4ee4a49c5fd5b4a747933ad423f781d587a5e71adc7533edd1703ce814deb2',
+});
+
 const EXPECTED_BY_FIRST_VERSION = new Map([
   [M00_M12_EXPECTED.firstVersion, M00_M12_EXPECTED],
   [M13_EXPECTED.firstVersion, M13_EXPECTED],
   [M14_EXPECTED.firstVersion, M14_EXPECTED],
   [M15_EXPECTED.firstVersion, M15_EXPECTED],
+  [M16_EXPECTED.firstVersion, M16_EXPECTED],
 ]);
 
 function sha256(value) {

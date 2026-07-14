@@ -25,6 +25,43 @@ async function invoke<T>(name: string, args: Record<string, unknown>): Promise<T
   return data as T;
 }
 
+export type ConfigurableProductPersistenceInput = {
+  actorUserAccountId: string;
+  organizationId: string;
+  journeyInstanceId: string | null;
+  submission: Record<string, unknown>;
+  assignment: Record<string, unknown>;
+  activationBatch: Record<string, unknown> | null;
+  evidence: Record<string, unknown>;
+  crmProjections: Array<Record<string, unknown>>;
+  idempotencyKey: string;
+};
+
+export type ConfigurableProductPersistenceData = {
+  submission_id: string;
+  result_id: string;
+  assignment_id: string;
+  new_submission: boolean;
+  response_count: number;
+  activation_count: number;
+  projection_count: number;
+};
+
+export const configurableProductRuntime = {
+  persistResult: (input: ConfigurableProductPersistenceInput) =>
+    invoke<RpcEnvelope<ConfigurableProductPersistenceData>>("persist_configurable_product_result", {
+      p_actor_user_account_id: input.actorUserAccountId,
+      p_organization_id: input.organizationId,
+      p_journey_instance_id: input.journeyInstanceId,
+      p_submission: input.submission,
+      p_assignment: input.assignment,
+      p_activation_batch: input.activationBatch,
+      p_evidence: input.evidence,
+      p_crm_projections: input.crmProjections,
+      p_idempotency_key: input.idempotencyKey
+    })
+};
+
 export const journeyRuntime = {
   resolveIdentity: (input: {
     provider: string;
