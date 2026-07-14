@@ -67,31 +67,6 @@ export const configurableProductRuntime = {
 };
 
 export const journeyRuntime = {
-  resolveIdentity: (input: {
-    provider: string;
-    issuer: string;
-    subject: string;
-    email: string;
-    emailVerified: boolean;
-    claimsFingerprint: string;
-  }) => invoke<IdentityContext>("e14_resolve_identity", {
-    p_provider: input.provider,
-    p_issuer: input.issuer,
-    p_subject: input.subject,
-    p_email_normalized: input.email,
-    p_email_verified: input.emailVerified,
-    p_claims_fingerprint: input.claimsFingerprint
-  }),
-
-  listParticipantJourneys: (actor: string) => invoke<ParticipantJourneys>("e14_list_participant_journeys", {
-    p_actor_user_account_id: actor
-  }),
-
-  getParticipantExperience: (actor: string, journeyInstanceId: string) => invoke<ParticipantExperience>("e14_get_participant_experience", {
-    p_actor_user_account_id: actor,
-    p_journey_instance_id: journeyInstanceId
-  }),
-
   listActivityComments: (actor: string, stepInstanceId: string) => invoke<ActivityComments>("list_activity_comments", {
     p_actor_user_account_id: actor,
     p_step_instance_id: stepInstanceId
@@ -126,6 +101,31 @@ export const journeyRuntime = {
     p_status: status,
     p_reason: reason,
     p_idempotency_key: key
+  }),
+
+  resolveIdentity: (input: {
+    provider: string;
+    issuer: string;
+    subject: string;
+    email: string;
+    emailVerified: boolean;
+    claimsFingerprint: string;
+  }) => invoke<IdentityContext>("e14_resolve_identity", {
+    p_provider: input.provider,
+    p_issuer: input.issuer,
+    p_subject: input.subject,
+    p_email_normalized: input.email,
+    p_email_verified: input.emailVerified,
+    p_claims_fingerprint: input.claimsFingerprint
+  }),
+
+  listParticipantJourneys: (actor: string) => invoke<ParticipantJourneys>("e14_list_participant_journeys", {
+    p_actor_user_account_id: actor
+  }),
+
+  getParticipantExperience: (actor: string, journeyInstanceId: string) => invoke<ParticipantExperience>("e14_get_participant_experience", {
+    p_actor_user_account_id: actor,
+    p_journey_instance_id: journeyInstanceId
   }),
 
   listOperatorInstances: (actor: string, organizationId: string) => invoke<OperatorInstances>("e14_list_operator_instances", {
