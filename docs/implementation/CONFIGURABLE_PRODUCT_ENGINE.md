@@ -1,8 +1,8 @@
 # Motor configurável de formulário, arquétipo e ativação
 
-**Versão:** 0.5  
+**Versão:** 0.6  
 **Data:** 2026-07-14  
-**Status:** núcleo lógico, fluxo operacional, persistência transacional e outbox implementados; configuração oficial e integração às rotas pendentes
+**Status:** núcleo lógico, fluxo operacional, persistência transacional e outbox implementados; pacote oficial de configuração e integração às rotas pendentes
 
 ## Objetivo
 
@@ -12,7 +12,7 @@ Fornecer um núcleo reutilizável para:
 - perguntas e opções configuráveis;
 - quatro arquétipos oficiais sem hardcode de nome;
 - classificação declarativa;
-- empate ou abstenção conforme política;
+- empate, prioridade ou abstenção conforme política aprovada;
 - histórico append-only;
 - recálculo e override auditável;
 - regras de ativação versionadas.
@@ -55,7 +55,9 @@ Operadores suportados:
 - `number_lte`;
 - `answered`.
 
-A política define score mínimo, margem mínima e desempate por prioridade ou abstenção.
+A política pode definir score mínimo, margem mínima e desempate por prioridade ou abstenção.
+
+Essa flexibilidade técnica não escolhe a política oficial. A referência exige um dos quatro arquétipos, mas o pacote atual não contém pesos, cortes ou regra formal de empate. Nenhuma estratégia será ativada silenciosamente.
 
 `confidence` permanece `null` enquanto não houver metodologia aprovada.
 
@@ -137,6 +139,18 @@ O RPC possui:
 
 A migration remota `20260714161338_configurable_product_operational_persistence` foi aplicada no Supabase de desenvolvimento/teste e materializada no histórico executável M16.
 
+## Baseline oficial reconciliada
+
+A configuração inicial deve representar:
+
+- 12 perguntas da versão 3;
+- 5 dimensões oficiais;
+- Fazedor, Batalhador, Construtor e Navegador;
+- maturidade operacional como eixo separado;
+- prontidão de jornada como eixo separado.
+
+A Q13 do protótipo Raio-X não integra o arquétipo oficial sem aprovação formal. O `scoring_config.json` do protótipo não é fonte metodológica oficial.
+
 ## Integração HubSpot existente
 
 O arquivo `workflow.ts` e os utilitários HubSpot existentes preservam o fluxo estrito de write/readback para testes e casos CRM realmente críticos.
@@ -175,9 +189,12 @@ Os arquétipos usados no teste de banco são explicitamente sintéticos e existe
 
 ## Pendências necessárias
 
-- carregar o formulário oficial;
-- carregar os quatro arquétipos e scoring oficial;
-- definir empate ou resultado inconclusivo;
+- receber e homologar o texto exato das 12 perguntas;
+- receber alternativas, condicionais e randomização oficiais;
+- receber a planilha de scoring e o log de revisão;
+- aprovar pesos, cortes e regra de empate;
+- carregar os quatro arquétipos e textos finais;
+- carregar a matriz inicial de ativações;
 - aplicar a configuração às rotas atuais;
 - criar administração mínima de draft, preview e publicação;
 - implementar o adapter/worker HubSpot real;
@@ -191,7 +208,8 @@ classification_engine_present = true
 operational_flow_without_hubspot_present = true
 crm_projection_commands_present = true
 crm_projection_requires_synchronous_readback = false
-classification_abstention_supported = true
+classification_strategies_supported = true
+official_tie_strategy_approved = false
 fabricated_confidence_generated = false
 assignment_history_append_only = true
 override_audited = true
@@ -200,8 +218,11 @@ operational_persistence_integrated = true
 hubspot_projection_outbox_integrated = true
 remote_development_migration_applied = true
 migration_history_materialized = true
-official_form_loaded = false
-official_four_archetypes_loaded = false
+official_question_count_reconciled = 12
+official_dimension_count_reconciled = 5
+official_archetype_count_reconciled = 4
+official_exact_wording_loaded = false
+official_scoring_loaded = false
 application_routes_integrated = false
 hubspot_real_worker_implemented = false
 ```
