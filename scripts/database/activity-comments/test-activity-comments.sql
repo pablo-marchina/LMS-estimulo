@@ -97,7 +97,7 @@ select pg_temp.activity_comment_assert(
   'comment row missing'
 );
 select pg_temp.activity_comment_assert(
-  (select count(*) = 1 from eventing.events where id = :'comment_create_event_id'::uuid and event_name = 'learning.activity.comment.created'),
+  (select count(*) = 1 from eventing.events where event_id = :'comment_create_event_id'::uuid and event_name = 'learning.activity.comment.created'),
   'creation event missing'
 );
 select pg_temp.activity_comment_assert(
@@ -218,7 +218,7 @@ select pg_temp.activity_comment_assert(
   'moderation history missing'
 );
 select pg_temp.activity_comment_assert(
-  (select count(*) = 1 from eventing.events where id = :'comment_hide_event_id'::uuid and event_name = 'learning.activity.comment.moderated'),
+  (select count(*) = 1 from eventing.events where event_id = :'comment_hide_event_id'::uuid and event_name = 'learning.activity.comment.moderated'),
   'moderation event missing'
 );
 select pg_temp.activity_comment_assert(
