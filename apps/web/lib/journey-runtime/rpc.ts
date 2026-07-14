@@ -1,8 +1,12 @@
 import "server-only";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 import type {
+  ActivityComment,
+  ActivityComments,
   IdentityContext,
   JourneyState,
+  OperatorActivityComment,
+  OperatorActivityComments,
   OperatorInstances,
   OperatorWorkspace,
   ParticipantExperience,
@@ -63,6 +67,42 @@ export const configurableProductRuntime = {
 };
 
 export const journeyRuntime = {
+  listActivityComments: (actor: string, stepInstanceId: string) => invoke<ActivityComments>("list_activity_comments", {
+    p_actor_user_account_id: actor,
+    p_step_instance_id: stepInstanceId
+  }),
+
+  createActivityComment: (actor: string, stepInstanceId: string, body: string, key: string) =>
+    invoke<RpcEnvelope<ActivityComment>>("create_activity_comment", {
+      p_actor_user_account_id: actor,
+      p_step_instance_id: stepInstanceId,
+      p_body: body,
+      p_idempotency_key: key
+    }),
+
+  listOperatorActivityComments: (actor: string, organizationId: string, limit = 50) =>
+    invoke<OperatorActivityComments>("list_operator_activity_comments", {
+      p_actor_user_account_id: actor,
+      p_organization_id: organizationId,
+      p_limit: limit
+    }),
+
+  moderateActivityComment: (
+    actor: string,
+    organizationId: string,
+    commentId: string,
+    status: "visible" | "hidden",
+    reason: string,
+    key: string
+  ) => invoke<RpcEnvelope<OperatorActivityComment & { changed: boolean }>>("moderate_activity_comment", {
+    p_actor_user_account_id: actor,
+    p_organization_id: organizationId,
+    p_comment_id: commentId,
+    p_status: status,
+    p_reason: reason,
+    p_idempotency_key: key
+  }),
+
   resolveIdentity: (input: {
     provider: string;
     issuer: string;

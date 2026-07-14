@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.2  
+**Versão:** 4.3  
 **Data:** 2026-07-14  
-**Status:** fundação técnica reproduzível; diagnóstico oficial reconciliado documentalmente; produto oficial ainda incompleto
+**Status:** fundação técnica reproduzível; comentários por aula implementados; produto oficial ainda incompleto
 
 ## Hierarquia de referência
 
@@ -45,12 +45,13 @@ O repositório já contém:
 
 - aplicação Next.js com seis rotas iniciais;
 - bridge de identidade e camada de aplicação de servidor;
-- 245 migrations executáveis;
+- 248 migrations executáveis;
 - replay limpo e equivalência estrutural;
 - 18 contratos públicos de RPC;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - motor configurável de formulário, arquétipos, classificação e ativações;
 - persistência transacional e outbox do resultado configurável;
+- comentários por aula com moderação, histórico, eventos e outbox;
 - porta HubSpot e adapter em memória;
 - lockfile e instalação reproduzível em Ubuntu e Windows;
 - contenção do legado de RPCs e helpers.

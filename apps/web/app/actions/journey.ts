@@ -8,6 +8,8 @@ import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 const uuid = z.string().uuid();
 const integer = z.coerce.number().int().nonnegative();
+const commentBody = z.string().trim().min(1).max(2000);
+const moderationStatus = z.enum(["visible", "hidden"]);
 
 async function actorId() {
   const auth = await getAuthContext();
@@ -83,6 +85,28 @@ export async function acknowledgeActivityAction(formData: FormData) {
     }
   }
   redirect(`/empreendedor/atividade/${step}?journey=${journey}`);
+}
+
+export async function createActivityCommentAction(formData: FormData) {
+  const actor = await actorId();
+  const journey = uuid.parse(formData.get("journey_instance_id"));
+  const step = uuid.parse(formData.get("step_instance_id"));
+  const body = commentBody.parse(String(formData.get("body") ?? ""));
+  const key = String(formData.get("idempotency_key") || randomUUID());
+  await journeyRuntime.createActivityComment(actor, step, body, key);
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&comentario=criado#comentarios`);
+}
+
+export async function moderateActivityCommentAction(formData: FormData) {
+  const actor = await actorId();
+  const organization = uuid.parse(formData.get("organization_id"));
+  const comment = uuid.parse(formData.get("comment_id"));
+  const status = moderationStatus.parse(formData.get("status"));
+  const reason = z.string().trim().max(500).parse(String(formData.get("reason") ?? ""));
+  if (status === "hidden" && !reason) throw new Error("ACTIVITY_COMMENT_MODERATION_REASON_REQUIRED");
+  const key = String(formData.get("idempotency_key") || randomUUID());
+  await journeyRuntime.moderateActivityComment(actor, organization, comment, status, reason, key);
+  redirect(`/admin?organization=${organization}&comentario=moderado#comentarios`);
 }
 
 export async function submitQuickCheckAction(formData: FormData) {

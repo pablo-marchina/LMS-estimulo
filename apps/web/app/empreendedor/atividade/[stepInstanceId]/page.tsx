@@ -1,18 +1,34 @@
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
-import { acknowledgeActivityAction, submitQuickCheckAction } from "@/app/actions/journey";
+import { acknowledgeActivityAction, createActivityCommentAction, submitQuickCheckAction } from "@/app/actions/journey";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() ? value : null; }
 
-export default async function ActivityPage({ params, searchParams }: { params: Promise<{ stepInstanceId: string }>; searchParams: Promise<{ journey?: string }> }) {
-  const [{ stepInstanceId }, { journey }] = await Promise.all([params, searchParams]);
+const commentDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "America/Sao_Paulo"
+});
+
+export default async function ActivityPage({
+  params,
+  searchParams
+}: {
+  params: Promise<{ stepInstanceId: string }>;
+  searchParams: Promise<{ journey?: string; comentario?: string }>;
+}) {
+  const [{ stepInstanceId }, query] = await Promise.all([params, searchParams]);
+  const journey = query.journey;
   if (!journey) notFound();
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const experience = await journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey);
+  const [experience, commentResult] = await Promise.all([
+    journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey),
+    journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId)
+  ]);
   if (experience.state.s?.step_instance_id !== stepInstanceId || !experience.activity) notFound();
 
   const accepted = experience.state.s.accepted_sections;
@@ -36,6 +52,35 @@ export default async function ActivityPage({ params, searchParams }: { params: P
         ))}
         {accepted < sectionTotal ? <button className="button button--primary" type="submit">Registrar leitura</button> : null}
       </form>
+
+      <section className="comments-section stack stack--large" id="comentarios" aria-labelledby="comentarios-titulo">
+        <div>
+          <p className="eyebrow">Participação</p>
+          <h2 id="comentarios-titulo">Comentários da aula</h2>
+          <p className="support-note">Compartilhe sua experiência com a atividade. Não publique dados pessoais, senhas ou informações financeiras.</p>
+        </div>
+        {query.comentario === "criado" ? <StatusPanel title="Comentário publicado" tone="success"><p>Sua participação já está visível nesta aula.</p></StatusPanel> : null}
+        <form action={createActivityCommentAction} className="card stack">
+          <input type="hidden" name="journey_instance_id" value={journey} />
+          <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+          <input type="hidden" name="idempotency_key" value={randomUUID()} />
+          <label htmlFor="activity-comment">Escreva seu comentário</label>
+          <textarea id="activity-comment" name="body" minLength={1} maxLength={2000} rows={4} required placeholder="Conte como você usa o ChatGPT no dia a dia ou responda à pergunta proposta na aula." />
+          <div className="form-footer"><span className="metadata">Máximo de 2.000 caracteres.</span><button className="button button--primary" type="submit">Publicar comentário</button></div>
+        </form>
+        {commentResult.comments.length === 0 ? (
+          <StatusPanel title="Nenhum comentário ainda" tone="info"><p>Seja a primeira pessoa a participar desta aula.</p></StatusPanel>
+        ) : (
+          <div className="comment-list" aria-live="polite">
+            {commentResult.comments.map((comment) => (
+              <article className="comment-card" key={comment.id}>
+                <div className="comment-header"><strong>{comment.author_name}</strong>{comment.is_own ? <span className="status-pill">Você</span> : null}<time dateTime={comment.created_at}>{commentDateFormatter.format(new Date(comment.created_at))}</time></div>
+                <p>{comment.body}</p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       {experience.state.q?.status === "failed" ? <StatusPanel title="Revise e tente novamente" tone="warning"><p>A tentativa anterior não atingiu o critério da atividade. O resultado é pedagógico e não representa risco ou elegibilidade de crédito.</p></StatusPanel> : null}
       {experience.state.q?.passed ? <StatusPanel title="Atividade concluída" tone="success"><p>O resultado e os pontos já foram registrados no ledger da jornada.</p></StatusPanel> : null}

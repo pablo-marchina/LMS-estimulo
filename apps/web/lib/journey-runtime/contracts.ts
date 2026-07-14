@@ -122,6 +122,41 @@ export type ParticipantExperience = {
   } | null;
 };
 
+export type ActivityComment = {
+  id: string;
+  step_instance_id: string;
+  author_name: string;
+  body: string;
+  status: "visible" | "hidden";
+  created_at: string;
+  is_own: boolean;
+};
+
+export type ActivityComments = {
+  step_instance_id: string;
+  comments: ActivityComment[];
+};
+
+export type OperatorActivityComment = {
+  id: string;
+  organization_id: string;
+  journey_instance_id: string;
+  step_instance_id: string;
+  activity_title: string;
+  author_name: string;
+  body: string;
+  status: "visible" | "hidden";
+  aggregate_version: number;
+  created_at: string;
+  moderated_at: string | null;
+  moderation_reason: string | null;
+};
+
+export type OperatorActivityComments = {
+  organization_id: string;
+  comments: OperatorActivityComment[];
+};
+
 export type OperatorInstances = {
   organization_id: string;
   instances: JourneyState[];
