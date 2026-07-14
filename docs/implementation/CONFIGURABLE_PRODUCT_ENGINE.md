@@ -1,8 +1,8 @@
 # Motor configurável de formulário, arquétipo e ativação
 
-**Versão:** 0.3  
+**Versão:** 0.4  
 **Data:** 2026-07-14  
-**Status:** núcleo lógico implementado; configuração oficial e integração às rotas pendentes
+**Status:** núcleo lógico e fluxo operacional implementados; configuração oficial e integração às rotas pendentes
 
 ## Objetivo
 
@@ -77,22 +77,39 @@ Regras versionadas podem gerar ações como:
 - definir segmento;
 - emitir evento.
 
-## Persistência
+## Fluxo operacional
 
-O motor de classificação é lógica de produto e deve permanecer independente do provedor de persistência.
-
-O arquivo `workflow.ts` e os utilitários HubSpot existentes demonstram um fluxo estrito de write/readback. Eles podem ser reutilizados para casos CRM críticos, mas não representam a única forma autorizada de executar o motor.
-
-O fluxo operacional recomendado é:
+`operational-workflow.ts` executa o núcleo sem depender do HubSpot:
 
 ```text
-carregar configuração publicada do LMS
-→ persistir submissão no banco operacional
-→ executar classificação
-→ persistir atribuição e ativações
-→ registrar eventos/outbox
-→ projetar resultado relevante para HubSpot
+configuração publicada
++ submissão persistida no LMS
++ pedido de classificação
+→ classificação
+→ atribuição
+→ ativações
+→ hashes de evidência
+→ comandos idempotentes de projeção CRM
 ```
+
+O resultado contém:
+
+- atribuição de arquétipo;
+- lote de ativações, quando houver;
+- hashes determinísticos de configuração, submissão, pedido, atribuição e ativações;
+- projeções resumidas de submissão, atribuição e ativações para publicação posterior pela outbox.
+
+As projeções não exigem readback síncrono. O produto pode concluir a operação local e sincronizar o HubSpot com retry e reconciliação.
+
+## Integração HubSpot existente
+
+O arquivo `workflow.ts` e os utilitários HubSpot existentes preservam o fluxo estrito de write/readback para testes e casos CRM realmente críticos.
+
+Esse fluxo:
+
+- não é o runtime central do diagnóstico;
+- não obriga cada submissão ou ativação a aguardar o CRM;
+- continua útil para validar idempotência, concorrência, `429`, `5xx` e readback.
 
 ## Extensibilidade
 
@@ -104,8 +121,10 @@ Não é necessário criar interface ou fluxos específicos para um quinto arqué
 
 ## Testes
 
-`npm run test:configurable-product` cobre atualmente:
+`npm run test:configurable-product` cobre:
 
+- fluxo operacional sem gateway HubSpot;
+- geração idempotente de projeções CRM;
 - classificação e ativação;
 - versões publicadas;
 - validação de respostas;
@@ -113,19 +132,18 @@ Não é necessário criar interface ou fluxos específicos para um quinto arqué
 - histórico append-only;
 - recálculo;
 - override;
-- extensibilidade do número de arquétipos.
-
-Os testes que usam o adapter HubSpot em memória validam capacidades de integração, não obrigam o runtime final a depender de readback síncrono.
+- extensibilidade do número de arquétipos;
+- capacidades do adapter HubSpot em memória.
 
 ## Pendências necessárias
 
 - carregar o formulário oficial;
 - carregar os quatro arquétipos e scoring oficial;
 - definir empate ou resultado inconclusivo;
-- aplicar a configuração às rotas existentes;
+- persistir configuração, submissão, atribuição e ativações no banco operacional;
+- enfileirar os comandos de projeção na outbox existente;
+- aplicar a configuração às rotas atuais;
 - criar administração mínima de draft, preview e publicação;
-- persistir resultados no banco operacional;
-- publicar as projeções relevantes no HubSpot;
 - executar E2E com o diagnóstico oficial.
 
 ## Gates
@@ -133,6 +151,9 @@ Os testes que usam o adapter HubSpot em memória validam capacidades de integra�
 ```text
 configurable_form_contract_defined = true
 classification_engine_present = true
+operational_flow_without_hubspot_present = true
+crm_projection_commands_present = true
+crm_projection_requires_synchronous_readback = false
 classification_abstention_supported = true
 fabricated_confidence_generated = false
 assignment_history_append_only = true
@@ -140,8 +161,9 @@ override_audited = true
 activation_rules_versioned = true
 official_form_loaded = false
 official_four_archetypes_loaded = false
+operational_persistence_integrated = false
 application_routes_integrated = false
-hubspot_projection_integrated = false
+hubspot_projection_outbox_integrated = false
 ```
 
 O motor existente deve ser integrado e configurado, não reescrito.
