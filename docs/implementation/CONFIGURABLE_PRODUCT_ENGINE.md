@@ -1,8 +1,8 @@
 # Motor configurável de formulário, arquétipo e ativação
 
-**Versão:** 0.4  
+**Versão:** 0.5  
 **Data:** 2026-07-14  
-**Status:** núcleo lógico e fluxo operacional implementados; configuração oficial e integração às rotas pendentes
+**Status:** núcleo lógico, fluxo operacional, persistência transacional e outbox implementados; configuração oficial e integração às rotas pendentes
 
 ## Objetivo
 
@@ -83,7 +83,7 @@ Regras versionadas podem gerar ações como:
 
 ```text
 configuração publicada
-+ submissão persistida no LMS
++ submissão
 + pedido de classificação
 → classificação
 → atribuição
@@ -97,9 +97,45 @@ O resultado contém:
 - atribuição de arquétipo;
 - lote de ativações, quando houver;
 - hashes determinísticos de configuração, submissão, pedido, atribuição e ativações;
-- projeções resumidas de submissão, atribuição e ativações para publicação posterior pela outbox.
+- projeções resumidas de submissão, atribuição e ativações.
 
-As projeções não exigem readback síncrono. O produto pode concluir a operação local e sincronizar o HubSpot com retry e reconciliação.
+As projeções não exigem readback síncrono.
+
+## Persistência operacional
+
+O RPC `public.persist_configurable_product_result` persiste, em uma única transação:
+
+```text
+submissão e respostas
+→ resultado
+→ atribuição de arquétipo
+→ decisões de ativação
+→ eventos
+→ outbox integration.hubspot
+```
+
+A implementação reutiliza as estruturas existentes:
+
+- `diagnostics.sessions`;
+- `diagnostics.responses`;
+- `diagnostics.results`;
+- `diagnostics.archetype_assignments`;
+- `orchestration.personalization_decisions`;
+- `eventing.events`;
+- `eventing.outbox`.
+
+Não foram criadas tabelas paralelas.
+
+O RPC possui:
+
+- autorização para participante ou operador com `participant.manage`;
+- validação de formulário, jornada, respostas e arquétipo publicado;
+- idempotência e replay sem duplicação;
+- rejeição de chave reutilizada com payload diferente;
+- rollback integral em falha;
+- acesso restrito a `postgres`, `service_role` e `app_worker`.
+
+A migration remota `20260714161338_configurable_product_operational_persistence` foi aplicada no Supabase de desenvolvimento/teste e materializada no histórico executável M16.
 
 ## Integração HubSpot existente
 
@@ -111,6 +147,8 @@ Esse fluxo:
 - não obriga cada submissão ou ativação a aguardar o CRM;
 - continua útil para validar idempotência, concorrência, `429`, `5xx` e readback.
 
+O worker produtivo que consumirá a rota `integration.hubspot` continua pendente do inventário real da conta.
+
 ## Extensibilidade
 
 A implementação suporta quantidade variável de arquétipos. Essa flexibilidade deve ser preservada, mas não é prioridade de produto.
@@ -121,30 +159,29 @@ Não é necessário criar interface ou fluxos específicos para um quinto arqué
 
 ## Testes
 
-`npm run test:configurable-product` cobre:
+`npm run test:configurable-product` cobre o núcleo lógico e as projeções.
 
-- fluxo operacional sem gateway HubSpot;
-- geração idempotente de projeções CRM;
-- classificação e ativação;
-- versões publicadas;
-- validação de respostas;
-- empate e abstenção;
-- histórico append-only;
-- recálculo;
-- override;
-- extensibilidade do número de arquétipos;
-- capacidades do adapter HubSpot em memória.
+`npm run test:configurable-product-persistence` cobre:
+
+- persistência de sessão, respostas, resultado e atribuição;
+- persistência das ativações;
+- criação da outbox HubSpot;
+- replay sem duplicação;
+- rejeição de chave idempotente incompatível;
+- acesso não autorizado;
+- rollback em arquétipo inválido.
+
+Os arquétipos usados no teste de banco são explicitamente sintéticos e existem somente no PostgreSQL efêmero.
 
 ## Pendências necessárias
 
 - carregar o formulário oficial;
 - carregar os quatro arquétipos e scoring oficial;
 - definir empate ou resultado inconclusivo;
-- persistir configuração, submissão, atribuição e ativações no banco operacional;
-- enfileirar os comandos de projeção na outbox existente;
 - aplicar a configuração às rotas atuais;
 - criar administração mínima de draft, preview e publicação;
-- executar E2E com o diagnóstico oficial.
+- implementar o adapter/worker HubSpot real;
+- executar E2E no navegador com o diagnóstico oficial.
 
 ## Gates
 
@@ -159,11 +196,14 @@ fabricated_confidence_generated = false
 assignment_history_append_only = true
 override_audited = true
 activation_rules_versioned = true
+operational_persistence_integrated = true
+hubspot_projection_outbox_integrated = true
+remote_development_migration_applied = true
+migration_history_materialized = true
 official_form_loaded = false
 official_four_archetypes_loaded = false
-operational_persistence_integrated = false
 application_routes_integrated = false
-hubspot_projection_outbox_integrated = false
+hubspot_real_worker_implemented = false
 ```
 
-O motor existente deve ser integrado e configurado, não reescrito.
+O motor existente deve ser configurado e ligado às rotas, não reescrito.
