@@ -1,6 +1,6 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 3.3  
+**Versão:** 3.4  
 **Data:** 2026-07-14  
 **Status:** ativo
 
@@ -20,7 +20,7 @@ Este documento registra somente estado, lacunas e critérios de encerramento. A 
 | ID | Severidade | Lacuna | Critério de encerramento |
 |---|---|---|---|
 | `PRODUCT-CONFIGURATION` | P0 | faltam perguntas/opções homologadas, scoring, desempate, textos finais, ativações e Jornada OpenAI publicável | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
-| `LMS-MUST-HAVES` | P0 | comentários, uploads, provas, selos e certificados incompletos | fluxos reais com autorização, eventos e testes |
+| `LMS-MUST-HAVES` | P0 | comentários por aula estão concluídos; uploads, provas, selos e certificados permanecem incompletos | capacidades restantes com autorização, eventos e testes |
 | `IDENTITY-SITE-INTEGRATION` | P0 | login real e entrada pelo site não comprovados | identidade única, sessão e permissões testadas |
 | `HUBSPOT-PHYSICAL-INTEGRATION` | P0 | adapter e modelo físico reais ausentes | inventário, matriz de projeção, retry, reconciliação e E2E no sandbox |
 | `BROWSER-ACCESSIBILITY` | P1 | navegador, mobile e acessibilidade não comprovados | E2E e auditoria dos fluxos críticos |
@@ -49,11 +49,15 @@ openai_journey_editorial_gate_closed = false
 
 ```text
 recovered_migration_count = 245
+active_migration_count = 3
+total_migration_count = 248
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 configurable_product_persistence_e2e_passed = true
+activity_comments_e2e_passed = true
+activity_comments_remote_surface_verified = true
 rls_negative_checks_passed = true
 idempotency_and_concurrency_passed = true
 events_and_outbox_passed = true
