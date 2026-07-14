@@ -81,12 +81,14 @@ async function buildReplayPlan() {
   const m13Manifest = await readJson(path.join(canonicalDirectory, 'M13_RUNTIME_MANIFEST.json'));
   const m14Manifest = await readJson(path.join(canonicalDirectory, 'M14_RUNTIME_MANIFEST.json'));
   const m15Manifest = await readJson(path.join(canonicalDirectory, 'M15_RUNTIME_MANIFEST.json'));
+  const m16Manifest = await readJson(path.join(canonicalDirectory, 'M16_RUNTIME_MANIFEST.json'));
 
   const plan = [
     ...manifestEntries(m00M12Manifest, 'recovered-m00-m12'),
     ...manifestEntries(m13Manifest, 'recovered-m13'),
     ...manifestEntries(m14Manifest, 'recovered-m14'),
     ...manifestEntries(m15Manifest, 'recovered-m15'),
+    ...manifestEntries(m16Manifest, 'recovered-m16'),
   ].sort((left, right) => left.version.localeCompare(right.version));
 
   const versions = plan.map((migration) => migration.version);
@@ -103,7 +105,10 @@ async function buildReplayPlan() {
   if (m15Manifest.migration_count !== 1) {
     fail(`expected 1 M15 migration, found ${m15Manifest.migration_count}`);
   }
-  if (plan.length !== 244) fail(`expected 244 replay files, found ${plan.length}`);
+  if (m16Manifest.migration_count !== 1) {
+    fail(`expected 1 M16 migration, found ${m16Manifest.migration_count}`);
+  }
+  if (plan.length !== 245) fail(`expected 245 replay files, found ${plan.length}`);
 
   return plan;
 }
@@ -155,6 +160,7 @@ export async function replayCleanDatabase(databaseUrl) {
     recovered_m13: 165,
     recovered_m14: 2,
     recovered_m15: 1,
+    recovered_m16: 1,
     first_version: plan[0].version,
     last_version: plan.at(-1).version,
   };
