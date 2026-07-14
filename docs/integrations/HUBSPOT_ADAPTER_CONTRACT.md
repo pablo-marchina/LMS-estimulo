@@ -1,27 +1,20 @@
-# Contrato do adapter HubSpot autoritativo
+# Contrato do adapter HubSpot
 
-**Versão:** 0.1  
-**Data:** 2026-07-10  
-**Status:** Implementado no adapter de teste; adapter real bloqueado pelo inventário da conta
+**Versão:** 0.2  
+**Data:** 2026-07-14  
+**Status:** porta e adapter de teste existentes; adapter real pendente
 
-## 1. Objetivo
+## Objetivo
 
-Garantir que nenhuma função de negócio use payload recém-recebido ou dado local sem origem HubSpot comprovada.
+Isolar a aplicação da API física do HubSpot e garantir sincronização idempotente, observável e reconciliável.
 
-O contrato é independente de:
+O contrato não torna o HubSpot banco operacional do LMS e não exige readback antes de toda regra de negócio.
 
-- nomes físicos de propriedades;
-- object type IDs;
-- custom objects ou app objects;
-- autenticação por app privado ou OAuth;
-- plano contratado;
-- limites concretos da conta.
+## Porta existente
 
-Essas decisões permanecem bloqueadas até o inventário real.
+A aplicação depende de `HubSpotDataGateway`, não de SDK ou endpoint específico.
 
-## 2. Porta obrigatória
-
-A aplicação depende de `HubSpotDataGateway`, não da API REST nem de SDK específico.
+Operações disponíveis:
 
 ```text
 write(command)
@@ -29,7 +22,11 @@ readBack(receipt)
 read(query)
 ```
 
-Todo comando de escrita declara:
+A porta e o `InMemoryHubSpotAdapter` podem ser reaproveitados no adapter real.
+
+## Escrita
+
+Cada comando deve declarar, no mínimo:
 
 ```text
 idempotencyKey
@@ -40,22 +37,30 @@ expectedVersion opcional
 payload
 ```
 
-Toda confirmação de escrita retorna:
+O adapter deve:
 
-```text
-portalId
-objectType
-objectId
-writeId
-acceptedAt
-expectedPayloadHash
-expectedVersion
-replayed
-```
+- impedir duplicação por idempotência;
+- tratar conflitos de versão;
+- traduzir erros retryable;
+- registrar tentativa e resultado sem expor dados sensíveis;
+- suportar batch quando aplicável.
 
-## 3. Prova de origem
+## Readback
 
-Uma leitura válida possui:
+Readback é uma capacidade do adapter, usada quando a confirmação externa é necessária.
+
+Casos típicos:
+
+- criação de objeto cujo ID será usado imediatamente;
+- escrita crítica sujeita a workflow externo;
+- atualização com expectativa de versão;
+- verificação durante reconciliação.
+
+Não é requisito executar write/readback antes de cada classificação, avaliação, progresso ou ponto.
+
+## Leitura e snapshots
+
+Leituras do HubSpot usadas pelo LMS devem registrar origem suficiente para auditoria:
 
 ```text
 portalId
@@ -64,131 +69,86 @@ objectId
 propertyOrPayloadVersion
 hubspotUpdatedAt
 retrievedAt
-snapshotHash
+snapshotHash quando necessário
 ```
 
-O gate rejeita:
+Validação de idade e hash é obrigatória apenas quando a regra depender da atualidade ou integridade exata do snapshot.
 
-- campo de origem vazio;
-- timestamp inválido;
-- snapshot vencido;
-- snapshot no futuro;
-- objeto ou versão diferente da escrita aceita;
-- hash divergente do payload aceito.
+## Adapter em memória
 
-## 4. Fluxo obrigatório
+`InMemoryHubSpotAdapter` existe para testes e reproduz:
 
-```text
-write collected data
-→ retry idempotente quando permitido
-→ readback
-→ validar identidade, versão, idade e hash
-→ executar decisão usando HubSpotSnapshot
-→ write business result
-→ retry idempotente quando permitido
-→ readback do resultado
-→ validar identidade, versão, idade e hash
-→ liberar usos posteriores
-```
-
-O callback da decisão recebe um `HubSpotSnapshot`, e não o payload bruto da requisição.
-
-## 5. Adapter em memória
-
-`InMemoryHubSpotAdapter` existe exclusivamente para desenvolvimento e testes automatizados.
-
-Ele reproduz:
-
-- criação e atualização de objetos;
-- versões monotônicas;
+- criação e atualização;
 - idempotência;
-- conflito de versão;
+- conflitos de versão;
 - readback;
 - atraso de visibilidade;
-- falhas planejadas de escrita e leitura;
-- erros retryable como `429` e `5xx`;
-- alteração externa concorrente;
-- métricas de tentativas e escritas confirmadas.
+- `429` e `5xx`;
+- alteração concorrente.
 
-Ele não define o modelo físico futuro do HubSpot e não pode ser promovido como adapter produtivo.
+Ele não define o modelo físico da conta e não é adapter produtivo.
 
-## 6. Códigos de contrato já testados
+## Fluxos suportados
 
-```text
-HUBSPOT_RATE_LIMITED
-HUBSPOT_UNAVAILABLE
-HUBSPOT_READBACK_NOT_VISIBLE
-HUBSPOT_READBACK_HASH_MISMATCH
-HUBSPOT_READBACK_IDENTITY_MISMATCH
-HUBSPOT_READBACK_SUPERSEDED
-HUBSPOT_IDEMPOTENCY_KEY_REUSED
-HUBSPOT_VERSION_CONFLICT
-HUBSPOT_SOURCE_STALE
-HUBSPOT_SOURCE_FROM_FUTURE
-HUBSPOT_OBJECT_NOT_FOUND
-```
-
-A tradução de erros HTTP reais será definida no adapter produtivo.
-
-## 7. Evidência de decisão
-
-Toda decisão bem-sucedida produz:
+### Sincronização assíncrona padrão
 
 ```text
-decisionId
-policyVersionId
-executedAt
-inputSources[]
-resultSource
+outbox do LMS
+→ write idempotente
+→ sucesso ou retry
+→ reconciliação em falha permanente
 ```
 
-Isso permite provar quais snapshots HubSpot originaram o resultado.
+### Escrita crítica
 
-## 8. Testes permanentes
-
-Comando:
-
-```bash
-npm run test:hubspot-contracts
+```text
+write
+→ readback
+→ validar identidade/versão
+→ liberar efeito dependente
 ```
 
-Casos cobertos:
+### Entrada do HubSpot
 
-1. escrita, readback, decisão, escrita do resultado e readback final;
-2. `429` e consistência eventual sem duplicação;
-3. indisponibilidade impedindo a decisão;
-4. replay idempotente e rejeição de reuso incompatível;
-5. concorrência otimista após alteração externa;
-6. snapshot vencido;
-7. divergência de hash antes da lógica de negócio.
+```text
+webhook ou leitura programada
+→ validar origem
+→ atualizar snapshot autorizado
+→ registrar evento de integração
+```
 
-O Web CI executa esse gate quando o adapter, seus contratos, seus testes ou o workflow mudam.
-
-## 9. Pendências para o adapter real
-
-Dependem do inventário da conta:
+## Pendências do adapter real
 
 - autenticação;
 - scopes;
 - objetos e propriedades;
 - associações;
+- busca e deduplicação;
 - batch endpoints;
 - webhooks;
 - limites de requisição;
-- regras de busca e deduplicação;
-- estratégia física de versionamento;
-- tradução de erros reais;
-- testes contra sandbox HubSpot.
+- tradução de erros;
+- testes no sandbox.
 
-## 10. Gates
+## Testes existentes
+
+O comando abaixo continua disponível para validar as capacidades mais estritas do gateway:
+
+```bash
+npm run test:hubspot-contracts
+```
+
+Esses testes são utilitários de integração, não gate obrigatório para toda mudança de frontend.
+
+## Gates
 
 ```text
 hubspot_gateway_contract_defined = true
 hubspot_test_adapter_implemented = true
-write_readback_use_gate_tested = true
-raw_request_payload_used_for_business_decision = false
-local_only_data_used_for_business_decision = false
 hubspot_real_adapter_implemented = false
 hubspot_inventory_complete = false
-hubspot_physical_model_approved = false
+projection_matrix_approved = false
+async_sync_tested = false
+critical_readback_tested = false
+reconciliation_tested = false
 ```

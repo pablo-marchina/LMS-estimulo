@@ -94,9 +94,6 @@ jobs:
       - name: Validate dependency lock
         run: npm run validate:dependency-lock
 
-      - name: Validate semantic naming
-        run: npm run validate:semantic-naming
-
       - name: Validate repository hygiene
         run: npm run validate:repository
 

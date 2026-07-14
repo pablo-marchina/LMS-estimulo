@@ -1,228 +1,135 @@
 # Fluxo lógico de integração com HubSpot
 
-**Versão:** 0.2  
-**Data:** 2026-07-10  
-**Status:** Arquitetura autoritativa definida; materialização física bloqueada pelo inventário do sandbox
+**Versão:** 0.3  
+**Data:** 2026-07-14  
+**Status:** fluxo lógico simplificado; adapter real pendente
 
-## 1. Papel do HubSpot
+## Papel do HubSpot
 
-HubSpot é a fonte autoritativa de todos os dados de negócio coletados e utilizados pelo produto.
+O HubSpot é o User 360 da Estímulo e concentra os dados necessários para relacionamento e acompanhamento do empreendedor.
 
-Isso inclui:
+Projeções prioritárias:
 
-- identidade operacional do usuário e da organização;
-- definições e versões de formulários;
-- perguntas e opções;
-- submissões e respostas;
-- arquétipos e suas versões;
-- políticas de classificação;
-- atribuições, recálculos e overrides;
-- regras que determinam onde e quando os resultados são utilizados;
-- execuções dessas regras;
-- estados de jornada e relacionamento usados por funcionalidades.
+- identidade e negócio;
+- vínculo com a jornada de crédito;
+- versão e resultado vigente do diagnóstico;
+- arquétipo vigente;
+- matrícula e progresso agregado;
+- conclusão, selos e certificados;
+- sinais comportamentais aprovados;
+- segmentos, tarefas e comunicações.
 
-PostgreSQL não é fonte independente desses dados. Ele permanece como plano técnico de integração, auditoria, idempotência, cache com linhagem e reconciliação.
+O HubSpot não substitui o banco operacional do LMS nem o event store detalhado.
 
-## 2. Regra de uso
-
-Nenhum dado recebido diretamente da interface poderá alimentar uma decisão de negócio antes de ser persistido no HubSpot e confirmado por readback.
+## Fluxo de saída do LMS
 
 ```text
-usuário envia dados
-→ plataforma valida apenas formato e autorização
-→ HubSpot recebe e persiste
-→ plataforma executa readback
-→ snapshot HubSpot é registrado
-→ classificação ou regra consome o snapshot HubSpot
-→ resultado volta ao HubSpot
-→ novo readback confirma o resultado
-→ usos posteriores são liberados
+participante ou operador executa ação
+→ LMS valida e persiste a transação
+→ evento e outbox são gravados atomicamente
+→ worker transforma a projeção necessária
+→ adapter escreve no HubSpot com idempotência
+→ sucesso encerra a entrega
+→ falha segue retry e reconciliação
 ```
 
-São usos de negócio:
+A experiência do participante não depende, por padrão, da confirmação síncrona do HubSpot.
 
-- classificação de arquétipo;
-- personalização;
-- recomendação;
-- seleção de trilha;
-- segmentação;
-- criação de tarefas;
-- comunicação;
-- relatórios operacionais;
-- qualquer função futura baseada em respostas, arquétipos ou comportamento.
+## Escritas que exigem confirmação
 
-## 3. Escrita de dados coletados
+Readback deve ser usado quando a confirmação do CRM é necessária antes do próximo efeito, como:
 
-Todo campo coletado deverá possuir destino HubSpot obrigatório.
+- criação ou vínculo de identidade CRM;
+- alteração de dado crítico consumido imediatamente por workflow externo;
+- escrita sujeita a conflito de versão;
+- ação irreversível baseada na confirmação externa.
 
-Cada mapeamento declarará:
+Para progresso, avaliações e eventos comuns, confirmação assíncrona e reconciliação são suficientes.
+
+## Fluxo de entrada do HubSpot
 
 ```text
-source_field
-hubspot_object_type
-hubspot_property_or_associated_object
-transformation
-required_for_submission
-sensitivity
-retention
-version
-status
-```
-
-Uma submissão somente será considerada funcionalmente concluída quando:
-
-```text
-hubspot_write_succeeded = true
-hubspot_readback_matches = true
-all_required_fields_confirmed = true
-```
-
-Caso o HubSpot esteja indisponível, a plataforma poderá manter estado técnico `pending_hubspot`, mas não poderá classificar nem utilizar os dados.
-
-## 4. Leitura de dados utilizados
-
-Toda leitura usada em uma decisão deverá ser direta do HubSpot ou de uma réplica comprovadamente HubSpot-sourced.
-
-A linhagem mínima é:
-
-```text
-portal_id
-object_type
-object_id
-source_version
-hubspot_updated_at
-retrieved_at
-snapshot_hash
-cache_expires_at
-```
-
-Caches são permitidos somente quando:
-
-- são alimentados exclusivamente por HubSpot;
-- não aceitam edição local independente;
-- possuem TTL e invalidação;
-- são atualizados por webhook ou reconciliação;
-- dados vencidos não alimentam decisões;
-- a execução registra o snapshot usado.
-
-## 5. Configuração editável
-
-Formulários, arquétipos, políticas e usos posteriores serão administráveis pela plataforma, mas a persistência autoritativa ocorrerá no HubSpot.
-
-Modelo lógico mínimo:
-
-```text
-FormDefinition
-FormVersion
-QuestionVersion
-QuestionOptionVersion
-FormSubmission
-FormAnswer
-ArchetypeDefinition
-ArchetypeVersion
-ClassificationPolicyVersion
-ArchetypeAssignment
-ActivationRuleVersion
-ActivationExecution
-HubSpotFieldMappingVersion
-```
-
-O modelo físico poderá usar objetos CRM customizados, app objects, propriedades, associações e app events, conforme as capacidades reais da conta.
-
-## 6. Arquétipos variáveis
-
-A quantidade de arquétipos é configurável.
-
-- a operação inicial pode começar com quatro;
-- adicionar ou remover arquétipos ativos cria nova versão de política;
-- um arquétipo histórico não é apagado se já tiver sido atribuído;
-- retirada significa deixar de ser elegível para classificações futuras;
-- reclassificação retroativa exige operação explícita;
-- cada atribuição, recálculo ou override gera um novo registro HubSpot.
-
-## 7. Regra de utilização dos resultados
-
-O local e o momento de uso de respostas ou arquétipos serão definidos por regras de ativação versionadas.
-
-Exemplo lógico:
-
-```text
-quando:
-  archetype_version = X
-  response.business_stage = Y
-  confidence >= threshold
-
-então:
-  assign_journey = Z
-  create_task = true
-  set_contact_segment = W
-```
-
-A regra e os dados usados deverão ser lidos do HubSpot. A execução também será persistida no HubSpot.
-
-## 8. Plano técnico PostgreSQL
-
-PostgreSQL poderá armazenar apenas estruturas técnicas como:
-
-- `integration.connections`;
-- `mapping_definitions` e versões;
-- `external_object_mappings`;
-- `sync_jobs` e `sync_attempts`;
-- `webhook_receipts`;
-- `conflicts`;
-- `reconciliation_runs` e itens;
-- outbox;
-- idempotência;
-- cache HubSpot-sourced com origem e validade;
-- auditoria técnica da decisão.
-
-Tabelas locais de diagnóstico, respostas e resultados existentes não poderão alimentar novas decisões sem antes serem reconciliadas com o HubSpot.
-
-## 9. Entrada do HubSpot
-
-```text
-Webhook HubSpot
+webhook HubSpot
 → validação de assinatura e replay
-→ webhook receipt
-→ resolução de objeto e associação
-→ atualização/invalidação do cache
-→ evento técnico de sincronização
+→ registro do receipt
+→ resolução de contato/empresa
+→ atualização do snapshot autorizado
+→ evento de integração
 → reconciliação quando necessário
 ```
 
-Webhooks não criam uma segunda autoridade local. Eles atualizam a réplica técnica da autoridade HubSpot.
+Dados do HubSpot que podem influenciar o LMS incluem identidade, empresa, segmento, status de crédito autorizado e preferências de relacionamento.
 
-## 10. Falhas e limites
+## Matriz de projeção
 
-A integração deverá implementar:
+Cada projeção deve declarar:
 
-- batch APIs quando disponíveis;
-- retry com backoff e jitter;
-- tratamento de `429`;
-- DLQ;
+```text
+source_entity_or_event
+business_purpose
+hubspot_object
+hubspot_property_or_association
+transformation
+sync_frequency
+sensitivity
+retention
+reconciliation_rule
+```
+
+Não é necessário criar um objeto HubSpot para cada entidade interna do LMS.
+
+## Configuração do produto
+
+Formulários, jornadas, conteúdos, avaliações, arquétipos e regras são versionados na plataforma.
+
+O HubSpot recebe:
+
+- identificador da definição e versão publicada;
+- resultado vigente e histórico necessário para operação;
+- agregados e referências úteis para segmentação e relacionamento.
+
+A edição completa dessas estruturas não depende de modelagem editorial dentro do CRM.
+
+## Indisponibilidade
+
+Quando o HubSpot estiver indisponível:
+
+- ações do LMS continuam sendo persistidas;
+- projeções permanecem pendentes na outbox;
+- retries usam backoff e idempotência;
+- erros permanentes são enviados para reconciliação;
+- apenas funcionalidades que exigem estado CRM atual ficam degradadas.
+
+## Requisitos do adapter real
+
+- autenticação e scopes mínimos;
+- mapeamento de contato e empresa;
+- batch quando vantajoso;
 - idempotência;
-- readback;
+- tratamento de `429` e `5xx`;
+- webhooks quando disponíveis;
+- observabilidade sem payload sensível;
 - reconciliação periódica;
-- monitoramento de consumo de API;
-- cache de configurações HubSpot-sourced;
-- webhooks para reduzir polling.
+- testes no sandbox.
 
-O HubSpot recomenda batch e cache para reduzir chamadas e webhooks para receber atualizações; os limites variam conforme distribuição do app e assinatura da conta.
+## Dados que não devem ser projetados por padrão
 
-## 11. Bloqueios para materialização física
+- cada clique ou visualização bruta;
+- logs técnicos;
+- tokens e segredos;
+- arquivos binários;
+- payloads completos sem finalidade operacional;
+- dados temporários de retry além do necessário.
 
-É necessário obter do sandbox HubSpot:
+## Critério de conclusão
 
-- plano e hubs contratados;
-- disponibilidade de objetos customizados ou app objects;
-- objetos e propriedades existentes;
-- pipelines e workflows existentes;
-- associações disponíveis;
-- scopes do app;
-- webhooks disponíveis;
-- limites de API aplicáveis;
-- regras de deduplicação;
-- identificadores de contato e empresa;
-- política institucional de propriedade dos campos.
-
-Sem esse inventário, o modelo lógico está definido, mas o schema físico HubSpot não pode ser aprovado.
+```text
+hubspot_inventory_complete = true
+projection_matrix_approved = true
+real_adapter_implemented = true
+identity_mapping_tested = true
+idempotency_and_retry_tested = true
+reconciliation_tested = true
+critical_readback_tested = true
+lms_outage_independence_tested = true
+```

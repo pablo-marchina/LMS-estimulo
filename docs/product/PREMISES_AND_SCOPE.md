@@ -1,86 +1,121 @@
 # Premissas e escopo
 
-**Versão:** 0.4  
-**Data:** 2026-07-10  
-**Status:** Baseline revalidada para o E14
+**Versão:** 0.5  
+**Data:** 2026-07-14  
+**Status:** baseline alinhada às referências oficiais
 
 ## Hierarquia de referência
 
-1. `Estimulo_all` e decisões explícitas posteriores da Estímulo;
-2. ADRs atuais;
-3. estado real do repositório e ambientes autorizados;
-4. demais documentos;
-5. código e artefatos legados.
+1. documentos oficiais de referência fornecidos pela Estímulo;
+2. alterações posteriores explicitamente aprovadas pela Estímulo;
+3. decisões de produto e arquitetura que apenas interpretam as referências;
+4. estado real do repositório e dos ambientes autorizados;
+5. documentação técnica, código e histórico legado.
+
+Um ADR não pode modificar silenciosamente um requisito oficial. Quando houver alteração de produto, ela deve identificar a referência afetada e a aprovação correspondente.
 
 ## Problema central
 
-A Estímulo precisa transformar capacitação em uma camada integrada à jornada do empreendedor. Interações relevantes devem preservar contexto, sequência e temporalidade para personalização, relacionamento e pesquisa futura.
+A Estímulo precisa transformar capacitação em uma camada integrada à jornada do empreendedor. As interações relevantes devem preservar contexto, sequência e temporalidade para personalização, relacionamento e pesquisa futura.
 
 ## Resultado esperado
 
 A plataforma deverá:
 
 - operar jornadas e conteúdos próprios ou externos;
-- configurar formulários versionados;
-- iniciar com quatro arquétipos, sem limite estrutural fixo;
-- permitir adicionar, retirar, dividir, fundir e versionar arquétipos;
-- versionar políticas de classificação e regras de utilização;
-- preservar submissões, atribuições, recálculos e overrides;
-- armazenar no HubSpot todos os dados de negócio coletados;
-- usar em funções de negócio somente dados provenientes do HubSpot;
-- registrar ações relevantes com finalidade, retenção e contrato.
+- publicar inicialmente a Jornada OpenAI;
+- configurar e versionar formulários, avaliações e regras;
+- operar inicialmente os quatro arquétipos oficiais;
+- personalizar jornadas conforme diagnóstico e contexto autorizado;
+- registrar interações relevantes, progresso, avaliações e pontos;
+- oferecer comentários, uploads, provas, selos e certificados;
+- manter o HubSpot como visão integrada do empreendedor;
+- suportar múltiplas jornadas sem mudança estrutural;
+- operar em AWS nos ambientes de staging e produção.
 
-## Ambientes
+## Ambientes e responsabilidades
 
-- Supabase: local, desenvolvimento e teste;
-- AWS: staging e produção;
-- HubSpot: autoridade dos dados de negócio em todos os ambientes;
-- PostgreSQL: plano técnico de outbox, idempotência, cache HubSpot-sourced, auditoria e reconciliação;
-- nenhuma promoção direta do Supabase para produção.
+- **Supabase:** desenvolvimento e teste;
+- **AWS:** staging e produção;
+- **PostgreSQL:** banco operacional do LMS, eventos, outbox, idempotência e auditoria técnica;
+- **HubSpot:** User 360, relacionamento e projeções de dados de negócio relevantes;
+- **storage autorizado:** arquivos, materiais, uploads e certificados.
+
+Não haverá promoção direta do Supabase para produção.
 
 ## HubSpot e dados do produto
 
-- Todo dado de negócio coletado deverá ser persistido no HubSpot.
-- Todo dado usado para classificação, personalização, recomendação, segmentação ou automação deverá ser lido do HubSpot ou de réplica com origem HubSpot comprovada.
-- Respostas recém-recebidas não poderão alimentar classificação antes da escrita e do readback no HubSpot.
-- Formulários, perguntas, opções, arquétipos, políticas e regras de ativação serão persistidos e versionados no HubSpot.
-- O estado `submitted` exige confirmação de escrita e readback.
-- Durante indisponibilidade, o dado poderá permanecer `pending_hubspot`, mas não poderá ser utilizado.
-- Caches locais exigem objeto de origem, versão, hash, horário de leitura, TTL e invalidação.
-- PostgreSQL não poderá ser uma autoridade paralela dos dados de usuário.
+- Identidade, informações do negócio, contexto de crédito autorizado, diagnóstico vigente, progresso agregado, conclusão e sinais aprovados deverão estar disponíveis no HubSpot.
+- Eventos granulares e telemetria permanecem no event store, com projeção seletiva para o HubSpot.
+- A sincronização padrão usa outbox, retry idempotente e reconciliação.
+- Readback é obrigatório somente para escritas CRM críticas que precisem de confirmação antes de uso imediato.
+- O LMS não depende de round-trip síncrono ao HubSpot para cada resposta, avaliação ou registro de progresso.
+- Formulários, jornadas, conteúdos, provas e políticas editoriais são versionados na plataforma; o HubSpot recebe versões, resultados e referências relevantes.
+- Nenhum log técnico, segredo ou binário será enviado ao HubSpot sem finalidade explícita.
 
 ## Formulário e arquétipos
 
 - Formulários seguem definição–versão–instância.
 - Rascunhos são editáveis; versões publicadas são imutáveis.
-- A configuração inicial pode ter quatro arquétipos, mas a quantidade ativa é editável.
-- Adicionar ou retirar arquétipos cria nova versão da política de classificação.
+- A operação inicial usa os quatro arquétipos oficiais.
+- A arquitetura pode aceitar alterações futuras, mas isso não substitui a obrigação de publicar os quatro perfis definidos pela referência.
 - Arquétipos já atribuídos não são apagados do histórico.
-- Resultados anteriores não são sobrescritos.
 - Recálculo e override são explícitos, autorizados e auditáveis.
-- Onde e quando o resultado será usado é definido por regras versionadas, não por condicionais hardcoded.
+- Confiança ou probabilidade somente será exibida quando sustentada pela metodologia aprovada.
+
+## Jornada OpenAI
+
+A primeira jornada publicada deve conter:
+
+- boas-vindas e bloco base opcional;
+- trilhas de Marketing e Vendas e de Gestão;
+- bloco avançado com Codex conforme regra aprovada;
+- vídeos, materiais, prompts, templates e práticas;
+- quick checks, provas, tentativas e critérios de conclusão;
+- pontos, selos e certificados;
+- comentários e uploads previstos nas aulas.
 
 ## Conteúdo externo
 
-Cada conteúdo deverá declarar provedor, identificador, URL, direitos, disponibilidade, tracking, regra de conclusão, fallback e versão.
+Conteúdo de parceiros deve declarar, no mínimo:
 
-## Fora do escopo inicial
+- provedor;
+- URL ou identificador;
+- autorização de uso;
+- forma de exibição ou redirecionamento;
+- regra de conclusão;
+- tracking mínimo;
+- fallback quando indisponível.
+
+## Crédito
+
+O momento da jornada de crédito pode ser usado para personalizar capacitação e relacionamento.
+
+Ficam fora do escopo da primeira entrega:
 
 - decisão automática de crédito;
 - score produtivo de aprovação ou rejeição;
-- múltiplos provedores sem necessidade;
+- alteração automática de taxa, limite ou garantia;
+- uso de arquétipo ou interação educacional sem validação e governança específicas.
+
+## Fora do escopo necessário
+
 - microserviços sem justificativa;
-- produção no Supabase;
-- envio de logs técnicos, segredos ou binários ao HubSpot sem finalidade.
+- múltiplos provedores sem necessidade;
+- aplicativo móvel nativo;
+- segunda jornada antes da conclusão da OpenAI;
+- marketplace complexo de recompensas;
+- substituição integral de legado já contido;
+- refatorações cosméticas sem impacto na entrega;
+- produção no Supabase.
 
 ## Princípios
 
-1. Decisões explícitas atuais prevalecem sobre artefatos antigos.
-2. Toda regra e configuração relevante possui versão.
-3. Arquétipos são configuráveis e sem limite hardcoded.
-4. Todo dado de negócio coletado é armazenado no HubSpot.
-5. Todo dado usado pelo produto possui origem HubSpot comprovável.
-6. PostgreSQL não é autoridade paralela dos dados de usuário.
-7. Toda ação relevante possui finalidade, retenção e teste.
-8. Supabase é somente teste e AWS staging é gate de produção.
-9. Código, integrações, testes e documentação mudam juntos.
+1. Referências oficiais prevalecem sobre ADRs, código e mockups.
+2. A Jornada OpenAI e os quatro arquétipos oficiais são as entradas prioritárias.
+3. Regras e versões publicadas preservam histórico.
+4. O HubSpot concentra a visão operacional; o LMS preserva o detalhe transacional e comportamental.
+5. Toda ação relevante possui evento, finalidade e teste proporcionais ao risco.
+6. Dívida técnica contida não bloqueia a entrega sem risco ou dependência concreta.
+7. Supabase é somente desenvolvimento/teste e AWS staging é gate de produção.
+8. Código, integrações, testes e documentação da mesma capacidade mudam juntos.
