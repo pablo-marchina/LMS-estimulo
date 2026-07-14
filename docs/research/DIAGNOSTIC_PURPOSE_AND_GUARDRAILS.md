@@ -1,120 +1,153 @@
 # Finalidade e guardrails do diagnóstico
 
-**Versão:** 0.1  
-**Data:** 2026-07-08  
-**Status:** Proposta para pesquisa e validação; não autorizada para decisão de crédito
+**Versão:** 0.2  
+**Data:** 2026-07-14  
+**Status:** requisito oficial para personalização inicial; instrumento ainda bloqueado para publicação até receber scoring e regras completas; não autorizado para decisão de crédito
 
-## 1. Objetivo
+## 1. Autoridade e objetivo
 
-Definir o que o diagnóstico da Plataforma Estímulo pode medir, para quais decisões de produto ele pode ser usado e quais interpretações permanecem proibidas até que existam evidências suficientes.
+Este documento interpreta as referências oficiais sem substituí-las. Em caso de conflito, prevalecem:
 
-O diagnóstico inicial não será um teste de personalidade, um score de crédito, uma avaliação clínica ou uma classificação permanente da pessoa. Ele será um instrumento versionado de personalização e pesquisa.
+1. `premissas-desenvolvimento.md`;
+2. `trabalho.md`;
+3. `arquetipos_estimulo.md`;
+4. alterações posteriores explicitamente aprovadas pela Estímulo;
+5. protótipos, código e documentos técnicos somente como evidência secundária.
 
-## 2. Usos autorizados na fase inicial
+A operação inicial deve aplicar um formulário versionado que atribua um dos quatro arquétipos oficiais:
+
+- Fazedor;
+- Batalhador;
+- Construtor;
+- Navegador.
+
+O diagnóstico serve inicialmente para personalização, relacionamento, ativação de conteúdo e pesquisa. Ele não é um teste clínico, uma classificação permanente da pessoa nem um score de crédito produtivo.
+
+## 2. Instrumento oficial identificado
+
+A referência `arquetipos_estimulo.md` descreve a versão 3 do formulário com:
+
+- 12 perguntas;
+- 5 dimensões;
+- perguntas situacionais;
+- quatro arquétipos de saída;
+- maturidade operacional calculada fora do formulário comportamental.
+
+As cinco dimensões oficiais são:
+
+1. D1 — Gestão financeira;
+2. D2 — Disciplina e hábito;
+3. D3 — Visão e planejamento;
+4. D4 — Perfil empreendedor;
+5. D5 — Relação com crédito e risco.
+
+O protótipo Raio-X contém uma Q13 sobre tempo de negócio. Essa pergunta é evidência secundária de implementação e deve ser tratada como contexto/maturidade, não como parte confirmada das 12 perguntas do arquétipo, até aprovação formal.
+
+## 3. Usos autorizados na fase inicial
 
 O diagnóstico poderá apoiar:
 
-1. escolha da trilha ou ordem inicial de atividades;
-2. intensidade e formato de suporte;
-3. recomendação de conteúdos de preparação;
-4. frequência e tipo de intervenção;
-5. identificação de barreiras de acesso ou aprendizagem;
-6. mensuração de mudanças ao longo da jornada;
-7. análise experimental da utilidade das dimensões e perfis;
-8. geração de hipóteses para futuras features comportamentais.
+1. apresentação do resultado oficial em linguagem não estigmatizante;
+2. escolha ou priorização de trilhas e conteúdos;
+3. intensidade e formato de suporte;
+4. criação de plano de ação por perfil;
+5. frequência e tipo de intervenção;
+6. combinação do arquétipo com maturidade e momento autorizado da jornada de crédito;
+7. mensuração da utilidade da personalização;
+8. pesquisa sobre estabilidade, compreensão e acionabilidade do instrumento.
 
-## 3. Usos proibidos na fase inicial
+## 4. Usos proibidos na fase inicial
 
 O diagnóstico não poderá, isoladamente ou em combinação com eventos do piloto:
 
 - aprovar ou reprovar crédito;
 - alterar taxa, limite, garantia ou condição financeira;
-- representar risco de inadimplência como fato;
+- representar risco de inadimplência como fato validado;
 - inferir caráter, honestidade, capacidade moral ou intenção de pagamento;
 - excluir participantes da capacitação;
 - produzir tratamento prejudicial sem revisão e governança;
 - ser apresentado como instrumento estatisticamente validado antes da validação;
-- ser utilizado para afirmar causalidade entre perfil, capacitação e resultado de crédito.
+- ser usado para afirmar causalidade entre perfil, capacitação e resultado de crédito;
+- transformar as descrições de risco do documento de arquétipos em regra produtiva de concessão.
 
-## 4. Arquitetura conceitual do diagnóstico
+As menções a risco de crédito existentes na referência são hipóteses de produto e pesquisa. Qualquer uso em crédito exige validação, governança, explicação, revisão humana, monitoramento e aprovação institucional específicas.
 
-O instrumento deverá manter três componentes separados.
+## 5. Separação conceitual obrigatória
 
-### 4.1 Perfil comportamental central
+A plataforma deve manter três camadas separadas.
 
-Dimensões relativamente persistentes, mas atualizáveis, relacionadas à forma como o empreendedor planeja, executa, aprende, busca apoio, verifica informações e reage a dificuldades.
+### 5.1 Arquétipo comportamental
 
-Este componente é o único candidato a sustentar arquétipos no futuro.
+Resultado do formulário oficial de 12 perguntas e 5 dimensões. A atribuição registra a versão do formulário, da política e dos textos de resultado.
 
-### 4.2 Snapshot contextual
+### 5.2 Maturidade operacional
 
-Condições que podem mudar rapidamente e não definem o arquétipo:
+Pré-infância, Infância, Adolescência ou Maturidade, obtida por dados objetivos autorizados. A referência determina que esse eixo não é calculado pelo formulário comportamental.
 
-- maturidade do negócio;
-- momento de crédito;
-- urgência financeira;
-- disponibilidade de tempo;
-- estrutura da equipe;
-- acesso digital;
-- limitações operacionais;
-- eventos externos recentes.
+### 5.3 Prontidão específica da jornada
 
-### 4.3 Prontidão específica da jornada
+Conhecimento, acesso, objetivos e barreiras ligados à jornada atual. Para a Jornada OpenAI, inclui experiência com IA, dispositivo, conectividade, tarefas desejadas, uploads, dados sensíveis e acesso às ferramentas.
 
-Conhecimento, acesso e objetivos ligados à jornada atual. Para a Jornada OpenAI:
+A personalização pode combinar as três camadas, mas elas não devem ser fundidas em um único rótulo.
 
-- experiência anterior com IA;
-- dispositivo e conectividade;
-- tarefas que deseja realizar;
-- familiaridade com upload, texto, áudio e arquivos;
-- capacidade de reconhecer dados sensíveis;
-- acesso às ferramentas exigidas;
-- confiança para revisar resultados produzidos por IA.
+## 6. Unidade de interpretação
 
-Prontidão de IA não é um traço permanente e não deve definir um arquétipo geral.
+O resultado deve ser apresentado como orientação de desenvolvimento baseada nas respostas daquela versão e contexto.
 
-## 5. Unidade de interpretação
-
-Os resultados deverão ser interpretados como evidências sobre respostas dadas em uma versão e contexto específicos.
-
-Não se deverá declarar:
+Evitar formulações permanentes ou estigmatizantes, como:
 
 > “O empreendedor é desorganizado.”
 
-Formulação permitida:
+Preferir:
 
-> “Nesta aplicação do instrumento, as respostas indicaram baixa frequência declarada de rotinas de planejamento e acompanhamento.”
+> “Suas respostas nesta aplicação indicam oportunidades de fortalecer rotinas de gestão e acompanhamento.”
 
-## 6. Requisitos de validade
+Os textos oficiais dos quatro resultados devem preservar o tom construtivo da referência.
 
-A validade não será tratada como propriedade permanente do formulário. Ela deverá ser sustentada para cada uso, público e contexto por evidências de:
+## 7. Regras de classificação e incerteza
 
-- conteúdo: itens representam adequadamente a dimensão;
+A premissa oficial determina que o formulário defina um dos quatro arquétipos. Entretanto, o pacote de referência não contém a planilha de iteração/scoring mencionada nem uma regra formal de empate.
+
+Portanto:
+
+- a plataforma deve suportar empate, prioridade e abstenção tecnicamente;
+- nenhuma dessas estratégias será ativada como política oficial sem aprovação;
+- não será inventada probabilidade ou confiança;
+- `confidence` permanece nulo enquanto não houver método aprovado;
+- a configuração oficial não pode ser publicada enquanto pesos, cortes e desempate não forem reproduzíveis;
+- o scoring hardcoded do protótipo Raio-X é evidência secundária e não fonte oficial.
+
+## 8. Versionamento, histórico e alteração
+
+- formulário segue definição–versão–instância;
+- rascunhos são editáveis;
+- versões publicadas são imutáveis;
+- respostas e resultados preservam a versão utilizada;
+- recálculo cria nova atribuição e não apaga a anterior;
+- override exige ator, justificativa e trilha de auditoria;
+- mudanças metodológicas exigem nova versão e changelog.
+
+## 9. Requisitos de validade
+
+A validade deve ser sustentada para o uso específico por evidências de:
+
+- conteúdo: itens representam adequadamente as cinco dimensões declaradas;
 - processo de resposta: participantes compreendem as perguntas como pretendido;
-- estrutura interna: itens se agrupam de forma compatível com as dimensões;
-- relação com outras variáveis: resultados se relacionam com comportamentos de forma coerente;
-- consequências: o uso não gera danos ou exclusões indevidas;
-- utilidade: o resultado efetivamente melhora a personalização.
+- estrutura interna: pesos e combinação produzem comportamento coerente;
+- estabilidade: resultados não variam arbitrariamente;
+- relação com outras variáveis: associações são analisadas sem assumir causalidade;
+- consequências: o uso não gera dano ou exclusão indevida;
+- utilidade: o resultado melhora de fato a personalização.
 
-## 7. Guardrails de classificação
+A afirmação de validação pela FDC e a base citada na referência precisam ser acompanhadas do relatório, base ou evidência metodológica correspondente antes de qualquer claim público de validação.
 
-- quatro arquétipos são uma hipótese de negócio, não uma quantidade a ser forçada nos dados;
-- deve existir estado `unclassified` ou `uncertain`;
-- a classificação deverá armazenar probabilidades ou confiança, não apenas um rótulo;
-- baixa confiança não será convertida em perfil definitivo;
-- cada atribuição registrará versão do instrumento e do modelo;
-- novas avaliações não apagarão atribuições anteriores;
-- o resultado deverá ser explicado em linguagem não estigmatizante;
-- arquétipos deverão gerar ações diferentes e testáveis;
-- características demográficas não serão usadas como entradas do arquétipo na primeira versão;
-- características demográficas poderão ser utilizadas, com finalidade e acesso controlados, para verificar equidade e diferenças de funcionamento dos itens.
+## 10. Relação com a Teoria da Mudança
 
-## 8. Relação com a Teoria da Mudança
-
-O diagnóstico deverá apoiar personalização e aplicação de conhecimentos, mas não substituir a mensuração de resultados. A plataforma deverá manter separadas:
+A plataforma deve manter separadas:
 
 ```text
 resposta diagnóstica
+→ arquétipo e contexto
 → recomendação ou intervenção
 → participação
 → compreensão
@@ -122,35 +155,20 @@ resposta diagnóstica
 → resultado posterior
 ```
 
-## 9. Política de atualização
+Conclusão de conteúdo, arquétipo ou engajamento não comprovam automaticamente impacto no negócio ou redução de risco.
 
-O diagnóstico deverá ser reaplicável em situações definidas, como:
+## 11. Gate de publicação
 
-- início de uma nova jornada;
-- mudança relevante de contexto;
-- intervalo temporal pré-definido;
-- solicitação do participante;
-- baixa confiança da classificação;
-- avaliação de mudança após intervenção.
+A configuração inicial só poderá ser publicada quando existirem:
 
-A reaplicação não deve ocorrer em frequência capaz de induzir respostas artificiais ou fadiga.
+- texto exato das 12 perguntas;
+- alternativas, condicionais e randomização aprovadas;
+- vínculo de cada alternativa às dimensões e arquétipos;
+- pesos, cortes, prioridades e regra de empate;
+- versão e changelog do instrumento;
+- textos finais dos quatro resultados;
+- matriz inicial de ativações permitidas;
+- revisão de linguagem, privacidade e consequências;
+- teste de equivalência entre a especificação aprovada e a configuração carregada.
 
-## 10. Critério de saída para produção
-
-Um arquétipo só poderá orientar personalização automática quando:
-
-- sua definição estiver documentada;
-- possuir itens e regras versionados;
-- tiver passado por entrevistas cognitivas;
-- produzir classificação reproduzível;
-- demonstrar acionabilidade;
-- possuir análise mínima de estabilidade e equidade;
-- permitir resultado incerto;
-- estiver aprovado para o uso específico.
-
-## Referências metodológicas
-
-- Knekta, Runyon e Eddy (2019), *One Size Doesn't Fit All*: validade depende do uso e contexto; análise fatorial é apenas uma das evidências necessárias.
-- Boateng et al. (2018), *Best Practices for Developing and Validating Scales*.
-- Sinha, Calfee e Delucchi (2021), *Practitioner's Guide to Latent Class Analysis*.
-- Tein, Coxe e Cham (2013), estudo de poder para identificação do número correto de classes.
+Até esse gate, o runtime pode ser testado apenas com configurações sintéticas claramente identificadas.
