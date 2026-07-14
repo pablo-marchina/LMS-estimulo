@@ -17,7 +17,7 @@
       "statement_count": 1,
       "remote_sql_bytes": 22333,
       "remote_sql_sha256": "99c7a1c9ef49387b0450a6ce8853511fdcb4736079e396910ffcb62b2b40187f",
-      "materialized_file_sha256": "17ce1c200a8dfa3f9a5c4cb62366d546638e84f665624666b243f6faa2f05ae8"
+      "materialized_file_sha256": "b0391560184e57ee4066532ee98b751332c53d9f5dc1905351e34c81245fff61"
     }
   ]
 }
