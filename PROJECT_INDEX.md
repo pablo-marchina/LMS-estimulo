@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.1  
+**Versão:** 4.2  
 **Data:** 2026-07-14  
-**Status:** fundação técnica reproduzível; produto oficial ainda incompleto
+**Status:** fundação técnica reproduzível; diagnóstico oficial reconciliado documentalmente; produto oficial ainda incompleto
 
 ## Hierarquia de referência
 
@@ -25,7 +25,7 @@ Entregar uma plataforma web LMS em produção na AWS que:
 - personalize a experiência;
 - registre interações, progresso e pontos;
 - ofereça comentários, uploads, provas, selos e certificados;
-- integre site, identidade, HubSpot e contexto autorizado de crédito;
+- integre site, identidade, HubSpot e contexto autorizado;
 - suporte futuras jornadas sem mudança estrutural.
 
 ## Ambientes e sistemas
@@ -45,16 +45,19 @@ O repositório já contém:
 
 - aplicação Next.js com seis rotas iniciais;
 - bridge de identidade e camada de aplicação de servidor;
-- 244 migrations executáveis;
+- 245 migrations executáveis;
 - replay limpo e equivalência estrutural;
 - 18 contratos públicos de RPC;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - motor configurável de formulário, arquétipos, classificação e ativações;
+- persistência transacional e outbox do resultado configurável;
 - porta HubSpot e adapter em memória;
 - lockfile e instalação reproduzível em Ubuntu e Windows;
 - contenção do legado de RPCs e helpers.
 
 Essa fundação não equivale ao produto final. A vertical atual ainda usa configuração sintética.
+
+A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring e desempate ainda não foram aprovados.
 
 ## Bloqueadores da entrega
 
@@ -90,7 +93,8 @@ O legado contido e a nomenclatura histórica são dívida técnica não bloquean
 
 - [Finalidade e guardrails](docs/research/DIAGNOSTIC_PURPOSE_AND_GUARDRAILS.md)
 - [Modelo de dimensões](docs/research/DIAGNOSTIC_DIMENSION_MODEL.md)
-- [Banco inicial de itens](docs/research/DIAGNOSTIC_ITEM_BANK_V0_1.md)
+- [Banco de itens](docs/research/DIAGNOSTIC_ITEM_BANK_V0_1.md)
+- [Solicitações de informação](docs/product/INFORMATION_REQUESTS.md)
 
 ### Implementação
 
@@ -109,7 +113,7 @@ O legado contido e a nomenclatura histórica são dívida técnica não bloquean
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Inventário mínimo HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
-- [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
+- [Fronteira externa](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
 - [Bridge de identidade](docs/architecture/IDENTITY_BRIDGE.md)
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
 - [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
@@ -124,8 +128,10 @@ Os documentos existentes de banco, eventos, segurança e operação permanecem c
 A prioridade vigente é:
 
 ```text
-configuração oficial
-→ vertical oficial
+obter e aprovar o pacote IR-008
+→ carregar configuração oficial em draft
+→ validar equivalência
+→ publicar vertical oficial em desenvolvimento/teste
 → frontend e must-haves
 → identidade/site e HubSpot
 → browser E2E
