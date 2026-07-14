@@ -10,6 +10,11 @@ const providerBootstrapFile = path.join(
   repositoryRoot,
   'scripts/database/equivalence/bootstrap-provider-catalog.sql',
 );
+const activeMigrationFiles = Object.freeze([
+  '20260714184729_activity_comments_schema.sql',
+  '20260714184752_activity_comments_participant_api.sql',
+  '20260714184813_activity_comments_operator_api.sql',
+]);
 const applicationSchemas = [
   'app_private',
   'assessment',
@@ -74,6 +79,14 @@ function manifestEntries(manifest, source) {
   }));
 }
 
+function activeEntries() {
+  return activeMigrationFiles.map((file) => ({
+    version: safeFileName(file.slice(0, 14), 'active migration version'),
+    file: path.join(migrationsDirectory, safeFileName(file, 'active migration file')),
+    source: 'active-post-recovery',
+  }));
+}
+
 async function buildReplayPlan() {
   const m00M12Manifest = await readJson(
     path.join(canonicalDirectory, 'M00_M12_RUNTIME_MANIFEST.json'),
@@ -89,6 +102,7 @@ async function buildReplayPlan() {
     ...manifestEntries(m14Manifest, 'recovered-m14'),
     ...manifestEntries(m15Manifest, 'recovered-m15'),
     ...manifestEntries(m16Manifest, 'recovered-m16'),
+    ...activeEntries(),
   ].sort((left, right) => left.version.localeCompare(right.version));
 
   const versions = plan.map((migration) => migration.version);
@@ -108,7 +122,10 @@ async function buildReplayPlan() {
   if (m16Manifest.migration_count !== 1) {
     fail(`expected 1 M16 migration, found ${m16Manifest.migration_count}`);
   }
-  if (plan.length !== 245) fail(`expected 245 replay files, found ${plan.length}`);
+  if (activeMigrationFiles.length !== 3) {
+    fail(`expected 3 active migrations, found ${activeMigrationFiles.length}`);
+  }
+  if (plan.length !== 248) fail(`expected 248 replay files, found ${plan.length}`);
 
   return plan;
 }
@@ -161,6 +178,7 @@ export async function replayCleanDatabase(databaseUrl) {
     recovered_m14: 2,
     recovered_m15: 1,
     recovered_m16: 1,
+    active_post_recovery: activeMigrationFiles.length,
     first_version: plan[0].version,
     last_version: plan.at(-1).version,
   };
