@@ -20,9 +20,10 @@
     "test:backend-e2e": "node scripts/database/backend-e2e/run-backend-e2e.mjs",
     "test:hubspot-contracts": "node scripts/integrations/hubspot-contracts/run-tests.mjs",
     "test:configurable-product": "node scripts/product/configurable-product/run-tests.mjs",
+    "test:configurable-product-persistence": "node scripts/database/configurable-product-persistence/run.mjs",
     "test:legacy-rpc-containment": "node scripts/database/legacy-rpc/run-tests.mjs",
     "test:database-clean-replay": "npm run validate:migration-history && npm run replay:database-clean && npm run validate:schema-equivalence && npm run validate:public-rpc-contracts",
-    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e",
+    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence",
     "test:application-foundation": "node --test scripts/application/validate-foundation.test.mjs",
     "test:migration-history": "node --test scripts/database/migration-history/*.test.mjs",
     "test:public-rpc-contracts": "node --test scripts/database/public-rpc-contracts/*.test.mjs"
