@@ -52,6 +52,8 @@ Confirmar existência, formato e identificadores de:
 
 ## IR-005 — Conteúdo final da Jornada OpenAI
 
+**Prioridade:** P0 — bloqueia a publicação da jornada oficial.
+
 Confirmar:
 - todos os arquivos e URLs;
 - ordem e pré-requisitos;
@@ -133,3 +135,28 @@ Entregar ou aprovar formalmente:
 ### Critério de encerramento
 
 A solicitação só será encerrada quando uma configuração de draft puder ser reproduzida integralmente a partir dos artefatos aprovados, comparada com casos oficiais e publicada sem completar lacunas por heurística.
+
+## IR-009 — Site, login e identidade
+
+**Prioridade:** P0 — bloqueia a entrada de usuários reais.
+
+Obter ou confirmar:
+
+1. repositório, stack e responsável técnico pelo site e pela área logada;
+2. provedor de autenticação e modelo atual de sessão;
+3. identificador canônico do usuário e do negócio;
+4. relação desses identificadores com HubSpot e crédito;
+5. atributos, claims, papéis e permissões disponíveis;
+6. política de recuperação de acesso;
+7. URLs de desenvolvimento, staging e produção;
+8. domínios, callbacks e redirects autorizados;
+9. API, webhook ou mecanismo disponível para troca de identidade;
+10. decisão sobre reutilização da conta atual ou criação de credencial própria do LMS;
+11. acesso ao ambiente não produtivo necessário para integração e teste;
+12. restrições de segurança, cookies, CORS e expiração de sessão.
+
+Não enviar senhas, tokens, cookies ou segredos no chat.
+
+### Critério de encerramento
+
+A solicitação será encerrada quando um usuário de teste puder sair do site Estímulo, entrar no LMS com identidade única, receber as permissões corretas e retornar ao site sem criar uma conta desconectada ou duplicar o cadastro.

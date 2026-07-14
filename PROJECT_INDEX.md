@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.2  
+**Versão:** 4.3  
 **Data:** 2026-07-14  
-**Status:** fundação técnica reproduzível; diagnóstico oficial reconciliado documentalmente; produto oficial ainda incompleto
+**Status:** fundação técnica reproduzível; diagnóstico reconciliado; implementação oficial em execução
 
 ## Hierarquia de referência
 
@@ -26,7 +26,9 @@ Entregar uma plataforma web LMS em produção na AWS que:
 - registre interações, progresso e pontos;
 - ofereça comentários, uploads, provas, selos e certificados;
 - integre site, identidade, HubSpot e contexto autorizado;
-- suporte futuras jornadas sem mudança estrutural.
+- suporte futuras jornadas sem mudança estrutural;
+- aceite conteúdo autorizado de parceiros;
+- ofereça resgate mínimo de recompensas.
 
 ## Ambientes e sistemas
 
@@ -57,23 +59,27 @@ O repositório já contém:
 
 Essa fundação não equivale ao produto final. A vertical atual ainda usa configuração sintética.
 
-A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring e desempate ainda não foram aprovados.
+A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring, desempate e casos oficiais ainda não foram aprovados.
 
 ## Bloqueadores da entrega
 
 Fonte: [DELIVERY_BLOCKERS.md](docs/implementation/DELIVERY_BLOCKERS.md).
 
 ```text
-PRODUCT-CONFIGURATION = open
+DIAGNOSTIC-OFFICIAL-CONFIGURATION = open
+OPENAI-JOURNEY-PUBLICATION = open
+FRONTEND-OFFICIAL-VERTICAL = open
 LMS-MUST-HAVES = open
 IDENTITY-SITE-INTEGRATION = open
 HUBSPOT-PHYSICAL-INTEGRATION = open
 BROWSER-ACCESSIBILITY = open
 AWS-STAGING = open
-UNUSED-TEST-ADAPTERS = open
+PARTNER-CONTENT = open
+REWARDS-REDEMPTION = open
+AUTHORIZED-CREDIT-CONTEXT = open
 ```
 
-O legado contido e a nomenclatura histórica são dívida técnica não bloqueante.
+O legado contido e a nomenclatura histórica são dívida técnica não bloqueante. Os adapters de storage/scan serão integrados no upload ou removidos dentro do próprio requisito, sem bloqueador separado.
 
 ## Documentação canônica
 
@@ -99,7 +105,7 @@ O legado contido e a nomenclatura histórica são dívida técnica não bloquean
 ### Implementação
 
 - [Rastreabilidade de premissas](docs/implementation/PREMISE_TRACEABILITY_MATRIX.md)
-- [Bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md)
+- [Bloqueadores e plano vigente](docs/implementation/DELIVERY_BLOCKERS.md)
 - [Delta de schema](docs/implementation/SCHEMA_DELTA.md)
 - [Lacunas do runtime](docs/implementation/RUNTIME_GAP.md)
 - [Backend E2E](docs/implementation/BACKEND_E2E.md)
@@ -125,18 +131,34 @@ Os documentos existentes de banco, eventos, segurança e operação permanecem c
 
 ## Regra de execução
 
-A prioridade vigente é:
+O trabalho não será interrompido enquanto artefatos externos estão pendentes. A execução vigente combina um caminho crítico e uma frente paralela:
 
 ```text
-obter e aprovar o pacote IR-008
-→ carregar configuração oficial em draft
-→ validar equivalência
-→ publicar vertical oficial em desenvolvimento/teste
-→ frontend e must-haves
+ENTRADAS EXTERNAS
+IR-008 diagnóstico
++ IR-005 Jornada OpenAI
++ IR-009 site/identidade
++ IR-002 HubSpot
+
+EM PARALELO
+comentários por aula
++ uploads de prática
++ avaliações, selos e certificados
++ frontend participante e administração mínima
+
+DEPOIS DAS ENTRADAS
+configurações oficiais em draft
+→ casos de referência
+→ publicação em desenvolvimento/teste
+→ vertical oficial E2E
 → identidade/site e HubSpot
-→ browser E2E
+→ browser/mobile/acessibilidade
 → AWS staging
 → produção controlada
+→ conteúdo de parceiros, recompensas e contexto autorizado
+→ aceite final
 ```
+
+Fixtures técnicas podem validar capacidades genéricas, mas nunca serão apresentadas como conteúdo, scoring ou resultado oficial.
 
 Refatorações cosméticas, generalizações futuras e substituição integral do legado não interrompem essa sequência.
