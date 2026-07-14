@@ -1,155 +1,156 @@
-# Banco inicial de itens do diagnóstico
+# Banco de itens do diagnóstico oficial
 
-**Versão:** 0.1  
-**Status:** Item pool para entrevistas cognitivas; não publicar como diagnóstico final
+**Versão documental:** 0.2  
+**Instrumento de referência:** versão 3  
+**Data:** 2026-07-14  
+**Status:** estrutura oficial reconciliada; texto exato, alternativas e scoring ainda bloqueiam publicação
 
-## 1. Formato de resposta proposto
+## 1. Autoridade
 
-Para itens comportamentais:
+A fonte primária deste documento é `arquetipos_estimulo.md`, que declara um formulário de 12 perguntas distribuídas em 5 dimensões.
+
+O protótipo Raio-X contém textos, alternativas e scoring úteis como evidência secundária, mas não possui autoridade para alterar o instrumento oficial. Em especial:
+
+- adiciona uma Q13 sobre tempo de negócio;
+- possui diferenças de enunciado em relação ao resumo oficial;
+- contém pesos, cortes e desempate hardcoded sem a planilha metodológica citada;
+- sempre força um resultado.
+
+Por isso, nenhum dado do protótipo será publicado automaticamente como configuração oficial.
+
+## 2. Inventário canônico das 12 perguntas
+
+| ID | Pergunta resumida da referência | Tipo declarado | Dimensão principal | Estado |
+|---|---|---|---|---|
+| Q1 | No fim do mês, consegue dizer quanto sobrou no negócio? | Escala 1–4 | D1 Gestão financeira | Estrutura confirmada; texto/opções a homologar |
+| Q2 | Recebeu R$ 2 mil de cliente e a conta de luz da casa vence hoje: o que faz? | Múltipla escolha | D1 Gestão financeira | Conflita com o enunciado do protótipo |
+| Q3 | Teve mês com dinheiro insuficiente nos últimos 6 meses? Como resolveu? | Múltipla escolha | D1 + D5 | Estrutura confirmada; opções a homologar |
+| Q4 | Há algo que faz toda semana no negócio sem precisar lembrar? | Escala 1–4 | D2 Disciplina e hábito | Estrutura confirmada; texto/opções a homologar |
+| Q5 | Parcela vence amanhã e fornecedor tem problema hoje: o que faz primeiro? | Múltipla escolha | D2 Disciplina e hábito | Cenário do protótipo é semelhante, mas não idêntico |
+| Q6 | Consegue dizer quanto quer faturar daqui a 6 meses? | Escala 1–4 | D3 Visão e planejamento | Estrutura confirmada; texto/opções a homologar |
+| Q7 | Se recebesse R$ 10 mil para investir, qual seria o primeiro pensamento? | Múltipla escolha | D3 + D5 | Estrutura confirmada; opções a homologar |
+| Q8 | Precisou se ausentar por dois dias: o que aconteceu no negócio? | Múltipla escolha | D4 Perfil empreendedor | Estrutura confirmada; opções a homologar |
+| Q9 | O que mais representa o dia a dia no negócio? | Múltipla escolha | D4 Perfil empreendedor | Estrutura confirmada; opções a homologar |
+| Q10 | Na última vez que pegou crédito, para que usou? | Múltipla escolha | D5 Crédito e risco | Estrutura confirmada; opções a homologar |
+| Q11 | Deixou de pagar parcela no prazo nos últimos 12 meses? | Sim/Não + condicional | D2 + D5 | Estrutura confirmada; causas condicionais a homologar |
+| Q12 | Como descreveria sua relação com dinheiro, no geral? | Escala visual 1–5 | D1 + D5 | Estrutura confirmada; texto/opções a homologar |
+
+## 3. Divergências entre referência e protótipo
+
+### 3.1 Quantidade de perguntas
+
+- documento oficial: 12 perguntas;
+- protótipo Raio-X: 13 perguntas;
+- Q13 do protótipo: “Há quanto tempo você toca esse negócio?”.
+
+Decisão documental: a Q13 não integra o arquétipo oficial. Ela pode ser reaproveitada futuramente como campo contextual para maturidade operacional, após aprovação.
+
+### 3.2 Q2
+
+O resumo oficial usa um cenário de recebimento de R$ 2 mil e conflito com uma conta pessoal. O protótipo pergunta por que um mês bom terminou quase sem caixa. São itens diferentes e podem medir comportamentos diferentes.
+
+Nenhum dos dois enunciados será tratado como texto final até a Estímulo identificar a versão aprovada.
+
+### 3.3 Q5
+
+O resumo oficial menciona parcela que vence e problema com fornecedor. O protótipo acrescenta valor disponível, antecipação ao fornecedor e opção de renegociação. A expansão do cenário precisa de homologação.
+
+### 3.4 Q12
+
+A referência resume uma relação geral com dinheiro. O protótipo delimita o último mês e combina vida pessoal e negócio. O período e a unidade de análise precisam ser aprovados.
+
+### 3.5 Texto introdutório e randomização
+
+A referência determina:
+
+- linguagem situacional;
+- ausência de resposta socialmente óbvia;
+- randomização de alternativas no Typeform;
+- explicação de que não existe resposta certa;
+- escala sem ponto neutro para Q1 e Q4.
+
+A Q12 usa escala visual 1–5 segundo a mesma referência e, portanto, é uma exceção explícita ao padrão sem ponto neutro.
+
+## 4. Informações obrigatórias por item
+
+A configuração publicada deverá registrar para cada pergunta:
+
+- ID estável;
+- versão;
+- enunciado exato;
+- instrução e período de referência;
+- tipo de resposta;
+- alternativas e chaves estáveis;
+- ordem fixa ou randomizada;
+- condição de exibição;
+- obrigatoriedade;
+- dimensão ou dimensões associadas;
+- contribuição de cada alternativa;
+- finalidade;
+- justificativa metodológica;
+- texto de acessibilidade;
+- histórico de alteração.
+
+## 5. Scoring ausente
+
+A referência afirma que existe uma planilha de iteração com justificativas metodológicas e log de revisão, mas ela não foi incluída no pacote.
+
+Ainda faltam:
+
+- pesos de cada alternativa por dimensão;
+- pesos diretos por arquétipo, se existirem;
+- normalização dos scores;
+- cortes mínimos;
+- prioridade entre arquétipos;
+- regra de empate;
+- tratamento de respostas condicionais;
+- tratamento de item ausente;
+- exemplos oficiais de entrada e resultado;
+- versão e autoria da metodologia.
+
+O `scoring_config.json` do protótipo não substitui esses artefatos.
+
+## 6. Estado da classificação
+
+A premissa oficial exige que o formulário defina um dos quatro arquétipos. Porém, sem regra oficial de empate, a política de produção permanece bloqueada.
+
+O motor pode suportar:
+
+- prioridade determinística;
+- empate explícito;
+- resultado inconclusivo;
+- abstenção;
+- confidence nula ou calculada.
+
+A escolha entre essas opções é decisão de produto/metodologia, não decisão técnica. Nenhuma será ativada silenciosamente.
+
+## 7. Testes necessários antes da publicação
+
+- validação de schema de todas as perguntas;
+- teste de obrigatoriedade e condicionais;
+- teste de randomização sem alterar scoring;
+- equivalência entre planilha aprovada e engine;
+- casos oficiais de cada arquétipo;
+- casos de empate e limite;
+- replay determinístico;
+- teste de recálculo entre versões;
+- revisão cognitiva dos enunciados;
+- revisão de linguagem não estigmatizante;
+- revisão de privacidade e consequências.
+
+## 8. Gate atual
 
 ```text
-Nos últimos 30 dias, com que frequência isso aconteceu?
-0 — Não se aplicou / não tive oportunidade
-1 — Nunca
-2 — Raramente
-3 — Às vezes
-4 — Muitas vezes
-5 — Quase sempre
+official_question_count = 12
+official_dimension_count = 5
+official_archetype_count = 4
+prototype_question_count = 13
+prototype_is_authoritative = false
+exact_wording_approved = false
+exact_options_approved = false
+scoring_method_received = false
+tie_rule_approved = false
+publishable = false
 ```
 
-A opção “não se aplicou” deve permanecer separada de “nunca”.
-
-## 2. Itens candidatos por dimensão
-
-### D1 — Planejamento orientado à ação
-
-- P01. Quando tenho um objetivo importante, defino qual será o primeiro passo.
-- P02. Divido tarefas grandes em partes que consigo realizar.
-- P03. Defino uma data ou momento para verificar se avancei.
-- P04. Quando surge uma urgência, reviso o que estava planejado em vez de abandonar tudo sem decidir.
-
-### D2 — Rotina de informação e controle
-
-- I01. Registro informações do negócio que precisarei consultar depois.
-- I02. Antes de uma decisão importante, consulto dados ou registros do negócio.
-- I03. Consigo localizar rapidamente documentos e informações que uso com frequência.
-- I04. Comparo o resultado de uma ação com o que esperava alcançar.
-
-### D3 — Execução e autorregulação
-
-- E01. Inicio as tarefas prioritárias no período em que planejei.
-- E02. Continuo uma tarefa importante mesmo quando aparecem atividades menores.
-- E03. Concluo uma etapa antes de começar várias outras relacionadas.
-- E04. Percebo quando estou desviando da prioridade e volto ao que precisava fazer.
-
-### D4 — Persistência e recuperação
-
-- R01. Quando uma tentativa não funciona, procuro entender o motivo antes de tentar novamente.
-- R02. Testo outra abordagem quando a primeira falha.
-- R03. Retomo tarefas importantes depois de uma interrupção.
-- R04. Sei identificar quando insistir e quando mudar de estratégia.
-
-### D5 — Aprendizagem aplicada
-
-- A01. Depois de aprender algo, testo em uma situação real do negócio.
-- A02. Adapto exemplos ou modelos à realidade do meu negócio.
-- A03. Observo se a nova prática produziu algum resultado.
-- A04. Mantenho na rotina uma prática que demonstrou funcionar.
-
-### D6 — Busca e uso de apoio
-
-- S01. Quando preciso de ajuda, explico claramente o problema e o que já tentei.
-- S02. Procuro alguém ou alguma fonte adequada ao tipo de dificuldade.
-- S03. Analiso o feedback recebido antes de decidir se vou aplicá-lo.
-- S04. Volto a quem me ajudou para mostrar o resultado ou esclarecer uma nova dúvida.
-
-### D7 — Experimentação digital
-
-- D01. Testo uma função nova em pequena escala antes de usar em uma atividade importante.
-- D02. Consigo seguir instruções para experimentar uma ferramenta digital.
-- D03. Quando cometo um erro simples em uma ferramenta, tento corrigir antes de desistir.
-- D04. Uso o que aprendi em uma ferramenta para entender outra parecida.
-
-### D8 — Verificação e calibração
-
-- V01. Verifico informações importantes antes de usá-las em uma decisão.
-- V02. Reconheço quando não tenho evidência suficiente para confiar em uma resposta.
-- V03. Comparo respostas de IA com documentos, fontes ou conhecimento do negócio.
-- V04. Evito enviar dados pessoais, financeiros ou de terceiros sem necessidade.
-
-## 3. Questões situacionais candidatas
-
-Os itens abaixo poderão complementar ou substituir autorrelatos após teste cognitivo.
-
-### Cenário 1 — Várias urgências
-
-“Você chega ao trabalho e encontra um fornecedor cobrando, três pedidos atrasados e uma campanha que deveria sair hoje. O que faria primeiro?”
-
-Registrar estratégia, não classificar automaticamente por alternativa.
-
-### Cenário 2 — Resposta de IA duvidosa
-
-“O ChatGPT apresenta um cálculo financeiro que parece correto, mas não mostra como chegou ao resultado. O que faria antes de usar?”
-
-### Cenário 3 — Curso interrompido
-
-“Você inicia uma aula, mas precisa parar no meio por causa de um cliente. O que ajudaria você a retomar?”
-
-### Cenário 4 — Tentativa prática falhou
-
-“Você criou uma mensagem de vendas com IA, mas os clientes não responderam. Qual seria seu próximo passo?”
-
-## 4. Módulo contextual
-
-Perguntas factuais ou por faixa:
-
-- tempo de existência do negócio;
-- formalização;
-- número de pessoas envolvidas;
-- setor;
-- canais de venda;
-- forma atual de registrar finanças;
-- tempo disponível por semana;
-- dispositivo principal;
-- qualidade de conexão;
-- maior urgência atual;
-- momento de crédito, quando aplicável e disponível na fonte oficial.
-
-## 5. Módulo de prontidão OpenAI
-
-- Já utilizou ChatGPT ou outra IA? Para quê?
-- Qual tarefa deseja melhorar primeiro?
-- Consegue utilizar texto por voz?
-- Consegue enviar ou baixar um arquivo?
-- Tem acesso às funcionalidades exigidas?
-- Sabe identificar dados que não deve enviar?
-- Como verificaria um cálculo, resumo ou recomendação?
-- Prefere ver uma demonstração, ler um passo a passo, testar sozinho ou receber acompanhamento?
-
-## 6. Entrevistas cognitivas
-
-Antes do piloto quantitativo, aplicar o item pool a 5–8 pessoas e perguntar:
-
-- O que esta pergunta quer dizer para você?
-- Como escolheu sua resposta?
-- Que período considerou?
-- Alguma palavra foi difícil?
-- Havia duas ideias na mesma frase?
-- A situação aconteceu, mas nenhuma alternativa serviu?
-
-## 7. Regras para redução do instrumento
-
-Remover ou reescrever itens que:
-
-- não sejam compreendidos de forma consistente;
-- dependam principalmente de acesso material;
-- gerem respostas socialmente desejáveis sem discriminação;
-- dupliquem outro item;
-- combinem dois comportamentos;
-- não alterem nenhuma intervenção;
-- apresentem baixa variabilidade;
-- funcionem de modo muito diferente entre grupos sem explicação legítima.
-
-## 8. Aviso
-
-Pontuações, pesos, cortes e associação a arquétipos não estão definidos. Somar os itens desta versão e gerar um perfil seria metodologicamente inválido.
+O item pool exploratório anterior permanece recuperável no histórico Git, mas não representa mais o instrumento oficial da operação inicial.

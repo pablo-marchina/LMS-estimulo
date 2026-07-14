@@ -1,6 +1,6 @@
 # Matriz de rastreabilidade das premissas atuais
 
-**Versão:** 3.0  
+**Versão:** 3.1  
 **Data:** 2026-07-14  
 **Status:** ativo
 
@@ -14,8 +14,8 @@ A matriz rastreia somente requisitos necessários para o produto final. Uma capa
 | P-002 | Supabase somente em desenvolvimento/teste | Definido | impedir promoção direta | configuração e documentação de ambientes |
 | P-003 | AWS em staging e produção | Planejado | ambiente ainda não implantado | deploy, E2E, backup, restore e rollback |
 | P-004 | plataforma multi-jornada com OpenAI como primeira jornada | Fundação presente | Jornada OpenAI oficial não carregada | publicação da jornada sem hardcode no núcleo |
-| P-005 | formulário versionado e quatro arquétipos oficiais | Motor presente | perguntas, scoring e textos oficiais pendentes | diagnóstico oficial E2E |
-| P-006 | personalização por diagnóstico e contexto autorizado | Parcial | regras oficiais e contexto de crédito pendentes | resultado ativa jornada/recomendação correta |
+| P-005 | formulário versionado com 12 perguntas, 5 dimensões e 4 arquétipos oficiais | Estrutura reconciliada; motor e persistência presentes | texto/opções, scoring, cortes, desempate, textos finais e ativações oficiais pendentes | configuração aprovada, casos de equivalência e diagnóstico oficial E2E |
+| P-006 | personalização por arquétipo, maturidade e contexto autorizado | Parcial | matriz de ativação e contexto real pendentes | resultado ativa jornada/recomendação correta e explicável |
 | P-007 | comentários por aula | Ausente | issue 61 | criar, visualizar e moderar comentário |
 | P-008 | upload de prática por aula/módulo | Parcial | storage/scan sem consumidor | upload, scan, consentimento e avaliação E2E |
 | P-009 | provas, selos e certificados | Parcial | regras e emissão final ausentes | aprovação/reprovação, emissão e validação |
@@ -27,13 +27,15 @@ A matriz rastreia somente requisitos necessários para o produto final. Uma capa
 | P-015 | integração com site e login real | Ausente | identidade e entrada pelo site pendentes | sessão real e identidade única E2E |
 | P-016 | contexto de crédito não vira decisão automática | Protegido | integrar somente dados autorizados | personalização sem efeito decisório de crédito |
 | P-017 | frontend mobile e acessível | Parcial | browser E2E e auditoria pendentes | fluxos críticos em desktop e mobile |
-| P-018 | banco e runtime reproduzíveis | Atendido | preservar gates | replay, equivalência, contratos e backend E2E |
+| P-018 | banco e runtime reproduzíveis | Atendido | preservar gates | replay de 245 migrations, equivalência, contratos e backend E2E |
 | P-019 | legado não cresce e não bloqueia entrega sem risco concreto | Atendido | alterar apenas por necessidade | containment permanece verde |
 
 ## Itens explicitamente fora da matriz de bloqueio
 
 - renomeação integral de helpers legados;
 - quinta taxonomia de arquétipos sem decisão oficial;
+- promoção automática da Q13 do protótipo ao formulário oficial;
+- uso do scoring do protótipo como metodologia oficial;
 - score produtivo de crédito;
 - segunda jornada antes da OpenAI;
 - aplicativo móvel nativo;

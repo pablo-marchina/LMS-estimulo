@@ -1,187 +1,192 @@
-# Modelo inicial de dimensões do diagnóstico
+# Modelo de dimensões do diagnóstico
 
-**Versão:** 0.1  
-**Status:** Hipóteses para pesquisa qualitativa; nenhuma dimensão aprovada como escala
+**Versão:** 0.2  
+**Data:** 2026-07-14  
+**Status:** estrutura oficial identificada; definições operacionais e scoring ainda dependem da metodologia completa
 
-## 1. Princípio
+## 1. Fonte e finalidade
 
-As dimensões abaixo organizam a pesquisa. Elas não constituem ainda um modelo psicológico validado. Cada dimensão deverá sobreviver a três testes:
+A referência `arquetipos_estimulo.md` determina que o formulário comportamental opera com cinco dimensões e quatro arquétipos. Este documento descreve essa estrutura oficial sem criar pesos, cortes ou propriedades psicométricas que não foram entregues.
 
-1. existe evidência comportamental observável;
-2. altera uma decisão de personalização;
-3. pode ser medida com qualidade aceitável.
+A versão anterior deste arquivo propunha oito dimensões exploratórias próprias. Elas não correspondem ao instrumento oficial e não podem substituir silenciosamente as cinco dimensões da Estímulo. Conceitos úteis daquela pesquisa poderão ser reaproveitados futuramente como features, prontidão ou hipóteses de intervenção, mas não como dimensões do formulário inicial sem aprovação formal.
 
-## 2. Dimensões comportamentais candidatas
+## 2. Cinco dimensões oficiais
 
-### D1. Planejamento orientado à ação
+### D1 — Gestão financeira
 
-**Definição:** capacidade de transformar objetivos amplos em próximos passos, prazos e critérios de acompanhamento.
+**Escopo declarado pela referência:** capacidade de acompanhar o que sobra ou falta, compreender o uso do caixa, lidar com insuficiência financeira e perceber a própria relação com dinheiro.
 
-**Comportamentos observáveis:**
+**Perguntas associadas na referência:**
 
-- define próximos passos concretos;
-- prioriza tarefas;
-- acompanha prazos;
-- revisa planos quando a situação muda.
+- Q1 — saber quanto sobrou ou faltou no negócio;
+- Q2 — interpretar por que um mês bom terminou sem caixa;
+- Q3 — forma de resolver insuficiência de dinheiro;
+- Q12 — autopercepção da relação com dinheiro.
 
-**Uso possível:** granularidade da trilha, checklists, lembretes e decomposição de tarefas.
+**Também participa:** Q2 e Q3 podem ter relação com D5; Q12 é declarada como D1 + D5.
 
-**Risco de interpretação:** confundir falta de tempo ou emergência com incapacidade de planejamento.
+**Cuidados:**
 
-### D2. Rotina de informação e controle
+- não confundir baixa renda ou choque externo com incapacidade de gestão;
+- não concluir risco de crédito diretamente da dimensão;
+- manter separadas informação objetiva, autorrelato e inferência.
 
-**Definição:** frequência com que registra, consulta e utiliza informações do negócio para decidir.
+### D2 — Disciplina e hábito
 
-**Comportamentos observáveis:**
+**Escopo declarado pela referência:** existência de rotinas, priorização de compromissos e comportamento diante de pagamentos e urgências.
 
-- registra entradas e saídas;
-- consulta informações antes de decidir;
-- mantém documentos acessíveis;
-- verifica resultados de ações anteriores.
+**Perguntas associadas na referência:**
 
-**Uso possível:** atividades práticas de organização, templates e validação de dados antes do uso de IA.
+- Q4 — atividade recorrente feita sem precisar lembrar;
+- Q5 — prioridade entre parcela e fornecedor;
+- Q11 — atraso de pagamento e motivo condicional.
 
-**Risco:** transformar acesso precário a ferramentas em julgamento comportamental.
+**Cuidados:**
 
-### D3. Execução e autorregulação
+- atraso por falta de dinheiro, esquecimento, priorização e falha técnica são causas distintas;
+- comportamento em um episódio não deve ser tratado como traço permanente;
+- contexto de crise deve ser preservado no resultado.
 
-**Definição:** capacidade de iniciar, manter e concluir ações sem depender integralmente de estímulos externos.
+### D3 — Visão e planejamento
 
-**Comportamentos observáveis:**
+**Escopo declarado pela referência:** clareza de objetivo futuro e lógica usada para decidir sobre investimento e crescimento.
 
-- começa tarefas planejadas;
-- mantém ritmo;
-- conclui etapas;
-- controla distrações e troca excessiva de prioridade.
+**Perguntas associadas na referência:**
 
-**Uso possível:** tamanho das etapas, sequência, reforços e suporte.
+- Q6 — meta de faturamento em seis meses;
+- Q7 — primeiro pensamento ao receber capital para investir.
 
-### D4. Persistência e recuperação
+**Também participa:** Q7 é declarada como D3 + D5.
 
-**Definição:** forma como reage a erro, dificuldade ou resultado abaixo do esperado.
+**Cuidados:**
 
-**Comportamentos observáveis:**
+- não confundir prudência com ausência de visão;
+- não assumir que crescimento é sempre a decisão correta;
+- separar meta declarada de capacidade real de execução.
 
-- tenta abordagem alternativa;
-- procura informação;
-- retoma após interrupção;
-- abandona ou insiste sem ajuste.
+### D4 — Perfil empreendedor
 
-**Uso possível:** intervenções após falha, opções de retomada, exemplos e apoio humano.
+**Escopo declarado pela referência:** grau de dependência do negócio em relação ao dono e predominância de execução, improviso, organização ou visão estratégica.
 
-**Risco:** valorizar persistência cega; a dimensão deve considerar ajuste de estratégia.
+**Perguntas associadas na referência:**
 
-### D5. Aprendizagem aplicada
+- Q8 — funcionamento do negócio durante ausência do empreendedor;
+- Q9 — atividade que melhor representa o dia a dia.
 
-**Definição:** tendência a testar, adaptar e incorporar um aprendizado em uma tarefa real.
+**Cuidados:**
 
-**Comportamentos observáveis:**
+- tamanho da equipe e estágio do negócio influenciam as respostas;
+- trabalhar diretamente na operação não deve ser apresentado como falha moral;
+- dependência operacional deve ser interpretada junto da maturidade do negócio.
 
-- testa rapidamente;
-- adapta exemplos ao próprio negócio;
-- compara resultado antes/depois;
-- mantém uma prática que funcionou.
+### D5 — Relação com crédito e risco
 
-**Uso possível:** proporção de prática, tipo de evidência e acompanhamento posterior.
+**Escopo declarado pela referência:** finalidade do crédito, forma de lidar com insuficiência financeira, priorização de compromissos e percepção de estabilidade.
 
-### D6. Busca e uso de apoio
+**Perguntas associadas na referência:**
 
-**Definição:** capacidade de reconhecer quando precisa de ajuda, localizar apoio adequado e utilizar feedback.
+- Q3 — solução usada quando faltou dinheiro;
+- Q7 — intenção de uso de capital;
+- Q10 — finalidade do último crédito;
+- Q11 — atraso e motivo;
+- Q12 — relação percebida com dinheiro.
 
-**Comportamentos observáveis:**
+**Cuidados:**
 
-- pede ajuda com contexto;
-- consulta pares ou especialistas;
-- responde a feedback;
-- diferencia ajuda útil de opinião genérica.
+- a dimensão não é um score de crédito;
+- finalidade declarada de crédito não comprova capacidade ou intenção de pagamento;
+- nunca converter o rótulo da dimensão em aprovação, reprovação, taxa ou limite sem validação e governança próprias.
 
-**Uso possível:** comunidade, mentoria, feedback guiado ou autosserviço.
+## 3. Matriz oficial de perguntas
 
-**Risco:** tratar autonomia e busca de apoio como polos melhores/piores; ambos podem ser adequados conforme o contexto.
+| Pergunta | D1 | D2 | D3 | D4 | D5 |
+|---|---:|---:|---:|---:|---:|
+| Q1 | principal |  |  |  |  |
+| Q2 | principal |  |  |  | possível conforme scoring |
+| Q3 | principal |  |  |  | principal |
+| Q4 |  | principal |  |  |  |
+| Q5 |  | principal |  |  | possível conforme scoring |
+| Q6 |  |  | principal |  |  |
+| Q7 |  |  | principal |  | principal |
+| Q8 |  |  |  | principal |  |
+| Q9 |  |  |  | principal |  |
+| Q10 |  |  |  |  | principal |
+| Q11 |  | principal |  |  | principal |
+| Q12 | principal |  |  |  | principal |
 
-### D7. Experimentação digital
+A tabela registra apenas relações declaradas ou diretamente indicadas pela referência resumida. O vínculo exato de cada alternativa e seu peso depende da planilha de iteração/scoring ainda não entregue.
 
-**Definição:** disposição e capacidade de explorar ferramentas digitais de forma incremental e reversível.
+## 4. Arquétipos e dimensões
 
-**Comportamentos observáveis:**
+Os quatro arquétipos oficiais são resultados compostos das cinco dimensões:
 
-- testa funções novas;
-- começa em escopo pequeno;
-- recupera-se de erros simples;
-- transfere aprendizado entre ferramentas.
+- **Fazedor:** alta centralidade da execução e lacunas de gestão;
+- **Batalhador:** resiliência combinada a instabilidade de caixa e atuação sob pressão;
+- **Construtor:** base organizada e necessidade de direção de crescimento;
+- **Navegador:** planejamento, informação e uso produtivo de recursos em nível mais avançado.
 
-**Uso possível:** nível de instrução, demonstrações, sandbox e suporte técnico.
+Essas descrições orientam textos e ativações, mas não revelam por si só a fórmula matemática. A configuração não deve derivar pesos apenas dessas narrativas.
 
-**Separação:** acesso a dispositivo e internet pertence ao contexto, não à dimensão.
+## 5. Maturidade operacional é eixo separado
 
-### D8. Verificação e calibração da confiança
+A referência define quatro estágios objetivos:
 
-**Definição:** capacidade de avaliar incerteza, verificar informações e ajustar confiança à qualidade da evidência.
+- Pré-infância;
+- Infância;
+- Adolescência;
+- Maturidade.
 
-**Comportamentos observáveis:**
+O estágio é determinado por dados objetivos autorizados, como formalização, tempo de negócio, porte e informações operacionais. Ele não pertence ao formulário comportamental.
 
-- verifica respostas antes de usar;
-- consulta fonte ou documento;
-- reconhece limites de conhecimento;
-- evita compartilhar informação sensível sem necessidade.
+A Q13 do protótipo Raio-X pergunta tempo de negócio. Ela deve ser tratada como informação contextual candidata para maturidade, não como confirmação de uma décima terceira pergunta do arquétipo.
 
-**Uso possível:** conteúdo de segurança, revisão humana e limites de IA.
+O resultado de personalização pode usar a matriz:
 
-## 3. Módulo contextual do negócio
+```text
+arquétipo comportamental
+× maturidade operacional
+× momento autorizado da jornada
+→ conteúdo, suporte e ativação
+```
 
-Esses campos não deverão compor o arquétipo central:
+## 6. Prontidão da Jornada OpenAI
 
-- tempo do negócio;
-- formalização;
-- faturamento por faixa;
-- número de pessoas na operação;
-- setor;
-- região;
-- maturidade declarada ou operacional;
-- controle financeiro atual;
-- canais de venda;
-- urgência principal;
-- tempo semanal disponível;
-- evento recente de crise;
-- momento de crédito, quando disponível.
+Prontidão para ChatGPT/Codex também permanece separada do arquétipo:
 
-A classificação histórica da Estímulo em pré-infância, infância, adolescência e maturidade deverá ser estudada como modelo de maturidade empresarial, não importada automaticamente como perfil comportamental.
-
-## 4. Módulo de prontidão para OpenAI
-
-- já utilizou ChatGPT ou ferramenta semelhante;
-- frequência e finalidade de uso;
-- dispositivo principal;
-- conectividade;
-- consegue usar texto, voz e upload;
+- experiência anterior com IA;
+- dispositivo e conectividade;
+- capacidade de usar texto, voz e upload;
+- tarefas prioritárias;
+- reconhecimento de dados sensíveis;
 - acesso às funcionalidades necessárias;
-- tarefas prioritárias: marketing, vendas, finanças, contratos, operação ou criação digital;
-- reconhece dados que não deve enviar;
-- revisa resultados gerados;
-- possui material real ou fictício para praticar;
-- prefere vídeo, texto, demonstração, prática ou apoio.
+- preferência de formato e suporte.
 
-## 5. Relação entre dimensões e personalização
+Esses dados podem alterar a experiência da Jornada OpenAI sem reclassificar o arquétipo central.
 
-| Dimensão | Baixa evidência | Alta evidência | Personalização candidata |
-|---|---|---|---|
-| Planejamento | objetivo amplo sem passos | passos, prazo e revisão | checklist, decomposição, calendário |
-| Informação e controle | decisões sem registro | dados consultados e atualizados | templates, prática com registros |
-| Execução | inicia e interrompe frequentemente | conclui etapas com autonomia | microetapas, reforço, autonomia |
-| Persistência adaptativa | abandona ou repete sem ajuste | retoma e muda estratégia | exemplo alternativo, suporte |
-| Aprendizagem aplicada | consome sem testar | testa e incorpora | desafios práticos, follow-up |
-| Uso de apoio | evita ou usa apoio sem foco | busca e aplica feedback | mentoria, comunidade, autosserviço |
-| Experimentação digital | evita funções novas | testa de forma controlada | tutorial detalhado ou exploração |
-| Verificação | aceita resultados sem revisão | verifica e reconhece incerteza | guardrails, fontes, revisão humana |
+## 7. O que não está definido
 
-## 6. Critérios para manter uma dimensão
+O pacote oficial ainda não fornece de forma reproduzível:
 
-Uma dimensão só seguirá para o instrumento quantitativo se:
+- definição matemática completa das dimensões;
+- peso de cada alternativa;
+- contribuição cruzada entre dimensões;
+- normalização dos scores;
+- regra de transformação de dimensões em arquétipo;
+- cortes mínimos;
+- regra de empate;
+- tratamento de resposta ausente ou condicional;
+- evidência da validação citada.
 
-- tiver definição distinta das demais;
-- aparecer em episódios reais das entrevistas;
-- possuir pelo menos três itens candidatos compreensíveis;
-- não for explicada principalmente por acesso, renda ou escolaridade;
-- gerar pelo menos uma intervenção diferente;
-- não exigir inferências sensíveis desnecessárias;
-- puder ser relacionada a comportamento futuro sem circularidade.
+Nenhuma implementação deve completar essas lacunas por heurística silenciosa.
+
+## 8. Gate de aceite
+
+O modelo estará pronto para configuração publicada quando:
+
+- a planilha/metodologia oficial for entregue;
+- cada alternativa possuir contribuição versionada;
+- os resultados do cálculo forem reproduzíveis;
+- casos de borda e empate estiverem aprovados;
+- a configuração for comparada com exemplos oficiais;
+- linguagem, equidade e consequências forem revisadas;
+- o uso permanecer restrito a personalização e pesquisa até autorização adicional.
