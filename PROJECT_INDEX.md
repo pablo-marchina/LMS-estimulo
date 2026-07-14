@@ -122,21 +122,3 @@ O legado contido e a nomenclatura histórica são dívida técnica não bloquean
 ### Dados, segurança e operação
 
 Os documentos existentes de banco, eventos, segurança e operação permanecem como referência técnica. Novos documentos especializados só devem ser criados quando uma capacidade obrigatória exigir informação que não caiba nos artefatos atuais.
-
-## Regra de execução
-
-A prioridade vigente é:
-
-```text
-obter e aprovar o pacote IR-008
-→ carregar configuração oficial em draft
-→ validar equivalência
-→ publicar vertical oficial em desenvolvimento/teste
-→ frontend e must-haves
-→ identidade/site e HubSpot
-→ browser E2E
-→ AWS staging
-→ produção controlada
-```
-
-Refatorações cosméticas, generalizações futuras e substituição integral do legado não interrompem essa sequência.
