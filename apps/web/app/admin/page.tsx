@@ -48,23 +48,21 @@ export default async function AdminPage({
 
   const canManageComments = organization.permissions.includes("engagement.manage");
   const canReviewPractice = organization.permissions.includes("assessment.review");
-  const [listing, supplemental] = await Promise.all([
+  const [listing, workspaceResult, commentResult, practiceResult] = await Promise.all([
     journeyRuntime.listOperatorInstances(auth.identity.user_account_id, organization.organization_id),
-    Promise.allSettled([
-      journeyRuntime.getOperatorWorkspace(auth.identity.user_account_id, organization.organization_id),
-      canManageComments
-        ? journeyRuntime.listOperatorActivityComments(auth.identity.user_account_id, organization.organization_id, 100)
-        : Promise.resolve(null),
-      canReviewPractice
-        ? practiceRuntime.listOperator(auth.identity.user_account_id, organization.organization_id, 100)
-        : Promise.resolve(null)
-    ])
+    Promise.allSettled([journeyRuntime.getOperatorWorkspace(auth.identity.user_account_id, organization.organization_id)]),
+    canManageComments
+      ? Promise.allSettled([journeyRuntime.listOperatorActivityComments(auth.identity.user_account_id, organization.organization_id, 100)])
+      : Promise.resolve([]),
+    canReviewPractice
+      ? Promise.allSettled([practiceRuntime.listOperator(auth.identity.user_account_id, organization.organization_id, 100)])
+      : Promise.resolve([])
   ]);
-  const workspace = supplemental[0]?.status === "fulfilled" ? supplemental[0].value : null;
-  const commentResult = supplemental[1]?.status === "fulfilled" ? supplemental[1].value : null;
-  const practiceResult = supplemental[2]?.status === "fulfilled" ? supplemental[2].value : null;
-  const comments = commentResult?.comments ?? [];
-  const practices = practiceResult?.submissions ?? [];
+  const workspace = workspaceResult[0]?.status === "fulfilled" ? workspaceResult[0].value : null;
+  const commentData = commentResult[0]?.status === "fulfilled" ? commentResult[0].value : null;
+  const practiceData = practiceResult[0]?.status === "fulfilled" ? practiceResult[0].value : null;
+  const comments = commentData?.comments ?? [];
+  const practices = practiceData?.submissions ?? [];
   const result = query.instance ? await journeyRuntime.getOperatorResult(auth.identity.user_account_id, organization.organization_id, query.instance) : null;
 
   return <AppShell area="admin" email={auth.email}>
