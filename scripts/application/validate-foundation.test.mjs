@@ -148,3 +148,31 @@ test('área operacional mantém consulta quando gestão não está disponível',
   assert.ok(admin.includes('Promise.allSettled'));
   assert.ok(admin.includes('Consulta disponível'));
 });
+
+test('painel consolida próxima ação, progresso, pontos e credenciais', async () => {
+  const home = await read('apps/web/app/empreendedor/page.tsx');
+  assert.ok(home.includes('participantNextActionLabel'));
+  assert.ok(home.includes('participantJourneyPriority'));
+  assert.ok(home.includes('credentialRuntime.listParticipant'));
+  assert.ok(home.includes('dashboard-next'));
+  assert.ok(home.includes('Pontos registrados'));
+});
+
+test('diagnóstico, atividade e resultado compartilham orientação de etapas', async () => {
+  const files = [
+    'apps/web/app/empreendedor/diagnostico/page.tsx',
+    'apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx',
+    'apps/web/app/empreendedor/resultado/page.tsx'
+  ];
+  for (const file of files) assert.ok((await read(file)).includes('JourneyProgressNav'));
+  const navigation = await read('apps/web/components/journey-progress-nav.tsx');
+  assert.ok(navigation.includes('aria-current'));
+  assert.ok(navigation.includes('journey-progress-step--locked'));
+});
+
+test('shell oferece salto para conteúdo e navegação de painel', async () => {
+  const shell = await read('apps/web/components/app-shell.tsx');
+  assert.ok(shell.includes('Pular para o conteúdo'));
+  assert.ok(shell.includes('id="conteudo-principal"'));
+  assert.ok(shell.includes('{ href: "/empreendedor", label: "Painel" }'));
+});

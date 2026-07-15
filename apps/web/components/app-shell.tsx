@@ -6,12 +6,13 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
   const links = area === "admin"
     ? [{ href: "/admin", label: "Operação" }]
     : [
-        { href: "/empreendedor", label: "Minhas jornadas" },
+        { href: "/empreendedor", label: "Painel" },
         { href: "/empreendedor/credenciais", label: "Credenciais" }
       ];
 
   return (
     <div className="app-frame">
+      <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
       <header className="app-header no-print">
         <Link className="brand" href={area === "admin" ? "/admin" : "/empreendedor"} aria-label="Plataforma Estímulo — início">
           <span className="brand-mark" aria-hidden="true">E</span>
@@ -25,7 +26,7 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
           <form action={signOutAction}><button className="button button--ghost" type="submit">Sair</button></form>
         </div>
       </header>
-      <main className="page-container">{children}</main>
+      <main id="conteudo-principal" className="page-container" tabIndex={-1}>{children}</main>
     </div>
   );
 }

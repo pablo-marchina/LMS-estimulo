@@ -1,26 +1,32 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { submitDiagnosisAction } from "@/app/actions/journey";
+import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 export default async function DiagnosisPage({ searchParams }: { searchParams: Promise<{ journey?: string }> }) {
   const { journey } = await searchParams;
-  if (!journey) return <StatusPanel title="Jornada não informada" tone="warning"><p>Volte para suas jornadas e selecione uma opção.</p></StatusPanel>;
+  if (!journey) return <StatusPanel title="Jornada não informada" tone="warning"><p>Volte para o painel e selecione uma jornada.</p><Link className="button button--secondary" href="/empreendedor">Ir para o painel</Link></StatusPanel>;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
   const experience = await journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey);
 
   if (experience.state.d?.status === "completed") {
     const step = experience.state.s?.step_instance_id;
-    return <StatusPanel title="Diagnóstico concluído" tone="success"><p>Seu caminho de aprendizagem já foi definido com base nas respostas registradas.</p>{step ? <Link className="button button--primary" href={`/empreendedor/atividade/${step}?journey=${journey}`}>Ir para a atividade</Link> : null}</StatusPanel>;
+    return <>
+      <header className="page-heading"><p className="eyebrow">Diagnóstico</p><h1>{experience.journey.title}</h1><p>Seu caminho de aprendizagem já foi definido com base nas respostas registradas.</p></header>
+      <JourneyProgressNav state={experience.state} current="diagnostic" />
+      <StatusPanel title="Diagnóstico concluído" tone="success"><p>Esta etapa está concluída e não precisa ser respondida novamente.</p>{step ? <Link className="button button--primary" href={`/empreendedor/atividade/${step}?journey=${journey}`}>Continuar aprendizagem</Link> : null}</StatusPanel>
+    </>;
   }
-  if (!experience.diagnostic) return <StatusPanel title="Diagnóstico indisponível" tone="warning"><p>A versão publicada desta jornada não possui um diagnóstico disponível.</p></StatusPanel>;
+  if (!experience.diagnostic) return <><JourneyProgressNav state={experience.state} current="diagnostic" /><StatusPanel title="Diagnóstico indisponível" tone="warning"><p>A versão publicada desta jornada não possui um diagnóstico disponível.</p><Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link></StatusPanel></>;
 
   return (
     <>
       <header className="page-heading"><p className="eyebrow">Etapa 1</p><h1>Diagnóstico inicial</h1><p>As respostas ajudam a escolher o próximo passo da jornada. Elas não constituem avaliação de crédito.</p></header>
+      <JourneyProgressNav state={experience.state} current="diagnostic" />
       <form action={submitDiagnosisAction} className="stack stack--large">
         <input type="hidden" name="journey_instance_id" value={journey} />
         <input type="hidden" name="idempotency_key" value={randomUUID()} />
@@ -32,7 +38,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
             </div>
           </fieldset>
         ))}
-        <button className="button button--primary" type="submit">Concluir diagnóstico</button>
+        <div className="form-footer"><Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link><button className="button button--primary" type="submit">Concluir diagnóstico</button></div>
       </form>
     </>
   );
