@@ -18,7 +18,8 @@ test('biblioteca possui catálogo, detalhe e administração mínima', async () 
 test('busca permanece em PostgreSQL full-text sem embeddings', async () => {
   const schema = await read('scripts/database/content-library/schema.sql');
   const api = await read('scripts/database/content-library/api.sql');
-  assert.ok(schema.includes('search_document tsvector generated always'));
+  assert.ok(schema.includes("search_document tsvector not null default ''::tsvector"));
+  assert.ok(schema.includes('library_item_search_document_trigger'));
   assert.ok(schema.includes('using gin(search_document)'));
   assert.ok(api.includes("websearch_to_tsquery('pg_catalog.portuguese'"));
   assert.ok(api.includes('ts_rank_cd'));
