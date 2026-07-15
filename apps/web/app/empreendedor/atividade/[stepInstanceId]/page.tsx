@@ -1,39 +1,77 @@
+import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { acknowledgeActivityAction, createActivityCommentAction, submitQuickCheckAction } from "@/app/actions/journey";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { practiceRuntime } from "@/lib/practice/runtime";
 
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() ? value : null; }
 
-const commentDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
   timeZone: "America/Sao_Paulo"
 });
+
+const practiceStatus: Record<string, string> = {
+  upload_pending: "Aguardando envio",
+  processing: "Verificação de segurança",
+  awaiting_review: "Aguardando revisão",
+  available: "Disponível",
+  accepted: "Aceita",
+  rejected: "Revisão solicitada",
+  failed: "Falha no envio",
+  blocked: "Arquivo bloqueado",
+  manual_review: "Revisão de segurança"
+};
+
+const practiceErrors: Record<string, string> = {
+  PRACTICE_FILE_REQUIRED: "Selecione um arquivo para enviar.",
+  PRACTICE_CONTENT_TYPE_NOT_ALLOWED: "Esse tipo de arquivo não é permitido.",
+  PRACTICE_FILE_EXTENSION_NOT_ALLOWED: "A extensão do arquivo não corresponde ao formato permitido.",
+  PRACTICE_FILE_SIZE_INVALID: "O arquivo deve ter até 6 MB.",
+  PRACTICE_SUBMISSION_LIMIT_REACHED: "O limite de envios desta atividade foi atingido.",
+  PRACTICE_STORAGE_UPLOAD_FAILED: "Não foi possível armazenar o arquivo.",
+  PRACTICE_UPLOAD_FAILED: "Não foi possível concluir o envio. Tente novamente."
+};
+
+function fileSize(value: number | null): string | null {
+  if (value === null) return null;
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default async function ActivityPage({
   params,
   searchParams
 }: {
   params: Promise<{ stepInstanceId: string }>;
-  searchParams: Promise<{ journey?: string; comentario?: string }>;
+  searchParams: Promise<{ journey?: string; comentario?: string; pratica?: string; codigo?: string }>;
 }) {
   const [{ stepInstanceId }, query] = await Promise.all([params, searchParams]);
   const journey = query.journey;
   if (!journey) notFound();
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const [experience, commentResult] = await Promise.all([
+  const [experience, commentResult, practiceResult] = await Promise.all([
     journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey),
-    journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId)
+    journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId),
+    practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId).catch(() => null)
   ]);
   if (experience.state.s?.step_instance_id !== stepInstanceId || !experience.activity) notFound();
 
   const accepted = experience.state.s.accepted_sections;
   const sectionTotal = experience.activity.sections.length;
   const canAssess = sectionTotal > 0 && accepted >= sectionTotal;
+  const practice = practiceResult?.practice ?? null;
+  const submissions = practiceResult?.submissions ?? [];
+  const countedSubmissions = submissions.filter((item) => item.status !== "failed").length;
+  const canUpload = Boolean(practice) && (practice?.max_submissions === null || countedSubmissions < practice.max_submissions);
+  const practiceError = query.codigo ? practiceErrors[query.codigo] ?? practiceErrors.PRACTICE_UPLOAD_FAILED : null;
+
   return (
     <>
       <header className="page-heading"><p className="eyebrow">Atividade</p><h1>{experience.activity.title}</h1><p>{experience.activity.description}</p><p className="metadata">Tempo estimado: {experience.activity.estimated_minutes} minutos</p></header>
@@ -52,6 +90,35 @@ export default async function ActivityPage({
         ))}
         {accepted < sectionTotal ? <button className="button button--primary" type="submit">Registrar leitura</button> : null}
       </form>
+
+      {practice ? <section className="practice-section stack stack--large" id="pratica" aria-labelledby="pratica-titulo">
+        <div>
+          <p className="eyebrow">Aplicação prática</p>
+          <h2 id="pratica-titulo">Envie sua evidência</h2>
+          <p className="support-note">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo fica privado, passa por verificação de segurança e só pode ser baixado depois de liberado.</p>
+        </div>
+        {query.pratica === "enviada" ? <StatusPanel title="Arquivo recebido" tone="success"><p>A evidência foi registrada e entrou na verificação de segurança.</p></StatusPanel> : null}
+        {query.pratica === "erro" ? <StatusPanel title="Envio não concluído" tone="warning"><p>{practiceError}</p></StatusPanel> : null}
+        {canUpload ? <form action="/api/practice-uploads" method="post" encType="multipart/form-data" className="card stack">
+          <input type="hidden" name="journey_instance_id" value={journey} />
+          <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+          <input type="hidden" name="idempotency_key" value={randomUUID()} />
+          <label htmlFor="practice-file">Arquivo da prática<input id="practice-file" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.docx" required /></label>
+          <label className="consent-row"><input type="checkbox" name="allow_public_use" /><span>Autorizo o Estímulo a avaliar este material para possíveis estudos de caso e evidências de impacto. A autorização é opcional e não altera a conclusão da atividade.</span></label>
+          {practice.terms_version ? <p className="metadata">Termos aplicáveis: {practice.terms_version}.</p> : null}
+          <button className="button button--primary" type="submit">Enviar evidência</button>
+        </form> : <StatusPanel title="Limite de envios atingido" tone="info"><p>Esta atividade não aceita novos arquivos no momento.</p></StatusPanel>}
+
+        {submissions.length === 0 ? <StatusPanel title="Nenhuma evidência enviada" tone="info"><p>Seu histórico de envios aparecerá aqui.</p></StatusPanel> : <div className="practice-list">
+          {submissions.map((submission) => <article className="practice-card" key={submission.id}>
+            <div className="practice-header"><strong>Envio {submission.submission_number}</strong><span className="status-pill">{practiceStatus[submission.status] ?? submission.status}</span><time dateTime={submission.submitted_at}>{dateFormatter.format(new Date(submission.submitted_at))}</time></div>
+            <p>{submission.original_filename ?? "Arquivo em preparação"}</p>
+            <div className="practice-meta"><span>{submission.content_type ?? "Formato em validação"}</span>{fileSize(submission.size_bytes) ? <span>{fileSize(submission.size_bytes)}</span> : null}<span>{submission.allow_public_use ? "Uso autorizado" : "Uso público não autorizado"}</span></div>
+            {submission.review_feedback ? <p className="moderation-reason"><strong>Retorno da revisão:</strong> {submission.review_feedback}</p> : null}
+            {submission.can_download ? <Link className="button button--secondary" href={`/api/practice-submissions/${submission.id}/download`}>Baixar arquivo</Link> : null}
+          </article>)}
+        </div>}
+      </section> : null}
 
       <section className="comments-section stack stack--large" id="comentarios" aria-labelledby="comentarios-titulo">
         <div>
@@ -74,7 +141,7 @@ export default async function ActivityPage({
           <div className="comment-list" aria-live="polite">
             {commentResult.comments.map((comment) => (
               <article className="comment-card" key={comment.id}>
-                <div className="comment-header"><strong>{comment.author_name}</strong>{comment.is_own ? <span className="status-pill">Você</span> : null}<time dateTime={comment.created_at}>{commentDateFormatter.format(new Date(comment.created_at))}</time></div>
+                <div className="comment-header"><strong>{comment.author_name}</strong>{comment.is_own ? <span className="status-pill">Você</span> : null}<time dateTime={comment.created_at}>{dateFormatter.format(new Date(comment.created_at))}</time></div>
                 <p>{comment.body}</p>
               </article>
             ))}
