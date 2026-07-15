@@ -1,24 +1,44 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
-import { createEnrollmentAction, moderateActivityCommentAction, publishVerticalAction } from "@/app/actions/journey";
+import { createEnrollmentAction, moderateActivityCommentAction, publishVerticalAction, reviewPracticeSubmissionAction } from "@/app/actions/journey";
 import { AppShell } from "@/components/app-shell";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { statusLabel } from "@/lib/journey-runtime/navigation";
+import { practiceRuntime } from "@/lib/practice/runtime";
 
 export const dynamic = "force-dynamic";
 
-const commentDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
   timeZone: "America/Sao_Paulo"
 });
 
+const practiceStatus: Record<string, string> = {
+  upload_pending: "Aguardando envio",
+  processing: "Verificação de segurança",
+  awaiting_review: "Aguardando revisão",
+  available: "Disponível",
+  accepted: "Aceita",
+  rejected: "Revisão solicitada",
+  failed: "Falha no envio",
+  blocked: "Arquivo bloqueado",
+  manual_review: "Revisão de segurança"
+};
+
+function fileSize(value: number | null): string | null {
+  if (value === null) return null;
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default async function AdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ organization?: string; instance?: string; sucesso?: string; comentario?: string }>;
+  searchParams: Promise<{ organization?: string; instance?: string; sucesso?: string; comentario?: string; pratica?: string }>;
 }) {
   const query = await searchParams;
   const auth = await getAuthContext();
@@ -27,21 +47,29 @@ export default async function AdminPage({
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning"><p>Nenhuma organização ativa foi encontrada.</p></StatusPanel></AppShell>;
 
   const canManageComments = organization.permissions.includes("engagement.manage");
-  const [listing, workspaceResult, commentResult] = await Promise.all([
+  const canReviewPractice = organization.permissions.includes("assessment.review");
+  const [listing, workspaceResult, commentResult, practiceResult] = await Promise.all([
     journeyRuntime.listOperatorInstances(auth.identity.user_account_id, organization.organization_id),
     Promise.allSettled([journeyRuntime.getOperatorWorkspace(auth.identity.user_account_id, organization.organization_id)]),
     canManageComments
       ? Promise.allSettled([journeyRuntime.listOperatorActivityComments(auth.identity.user_account_id, organization.organization_id, 100)])
+      : Promise.resolve([]),
+    canReviewPractice
+      ? Promise.allSettled([practiceRuntime.listOperator(auth.identity.user_account_id, organization.organization_id, 100)])
       : Promise.resolve([])
   ]);
   const workspace = workspaceResult[0]?.status === "fulfilled" ? workspaceResult[0].value : null;
-  const comments = commentResult[0]?.status === "fulfilled" ? commentResult[0].value.comments : [];
+  const commentData = commentResult[0]?.status === "fulfilled" ? commentResult[0].value : null;
+  const practiceData = practiceResult[0]?.status === "fulfilled" ? practiceResult[0].value : null;
+  const comments = commentData?.comments ?? [];
+  const practices = practiceData?.submissions ?? [];
   const result = query.instance ? await journeyRuntime.getOperatorResult(auth.identity.user_account_id, organization.organization_id, query.instance) : null;
 
   return <AppShell area="admin" email={auth.email}>
-    <header className="page-heading"><p className="eyebrow">Operação</p><h1>Jornadas e evidências</h1><p>Publicação, matrícula, comentários e acompanhamento usam dados versionados e eventos reais.</p></header>
+    <header className="page-heading"><p className="eyebrow">Operação</p><h1>Jornadas e evidências</h1><p>Publicação, matrícula, comentários, práticas e acompanhamento usam dados versionados e eventos reais.</p></header>
     {query.sucesso ? <StatusPanel title="Operação concluída" tone="success"><p>A alteração foi confirmada pelo backend transacional.</p></StatusPanel> : null}
     {query.comentario === "moderado" ? <StatusPanel title="Comentário moderado" tone="success"><p>O estado do comentário e o histórico de moderação foram registrados.</p></StatusPanel> : null}
+    {query.pratica === "revisada" ? <StatusPanel title="Prática revisada" tone="success"><p>A decisão e o feedback foram registrados no histórico da submissão.</p></StatusPanel> : null}
     <form className="inline-form" method="get"><label>Organização<select name="organization" defaultValue={organization.organization_id}>{auth.identity.organizations.map((item) => <option value={item.organization_id} key={item.organization_id}>{item.display_name}</option>)}</select></label><button className="button button--secondary" type="submit">Selecionar</button></form>
 
     {workspace ? <div className="admin-columns">
@@ -49,10 +77,40 @@ export default async function AdminPage({
       <section className="card"><h2>Criar matrícula</h2>{workspace.participants.length === 0 || workspace.journey_versions.filter((item) => item.status === "published").length === 0 ? <p>É necessário ter participante técnico e versão publicada.</p> : <form action={createEnrollmentAction} className="stack"><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><label>Participante<select name="entrepreneur_id" required>{workspace.participants.map((item) => <option key={item.entrepreneur_id} value={item.entrepreneur_id}>{item.display_name} · {item.email}</option>)}</select></label><label>Jornada<select name="journey_version_id" required>{workspace.journey_versions.filter((item) => item.status === "published").map((item) => <option key={item.journey_version_id} value={item.journey_version_id}>{item.title} · versão {item.version_number}</option>)}</select></label><button className="button button--primary" type="submit">Matricular</button></form>}</section>
     </div> : <StatusPanel title="Consulta disponível" tone="info"><p>As ações de publicação e matrícula não estão disponíveis para este vínculo.</p></StatusPanel>}
 
+    {canReviewPractice ? <section className="stack stack--large" id="praticas" aria-labelledby="revisao-praticas-titulo">
+      <div><p className="eyebrow">Evidências</p><h2 id="revisao-praticas-titulo">Revisão de práticas</h2><p className="support-note">Somente arquivos liberados pela verificação de segurança podem ser baixados ou avaliados.</p></div>
+      {practices.length === 0 ? <StatusPanel title="Nenhuma prática" tone="info"><p>Ainda não há evidências enviadas nesta organização.</p></StatusPanel> : <div className="practice-list">{practices.map((practice) => <article className="practice-card" key={practice.id}>
+        <div className="practice-header"><strong>{practice.participant_name}</strong><span className="status-pill">{practiceStatus[practice.status] ?? practice.status}</span><time dateTime={practice.submitted_at}>{dateFormatter.format(new Date(practice.submitted_at))}</time></div>
+        <p className="metadata">{practice.activity_title} · envio {practice.submission_number}</p>
+        <p>{practice.original_filename ?? "Arquivo em preparação"}</p>
+        <div className="practice-meta"><span>{practice.content_type ?? "Formato em validação"}</span>{fileSize(practice.size_bytes) ? <span>{fileSize(practice.size_bytes)}</span> : null}<span>{practice.allow_public_use ? "Uso autorizado" : "Uso público não autorizado"}</span></div>
+        {practice.review_feedback ? <p className="moderation-reason"><strong>Feedback atual:</strong> {practice.review_feedback}</p> : null}
+        {practice.can_download ? <Link className="button button--secondary" href={`/api/practice-submissions/${practice.id}/download`}>Baixar evidência</Link> : null}
+        {practice.status === "awaiting_review" ? <div className="review-actions">
+          <form action={reviewPracticeSubmissionAction} className="stack review-form">
+            <input type="hidden" name="organization_id" value={organization.organization_id} />
+            <input type="hidden" name="submission_id" value={practice.id} />
+            <input type="hidden" name="status" value="accepted" />
+            <input type="hidden" name="idempotency_key" value={randomUUID()} />
+            <label>Feedback opcional<textarea name="feedback" rows={2} maxLength={2000} placeholder="Registre uma orientação para o participante." /></label>
+            <button className="button button--primary" type="submit">Aceitar prática</button>
+          </form>
+          <form action={reviewPracticeSubmissionAction} className="stack review-form">
+            <input type="hidden" name="organization_id" value={organization.organization_id} />
+            <input type="hidden" name="submission_id" value={practice.id} />
+            <input type="hidden" name="status" value="rejected" />
+            <input type="hidden" name="idempotency_key" value={randomUUID()} />
+            <label>Motivo da revisão<textarea name="feedback" rows={2} minLength={1} maxLength={2000} required placeholder="Explique o que precisa ser ajustado." /></label>
+            <button className="button button--secondary" type="submit">Solicitar ajuste</button>
+          </form>
+        </div> : null}
+      </article>)}</div>}
+    </section> : null}
+
     {canManageComments ? <section className="stack stack--large" id="comentarios" aria-labelledby="moderacao-comentarios-titulo">
       <div><p className="eyebrow">Participação</p><h2 id="moderacao-comentarios-titulo">Moderação de comentários</h2><p className="support-note">Comentários visíveis podem ser ocultados com justificativa. Comentários ocultos podem ser restaurados sem apagar o histórico.</p></div>
       {comments.length === 0 ? <StatusPanel title="Nenhum comentário" tone="info"><p>Ainda não há comentários para moderar nesta organização.</p></StatusPanel> : <div className="comment-list">{comments.map((comment) => <article className="comment-card" key={comment.id}>
-        <div className="comment-header"><strong>{comment.author_name}</strong><span className="status-pill">{comment.status === "visible" ? "Visível" : "Oculto"}</span><time dateTime={comment.created_at}>{commentDateFormatter.format(new Date(comment.created_at))}</time></div>
+        <div className="comment-header"><strong>{comment.author_name}</strong><span className="status-pill">{comment.status === "visible" ? "Visível" : "Oculto"}</span><time dateTime={comment.created_at}>{dateFormatter.format(new Date(comment.created_at))}</time></div>
         <p className="metadata">{comment.activity_title}</p>
         <p>{comment.body}</p>
         {comment.moderation_reason ? <p className="moderation-reason"><strong>Motivo atual:</strong> {comment.moderation_reason}</p> : null}

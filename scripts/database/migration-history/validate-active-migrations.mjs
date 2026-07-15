@@ -10,6 +10,9 @@ const expectedActiveMigrations = Object.freeze([
   '20260714184729_activity_comments_schema.sql',
   '20260714184752_activity_comments_participant_api.sql',
   '20260714184813_activity_comments_operator_api.sql',
+  '20260715143709_practice_uploads_schema.sql',
+  '20260715143808_practice_uploads_participant_api.sql',
+  '20260715143842_practice_uploads_operator_api.sql',
 ]);
 
 export async function validateActiveMigrations() {

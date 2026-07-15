@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "artifact": "e14_remote_schema_baseline",
   "source": "Supabase development and test environment",
-  "observed_at": "2026-07-14",
+  "observed_at": "2026-07-15",
   "inventory": {
     "schema_version": "1.0",
     "postgres_major": 17,
@@ -12,12 +12,12 @@
         "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
       },
       "columns": {
-        "count": 1663,
-        "sha256": "21ef126ca90691bdfc21c81b9122efaee9d967dead87f63aace23c04a17948e4"
+        "count": 1675,
+        "sha256": "02c6a3db112187ec1c02e9bdf8829072ea323584b272f76eb88174c99a5c845a"
       },
       "indexes": {
-        "count": 523,
-        "sha256": "57a74947b4c11621f880f213318b5384cd0da282dade07053d0088b2d69052c2"
+        "count": 527,
+        "sha256": "2de51e29ace3d7b724e6d7dc27e5198a31f12fb6efb6334e3a7ef3ae06738599"
       },
       "schemas": {
         "count": 14,
@@ -40,8 +40,8 @@
         "sha256": "5d11cc994f0371ba9a65b03911d05b8629a65df802c0be5be07e0b0206d86496"
       },
       "constraints": {
-        "count": 759,
-        "sha256": "c71e0a7ca37fecbd7a8088c0311924d5887e590792da46bd552d0d0be0f5dcce"
+        "count": 761,
+        "sha256": "b9f361ae67e71cbddf1e7da88615349d0a5a301b96d31f3c18b2c1091eeca7a5"
       }
     }
   }

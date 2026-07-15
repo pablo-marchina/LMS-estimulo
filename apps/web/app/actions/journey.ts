@@ -5,11 +5,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { practiceRuntime } from "@/lib/practice/runtime";
 
 const uuid = z.string().uuid();
 const integer = z.coerce.number().int().nonnegative();
 const commentBody = z.string().trim().min(1).max(2000);
 const moderationStatus = z.enum(["visible", "hidden"]);
+const practiceReviewStatus = z.enum(["accepted", "rejected"]);
 
 async function actorId() {
   const auth = await getAuthContext();
@@ -107,6 +109,24 @@ export async function moderateActivityCommentAction(formData: FormData) {
   const key = String(formData.get("idempotency_key") || randomUUID());
   await journeyRuntime.moderateActivityComment(actor, organization, comment, status, reason, key);
   redirect(`/admin?organization=${organization}&comentario=moderado#comentarios`);
+}
+
+export async function reviewPracticeSubmissionAction(formData: FormData) {
+  const actor = await actorId();
+  const organization = uuid.parse(formData.get("organization_id"));
+  const submission = uuid.parse(formData.get("submission_id"));
+  const status = practiceReviewStatus.parse(formData.get("status"));
+  const feedback = z.string().trim().max(2000).parse(String(formData.get("feedback") ?? ""));
+  if (status === "rejected" && !feedback) throw new Error("PRACTICE_REVIEW_FEEDBACK_REQUIRED");
+  await practiceRuntime.review(
+    actor,
+    organization,
+    submission,
+    status,
+    feedback,
+    String(formData.get("idempotency_key") || randomUUID())
+  );
+  redirect(`/admin?organization=${organization}&pratica=revisada#praticas`);
 }
 
 export async function submitQuickCheckAction(formData: FormData) {

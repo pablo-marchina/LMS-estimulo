@@ -6,10 +6,12 @@ on:
       - ".github/workflows/database-gates.yml"
       - "package.json"
       - "apps/web/lib/journey-runtime/rpc.ts"
+      - "apps/web/lib/practice/**"
       - "docs/implementation/public-rpc-contracts-v1.json"
       - "scripts/database/activity-comments/**"
       - "scripts/database/backend-e2e/**"
       - "scripts/database/configurable-product-persistence/**"
+      - "scripts/database/practice-uploads/**"
       - "scripts/database/equivalence/**"
       - "scripts/database/legacy-rpc/**"
       - "scripts/database/public-rpc-contracts/**"
@@ -109,5 +111,5 @@ jobs:
         if: steps.database_gates.outputs.exit_code != '0'
         shell: bash
         run: |
-          echo "Replay, equivalence, public contracts, backend E2E, configurable-product persistence or activity comments failed. Inspect the uploaded diagnostic artifact."
+          echo "Replay, equivalence, public contracts, backend E2E, configurable-product persistence, comments or practice uploads failed. Inspect the uploaded diagnostic artifact."
           exit 1

@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.3  
-**Data:** 2026-07-14  
-**Status:** fundação técnica reproduzível; comentários por aula implementados; produto oficial ainda incompleto
+**Versão:** 4.4  
+**Data:** 2026-07-15  
+**Status:** fundação técnica reproduzível; comentários e uploads por aula implementados; produto oficial ainda incompleto
 
 ## Hierarquia de referência
 
@@ -43,15 +43,16 @@ O Supabase não será promovido a produção.
 
 O repositório já contém:
 
-- aplicação Next.js com seis rotas iniciais;
+- aplicação Next.js com rotas de participante, operação, upload e download protegido;
 - bridge de identidade e camada de aplicação de servidor;
-- 248 migrations executáveis;
+- 251 migrations executáveis;
 - replay limpo e equivalência estrutural;
 - 18 contratos públicos de RPC;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - motor configurável de formulário, arquétipos, classificação e ativações;
 - persistência transacional e outbox do resultado configurável;
 - comentários por aula com moderação, histórico, eventos e outbox;
+- uploads de prática com storage privado, quarentena, scan, consentimento, revisão, eventos e outbox;
 - porta HubSpot e adapter em memória;
 - lockfile e instalação reproduzível em Ubuntu e Windows;
 - contenção do legado de RPCs e helpers.
@@ -71,7 +72,6 @@ IDENTITY-SITE-INTEGRATION = open
 HUBSPOT-PHYSICAL-INTEGRATION = open
 BROWSER-ACCESSIBILITY = open
 AWS-STAGING = open
-UNUSED-TEST-ADAPTERS = open
 ```
 
 O legado contido e a nomenclatura histórica são dívida técnica não bloqueante.
