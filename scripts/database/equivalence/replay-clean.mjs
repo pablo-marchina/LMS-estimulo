@@ -17,6 +17,11 @@ const activeMigrationFiles = Object.freeze([
   '20260715143709_practice_uploads_schema.sql',
   '20260715143808_practice_uploads_participant_api.sql',
   '20260715143842_practice_uploads_operator_api.sql',
+  '20260715155144_learning_credentials_schema.sql',
+  '20260715155610_learning_credentials_context.sql',
+  '20260715155647_learning_credentials_candidates.sql',
+  '20260715155753_learning_credentials_issuance_api.sql',
+  '20260715155834_learning_credentials_read_api.sql',
 ]);
 const applicationSchemas = [
   'app_private',
@@ -125,10 +130,10 @@ async function buildReplayPlan() {
   if (m16Manifest.migration_count !== 1) {
     fail(`expected 1 M16 migration, found ${m16Manifest.migration_count}`);
   }
-  if (activeMigrationFiles.length !== 6) {
-    fail(`expected 6 active migrations, found ${activeMigrationFiles.length}`);
+  if (activeMigrationFiles.length !== 11) {
+    fail(`expected 11 active migrations, found ${activeMigrationFiles.length}`);
   }
-  if (plan.length !== 251) fail(`expected 251 replay files, found ${plan.length}`);
+  if (plan.length !== 256) fail(`expected 256 replay files, found ${plan.length}`);
 
   return plan;
 }
