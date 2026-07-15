@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const files = [
   'scripts/database/learning-credentials/schema.sql',
+  'scripts/database/learning-credentials/context.sql',
+  'scripts/database/learning-credentials/candidates.sql',
   'scripts/database/learning-credentials/issuance-api.sql',
   'scripts/database/learning-credentials/read-api.sql',
   'scripts/database/learning-credentials/test-learning-credentials.sql',
