@@ -40,11 +40,7 @@ create table if not exists catalog.library_item_versions (
   created_at timestamptz not null default now(),
   published_at timestamptz,
   retired_at timestamptz,
-  search_document tsvector generated always as (
-    setweight(to_tsvector('pg_catalog.portuguese'::regconfig, coalesce(title, '')), 'A') ||
-    setweight(to_tsvector('pg_catalog.portuguese'::regconfig, coalesce(array_to_string(topics, ' '), '') || ' ' || coalesce(source_name, '')), 'B') ||
-    setweight(to_tsvector('pg_catalog.portuguese'::regconfig, coalesce(summary, '') || ' ' || coalesce(body, '')), 'C')
-  ) stored,
+  search_document tsvector not null default ''::tsvector,
   constraint library_item_versions_number check (version_number > 0),
   constraint library_item_versions_status check (status in ('draft','published','retired')),
   constraint library_item_versions_title_length check (length(trim(title)) between 3 and 200),
@@ -66,6 +62,28 @@ create table if not exists catalog.library_item_versions (
   ),
   constraint library_item_versions_unique unique (library_item_id, version_number)
 );
+
+create or replace function app_private.library_item_search_document_trigger()
+returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $$
+begin
+  new.search_document :=
+    setweight(to_tsvector('pg_catalog.portuguese'::regconfig, coalesce(new.title, '')), 'A') ||
+    setweight(to_tsvector('pg_catalog.portuguese'::regconfig, coalesce(array_to_string(new.topics, ' '), '') || ' ' || coalesce(new.source_name, '')), 'B') ||
+    setweight(to_tsvector('pg_catalog.portuguese'::regconfig, coalesce(new.summary, '') || ' ' || coalesce(new.body, '')), 'C');
+  return new;
+end;
+$$;
+
+drop trigger if exists library_item_versions_search_document on catalog.library_item_versions;
+create trigger library_item_versions_search_document
+before insert or update of title, summary, body, topics, source_name
+on catalog.library_item_versions
+for each row execute function app_private.library_item_search_document_trigger();
+
+update catalog.library_item_versions set title = title where search_document = ''::tsvector;
 
 create table if not exists catalog.library_item_journey_links (
   library_item_version_id uuid not null references catalog.library_item_versions(id) on delete cascade,
@@ -99,6 +117,7 @@ alter table catalog.library_item_journey_links force row level security;
 revoke all on catalog.library_items from public, anon, authenticated;
 revoke all on catalog.library_item_versions from public, anon, authenticated;
 revoke all on catalog.library_item_journey_links from public, anon, authenticated;
+revoke all on function app_private.library_item_search_document_trigger() from public, anon, authenticated;
 
 do $$
 begin
