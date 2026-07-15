@@ -13,6 +13,12 @@ const expectedActiveMigrations = Object.freeze([
   '20260715143709_practice_uploads_schema.sql',
   '20260715143808_practice_uploads_participant_api.sql',
   '20260715143842_practice_uploads_operator_api.sql',
+  '20260715155144_learning_credentials_schema.sql',
+  '20260715155610_learning_credentials_context.sql',
+  '20260715155647_learning_credentials_candidates.sql',
+  '20260715155753_learning_credentials_issuance_api.sql',
+  '20260715155834_learning_credentials_read_api.sql',
+  '20260715161140_learning_credentials_verify_hardening.sql',
 ]);
 
 export async function validateActiveMigrations() {

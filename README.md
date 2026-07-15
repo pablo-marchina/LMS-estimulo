@@ -16,29 +16,19 @@ HubSpot = User 360 e projeções de relacionamento
 
 Já foram comprovados:
 
-- 244 migrations executáveis e replay limpo;
+- 257 migrations executáveis e replay limpo;
 - equivalência estrutural do banco;
-- 18 contratos públicos de RPC;
-- backend E2E com publicação, matrícula, diagnóstico, atividade, avaliação, progresso, pontos, eventos e outbox;
-- aplicação Next.js com rotas iniciais de participante e operação;
+- 18 contratos públicos históricos de RPC e superfícies server-only adicionais;
+- backend E2E com publicação, matrícula, diagnóstico, atividade, avaliações versionadas, progresso, pontos, eventos e outbox;
+- aplicação Next.js com áreas de participante e operação;
+- comentários e uploads por aula, storage privado, quarentena, scan e revisão;
+- avaliação multiquestão com tentativas e correção versionada;
+- emissão idempotente de selos e certificados, carteira do participante e validação pública;
 - motor configurável de formulários, arquétipos e ativações;
 - porta HubSpot e adapter em memória;
 - instalação reproduzível em Ubuntu e Windows.
 
-Ainda faltam as entradas oficiais, os must-haves do LMS, identidade/site, adapter HubSpot real, browser E2E e AWS staging.
-
-## Prioridade vigente
-
-```text
-1. aprovar e carregar formulário, 4 arquétipos e Jornada OpenAI
-2. substituir a vertical sintética pela vertical oficial
-3. completar frontend, comentários, uploads, provas, selos e certificados
-4. integrar identidade/site e HubSpot real
-5. validar navegador, acessibilidade e AWS staging
-6. liberar produção controlada
-```
-
-Dívida técnica contida e refatorações cosméticas não interrompem essa sequência.
+Ainda faltam as entradas oficiais, identidade/site, adapter HubSpot real, browser E2E, acessibilidade e AWS staging. As regras e conteúdos sintéticos usados nos testes não substituem a configuração homologada da Jornada OpenAI.
 
 ## Estrutura
 
@@ -47,6 +37,7 @@ apps/web/                              aplicação Next.js
 apps/web/lib/hubspot/                  porta e utilitários HubSpot
 apps/web/lib/configurable-product/     formulário, classificação e ativações
 apps/web/lib/journey-runtime/          runtime da jornada e compatibilidade RPC
+apps/web/lib/credentials/              emissão e leitura de credenciais
 supabase/migrations/                   histórico executável
 supabase/canonical-migrations/         manifests e SQL canônico
 supabase/functions/                    adapters ativos em desenvolvimento/teste

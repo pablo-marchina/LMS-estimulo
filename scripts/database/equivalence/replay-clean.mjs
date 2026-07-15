@@ -1,176 +1,101 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const canonicalDirectory = path.join(repositoryRoot, 'supabase/canonical-migrations');
-const migrationsDirectory = path.join(repositoryRoot, 'supabase/migrations');
-const providerBootstrapFile = path.join(
-  repositoryRoot,
-  'scripts/database/equivalence/bootstrap-provider-catalog.sql',
-);
-const activeMigrationFiles = Object.freeze([
-  '20260714184729_activity_comments_schema.sql',
-  '20260714184752_activity_comments_participant_api.sql',
-  '20260714184813_activity_comments_operator_api.sql',
-  '20260715143709_practice_uploads_schema.sql',
-  '20260715143808_practice_uploads_participant_api.sql',
-  '20260715143842_practice_uploads_operator_api.sql',
-]);
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const canonical = path.join(root, 'supabase/canonical-migrations');
+const migrations = path.join(root, 'supabase/migrations');
+const providerBootstrap = path.join(root, 'scripts/database/equivalence/bootstrap-provider-catalog.sql');
+const recoveredLastVersion = '20260714161338';
 const applicationSchemas = [
-  'app_private',
-  'assessment',
-  'catalog',
-  'core',
-  'diagnostics',
-  'engagement',
-  'eventing',
-  'governance',
-  'iam',
-  'integration',
-  'intelligence',
-  'intervention',
-  'orchestration',
-  'reporting',
+  'app_private', 'assessment', 'catalog', 'core', 'diagnostics', 'engagement', 'eventing',
+  'governance', 'iam', 'integration', 'intelligence', 'intervention', 'orchestration', 'reporting',
 ];
 
-function fail(message) {
-  throw new Error(message);
-}
+function fail(message) { throw new Error(message); }
 
-function runPsql(databaseUrl, args, options = {}) {
+function psql(databaseUrl, args) {
   const result = spawnSync(
     'psql',
     ['--dbname', databaseUrl, '--no-psqlrc', '--set', 'ON_ERROR_STOP=1', ...args],
-    {
-      cwd: repositoryRoot,
-      encoding: options.encoding ?? 'utf8',
-      stdio: options.stdio ?? 'pipe',
-      env: {
-        ...process.env,
-        PGOPTIONS: '-c client_min_messages=warning',
-      },
-    },
+    { cwd: root, encoding: 'utf8', env: { ...process.env, PGOPTIONS: '-c client_min_messages=warning' } },
   );
-
   if (result.error) fail(`failed to start psql: ${result.error.message}`);
-  if (result.status !== 0) {
-    const stdout = result.stdout?.toString() ?? '';
-    const stderr = result.stderr?.toString() ?? '';
-    fail(`psql exited with status ${result.status}\n${stdout}\n${stderr}`.trim());
-  }
-  return result.stdout?.toString() ?? '';
+  if (result.status !== 0) fail(`psql exited with status ${result.status}\n${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim());
+  return String(result.stdout ?? '');
 }
 
-async function readJson(filePath) {
-  return JSON.parse(await readFile(filePath, 'utf8'));
+async function manifest(name) {
+  return JSON.parse(await readFile(path.join(canonical, name), 'utf8'));
 }
 
-function safeFileName(value, field) {
-  if (typeof value !== 'string' || !/^[0-9A-Za-z][0-9A-Za-z_.-]*$/.test(value)) {
-    fail(`invalid ${field}: ${String(value)}`);
-  }
-  return value;
-}
-
-function manifestEntries(manifest, source) {
-  return manifest.migrations.map((migration) => ({
-    version: safeFileName(migration.version, `${source} version`),
-    file: path.join(migrationsDirectory, safeFileName(migration.file, `${source} migration file`)),
+function manifestEntries(document, source) {
+  return document.migrations.map(({ version, file }) => ({
+    version,
+    file: path.join(migrations, file),
     source,
   }));
 }
 
-function activeEntries() {
-  return activeMigrationFiles.map((file) => ({
-    version: safeFileName(file.slice(0, 14), 'active migration version'),
-    file: path.join(migrationsDirectory, safeFileName(file, 'active migration file')),
+async function activeEntries() {
+  const files = (await readdir(migrations))
+    .filter((file) => /^\d{14}_[a-z0-9_]+\.sql$/.test(file))
+    .filter((file) => file.slice(0, 14) > recoveredLastVersion)
+    .sort();
+  return files.map((file) => ({
+    version: file.slice(0, 14),
+    file: path.join(migrations, file),
     source: 'active-post-recovery',
   }));
 }
 
-async function buildReplayPlan() {
-  const m00M12Manifest = await readJson(
-    path.join(canonicalDirectory, 'M00_M12_RUNTIME_MANIFEST.json'),
-  );
-  const m13Manifest = await readJson(path.join(canonicalDirectory, 'M13_RUNTIME_MANIFEST.json'));
-  const m14Manifest = await readJson(path.join(canonicalDirectory, 'M14_RUNTIME_MANIFEST.json'));
-  const m15Manifest = await readJson(path.join(canonicalDirectory, 'M15_RUNTIME_MANIFEST.json'));
-  const m16Manifest = await readJson(path.join(canonicalDirectory, 'M16_RUNTIME_MANIFEST.json'));
-
+async function replayPlan() {
+  const [m00m12, m13, m14, m15, m16, active] = await Promise.all([
+    manifest('M00_M12_RUNTIME_MANIFEST.json'),
+    manifest('M13_RUNTIME_MANIFEST.json'),
+    manifest('M14_RUNTIME_MANIFEST.json'),
+    manifest('M15_RUNTIME_MANIFEST.json'),
+    manifest('M16_RUNTIME_MANIFEST.json'),
+    activeEntries(),
+  ]);
+  const expected = [
+    [m00m12.migration_count, 76, 'M00-M12'],
+    [m13.migration_count, 165, 'M13'],
+    [m14.migration_count, 2, 'M14'],
+    [m15.migration_count, 1, 'M15'],
+    [m16.migration_count, 1, 'M16'],
+    [active.length, 12, 'active'],
+  ];
+  for (const [actual, count, label] of expected) {
+    if (actual !== count) fail(`expected ${count} ${label} migrations, found ${actual}`);
+  }
   const plan = [
-    ...manifestEntries(m00M12Manifest, 'recovered-m00-m12'),
-    ...manifestEntries(m13Manifest, 'recovered-m13'),
-    ...manifestEntries(m14Manifest, 'recovered-m14'),
-    ...manifestEntries(m15Manifest, 'recovered-m15'),
-    ...manifestEntries(m16Manifest, 'recovered-m16'),
-    ...activeEntries(),
+    ...manifestEntries(m00m12, 'recovered-m00-m12'),
+    ...manifestEntries(m13, 'recovered-m13'),
+    ...manifestEntries(m14, 'recovered-m14'),
+    ...manifestEntries(m15, 'recovered-m15'),
+    ...manifestEntries(m16, 'recovered-m16'),
+    ...active,
   ].sort((left, right) => left.version.localeCompare(right.version));
-
-  const versions = plan.map((migration) => migration.version);
-  if (new Set(versions).size !== versions.length) fail('replay plan contains duplicate versions');
-  if (m00M12Manifest.migration_count !== 76) {
-    fail(`expected 76 M00-M12 migrations, found ${m00M12Manifest.migration_count}`);
-  }
-  if (m13Manifest.migration_count !== 165) {
-    fail(`expected 165 M13 migrations, found ${m13Manifest.migration_count}`);
-  }
-  if (m14Manifest.migration_count !== 2) {
-    fail(`expected 2 M14 migrations, found ${m14Manifest.migration_count}`);
-  }
-  if (m15Manifest.migration_count !== 1) {
-    fail(`expected 1 M15 migration, found ${m15Manifest.migration_count}`);
-  }
-  if (m16Manifest.migration_count !== 1) {
-    fail(`expected 1 M16 migration, found ${m16Manifest.migration_count}`);
-  }
-  if (activeMigrationFiles.length !== 6) {
-    fail(`expected 6 active migrations, found ${activeMigrationFiles.length}`);
-  }
-  if (plan.length !== 251) fail(`expected 251 replay files, found ${plan.length}`);
-
+  if (new Set(plan.map(({ version }) => version)).size !== plan.length) fail('replay plan contains duplicate versions');
+  if (plan.length !== 257) fail(`expected 257 replay files, found ${plan.length}`);
   return plan;
-}
-
-function assertCleanDatabase(databaseUrl) {
-  const literalList = applicationSchemas.map((schema) => `'${schema}'`).join(',');
-  const output = runPsql(databaseUrl, [
-    '--tuples-only',
-    '--no-align',
-    '--command',
-    `select count(*) from pg_namespace where nspname in (${literalList});`,
-  ]).trim();
-  if (output !== '0') fail(`clean replay requires an empty application schema set; found ${output}`);
-}
-
-function provisionProviderCatalog(databaseUrl) {
-  process.stdout.write('[bootstrap] provider catalog supabase_migrations.schema_migrations\n');
-  try {
-    runPsql(databaseUrl, ['--quiet', '--single-transaction', '--file', providerBootstrapFile]);
-  } catch (error) {
-    fail(
-      `provider catalog bootstrap failed: ${path.relative(repositoryRoot, providerBootstrapFile)}\n${error.message}`,
-    );
-  }
-}
-
-function applyMigration(databaseUrl, migration, index, total) {
-  const relativePath = path.relative(repositoryRoot, migration.file).replaceAll('\\', '/');
-  process.stdout.write(`[${index + 1}/${total}] ${migration.source} ${relativePath}\n`);
-  try {
-    runPsql(databaseUrl, ['--quiet', '--single-transaction', '--file', migration.file]);
-  } catch (error) {
-    fail(`migration failed: ${relativePath}\n${error.message}`);
-  }
 }
 
 export async function replayCleanDatabase(databaseUrl) {
   if (!databaseUrl) fail('DATABASE_URL is required');
-  assertCleanDatabase(databaseUrl);
-  provisionProviderCatalog(databaseUrl);
-  const plan = await buildReplayPlan();
-  plan.forEach((migration, index) => applyMigration(databaseUrl, migration, index, plan.length));
+  const schemaList = applicationSchemas.map((schema) => `'${schema}'`).join(',');
+  const existing = psql(databaseUrl, ['--tuples-only', '--no-align', '--command', `select count(*) from pg_namespace where nspname in (${schemaList});`]).trim();
+  if (existing !== '0') fail(`clean replay requires an empty application schema set; found ${existing}`);
+  psql(databaseUrl, ['--quiet', '--single-transaction', '--file', providerBootstrap]);
+  const plan = await replayPlan();
+  for (const [index, migration] of plan.entries()) {
+    const relative = path.relative(root, migration.file).replaceAll('\\', '/');
+    process.stdout.write(`[${index + 1}/${plan.length}] ${migration.source} ${relative}\n`);
+    try { psql(databaseUrl, ['--quiet', '--single-transaction', '--file', migration.file]); }
+    catch (error) { fail(`migration failed: ${relative}\n${error.message}`); }
+  }
   return {
     status: 'replayed',
     transaction_mode: 'one_transaction_per_migration',
@@ -181,23 +106,15 @@ export async function replayCleanDatabase(databaseUrl) {
     recovered_m14: 2,
     recovered_m15: 1,
     recovered_m16: 1,
-    active_post_recovery: activeMigrationFiles.length,
+    active_post_recovery: 12,
     first_version: plan[0].version,
     last_version: plan.at(-1).version,
   };
 }
 
-async function main() {
-  const result = await replayCleanDatabase(process.env.DATABASE_URL);
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-}
-
-const isDirectExecution =
-  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
-
-if (isDirectExecution) {
-  main().catch((error) => {
-    process.stderr.write(`${error.stack ?? error.message}\n`);
-    process.exitCode = 1;
-  });
+const direct = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+if (direct) {
+  replayCleanDatabase(process.env.DATABASE_URL)
+    .then((result) => process.stdout.write(`${JSON.stringify(result, null, 2)}\n`))
+    .catch((error) => { process.stderr.write(`${error.stack ?? error.message}\n`); process.exitCode = 1; });
 }

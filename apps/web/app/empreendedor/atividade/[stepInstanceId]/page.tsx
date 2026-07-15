@@ -49,7 +49,7 @@ export default async function ActivityPage({
   searchParams
 }: {
   params: Promise<{ stepInstanceId: string }>;
-  searchParams: Promise<{ journey?: string; comentario?: string; pratica?: string; codigo?: string }>;
+  searchParams: Promise<{ journey?: string; comentario?: string; pratica?: string; codigo?: string; avaliacao?: string }>;
 }) {
   const [{ stepInstanceId }, query] = await Promise.all([params, searchParams]);
   const journey = query.journey;
@@ -66,6 +66,11 @@ export default async function ActivityPage({
   const accepted = experience.state.s.accepted_sections;
   const sectionTotal = experience.activity.sections.length;
   const canAssess = sectionTotal > 0 && accepted >= sectionTotal;
+  const assessment = experience.assessment;
+  const maxAttempts = assessment?.max_attempts ?? null;
+  const attemptsUsed = experience.state.q?.attempt_number ?? 0;
+  const attemptInProgress = experience.state.q?.status === "in_progress";
+  const attemptAvailable = maxAttempts === null || attemptInProgress || attemptsUsed < maxAttempts;
   const practice = practiceResult?.practice ?? null;
   const submissions = practiceResult?.submissions ?? [];
   const countedSubmissions = submissions.filter((item) => item.status !== "failed").length;
@@ -149,27 +154,30 @@ export default async function ActivityPage({
         )}
       </section>
 
-      {experience.state.q?.status === "failed" ? <StatusPanel title="Revise e tente novamente" tone="warning"><p>A tentativa anterior não atingiu o critério da atividade. O resultado é pedagógico e não representa risco ou elegibilidade de crédito.</p></StatusPanel> : null}
-      {experience.state.q?.passed ? <StatusPanel title="Atividade concluída" tone="success"><p>O resultado e os pontos já foram registrados no ledger da jornada.</p></StatusPanel> : null}
+      {query.avaliacao === "reprovada" || experience.state.q?.status === "failed" ? <StatusPanel title="Revise e tente novamente" tone="warning"><p>A tentativa anterior não atingiu o critério da atividade. O resultado é pedagógico e não representa risco ou elegibilidade de crédito.</p></StatusPanel> : null}
+      {experience.state.q?.passed ? <StatusPanel title="Atividade concluída" tone="success"><p>O resultado, os pontos e as credenciais elegíveis foram processados.</p></StatusPanel> : null}
+      {canAssess && assessment && !experience.state.q?.passed && !attemptAvailable ? <StatusPanel title="Limite de tentativas atingido" tone="warning"><p>Não há uma nova tentativa disponível para esta versão da avaliação.</p></StatusPanel> : null}
 
-      {canAssess && !experience.state.q?.passed && experience.assessment?.questions[0] ? (
-        <form action={submitQuickCheckAction} className="question-card stack">
+      {canAssess && assessment?.questions.length && !experience.state.q?.passed && attemptAvailable ? (
+        <form action={submitQuickCheckAction} className="assessment-form stack stack--large">
           <input type="hidden" name="journey_instance_id" value={journey} />
           <input type="hidden" name="step_instance_id" value={stepInstanceId} />
           <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <h2>Verificação rápida</h2>
-          <p>{experience.assessment.questions[0].prompt}</p>
-          {experience.assessment.questions[0].response ? (
-            <>
-              <input type="hidden" name="answer" value={experience.assessment.questions[0].response.option_code} />
-              <p className="form-message">Resposta já registrada. A submissão continuará de forma idempotente.</p>
-            </>
-          ) : (
-            <div className="option-list">
-              {experience.assessment.questions[0].options.map((option) => <label className="option" key={option.id}><input type="radio" name="answer" value={option.code} required /><span>{option.label}</span></label>)}
-            </div>
-          )}
-          <button className="button button--primary" type="submit">Enviar resposta</button>
+          <div className="card">
+            <p className="eyebrow">Avaliação de conhecimento</p>
+            <h2>Verifique o que aprendeu</h2>
+            <p className="support-note">{assessment.questions.length} {assessment.questions.length === 1 ? "questão" : "questões"}{assessment.passing_score !== null ? ` · aprovação a partir de ${assessment.passing_score}%` : ""}{maxAttempts !== null ? ` · até ${maxAttempts} tentativas` : ""}.</p>
+          </div>
+          {assessment.questions.map((question, index) => <fieldset className="question-card" key={question.id}>
+            <legend><span>Questão {index + 1}</span>{question.prompt}</legend>
+            {question.response ? <>
+              <input type="hidden" name={`answer_${question.id}`} value={question.response.option_code} />
+              <p className="form-message">Resposta registrada nesta tentativa.</p>
+            </> : <div className="option-list">
+              {question.options.map((option) => <label className="option" key={option.id}><input type="radio" name={`answer_${question.id}`} value={option.code} required /><span>{option.label}</span></label>)}
+            </div>}
+          </fieldset>)}
+          <button className="button button--primary" type="submit">Enviar avaliação</button>
         </form>
       ) : null}
     </>

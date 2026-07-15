@@ -1,0 +1,113 @@
+\set ON_ERROR_STOP on
+
+create or replace function public.list_participant_credentials(
+  p_actor_user_account_id uuid
+) returns jsonb
+language plpgsql
+stable
+security definer
+set search_path=pg_catalog
+as $$
+declare
+  v_entrepreneur_id uuid;
+  v_badges jsonb;
+  v_certificates jsonb;
+begin
+  v_entrepreneur_id:=app_private.e14_entrepreneur_for_account(p_actor_user_account_id);
+  if v_entrepreneur_id is null then
+    return jsonb_build_object(
+      'entrepreneur_id',null,'badges','[]'::jsonb,'certificates','[]'::jsonb
+    );
+  end if;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'award_id',ba.id,'journey_instance_id',ba.journey_instance_id,
+    'badge_version_id',ba.badge_version_id,'title',bv.title,'description',bv.description,
+    'journey_title',jv.title,'awarded_at',ba.awarded_at,
+    'revoked_at',ba.revoked_at,'revocation_reason',ba.revocation_reason,
+    'status',case when ba.revoked_at is null then 'active' else 'revoked' end
+  ) order by ba.awarded_at desc),'[]'::jsonb)
+  into v_badges
+  from engagement.badge_awards ba
+  join engagement.badge_versions bv on bv.id=ba.badge_version_id
+  join orchestration.journey_instances ji on ji.id=ba.journey_instance_id
+  join orchestration.enrollments en on en.id=ji.enrollment_id
+  join catalog.journey_versions jv on jv.id=en.journey_version_id
+  where ba.entrepreneur_id=v_entrepreneur_id;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'issuance_id',ci.id,'journey_instance_id',ci.journey_instance_id,
+    'certificate_version_id',ci.certificate_version_id,
+    'certificate_name',cd.name,'journey_title',jv.title,
+    'verification_code',ci.verification_code,'display_name',ci.display_name_snapshot,
+    'status',ci.status,'issued_at',ci.issued_at,'expires_at',ci.expires_at,
+    'revoked_at',ci.revoked_at,'revocation_reason',ci.revocation_reason,
+    'valid',ci.status='active' and ci.revoked_at is null
+      and (ci.expires_at is null or ci.expires_at>now())
+  ) order by ci.issued_at desc),'[]'::jsonb)
+  into v_certificates
+  from engagement.certificate_issuances ci
+  join engagement.certificate_versions cv on cv.id=ci.certificate_version_id
+  join engagement.certificate_definitions cd on cd.id=cv.certificate_definition_id
+  join orchestration.journey_instances ji on ji.id=ci.journey_instance_id
+  join orchestration.enrollments en on en.id=ji.enrollment_id
+  join catalog.journey_versions jv on jv.id=en.journey_version_id
+  where ci.entrepreneur_id=v_entrepreneur_id;
+
+  return jsonb_build_object(
+    'entrepreneur_id',v_entrepreneur_id,'badges',v_badges,'certificates',v_certificates
+  );
+end;
+$$;
+
+create or replace function public.verify_certificate(
+  p_verification_code text
+) returns jsonb
+language plpgsql
+stable
+security definer
+set search_path=pg_catalog
+as $$
+declare
+  v_result jsonb;
+  v_code text:=upper(btrim(coalesce(p_verification_code,'')));
+begin
+  if v_code !~ '^EST-[A-F0-9]{20}$' then
+    return jsonb_build_object('valid',false,'reason','invalid_code');
+  end if;
+
+  select jsonb_build_object(
+    'valid',ci.status='active' and ci.revoked_at is null
+      and (ci.expires_at is null or ci.expires_at>now()),
+    'reason',case
+      when ci.revoked_at is not null or ci.status<>'active' then 'revoked'
+      when ci.expires_at is not null and ci.expires_at<=now() then 'expired'
+      else 'valid'
+    end,
+    'verification_code',ci.verification_code,
+    'certificate_name',cd.name,
+    'journey_title',jv.title,
+    'display_name',ci.display_name_snapshot,
+    'issued_at',ci.issued_at,
+    'expires_at',ci.expires_at,
+    'revoked_at',ci.revoked_at
+  ) into v_result
+  from engagement.certificate_issuances ci
+  join engagement.certificate_versions cv on cv.id=ci.certificate_version_id
+  join engagement.certificate_definitions cd on cd.id=cv.certificate_definition_id
+  join catalog.journey_versions jv on jv.id=cv.journey_version_id
+  where ci.verification_code=v_code;
+
+  return coalesce(v_result,jsonb_build_object('valid',false,'reason','not_found'));
+end;
+$$;
+
+revoke all on function public.list_participant_credentials(uuid)
+  from public,anon,authenticated;
+revoke all on function public.verify_certificate(text)
+  from public,anon,authenticated;
+
+grant execute on function public.list_participant_credentials(uuid)
+  to service_role,app_worker;
+grant execute on function public.verify_certificate(text)
+  to service_role,app_worker;

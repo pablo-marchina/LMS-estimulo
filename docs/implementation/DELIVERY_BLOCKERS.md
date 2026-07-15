@@ -1,6 +1,6 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 3.5  
+**Versão:** 3.6  
 **Data:** 2026-07-15  
 **Status:** ativo
 
@@ -19,8 +19,7 @@ Este documento registra somente estado, lacunas e critérios de encerramento. A 
 
 | ID | Severidade | Lacuna | Critério de encerramento |
 |---|---|---|---|
-| `PRODUCT-CONFIGURATION` | P0 | faltam perguntas/opções homologadas, scoring, desempate, textos finais, ativações e Jornada OpenAI publicável | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
-| `LMS-MUST-HAVES` | P0 | comentários e uploads por aula estão concluídos; provas, selos e certificados permanecem incompletos | capacidades restantes com autorização, eventos e testes |
+| `PRODUCT-CONFIGURATION` | P0 | faltam perguntas/opções homologadas, scoring, desempate, textos finais, ativações, avaliações, regras de credencial e Jornada OpenAI publicável | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
 | `IDENTITY-SITE-INTEGRATION` | P0 | login real e entrada pelo site não comprovados | identidade única, sessão e permissões testadas |
 | `HUBSPOT-PHYSICAL-INTEGRATION` | P0 | adapter e modelo físico reais ausentes | inventário, matriz de projeção, retry, reconciliação e E2E no sandbox |
 | `BROWSER-ACCESSIBILITY` | P1 | navegador, mobile e acessibilidade não comprovados | E2E e auditoria dos fluxos críticos |
@@ -41,6 +40,8 @@ scoring_method_received = false
 tie_rule_approved = false
 result_copy_approved = false
 activation_matrix_approved = false
+openai_assessments_approved = false
+openai_credential_rules_approved = false
 openai_journey_editorial_gate_closed = false
 ```
 
@@ -48,8 +49,8 @@ openai_journey_editorial_gate_closed = false
 
 ```text
 recovered_migration_count = 245
-active_migration_count = 6
-total_migration_count = 251
+active_migration_count = 12
+total_migration_count = 257
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
@@ -60,6 +61,12 @@ activity_comments_remote_surface_verified = true
 practice_uploads_e2e_passed = true
 practice_uploads_remote_surface_verified = true
 storage_and_scan_have_runtime_consumer = true
+multi_question_assessment_ui_passed = true
+learning_credentials_e2e_passed = true
+learning_credentials_remote_surface_verified = true
+certificate_public_page_implemented = true
+certificate_direct_anonymous_rpc_disabled = true
+lms_must_haves_technical_gate_closed = true
 rls_negative_checks_passed = true
 idempotency_and_concurrency_passed = true
 events_and_outbox_passed = true
@@ -67,6 +74,8 @@ clean_install_linux_passed = true
 clean_install_windows_passed = true
 typecheck_and_build_passed = true
 ```
+
+O gate técnico de must-haves do LMS está encerrado para comentários, uploads, avaliações, selos e certificados genéricos. A publicação da Jornada OpenAI continua bloqueada pelas versões oficiais de conteúdo, correção e regras de credencial, registradas em `PRODUCT-CONFIGURATION`.
 
 ## Dívida não bloqueante
 

@@ -94,6 +94,23 @@ input[type="file"] { padding: 10px; }
 .review-form { border-top: 1px solid var(--border); padding-top: 16px; }
 .moderation-form { padding-top: 14px; border-top: 1px solid var(--border); }
 .moderation-reason { border-radius: 12px; background: var(--warning); padding: 12px; }
+.assessment-form { margin: 40px 0; }
+.credential-refresh { margin: 24px 0; }
+.credential-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.credential-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); overflow: hidden; }
+.credential-card--certificate { border-top: 7px solid var(--primary); }
+.credential-mark { float: right; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: var(--green-light); font-size: 28px; font-weight: 900; }
+.certificate-page { min-height: 100vh; display: grid; align-content: center; justify-items: center; gap: 24px; padding: 32px; }
+.certificate-document { width: min(920px, 100%); min-height: 620px; display: grid; align-content: center; text-align: center; padding: clamp(36px, 8vw, 88px); background: white; border: 14px double var(--primary); box-shadow: var(--shadow); }
+.certificate-brand { display: inline-flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 28px; font-size: 1.25rem; }
+.certificate-name { margin: 10px 0 24px; font-size: clamp(2rem, 6vw, 4rem); font-weight: 900; color: var(--primary); }
+.certificate-intro { margin-bottom: 0; color: var(--muted); }
+.certificate-details { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; margin: 34px 0; }
+.certificate-details div { min-width: 180px; }
+.certificate-details dt { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
+.certificate-details dd { margin: 5px 0 0; font-weight: 800; }
+.certificate-validity { font-weight: 900; color: #176b3a; }
+.certificate-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
 @media (max-width: 760px) {
   .app-header { align-items: flex-start; flex-wrap: wrap; }
   .app-header nav { order: 3; width: 100%; }
@@ -102,4 +119,13 @@ input[type="file"] { padding: 10px; }
   .page-container { padding-top: 32px; }
   .comment-header time, .practice-header time { width: 100%; margin-left: 0; }
   .form-footer .button, .practice-card .button, .review-form .button { width: 100%; }
+  .certificate-page { padding: 12px; }
+  .certificate-document { border-width: 8px; }
+}
+@media print {
+  @page { size: A4 landscape; margin: 0; }
+  body { background: white; }
+  .no-print { display: none !important; }
+  .certificate-page { min-height: auto; padding: 0; }
+  .certificate-document { width: 100%; min-height: 100vh; box-shadow: none; border-color: #000078; }
 }
