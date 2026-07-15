@@ -1,6 +1,6 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 3.7  
+**Versão:** 3.8  
 **Data:** 2026-07-15  
 **Status:** ativo
 
@@ -22,7 +22,7 @@ Este documento registra somente estado, lacunas e critérios de encerramento. A 
 | `PRODUCT-CONFIGURATION` | P0 | o manifesto estrutural existe e impede inferências, mas ainda faltam perguntas/opções homologadas, scoring, desempate, textos finais, ativações, avaliações, regras de credencial e Jornada OpenAI publicável | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
 | `IDENTITY-SITE-INTEGRATION` | P0 | login real e entrada pelo site não comprovados | identidade única, sessão e permissões testadas |
 | `HUBSPOT-PHYSICAL-INTEGRATION` | P0 | adapter e modelo físico reais ausentes | inventário, matriz de projeção, retry, reconciliação e E2E no sandbox |
-| `BROWSER-ACCESSIBILITY` | P1 | navegador, mobile e acessibilidade não comprovados | E2E e auditoria dos fluxos críticos |
+| `BROWSER-ACCESSIBILITY` | P1 | Browser E2E, teclado básico e viewport mobile estão comprovados; falta auditoria completa de acessibilidade | auditoria WCAG, correções e reexecução dos fluxos críticos |
 | `AWS-STAGING` | P1 | staging não implantado | deploy, TLS, secrets, logs, backup, restore e rollback |
 
 ## Subgates da configuração oficial
@@ -52,8 +52,8 @@ openai_journey_editorial_gate_closed = false
 
 ```text
 recovered_migration_count = 245
-active_migration_count = 12
-total_migration_count = 257
+active_migration_count = 19
+total_migration_count = 264
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
@@ -69,6 +69,9 @@ learning_credentials_e2e_passed = true
 learning_credentials_remote_surface_verified = true
 certificate_public_page_implemented = true
 certificate_direct_anonymous_rpc_disabled = true
+browser_e2e_synthetic_vertical_passed = true
+content_library_e2e_passed = true
+content_library_remote_surface_verified = true
 lms_must_haves_technical_gate_closed = true
 rls_negative_checks_passed = true
 idempotency_and_concurrency_passed = true
@@ -78,7 +81,7 @@ clean_install_windows_passed = true
 typecheck_and_build_passed = true
 ```
 
-O gate técnico de must-haves do LMS está encerrado para comentários, uploads, avaliações, selos e certificados genéricos. A publicação da Jornada OpenAI continua bloqueada pelas versões oficiais de conteúdo, correção e regras de credencial, registradas em `PRODUCT-CONFIGURATION`.
+O gate técnico de must-haves do LMS está encerrado para comentários, uploads, avaliações, selos e certificados genéricos. A primeira vertical da biblioteca também possui catálogo versionado, busca textual, conteúdo nativo, referências externas rastreadas e administração mínima. A publicação da Jornada OpenAI continua bloqueada pelas versões oficiais de conteúdo, correção e regras de credencial, registradas em `PRODUCT-CONFIGURATION`.
 
 O manifesto em `config/official-diagnostic/v3/manifest.json` é deliberadamente bloqueado. Ele registra apenas estrutura confirmada e não autoriza seed, preview ou publicação enquanto os artefatos P0 permanecerem ausentes ou conflitantes.
 
