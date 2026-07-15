@@ -24,13 +24,15 @@ test('workspace contém aplicação Next.js real em apps/web', async () => {
   assert.equal(webPackage.dependencies.next, '16.2.10');
 });
 
-test('seis rotas do contrato existem', async () => {
+test('rotas centrais e credenciais existem', async () => {
   for (const file of [
     'entrar/page.tsx',
     'empreendedor/page.tsx',
     'empreendedor/diagnostico/page.tsx',
     'empreendedor/atividade/[stepInstanceId]/page.tsx',
     'empreendedor/resultado/page.tsx',
+    'empreendedor/credenciais/page.tsx',
+    'credenciais/[verificationCode]/page.tsx',
     'admin/page.tsx',
   ]) {
     assert.ok((await read(`apps/web/app/${file}`)).length > 50);
@@ -40,8 +42,11 @@ test('seis rotas do contrato existem', async () => {
 test('service role permanece server-only', async () => {
   const admin = await read('apps/web/lib/supabase/admin.ts');
   const actions = await read('apps/web/app/actions/journey.ts');
+  const credentials = await read('apps/web/lib/credentials/runtime.ts');
   assert.ok(admin.includes('import "server-only"'));
+  assert.ok(credentials.includes('import "server-only"'));
   assert.ok(!actions.includes('SUPABASE_SERVICE_ROLE_KEY'));
+  assert.ok(!credentials.includes('SUPABASE_SERVICE_ROLE_KEY'));
 });
 
 test('todos os comandos da jornada são acessados pela camada tipada', async () => {
@@ -115,10 +120,27 @@ test('atividade renderiza o heading real do conteúdo versionado', async () => {
   assert.ok(activity.includes('section.heading'));
 });
 
+test('avaliação registra todas as questões versionadas', async () => {
+  const activity = await read('apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx');
+  const actions = await read('apps/web/app/actions/journey.ts');
+  assert.ok(activity.includes('assessment.questions.map'));
+  assert.ok(activity.includes('answer_${question.id}'));
+  assert.ok(actions.includes('for (const question of assessment.questions)'));
+  assert.ok(actions.includes(':answer:${question.id}'));
+});
+
 test('tentativa reprovada retorna para revisão da atividade', async () => {
   const actions = await read('apps/web/app/actions/journey.ts');
   assert.ok(actions.includes('updated.state.q?.passed'));
   assert.ok(actions.includes('/empreendedor/atividade/${step}'));
+});
+
+test('aprovação processa credenciais pela camada server-only', async () => {
+  const actions = await read('apps/web/app/actions/journey.ts');
+  const runtime = await read('apps/web/lib/credentials/runtime.ts');
+  assert.ok(actions.includes('credentialRuntime.issue'));
+  assert.ok(runtime.includes('issue_learning_credentials'));
+  assert.ok(runtime.includes('verify_certificate'));
 });
 
 test('área operacional mantém consulta quando gestão não está disponível', async () => {
