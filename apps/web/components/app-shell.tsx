@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { signOutAction } from "@/app/entrar/actions";
+import { EstimuloBrand } from "@/components/estimulo-brand";
 import { IdempotentSubmitBoundary } from "@/components/idempotent-submit-guard";
 
 export function AppShell({ area, email, children }: { area: "empreendedor" | "admin"; email: string; children: ReactNode }) {
@@ -20,10 +21,7 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
       <div className="app-frame">
         <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
         <header className="app-header no-print">
-          <Link className="brand" href={area === "admin" ? "/admin" : "/empreendedor"} aria-label="Plataforma Estímulo — início">
-            <span className="brand-mark" aria-hidden="true">E</span>
-            <span><strong>Estímulo</strong><small>Desenvolvimento do empreendedor</small></span>
-          </Link>
+          <EstimuloBrand href={area === "admin" ? "/admin" : "/empreendedor"} compact />
           <nav aria-label="Navegação principal">
             {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
           </nav>

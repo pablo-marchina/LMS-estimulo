@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.6  
+**Versão:** 4.7  
 **Data:** 2026-07-15  
-**Status:** fundação técnica reproduzível; must-haves genéricos do LMS e catálogo inicial implementados; produto oficial ainda incompleto
+**Status:** fundação técnica reproduzível; must-haves genéricos do LMS, catálogo inicial e cadastro controlado de teste implementados; produto oficial ainda incompleto
 
 ## Hierarquia de referência
 
@@ -45,8 +45,11 @@ O Supabase não será promovido a produção.
 O repositório já contém:
 
 - aplicação Next.js com áreas de participante, operação e validação pública de certificado;
+- identidade visual da Estímulo aplicada ao login e ao shell autenticado;
 - bridge de identidade e camada de aplicação de servidor;
-- 264 migrations executáveis;
+- cadastro público opcional para desenvolvimento/teste, desabilitado por padrão e bloqueado em produção;
+- provisionamento service-role-only de perfil mínimo de empreendedor marcado como dado de teste;
+- 265 migrations executáveis;
 - replay limpo e equivalência estrutural;
 - 18 contratos públicos históricos de RPC e superfícies server-only adicionais;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, avaliações, RLS, idempotência, concorrência, eventos, outbox e pontos;
@@ -64,7 +67,7 @@ O repositório já contém:
 - lockfile e instalação reproduzível em Ubuntu e Windows;
 - contenção do legado de RPCs e helpers.
 
-Essa fundação não equivale ao produto final. A vertical principal ainda usa configuração sintética e a biblioteca ainda não possui conteúdo oficial carregado.
+Essa fundação não equivale ao produto final. A vertical principal ainda usa configuração sintética, a biblioteca ainda não possui conteúdo oficial carregado e o cadastro público de teste não substitui a integração oficial de identidade/site.
 
 A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring, avaliações e regras de credencial ainda não foram aprovados.
 
