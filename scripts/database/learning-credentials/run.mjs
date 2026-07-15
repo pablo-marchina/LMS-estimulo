@@ -9,6 +9,7 @@ const files = [
   'supabase/migrations/20260715155647_learning_credentials_candidates.sql',
   'supabase/migrations/20260715155753_learning_credentials_issuance_api.sql',
   'supabase/migrations/20260715155834_learning_credentials_read_api.sql',
+  'supabase/migrations/20260715161140_learning_credentials_verify_hardening.sql',
   'scripts/database/learning-credentials/test-learning-credentials.sql',
 ].map((file) => path.join(repositoryRoot, file));
 const databaseUrl = process.env.DATABASE_URL;
