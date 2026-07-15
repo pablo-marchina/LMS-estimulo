@@ -54,6 +54,7 @@ h2 { font-size: 1.35rem; }
 label { display: grid; gap: 8px; font-weight: 700; }
 input, select, textarea { width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; color: var(--text); background: white; }
 textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
+input[type="file"] { padding: 10px; }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; border-radius: 999px; padding: 10px 20px; border: 1px solid transparent; font-weight: 800; cursor: pointer; text-decoration: none; }
 .button--primary { background: var(--primary); color: white; }
 .button--primary:hover { background: var(--primary-dark); }
@@ -71,9 +72,9 @@ textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
 .question-card legend span { display: block; color: var(--primary-bright); font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
 .option-list { display: grid; gap: 10px; margin-top: 18px; }
 .option { grid-template-columns: auto 1fr; align-items: center; border: 1px solid var(--border); border-radius: 14px; padding: 12px; font-weight: 500; }
-.option input, .confirm-row input { width: auto; }
+.option input, .confirm-row input, .consent-row input { width: auto; }
 .content-section { box-shadow: none; }
-.confirm-row { grid-template-columns: auto 1fr; align-items: center; margin-top: 18px; }
+.confirm-row, .consent-row { grid-template-columns: auto 1fr; align-items: start; margin-top: 18px; }
 .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
 .metric span, .metric strong { display: block; }
 .metric strong { font-size: 1.6rem; margin-top: 6px; }
@@ -81,13 +82,16 @@ textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
 .inline-form { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
 .inline-form label { min-width: 280px; }
 .evidence-view { overflow: auto; max-height: 560px; padding: 16px; border-radius: 14px; background: #11102f; color: #eef0ff; font-size: .82rem; }
-.comments-section { margin: 40px 0; }
+.comments-section, .practice-section { margin: 40px 0; }
 .form-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.comment-list { display: grid; gap: 14px; }
-.comment-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
-.comment-card p:last-child { margin-bottom: 0; }
-.comment-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-.comment-header time { margin-left: auto; color: var(--muted); font-size: .82rem; }
+.comment-list, .practice-list { display: grid; gap: 14px; }
+.comment-card, .practice-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+.comment-card p:last-child, .practice-card p:last-child { margin-bottom: 0; }
+.comment-header, .practice-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.comment-header time, .practice-header time { margin-left: auto; color: var(--muted); font-size: .82rem; }
+.practice-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: .86rem; margin: 12px 0 16px; }
+.review-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 18px; }
+.review-form { border-top: 1px solid var(--border); padding-top: 16px; }
 .moderation-form { padding-top: 14px; border-top: 1px solid var(--border); }
 .moderation-reason { border-radius: 12px; background: var(--warning); padding: 12px; }
 @media (max-width: 760px) {
@@ -96,6 +100,6 @@ textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
   .session-summary { margin-left: auto; }
   .session-summary span { display: none; }
   .page-container { padding-top: 32px; }
-  .comment-header time { width: 100%; margin-left: 0; }
-  .form-footer .button { width: 100%; }
+  .comment-header time, .practice-header time { width: 100%; margin-left: 0; }
+  .form-footer .button, .practice-card .button, .review-form .button { width: 100%; }
 }
