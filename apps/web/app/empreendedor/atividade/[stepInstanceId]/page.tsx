@@ -2,6 +2,7 @@ import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { acknowledgeActivityAction, createActivityCommentAction, submitQuickCheckAction } from "@/app/actions/journey";
+import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
@@ -80,8 +81,9 @@ export default async function ActivityPage({
   return (
     <>
       <header className="page-heading"><p className="eyebrow">Atividade</p><h1>{experience.activity.title}</h1><p>{experience.activity.description}</p><p className="metadata">Tempo estimado: {experience.activity.estimated_minutes} minutos</p></header>
+      <JourneyProgressNav state={experience.state} current="activity" />
       <ProgressMeter value={sectionTotal ? accepted / sectionTotal : 0} label="Conteúdo confirmado" />
-      <form action={acknowledgeActivityAction} className="stack stack--large">
+      <form action={acknowledgeActivityAction} className="stack stack--large" id="conteudo">
         <input type="hidden" name="journey_instance_id" value={journey} />
         <input type="hidden" name="step_instance_id" value={stepInstanceId} />
         <input type="hidden" name="idempotency_key" value={randomUUID()} />
@@ -159,7 +161,7 @@ export default async function ActivityPage({
       {canAssess && assessment && !experience.state.q?.passed && !attemptAvailable ? <StatusPanel title="Limite de tentativas atingido" tone="warning"><p>Não há uma nova tentativa disponível para esta versão da avaliação.</p></StatusPanel> : null}
 
       {canAssess && assessment?.questions.length && !experience.state.q?.passed && attemptAvailable ? (
-        <form action={submitQuickCheckAction} className="assessment-form stack stack--large">
+        <form action={submitQuickCheckAction} className="assessment-form stack stack--large" id="avaliacao">
           <input type="hidden" name="journey_instance_id" value={journey} />
           <input type="hidden" name="step_instance_id" value={stepInstanceId} />
           <input type="hidden" name="idempotency_key" value={randomUUID()} />
@@ -180,6 +182,11 @@ export default async function ActivityPage({
           <button className="button button--primary" type="submit">Enviar avaliação</button>
         </form>
       ) : null}
+
+      <div className="form-footer journey-page-footer no-print">
+        <Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link>
+        {experience.state.q?.passed ? <Link className="button button--primary" href={`/empreendedor/resultado?journey=${journey}`}>Ver resultado</Link> : canAssess && assessment?.questions.length ? <Link className="button button--primary" href="#avaliacao">Ir para avaliação</Link> : <Link className="button button--secondary" href="#conteudo">Voltar ao conteúdo</Link>}
+      </div>
     </>
   );
 }
