@@ -103,7 +103,7 @@ begin
     return jsonb_build_object('request_id',v_existing.source_event_id,'idempotency_key',p_idempotency_key,'replayed',true,'data',v_existing.result_snapshot);
   end if;
 
-  select s into v_submission
+  select s.* into v_submission
   from assessment.submissions s
   join orchestration.step_instances si on si.id=s.step_instance_id
   join orchestration.path_assignments pa on pa.id=si.path_assignment_id
@@ -118,7 +118,7 @@ begin
   join orchestration.journey_instances ji on ji.id=pa.journey_instance_id
   where si.id=v_submission.step_instance_id;
 
-  select f into v_file
+  select f.* into v_file
   from assessment.submission_evidence se join core.file_objects f on f.id=se.file_object_id
   where se.submission_id=p_submission_id and se.position=1;
   if not found or v_file.security_status<>'clean' or v_file.deleted_at is not null then
@@ -187,7 +187,7 @@ begin
   where s.id=p_submission_id;
   if v_organization_id is null then raise exception 'PRACTICE_SUBMISSION_NOT_FOUND' using errcode='P0002'; end if;
 
-  select f into v_file
+  select f.* into v_file
   from assessment.submission_evidence se join core.file_objects f on f.id=se.file_object_id
   where se.submission_id=p_submission_id and se.position=1;
 
