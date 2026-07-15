@@ -65,7 +65,7 @@ async function replayPlan() {
     [m14.migration_count, 2, 'M14'],
     [m15.migration_count, 1, 'M15'],
     [m16.migration_count, 1, 'M16'],
-    [active.length, 12, 'active'],
+    [active.length, 18, 'active'],
   ];
   for (const [actual, count, label] of expected) {
     if (actual !== count) fail(`expected ${count} ${label} migrations, found ${actual}`);
@@ -79,7 +79,7 @@ async function replayPlan() {
     ...active,
   ].sort((left, right) => left.version.localeCompare(right.version));
   if (new Set(plan.map(({ version }) => version)).size !== plan.length) fail('replay plan contains duplicate versions');
-  if (plan.length !== 257) fail(`expected 257 replay files, found ${plan.length}`);
+  if (plan.length !== 263) fail(`expected 263 replay files, found ${plan.length}`);
   return plan;
 }
 
@@ -106,7 +106,7 @@ export async function replayCleanDatabase(databaseUrl) {
     recovered_m14: 2,
     recovered_m15: 1,
     recovered_m16: 1,
-    active_post_recovery: 12,
+    active_post_recovery: 18,
     first_version: plan[0].version,
     last_version: plan.at(-1).version,
   };
