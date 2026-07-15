@@ -16,7 +16,7 @@ HubSpot = User 360 e projeções de relacionamento
 
 Já foram comprovados:
 
-- 256 migrations executáveis e replay limpo;
+- 257 migrations executáveis e replay limpo;
 - equivalência estrutural do banco;
 - 18 contratos públicos históricos de RPC e superfícies server-only adicionais;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, avaliações versionadas, progresso, pontos, eventos e outbox;
