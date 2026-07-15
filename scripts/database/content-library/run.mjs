@@ -6,6 +6,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const files = [
   'scripts/database/content-library/schema.sql',
   'scripts/database/content-library/api.sql',
+  'scripts/database/content-library/event-versioning.sql',
   'scripts/database/content-library/test-content-library.sql',
 ].map((file) => path.join(repositoryRoot, file));
 const databaseUrl = process.env.DATABASE_URL;
