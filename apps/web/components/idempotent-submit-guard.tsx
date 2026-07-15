@@ -1,45 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
+import { useRef, type FormEvent, type ReactNode } from "react";
 
 const DUPLICATE_WINDOW_MS = 2_000;
 
-export function IdempotentSubmitGuard() {
-  useEffect(() => {
-    const pending = new WeakSet<HTMLFormElement>();
-    const bypass = new WeakSet<HTMLFormElement>();
+export function IdempotentSubmitBoundary({ children }: { children: ReactNode }) {
+  const pending = useRef(new WeakSet<HTMLFormElement>());
 
-    const handleSubmit = (event: SubmitEvent) => {
-      const form = event.target;
-      if (!(form instanceof HTMLFormElement)) return;
-      if (!form.querySelector('input[name="idempotency_key"]')) return;
+  const handleSubmitCapture = (event: FormEvent<HTMLDivElement>) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (!form.querySelector('input[name="idempotency_key"]')) return;
 
-      if (bypass.has(form)) {
-        bypass.delete(form);
-        return;
-      }
-
+    if (pending.current.has(form)) {
       event.preventDefault();
-      event.stopImmediatePropagation();
-      if (pending.has(form)) return;
+      event.stopPropagation();
+      return;
+    }
 
-      pending.add(form);
-      const submitter = event.submitter;
-      queueMicrotask(() => {
-        if (!form.isConnected) return;
-        bypass.add(form);
-        if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
-          form.requestSubmit(submitter);
-        } else {
-          form.requestSubmit();
-        }
-      });
-      window.setTimeout(() => pending.delete(form), DUPLICATE_WINDOW_MS);
-    };
+    pending.current.add(form);
+    window.setTimeout(() => pending.current.delete(form), DUPLICATE_WINDOW_MS);
+  };
 
-    document.addEventListener("submit", handleSubmit, true);
-    return () => document.removeEventListener("submit", handleSubmit, true);
-  }, []);
-
-  return null;
+  return <div onSubmitCapture={handleSubmitCapture}>{children}</div>;
 }
