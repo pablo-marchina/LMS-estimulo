@@ -32,6 +32,6 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
         </header>
         <main id="conteudo-principal" className="page-container" tabIndex={-1}>{children}</main>
       </div>
-    </IdempotSubmitBoundary>
+    </IdempotentSubmitBoundary>
   );
 }
