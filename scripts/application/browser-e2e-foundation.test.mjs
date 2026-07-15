@@ -9,12 +9,16 @@ const read = (file) => readFile(resolve(root, file), 'utf8');
 test('modo browser E2E é server-only, local e explicitamente habilitado', async () => {
   const config = await read('apps/web/lib/browser-e2e/config.ts');
   const auth = await read('apps/web/lib/auth/context.ts');
+  const proxy = await read('apps/web/proxy.ts');
   const sessionRoute = await read('apps/web/app/api/e2e/session/route.ts');
   assert.ok(config.includes('import "server-only"'));
   assert.ok(config.includes('BROWSER_E2E_MODE === "synthetic"'));
   assert.ok(config.includes('hostname === "127.0.0.1"'));
   assert.ok(config.includes('token.length >= 24'));
   assert.ok(auth.includes('browserE2EEnabled()'));
+  assert.ok(proxy.includes('localSyntheticSession(request)'));
+  assert.ok(proxy.includes('new Set(["127.0.0.1", "localhost", "::1"])'));
+  assert.ok(proxy.includes('token.length < 24'));
   assert.ok(sessionRoute.includes('status: 404'));
   assert.ok(sessionRoute.includes('status: 403'));
 });
