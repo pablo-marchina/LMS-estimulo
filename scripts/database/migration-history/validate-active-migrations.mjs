@@ -19,6 +19,12 @@ const expectedActiveMigrations = Object.freeze([
   '20260715155753_learning_credentials_issuance_api.sql',
   '20260715155834_learning_credentials_read_api.sql',
   '20260715161140_learning_credentials_verify_hardening.sql',
+  '20260715191916_content_library_schema.sql',
+  '20260715191948_content_library_read_api.sql',
+  '20260715192055_content_library_save_api.sql',
+  '20260715192121_content_library_publish_api.sql',
+  '20260715192145_content_library_access_api.sql',
+  '20260715192207_content_library_event_versioning.sql',
 ]);
 
 export async function validateActiveMigrations() {
