@@ -14,6 +14,9 @@ const activeMigrationFiles = Object.freeze([
   '20260714184729_activity_comments_schema.sql',
   '20260714184752_activity_comments_participant_api.sql',
   '20260714184813_activity_comments_operator_api.sql',
+  '20260715143709_practice_uploads_schema.sql',
+  '20260715143808_practice_uploads_participant_api.sql',
+  '20260715143842_practice_uploads_operator_api.sql',
 ]);
 const applicationSchemas = [
   'app_private',
@@ -122,10 +125,10 @@ async function buildReplayPlan() {
   if (m16Manifest.migration_count !== 1) {
     fail(`expected 1 M16 migration, found ${m16Manifest.migration_count}`);
   }
-  if (activeMigrationFiles.length !== 3) {
-    fail(`expected 3 active migrations, found ${activeMigrationFiles.length}`);
+  if (activeMigrationFiles.length !== 6) {
+    fail(`expected 6 active migrations, found ${activeMigrationFiles.length}`);
   }
-  if (plan.length !== 248) fail(`expected 248 replay files, found ${plan.length}`);
+  if (plan.length !== 251) fail(`expected 251 replay files, found ${plan.length}`);
 
   return plan;
 }
