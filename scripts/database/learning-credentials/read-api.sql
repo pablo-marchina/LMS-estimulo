@@ -110,4 +110,4 @@ revoke all on function public.verify_certificate(text)
 grant execute on function public.list_participant_credentials(uuid)
   to service_role,app_worker;
 grant execute on function public.verify_certificate(text)
-  to anon,authenticated,service_role,app_worker;
+  to service_role,app_worker;
