@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
+import { credentialRuntime } from "@/lib/credentials/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
 
@@ -135,27 +136,61 @@ export async function submitQuickCheckAction(formData: FormData) {
   const step = uuid.parse(formData.get("step_instance_id"));
   const baseKey = String(formData.get("idempotency_key") || randomUUID());
   let experience = await journeyRuntime.getParticipantExperience(actor, journey);
-  let question = experience.assessment?.questions[0];
-  if (!question || experience.state.s?.step_instance_id !== step) throw new Error("ASSESSMENT_NOT_AVAILABLE");
+  let assessment = experience.assessment;
+  if (!assessment?.questions.length || experience.state.s?.step_instance_id !== step) {
+    throw new Error("ASSESSMENT_NOT_AVAILABLE");
+  }
 
   if (!experience.state.q || experience.state.q.status !== "in_progress") {
     await journeyRuntime.startQuickCheck(actor, step, `${baseKey}:start`);
     experience = await journeyRuntime.getParticipantExperience(actor, journey);
-    question = experience.assessment?.questions[0];
-    if (!question) throw new Error("ASSESSMENT_NOT_AVAILABLE");
+    assessment = experience.assessment;
+    if (!assessment?.questions.length) throw new Error("ASSESSMENT_NOT_AVAILABLE");
   }
   const attempt = experience.state.q;
   if (!attempt) throw new Error("ASSESSMENT_ATTEMPT_NOT_AVAILABLE");
-  const answer = String(formData.get("answer") ?? "");
-  if (!answer) throw new Error("ASSESSMENT_ANSWER_REQUIRED");
-  if (question.response && question.response.option_code !== answer) throw new Error("ASSESSMENT_ANSWER_ALREADY_RECORDED");
-  if (!question.response) await journeyRuntime.recordQuickCheckAnswer(actor, attempt.attempt_id, question.id, answer, `${baseKey}:answer`);
+
+  for (const question of assessment.questions) {
+    const answer = String(formData.get(`answer_${question.id}`) ?? "");
+    if (!answer) throw new Error("ASSESSMENT_ANSWER_REQUIRED");
+    if (question.response && question.response.option_code !== answer) {
+      throw new Error("ASSESSMENT_ANSWER_ALREADY_RECORDED");
+    }
+    if (!question.response) {
+      await journeyRuntime.recordQuickCheckAnswer(
+        actor,
+        attempt.attempt_id,
+        question.id,
+        answer,
+        `${baseKey}:answer:${question.id}`
+      );
+    }
+  }
+
   experience = await journeyRuntime.getParticipantExperience(actor, journey);
   const current = experience.state.q;
   if (!current) throw new Error("ASSESSMENT_VERSION_NOT_AVAILABLE");
   await journeyRuntime.submitQuickCheck(actor, current.attempt_id, current.aggregate_version, `${baseKey}:submit`);
   const updated = await journeyRuntime.getParticipantExperience(actor, journey);
-  redirect(updated.state.q?.passed ? `/empreendedor/resultado?journey=${journey}` : `/empreendedor/atividade/${step}?journey=${journey}`);
+  if (updated.state.q?.passed) {
+    await credentialRuntime.issue(actor, journey, step, `${baseKey}:credentials`);
+    redirect(`/empreendedor/resultado?journey=${journey}&avaliacao=aprovada`);
+  }
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&avaliacao=reprovada`);
+}
+
+export async function issueLearningCredentialsAction(formData: FormData) {
+  const actor = await actorId();
+  const journey = uuid.parse(formData.get("journey_instance_id"));
+  const stepValue = String(formData.get("step_instance_id") ?? "").trim();
+  const step = stepValue ? uuid.parse(stepValue) : null;
+  await credentialRuntime.issue(
+    actor,
+    journey,
+    step,
+    String(formData.get("idempotency_key") || randomUUID())
+  );
+  redirect(`/empreendedor/resultado?journey=${journey}&credenciais=atualizadas`);
 }
 
 export async function publishVerticalAction(formData: FormData) {
