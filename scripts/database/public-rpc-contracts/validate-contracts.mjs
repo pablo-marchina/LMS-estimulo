@@ -112,7 +112,11 @@ export function validateApplicationContract(manifest, source) {
     }
   });
 
-  assert.ok(source.includes('if (error) throw new JourneyRpcError(error.code ?? "JOURNEY_RPC_ERROR", error.message);'), 'database error code propagation changed');
+  const legacyPropagation = source.includes('if (error) throw new JourneyRpcError(error.code ?? "JOURNEY_RPC_ERROR", error.message);');
+  const sharedPropagation = source.includes('invokeServerRpc')
+    && source.includes('error instanceof ServerRpcError')
+    && source.includes('new JourneyRpcError(error.code, error.message)');
+  assert.ok(legacyPropagation || sharedPropagation, 'database error code propagation changed');
   assert.deepEqual(
     sortedUnique([
       ...contract.command_methods,

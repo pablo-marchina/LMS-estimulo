@@ -1,5 +1,4 @@
 import "server-only";
-import { createPrivilegedClient } from "@/lib/supabase/admin";
 import type {
   ActivityComment,
   ActivityComments,
@@ -14,6 +13,7 @@ import type {
   RpcEnvelope
 } from "@/lib/journey-runtime/contracts";
 import { legacyRpcArguments } from "@/lib/journey-runtime/legacy-rpc-arguments";
+import { invokeServerRpc, ServerRpcError } from "@/lib/rpc/server-invoke";
 
 export class JourneyRpcError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -23,10 +23,12 @@ export class JourneyRpcError extends Error {
 }
 
 async function invoke<T>(name: string, args: Record<string, unknown>): Promise<T> {
-  const client = createPrivilegedClient();
-  const { data, error } = await client.rpc(name, args);
-  if (error) throw new JourneyRpcError(error.code ?? "JOURNEY_RPC_ERROR", error.message);
-  return data as T;
+  try {
+    return await invokeServerRpc<T>(name, args);
+  } catch (error) {
+    if (error instanceof ServerRpcError) throw new JourneyRpcError(error.code, error.message);
+    throw error;
+  }
 }
 
 export type ConfigurableProductPersistenceInput = {

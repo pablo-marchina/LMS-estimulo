@@ -1,17 +1,14 @@
 import "server-only";
-import { createPrivilegedClient } from "@/lib/supabase/admin";
 import type {
   CertificateVerification,
   CredentialIssuanceResult,
   ParticipantCredentials
 } from "@/lib/credentials/contracts";
 import type { RpcEnvelope } from "@/lib/journey-runtime/contracts";
+import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 async function invoke<T>(name: string, args: Record<string, unknown>): Promise<T> {
-  const client = createPrivilegedClient();
-  const { data, error } = await client.rpc(name, args);
-  if (error) throw new Error(error.message);
-  return data as T;
+  return invokeServerRpc<T>(name, args);
 }
 
 export const credentialRuntime = {
