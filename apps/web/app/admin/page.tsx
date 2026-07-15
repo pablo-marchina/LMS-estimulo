@@ -48,13 +48,21 @@ export default async function AdminPage({
 
   const canManageComments = organization.permissions.includes("engagement.manage");
   const canReviewPractice = organization.permissions.includes("assessment.review");
-  const [listing, workspaceResult, commentResult, practiceResult] = await Promise.all([
+  const [listing, supplemental] = await Promise.all([
     journeyRuntime.listOperatorInstances(auth.identity.user_account_id, organization.organization_id),
-    journeyRuntime.getOperatorWorkspace(auth.identity.user_account_id, organization.organization_id).catch(() => null),
-    canManageComments ? journeyRuntime.listOperatorActivityComments(auth.identity.user_account_id, organization.organization_id, 100).catch(() => null) : Promise.resolve(null),
-    canReviewPractice ? practiceRuntime.listOperator(auth.identity.user_account_id, organization.organization_id, 100).catch(() => null) : Promise.resolve(null)
+    Promise.allSettled([
+      journeyRuntime.getOperatorWorkspace(auth.identity.user_account_id, organization.organization_id),
+      canManageComments
+        ? journeyRuntime.listOperatorActivityComments(auth.identity.user_account_id, organization.organization_id, 100)
+        : Promise.resolve(null),
+      canReviewPractice
+        ? practiceRuntime.listOperator(auth.identity.user_account_id, organization.organization_id, 100)
+        : Promise.resolve(null)
+    ])
   ]);
-  const workspace = workspaceResult;
+  const workspace = supplemental[0]?.status === "fulfilled" ? supplemental[0].value : null;
+  const commentResult = supplemental[1]?.status === "fulfilled" ? supplemental[1].value : null;
+  const practiceResult = supplemental[2]?.status === "fulfilled" ? supplemental[2].value : null;
   const comments = commentResult?.comments ?? [];
   const practices = practiceResult?.submissions ?? [];
   const result = query.instance ? await journeyRuntime.getOperatorResult(auth.identity.user_account_id, organization.organization_id, query.instance) : null;
