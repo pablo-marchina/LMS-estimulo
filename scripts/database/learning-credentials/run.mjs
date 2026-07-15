@@ -4,11 +4,11 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const files = [
-  'scripts/database/learning-credentials/schema.sql',
-  'scripts/database/learning-credentials/context.sql',
-  'scripts/database/learning-credentials/candidates.sql',
-  'scripts/database/learning-credentials/issuance-api.sql',
-  'scripts/database/learning-credentials/read-api.sql',
+  'supabase/migrations/20260715155144_learning_credentials_schema.sql',
+  'supabase/migrations/20260715155610_learning_credentials_context.sql',
+  'supabase/migrations/20260715155647_learning_credentials_candidates.sql',
+  'supabase/migrations/20260715155753_learning_credentials_issuance_api.sql',
+  'supabase/migrations/20260715155834_learning_credentials_read_api.sql',
   'scripts/database/learning-credentials/test-learning-credentials.sql',
 ].map((file) => path.join(repositoryRoot, file));
 const databaseUrl = process.env.DATABASE_URL;
