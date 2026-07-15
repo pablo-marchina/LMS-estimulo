@@ -4,9 +4,13 @@ import { signOutAction } from "@/app/entrar/actions";
 
 export function AppShell({ area, email, children }: { area: "empreendedor" | "admin"; email: string; children: ReactNode }) {
   const links = area === "admin"
-    ? [{ href: "/admin", label: "Operação" }]
+    ? [
+        { href: "/admin", label: "Operação" },
+        { href: "/admin/biblioteca", label: "Biblioteca" }
+      ]
     : [
         { href: "/empreendedor", label: "Painel" },
+        { href: "/capacitacao/biblioteca", label: "Biblioteca" },
         { href: "/empreendedor/credenciais", label: "Credenciais" }
       ];
 
