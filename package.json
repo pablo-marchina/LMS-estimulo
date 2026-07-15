@@ -27,10 +27,11 @@
     "test:practice-uploads": "node scripts/database/practice-uploads/run.mjs",
     "test:learning-credentials": "node scripts/database/learning-credentials/run.mjs",
     "test:content-library": "node scripts/database/content-library/run.mjs",
+    "test:test-public-signup": "node scripts/database/test-public-signup/run.mjs",
     "test:legacy-rpc-containment": "node scripts/database/legacy-rpc/run-tests.mjs",
     "test:browser-e2e": "node scripts/browser-e2e/run-synthetic-vertical.mjs",
     "test:database-clean-replay": "npm run validate:migration-history && npm run replay:database-clean && npm run validate:schema-equivalence && npm run validate:public-rpc-contracts",
-    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence && npm run test:activity-comments && npm run test:practice-uploads && npm run test:learning-credentials && npm run test:content-library",
+    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence && npm run test:activity-comments && npm run test:practice-uploads && npm run test:learning-credentials && npm run test:content-library && npm run test:test-public-signup",
     "test:application-foundation": "node --test scripts/application/*.test.mjs",
     "test:migration-history": "node --test scripts/database/migration-history/*.test.mjs",
     "test:public-rpc-contracts": "node --test scripts/database/public-rpc-contracts/*.test.mjs"
