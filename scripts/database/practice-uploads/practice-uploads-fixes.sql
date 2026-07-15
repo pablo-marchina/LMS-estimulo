@@ -1,5 +1,69 @@
 \set ON_ERROR_STOP on
 
+create or replace function public.list_operator_practice_submissions(
+  p_actor_user_account_id uuid,
+  p_organization_id uuid,
+  p_limit integer default 100
+) returns jsonb
+language plpgsql
+stable
+security definer
+set search_path=pg_catalog
+as $$
+declare v_submissions jsonb;
+begin
+  if not app_private.e14_actor_has_permission(p_actor_user_account_id,p_organization_id,'assessment.review') then
+    raise exception 'FORBIDDEN' using errcode='42501';
+  end if;
+  if p_limit<1 or p_limit>500 then raise exception 'PRACTICE_LIST_LIMIT_INVALID' using errcode='22023'; end if;
+
+  select coalesce(jsonb_agg(row_data order by submitted_at desc),'[]'::jsonb)
+  into v_submissions
+  from (
+    select s.submitted_at,jsonb_build_object(
+      'id',s.id,'organization_id',p_organization_id,'journey_instance_id',ji.id,
+      'step_instance_id',s.step_instance_id,'activity_title',av.title,
+      'participant_name',coalesce(e.preferred_name,e.legal_name,split_part(ua.email_normalized,'@',1),'Participante'),
+      'submission_number',s.submission_number,
+      'status',case
+        when s.status in ('accepted','rejected','failed') then s.status
+        when f.security_status='clean' and ps.review_required then 'awaiting_review'
+        when f.security_status='clean' then 'available'
+        when f.security_status='infected' then 'blocked'
+        when f.security_status='manual_review' then 'manual_review'
+        else s.status end,
+      'security_status',f.security_status,'file_object_id',f.id,
+      'original_filename',coalesce(f.original_filename,i.original_filename),
+      'content_type',f.content_type,'size_bytes',f.size_bytes,
+      'allow_public_use',s.allow_public_use,'submitted_at',s.submitted_at,
+      'can_download',coalesce(f.security_status='clean' and f.deleted_at is null,false),
+      'review_required',ps.review_required,'review_status',r.status,
+      'review_feedback',r.feedback,'reviewed_at',r.reviewed_at
+    ) row_data
+    from assessment.submissions s
+    join orchestration.step_instances si on si.id=s.step_instance_id
+    join orchestration.path_assignments pa on pa.id=si.path_assignment_id
+    join orchestration.journey_instances ji on ji.id=pa.journey_instance_id
+    join orchestration.enrollments en on en.id=ji.enrollment_id
+    join core.entrepreneurs e on e.id=en.entrepreneur_id
+    join iam.user_accounts ua on ua.id=e.user_account_id
+    join catalog.activity_versions av on av.id=s.activity_version_id
+    join assessment.practice_specs ps on ps.activity_version_id=s.activity_version_id
+    left join core.file_upload_intents i on i.id=s.upload_intent_id
+    left join assessment.submission_evidence se on se.submission_id=s.id and se.position=1
+    left join core.file_objects f on f.id=se.file_object_id
+    left join lateral (
+      select rv.status,rv.feedback,rv.reviewed_at from assessment.reviews rv
+      where rv.submission_id=s.id order by rv.reviewed_at desc,rv.id desc limit 1
+    ) r on true
+    where app_private.journey_owner_organization_id(ji.id)=p_organization_id
+    order by s.submitted_at desc
+    limit p_limit
+  ) x;
+  return jsonb_build_object('organization_id',p_organization_id,'submissions',v_submissions);
+end;
+$$;
+
 create or replace function public.review_practice_submission(
   p_actor_user_account_id uuid,
   p_organization_id uuid,
@@ -143,3 +207,11 @@ begin
   );
 end;
 $$;
+
+revoke all on function public.list_operator_practice_submissions(uuid,uuid,integer) from public,anon,authenticated;
+revoke all on function public.review_practice_submission(uuid,uuid,uuid,text,text,text) from public,anon,authenticated;
+revoke all on function public.get_practice_download_descriptor(uuid,uuid) from public,anon,authenticated;
+
+grant execute on function public.list_operator_practice_submissions(uuid,uuid,integer) to service_role,app_worker;
+grant execute on function public.review_practice_submission(uuid,uuid,uuid,text,text,text) to service_role,app_worker;
+grant execute on function public.get_practice_download_descriptor(uuid,uuid) to service_role,app_worker;
