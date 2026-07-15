@@ -133,6 +133,16 @@ begin
     'feedback',v_feedback,'reviewed_at',clock_timestamp(),'aggregate_version',v_new_version
   );
 
+  perform app_private.e14_append_event(
+    v_event_id,'learning.practice.review.completed','user_account',p_actor_user_account_id,
+    'user_account',p_actor_user_account_id,p_organization_id,v_journey_instance_id,
+    'practice_submission',p_submission_id,v_new_version,v_event_id,null,
+    jsonb_build_object(
+      'submission_id',p_submission_id,'review_id',v_review_id,
+      'status',p_status,'feedback_present',v_feedback is not null
+    )
+  );
+
   insert into assessment.reviews(
     id,submission_id,reviewer_user_account_id,review_type,rubric_version_id,status,
     feedback,reviewed_at,source_event_id,idempotency_key,request_hash,result_snapshot,changed
@@ -145,15 +155,6 @@ begin
       aggregate_version=v_new_version
   where id=p_submission_id;
 
-  perform app_private.e14_append_event(
-    v_event_id,'learning.practice.review.completed','user_account',p_actor_user_account_id,
-    'user_account',p_actor_user_account_id,p_organization_id,v_journey_instance_id,
-    'practice_submission',p_submission_id,v_new_version,v_event_id,null,
-    jsonb_build_object(
-      'submission_id',p_submission_id,'review_id',v_review_id,
-      'status',p_status,'feedback_present',v_feedback is not null
-    )
-  );
   return jsonb_build_object('request_id',v_event_id,'idempotency_key',p_idempotency_key,'replayed',false,'data',v_snapshot);
 end;
 $$;
