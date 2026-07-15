@@ -10,7 +10,7 @@ from orchestration.journey_instances ji
 join orchestration.enrollments en on en.id=ji.enrollment_id
 join core.entrepreneurs e on e.id=en.entrepreneur_id
 where ji.status='completed'
-order by ji.completed_at nulls last,ji.id
+order by coalesce(ji.fully_completed_at,ji.base_completed_at,ji.updated_at) nulls last,ji.id
 limit 1
 \gset credential_
 
