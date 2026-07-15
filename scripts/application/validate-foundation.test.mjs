@@ -27,6 +27,7 @@ test('workspace contém aplicação Next.js real em apps/web', async () => {
 test('rotas centrais e credenciais existem', async () => {
   for (const file of [
     'entrar/page.tsx',
+    'cadastro/page.tsx',
     'empreendedor/page.tsx',
     'empreendedor/diagnostico/page.tsx',
     'empreendedor/atividade/[stepInstanceId]/page.tsx',
@@ -103,10 +104,15 @@ test('admin não exige UUIDs digitados manualmente', async () => {
   assert.ok(!source.includes('ID da versão da jornada'));
 });
 
-test('cadastro público não existe', async () => {
+test('cadastro público existe somente sob gate explícito de teste', async () => {
   const login = await read('apps/web/app/entrar/page.tsx');
-  assert.ok(login.includes('cadastro público não está habilitado'));
-  assert.ok(!login.includes('signUp'));
+  const signup = await read('apps/web/app/cadastro/page.tsx');
+  const gate = await read('apps/web/lib/auth/test-public-signup.ts');
+  assert.ok(login.includes('testPublicSignupEnabled'));
+  assert.ok(signup.includes('notFound()'));
+  assert.ok(gate.includes('PUBLIC_SIGNUP_TEST_MODE'));
+  assert.ok(gate.includes('process.env.NODE_ENV !== "production"'));
+  assert.ok(gate.includes('ALLOWED_APP_ENVIRONMENTS.has'));
 });
 
 test('login direciona participante e operador conforme identidade interna', async () => {
