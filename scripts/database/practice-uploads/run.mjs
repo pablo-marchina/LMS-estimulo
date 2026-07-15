@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const migrationFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/practice-uploads.sql');
+const fixesFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/practice-uploads-fixes.sql');
 const testFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/test-practice-uploads.sql');
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -16,6 +17,7 @@ const result = spawnSync(
     '--no-psqlrc',
     '--set', 'ON_ERROR_STOP=1',
     '--file', migrationFile,
+    '--file', fixesFile,
     '--file', testFile,
   ],
   {
