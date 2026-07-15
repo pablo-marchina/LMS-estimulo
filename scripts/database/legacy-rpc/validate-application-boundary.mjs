@@ -40,6 +40,10 @@ if (!rpcSource.includes('from "@/lib/journey-runtime/legacy-rpc-arguments"')) {
   fail("rpc.ts must import the legacy RPC argument compatibility boundary.");
 }
 
+if (!boundarySource.includes("normalizeLegacyRpcArgumentsForSynthetic")) {
+  fail("The compatibility boundary must own synthetic normalization of frozen aliases.");
+}
+
 if (!syntheticRuntimeSource.includes('import "server-only"')) {
   fail("The browser E2E synthetic runtime must remain server-only.");
 }
@@ -62,6 +66,9 @@ for (const rpcName of opaqueRpcs) {
   if (!boundarySource.includes(`${method}(`)) {
     fail(`Compatibility boundary is missing mapper ${method}.`);
   }
+  if (!boundarySource.includes(`case "${rpcName}"`)) {
+    fail(`Compatibility boundary is missing synthetic normalization for ${rpcName}.`);
+  }
 }
 
 if (/^\s+[a-z]:\s/m.test(rpcSource)) {
@@ -70,12 +77,12 @@ if (/^\s+[a-z]:\s/m.test(rpcSource)) {
 
 const applicationFiles = walk(resolve(repositoryRoot, "apps/web"));
 for (const absolutePath of applicationFiles) {
-  if (absolutePath === rpcPath || absolutePath === syntheticRuntimePath) continue;
+  if (absolutePath === rpcPath || absolutePath === boundaryPath || absolutePath === syntheticRuntimePath) continue;
   const source = readFileSync(absolutePath, "utf8");
   for (const rpcName of opaqueRpcs) {
     if (source.includes(`"${rpcName}"`) || source.includes(`'${rpcName}'`)) {
       fail(
-        `${relative(repositoryRoot, absolutePath)} references ${rpcName} outside apps/web/lib/journey-runtime/rpc.ts.`
+        `${relative(repositoryRoot, absolutePath)} references ${rpcName} outside the approved compatibility and test boundaries.`
       );
     }
   }
@@ -87,5 +94,5 @@ if (new Set(methods).size !== opaqueRpcs.length) {
 
 if (process.exitCode) process.exit(process.exitCode);
 console.log(
-  `Legacy RPC application boundary passed: ${opaqueRpcs.length} RPCs are isolated behind semantic mappers; the server-only browser E2E adapter is explicitly gated.`
+  `Legacy RPC application boundary passed: ${opaqueRpcs.length} RPCs are isolated behind semantic mappers; synthetic normalization remains in the compatibility boundary and the browser adapter is server-only.`
 );
