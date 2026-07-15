@@ -69,7 +69,7 @@ export default async function ActivityPage({
   const practice = practiceResult?.practice ?? null;
   const submissions = practiceResult?.submissions ?? [];
   const countedSubmissions = submissions.filter((item) => item.status !== "failed").length;
-  const canUpload = Boolean(practice) && (practice?.max_submissions === null || countedSubmissions < practice.max_submissions);
+  const canUpload = practice !== null && (practice.max_submissions === null || countedSubmissions < practice.max_submissions);
   const practiceError = query.codigo ? practiceErrors[query.codigo] ?? practiceErrors.PRACTICE_UPLOAD_FAILED : null;
 
   return (
