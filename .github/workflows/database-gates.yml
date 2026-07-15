@@ -8,12 +8,14 @@ on:
       - "apps/web/lib/journey-runtime/rpc.ts"
       - "apps/web/lib/practice/**"
       - "apps/web/lib/credentials/**"
+      - "apps/web/lib/library/**"
       - "docs/implementation/public-rpc-contracts-v1.json"
       - "scripts/database/activity-comments/**"
       - "scripts/database/backend-e2e/**"
       - "scripts/database/configurable-product-persistence/**"
       - "scripts/database/practice-uploads/**"
       - "scripts/database/learning-credentials/**"
+      - "scripts/database/content-library/**"
       - "scripts/database/equivalence/**"
       - "scripts/database/legacy-rpc/**"
       - "scripts/database/public-rpc-contracts/**"
@@ -113,5 +115,5 @@ jobs:
         if: steps.database_gates.outputs.exit_code != '0'
         shell: bash
         run: |
-          echo "Replay, equivalence, public contracts, backend E2E, persistence, comments, practice uploads or learning credentials failed. Inspect the uploaded diagnostic artifact."
+          echo "Replay, equivalence, public contracts, backend E2E, persistence, comments, practice uploads, learning credentials or content library failed. Inspect the uploaded diagnostic artifact."
           exit 1
