@@ -26,6 +26,7 @@ const expectedActiveMigrations = Object.freeze([
   '20260715192145_content_library_access_api.sql',
   '20260715192207_content_library_event_versioning.sql',
   '20260715193828_content_library_fk_indexes.sql',
+  '20260715224122_test_public_signup_provisioning.sql',
 ]);
 
 export async function validateActiveMigrations() {
