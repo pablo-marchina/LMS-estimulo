@@ -58,7 +58,12 @@ export async function uploadPracticeEvidence(input: {
   bucket: string;
   objectKey: string;
   file: File;
-}): Promise<{ sha256: string; etag: string | null; providerObjectVersion: string | null }> {
+}): Promise<{
+  sha256: string;
+  etag: string | null;
+  providerObjectVersion: string | null;
+  created: boolean;
+}> {
   validatePracticeEvidenceFile(input.file);
   await ensurePrivateBucket(input.bucket);
 
@@ -74,7 +79,7 @@ export async function uploadPracticeEvidence(input: {
     throw new Error(`PRACTICE_STORAGE_UPLOAD_FAILED:${error.message}`);
   }
 
-  return { sha256, etag: null, providerObjectVersion: null };
+  return { sha256, etag: null, providerObjectVersion: null, created: !error };
 }
 
 export async function removePracticeEvidence(bucket: string, objectKey: string): Promise<void> {
