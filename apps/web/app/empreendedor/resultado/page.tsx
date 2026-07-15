@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { issueLearningCredentialsAction } from "@/app/actions/journey";
+import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
-import { statusLabel } from "@/lib/journey-runtime/navigation";
+import { participantNextHref, statusLabel } from "@/lib/journey-runtime/navigation";
 
 export default async function ResultPage({
   searchParams
@@ -14,7 +15,7 @@ export default async function ResultPage({
 }) {
   const query = await searchParams;
   const journey = query.journey;
-  if (!journey) return <StatusPanel title="Jornada não informada" tone="warning"><p>Selecione uma jornada para consultar o resultado.</p></StatusPanel>;
+  if (!journey) return <StatusPanel title="Jornada não informada" tone="warning"><p>Selecione uma jornada para consultar o resultado.</p><Link className="button button--secondary" href="/empreendedor">Ir para o painel</Link></StatusPanel>;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
   const [state, credentials] = await Promise.all([
@@ -27,6 +28,7 @@ export default async function ResultPage({
   return (
     <>
       <header className="page-heading"><p className="eyebrow">Resultado da jornada</p><h1>{state.journey_title ?? state.journey_code}</h1><p>Veja apenas fatos registrados durante a experiência de aprendizagem.</p></header>
+      <JourneyProgressNav state={state} current="result" />
       {query.avaliacao === "aprovada" ? <StatusPanel title="Avaliação aprovada" tone="success"><p>O resultado foi registrado e as credenciais elegíveis foram processadas.</p></StatusPanel> : null}
       {query.credenciais === "atualizadas" ? <StatusPanel title="Credenciais atualizadas" tone="success"><p>Selos e certificados elegíveis foram verificados de forma idempotente.</p></StatusPanel> : null}
       <div className="metrics-grid">
@@ -41,7 +43,7 @@ export default async function ResultPage({
         <input type="hidden" name="journey_instance_id" value={journey} />
         <input type="hidden" name="idempotency_key" value={randomUUID()} />
         <button className="button button--secondary" type="submit">Verificar credenciais elegíveis</button>
-      </form> : null}
+      </form> : <StatusPanel title="Jornada ainda em andamento" tone="info"><p>Conclua as etapas obrigatórias para liberar o resultado final.</p><Link className="button button--primary" href={participantNextHref(state)}>Continuar jornada</Link></StatusPanel>}
 
       <section className="stack stack--large" aria-labelledby="credenciais-jornada">
         <div><p className="eyebrow">Conquistas</p><h2 id="credenciais-jornada">Credenciais desta jornada</h2></div>
@@ -56,7 +58,7 @@ export default async function ResultPage({
         </article>)}</div> : null}
       </section>
 
-      <div className="form-footer no-print"><Link className="button button--secondary" href="/empreendedor">Voltar às jornadas</Link><Link className="button button--secondary" href="/empreendedor/credenciais">Todas as credenciais</Link></div>
+      <div className="form-footer journey-page-footer no-print"><Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link><Link className="button button--secondary" href="/empreendedor/credenciais">Todas as credenciais</Link></div>
     </>
   );
 }
