@@ -12,9 +12,15 @@ export default async function ParticipantCredentialsPage() {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
   const credentials = await credentialRuntime.listParticipant(auth.identity.user_account_id);
+  const activeBadges = credentials.badges.filter((badge) => badge.status === "active").length;
+  const validCertificates = credentials.certificates.filter((certificate) => certificate.valid).length;
 
   return <>
     <header className="page-heading"><p className="eyebrow">Conquistas</p><h1>Minhas credenciais</h1><p>Selos e certificados são emitidos a partir de resultados e regras versionadas.</p></header>
+    <div className="metrics-grid">
+      <article className="metric"><span>Selos ativos</span><strong>{activeBadges}</strong></article>
+      <article className="metric"><span>Certificados válidos</span><strong>{validCertificates}</strong></article>
+    </div>
 
     <section className="stack stack--large" aria-labelledby="selos-titulo">
       <div><h2 id="selos-titulo">Selos</h2><p className="support-note">Marcos intermediários ou conclusões de jornada.</p></div>
@@ -37,5 +43,7 @@ export default async function ParticipantCredentialsPage() {
         </article>)}
       </div>}
     </section>
+
+    <div className="form-footer journey-page-footer no-print"><Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link></div>
   </>;
 }
