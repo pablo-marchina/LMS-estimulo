@@ -1,0 +1,2 @@
+Evidência sintética do Browser E2E.
+Este arquivo existe apenas para validar o fluxo privado de upload.
