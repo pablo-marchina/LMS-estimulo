@@ -28,10 +28,10 @@ export async function signInAction(formData: FormData) {
           email,
           preferredName
         });
-        redirect("/empreendedor");
       } catch {
         redirect("/entrar?erro=cadastro_incompleto");
       }
+      redirect("/empreendedor");
     }
   }
 
