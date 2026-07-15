@@ -11,7 +11,32 @@ const ARTICLE_VERSION_ID = "f1000000-0000-4000-8000-000000000001";
 const EXTERNAL_ITEM_ID = "f0000000-0000-4000-8000-000000000002";
 const EXTERNAL_VERSION_ID = "f1000000-0000-4000-8000-000000000002";
 
-const ARTICLE = {
+type SyntheticLibraryItem = {
+  library_item_id: string;
+  library_item_version_id: string;
+  slug: string;
+  version_number: number;
+  title: string;
+  summary: string;
+  body: string | null;
+  content_kind: "article" | "external_link";
+  content_format: "article" | "video" | "podcast" | "guide" | "tool" | "course" | "other";
+  level: "introductory" | "intermediate" | "advanced" | "all";
+  estimated_minutes: number;
+  source_type: "estimulo" | "partner" | "external";
+  source_name: string;
+  language_code: string;
+  topics: string[];
+  visibility: "authenticated" | "organization";
+  accessibility_metadata: Record<string, unknown>;
+  published_at: string;
+  has_external_link: boolean;
+  external_url: string | null;
+  journeys: Array<{ journey_version_id: string; relation_type: "supplemental" | "recommended"; journey_title: string }>;
+  rank: number;
+};
+
+const ARTICLE: SyntheticLibraryItem = {
   library_item_id: ARTICLE_ITEM_ID,
   library_item_version_id: ARTICLE_VERSION_ID,
   slug: "fluxo-de-caixa-pratico",
@@ -31,11 +56,12 @@ const ARTICLE = {
   accessibility_metadata: {},
   published_at: "2026-07-15T12:00:00.000Z",
   has_external_link: false,
+  external_url: null,
   journeys: [{ journey_version_id: JOURNEY_VERSION_ID, relation_type: "supplemental", journey_title: "Jornada sintética OpenAI" }],
   rank: 1
-} as const;
+};
 
-const EXTERNAL = {
+const EXTERNAL: SyntheticLibraryItem = {
   library_item_id: EXTERNAL_ITEM_ID,
   library_item_version_id: EXTERNAL_VERSION_ID,
   slug: "planejamento-semanal-parceiro",
@@ -58,9 +84,9 @@ const EXTERNAL = {
   external_url: "https://example.org/planejamento",
   journeys: [],
   rank: 0
-} as const;
+};
 
-const ITEMS = [ARTICLE, EXTERNAL] as const;
+const ITEMS: SyntheticLibraryItem[] = [ARTICLE, EXTERNAL];
 const SUPPORTED = new Set([
   "list_library_content",
   "get_library_content",
@@ -101,8 +127,14 @@ function fingerprint(name: string, args: Record<string, unknown>): string {
   return JSON.stringify([name, args], Object.keys(args).sort());
 }
 
-function summary(item: typeof ARTICLE | typeof EXTERNAL) {
-  const { body: _body, accessibility_metadata: _accessibility, has_external_link: _hasLink, external_url: _url, ...value } = item;
+function summary(item: SyntheticLibraryItem) {
+  const {
+    body: _body,
+    accessibility_metadata: _accessibility,
+    has_external_link: _hasLink,
+    external_url: _url,
+    ...value
+  } = item;
   return value;
 }
 
@@ -124,7 +156,7 @@ export async function invokeSyntheticLibraryRpc<T>(name: string, args: Record<st
     const filtered = ITEMS.filter((item) => {
       const searchable = `${item.title} ${item.summary} ${item.source_name} ${item.topics.join(" ")}`.toLowerCase();
       return (!query || query.split(/\s+/).every((term) => searchable.includes(term)))
-        && (!topic || item.topics.includes(topic as never))
+        && (!topic || item.topics.includes(topic))
         && (!format || item.content_format === format)
         && (!level || item.level === level);
     });
@@ -134,17 +166,17 @@ export async function invokeSyntheticLibraryRpc<T>(name: string, args: Record<st
       limit,
       offset,
       facets: {
-        topics: [...new Set(ITEMS.flatMap((item) => [...item.topics]))].sort(),
+        topics: [...new Set(ITEMS.flatMap((item) => item.topics))].sort(),
         formats: [...new Set(ITEMS.map((item) => item.content_format))].sort(),
         levels: [...new Set(ITEMS.map((item) => item.level))].sort()
       }
-    } as T;
+    } as unknown as T;
   }
 
   if (name === "get_library_content") {
     const item = ITEMS.find((candidate) => candidate.slug === String(args.p_slug).trim().toLowerCase());
     if (!item) throw new Error("LIBRARY_CONTENT_NOT_FOUND");
-    return item as T;
+    return item as unknown as T;
   }
 
   if (name === "record_library_content_access") {
@@ -158,7 +190,7 @@ export async function invokeSyntheticLibraryRpc<T>(name: string, args: Record<st
     const previous = state.idempotency[key];
     if (previous) {
       if (previous.fingerprint !== requestFingerprint) throw new Error("IDEMPOTENCY_KEY_REUSED");
-      return { ...previous.envelope, replayed: true } as T;
+      return { ...previous.envelope, replayed: true } as unknown as T;
     }
     const data = {
       library_item_id: item.library_item_id,
@@ -176,7 +208,7 @@ export async function invokeSyntheticLibraryRpc<T>(name: string, args: Record<st
     });
     state.idempotency[key] = { fingerprint: requestFingerprint, envelope };
     await saveState(state);
-    return envelope as T;
+    return envelope as unknown as T;
   }
 
   throw new Error(`BROWSER_E2E_LIBRARY_RPC_NOT_IMPLEMENTED:${name}`);
