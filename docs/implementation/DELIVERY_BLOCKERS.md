@@ -1,6 +1,6 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 3.6  
+**Versão:** 3.7  
 **Data:** 2026-07-15  
 **Status:** ativo
 
@@ -19,7 +19,7 @@ Este documento registra somente estado, lacunas e critérios de encerramento. A 
 
 | ID | Severidade | Lacuna | Critério de encerramento |
 |---|---|---|---|
-| `PRODUCT-CONFIGURATION` | P0 | faltam perguntas/opções homologadas, scoring, desempate, textos finais, ativações, avaliações, regras de credencial e Jornada OpenAI publicável | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
+| `PRODUCT-CONFIGURATION` | P0 | o manifesto estrutural existe e impede inferências, mas ainda faltam perguntas/opções homologadas, scoring, desempate, textos finais, ativações, avaliações, regras de credencial e Jornada OpenAI publicável | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
 | `IDENTITY-SITE-INTEGRATION` | P0 | login real e entrada pelo site não comprovados | identidade única, sessão e permissões testadas |
 | `HUBSPOT-PHYSICAL-INTEGRATION` | P0 | adapter e modelo físico reais ausentes | inventário, matriz de projeção, retry, reconciliação e E2E no sandbox |
 | `BROWSER-ACCESSIBILITY` | P1 | navegador, mobile e acessibilidade não comprovados | E2E e auditoria dos fluxos críticos |
@@ -28,6 +28,9 @@ Este documento registra somente estado, lacunas e critérios de encerramento. A 
 ## Subgates da configuração oficial
 
 ```text
+official_configuration_manifest_present = true
+official_configuration_manifest_publishable = false
+official_configuration_inference_guards_present = true
 official_question_count = 12
 official_dimension_count = 5
 official_archetype_count = 4
@@ -76,6 +79,8 @@ typecheck_and_build_passed = true
 ```
 
 O gate técnico de must-haves do LMS está encerrado para comentários, uploads, avaliações, selos e certificados genéricos. A publicação da Jornada OpenAI continua bloqueada pelas versões oficiais de conteúdo, correção e regras de credencial, registradas em `PRODUCT-CONFIGURATION`.
+
+O manifesto em `config/official-diagnostic/v3/manifest.json` é deliberadamente bloqueado. Ele registra apenas estrutura confirmada e não autoriza seed, preview ou publicação enquanto os artefatos P0 permanecerem ausentes ou conflitantes.
 
 ## Dívida não bloqueante
 

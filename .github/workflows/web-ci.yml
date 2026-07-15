@@ -6,11 +6,13 @@ on:
       - ".github/workflows/web-ci.yml"
       - ".npmrc"
       - "apps/web/**"
+      - "config/official-diagnostic/**"
       - "package.json"
       - "package-lock.json"
       - "scripts/repository/validate-package-lock.mjs"
       - "scripts/application/validate-foundation*"
       - "scripts/product/configurable-product/**"
+      - "scripts/product/official-diagnostic/**"
       - "docs/implementation/public-rpc-contracts-v1.json"
       - "supabase/migrations/*_m14*_step5_*.sql"
 
@@ -59,6 +61,12 @@ jobs:
 
       - name: Test configurable product behavior
         run: npm run test:configurable-product
+
+      - name: Validate official diagnostic evidence
+        run: npm run validate:official-diagnostic
+
+      - name: Test official diagnostic guards
+        run: npm run test:official-diagnostic
 
       - name: Typecheck web application
         run: npm run typecheck:web
