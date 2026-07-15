@@ -22,7 +22,8 @@ test('busca permanece em PostgreSQL full-text sem embeddings', async () => {
   assert.ok(schema.includes('using gin(search_document)'));
   assert.ok(api.includes("websearch_to_tsquery('pg_catalog.portuguese'"));
   assert.ok(api.includes('ts_rank_cd'));
-  assert.ok(!schema.toLowerCase().includes('vector('));
+  assert.ok(!schema.toLowerCase().includes('extensions.vector'));
+  assert.ok(!schema.toLowerCase().includes('embedding'));
   assert.ok(!api.toLowerCase().includes('embedding'));
 });
 
