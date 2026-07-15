@@ -3,8 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
-const migrationFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/practice-uploads.sql');
-const fixesFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/practice-uploads-fixes.sql');
+const schemaFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/practice-uploads.sql');
+const participantFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/participant-api.sql');
+const operatorFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/practice-uploads-fixes.sql');
 const testFile = path.join(repositoryRoot, 'scripts/database/practice-uploads/test-practice-uploads.sql');
 const databaseUrl = process.env.DATABASE_URL;
 
@@ -16,8 +17,9 @@ const result = spawnSync(
     '--dbname', databaseUrl,
     '--no-psqlrc',
     '--set', 'ON_ERROR_STOP=1',
-    '--file', migrationFile,
-    '--file', fixesFile,
+    '--file', schemaFile,
+    '--file', participantFile,
+    '--file', operatorFile,
     '--file', testFile,
   ],
   {
