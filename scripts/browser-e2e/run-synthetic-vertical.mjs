@@ -10,6 +10,7 @@ const token = process.env.BROWSER_E2E_TOKEN;
 const artifactsDir = path.resolve(root, process.env.BROWSER_E2E_ARTIFACTS_DIR || ".artifacts/browser-e2e");
 const fixtureFile = path.resolve(root, "scripts/browser-e2e/fixtures/evidence.txt");
 const debuggingPort = Number(process.env.BROWSER_E2E_CDP_PORT || 9222);
+const syntheticArticleVersionId = "f1000000-0000-4000-8000-000000000001";
 
 if (!token || token.length < 24) throw new Error("BROWSER_E2E_TOKEN is required");
 await mkdir(artifactsDir, { recursive: true });
@@ -226,6 +227,32 @@ try {
   await client.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
   assert.equal(await client.evaluate("document.activeElement?.textContent?.trim()"), "Pular para o conteúdo");
 
+  currentStep = "content library catalog and access replay";
+  log(currentStep);
+  await clickText("Biblioteca");
+  await waitUrl("/capacitacao/biblioteca");
+  await waitText("Biblioteca de conteúdos");
+  await waitText("2 conteúdos encontrados");
+  await fill('input[name="q"]', "fluxo caixa");
+  await clickText("Aplicar filtros");
+  await waitUrl("q=fluxo+caixa");
+  await waitText("1 conteúdo encontrado");
+  await waitText("Fluxo de caixa prático");
+  await clickText("Ver conteúdo");
+  await waitUrl("/capacitacao/biblioteca/fluxo-de-caixa-pratico");
+  await waitText("Comece registrando todas as entradas e saídas.");
+  const accessReplay = await client.evaluate(`(async () => {
+    const body = { libraryItemVersionId: ${JSON.stringify(syntheticArticleVersionId)}, idempotencyKey: 'browser-library-access-replay-v1' };
+    const first = await fetch('/api/library/access', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((response) => response.json());
+    const second = await fetch('/api/library/access', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then((response) => response.json());
+    return { first, second };
+  })()`);
+  assert.equal(accessReplay.first.recorded, true);
+  assert.equal(accessReplay.first.replayed, false);
+  assert.equal(accessReplay.second.replayed, true);
+  await navigate(`${baseUrl}/empreendedor`);
+  await waitText("Painel do empreendedor");
+
   currentStep = "start journey";
   log(currentStep);
   await clickText("Começar jornada");
@@ -321,14 +348,17 @@ try {
   });
   await navigate(`${baseUrl}/empreendedor`);
   await waitText("Painel do empreendedor");
-  assert.equal(await client.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), true, "mobile page has horizontal overflow");
+  assert.equal(await client.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), true, "mobile dashboard has horizontal overflow");
   assert.equal(await textIncludes("Concluídas"), true);
   assert.equal(await textIncludes("Credenciais"), true);
+  await navigate(`${baseUrl}/capacitacao/biblioteca`);
+  await waitText("Biblioteca de conteúdos");
+  assert.equal(await client.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), true, "mobile library has horizontal overflow");
 
   const result = {
     status: "passed",
-    flow: ["technical_login", "dashboard", "diagnosis", "activity", "comment", "upload", "assessment_retry", "credentials", "certificate"],
-    assertions: { keyboard: true, mobile: true, reload: true, duplicate_submission: true }
+    flow: ["technical_login", "dashboard", "library", "diagnosis", "activity", "comment", "upload", "assessment_retry", "credentials", "certificate"],
+    assertions: { keyboard: true, mobile: true, reload: true, duplicate_submission: true, library_access_replay: true }
   };
   await writeFile(path.join(artifactsDir, "result.json"), JSON.stringify(result, null, 2), "utf8");
   log("synthetic browser vertical passed");

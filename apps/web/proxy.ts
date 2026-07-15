@@ -19,7 +19,9 @@ function localSyntheticSession(request: NextRequest): boolean {
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const protectedPath = request.nextUrl.pathname.startsWith("/empreendedor") || request.nextUrl.pathname.startsWith("/admin");
+  const protectedPath = request.nextUrl.pathname.startsWith("/empreendedor")
+    || request.nextUrl.pathname.startsWith("/capacitacao")
+    || request.nextUrl.pathname.startsWith("/admin");
   if (protectedPath && localSyntheticSession(request)) return response;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -41,4 +43,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/entrar", "/empreendedor/:path*", "/admin/:path*"] };
+export const config = { matcher: ["/entrar", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };

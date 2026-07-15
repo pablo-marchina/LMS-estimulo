@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.5  
+**Versão:** 4.6  
 **Data:** 2026-07-15  
-**Status:** fundação técnica reproduzível; must-haves genéricos do LMS implementados; produto oficial ainda incompleto
+**Status:** fundação técnica reproduzível; must-haves genéricos do LMS e catálogo inicial implementados; produto oficial ainda incompleto
 
 ## Hierarquia de referência
 
@@ -25,6 +25,7 @@ Entregar uma plataforma web LMS em produção na AWS que:
 - personalize a experiência;
 - registre interações, progresso e pontos;
 - ofereça comentários, uploads, provas, selos e certificados;
+- disponibilize uma biblioteca de conteúdos próprios e externos governados;
 - integre site, identidade, HubSpot e contexto autorizado;
 - suporte futuras jornadas sem mudança estrutural.
 
@@ -45,7 +46,7 @@ O repositório já contém:
 
 - aplicação Next.js com áreas de participante, operação e validação pública de certificado;
 - bridge de identidade e camada de aplicação de servidor;
-- 257 migrations executáveis;
+- 264 migrations executáveis;
 - replay limpo e equivalência estrutural;
 - 18 contratos públicos históricos de RPC e superfícies server-only adicionais;
 - backend E2E com publicação, matrícula, diagnóstico, atividade, avaliações, RLS, idempotência, concorrência, eventos, outbox e pontos;
@@ -56,11 +57,14 @@ O repositório já contém:
 - avaliação multiquestão com tentativas, correção e estados de aprovação/reprovação;
 - emissão idempotente de selos e certificados por regras versionadas;
 - carteira de credenciais, código de validação, página pública e impressão em PDF pelo navegador;
+- biblioteca versionada com artigos próprios, links HTTPS rastreados, busca textual PostgreSQL, filtros e associação opcional com jornadas;
+- administração editorial mínima de rascunho e publicação por hash;
+- Browser E2E sintético cobrindo a vertical crítica, teclado, reload e viewport mobile;
 - porta HubSpot e adapter em memória;
 - lockfile e instalação reproduzível em Ubuntu e Windows;
 - contenção do legado de RPCs e helpers.
 
-Essa fundação não equivale ao produto final. A vertical atual ainda usa configuração sintética.
+Essa fundação não equivale ao produto final. A vertical principal ainda usa configuração sintética e a biblioteca ainda não possui conteúdo oficial carregado.
 
 A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring, avaliações e regras de credencial ainda não foram aprovados.
 
