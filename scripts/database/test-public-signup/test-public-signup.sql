@@ -5,13 +5,13 @@ create temporary table test_signup_context (
   entrepreneur_id uuid
 ) on commit drop;
 
-insert into test_signup_context(user_account_id)
-select id
-from (
+with created as (
   insert into iam.user_accounts(email_normalized, status)
   values ('public-signup-e2e@estimulo.test', 'active')
   returning id
-) created;
+)
+insert into test_signup_context(user_account_id)
+select id from created;
 
 update test_signup_context
 set entrepreneur_id = (
