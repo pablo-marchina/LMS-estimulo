@@ -54,6 +54,20 @@ function runJsonSql(databaseUrl, sqlPath, label) {
   return JSON.parse(lines[0]);
 }
 
+function normalizedCategory(value) {
+  if (!value || !Array.isArray(value.sha256_chunks)) return value;
+  const sha256 = value.sha256_chunks.join('');
+  assert.match(sha256, /^[0-9a-f]{64}$/, 'chunked baseline digest is invalid');
+  const { sha256_chunks: _chunks, ...rest } = value;
+  return { ...rest, sha256 };
+}
+
+function normalizedCategories(categories) {
+  return Object.fromEntries(
+    Object.entries(categories).map(([name, value]) => [name, normalizedCategory(value)]),
+  );
+}
+
 function categoryDiff(expected, actual) {
   const names = [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort();
   return names
@@ -71,7 +85,8 @@ export async function validateSchemaEquivalence(databaseUrl) {
   const baseline = JSON.parse(await readFile(baselinePath, 'utf8'));
   const actual = runJsonSql(databaseUrl, inventorySqlPath, 'inventory');
   const expected = baseline.inventory;
-  const differences = categoryDiff(expected.categories, actual.categories);
+  const expectedCategories = normalizedCategories(expected.categories);
+  const differences = categoryDiff(expectedCategories, actual.categories);
 
   assert.equal(actual.schema_version, expected.schema_version, 'inventory schema version differs');
   assert.equal(actual.postgres_major, expected.postgres_major, 'PostgreSQL major version differs');
