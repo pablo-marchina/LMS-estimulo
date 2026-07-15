@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { signOutAction } from "@/app/entrar/actions";
+import { IdempotentSubmitGuard } from "@/components/idempotent-submit-guard";
 
 export function AppShell({ area, email, children }: { area: "empreendedor" | "admin"; email: string; children: ReactNode }) {
   const links = area === "admin"
@@ -16,6 +17,7 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
 
   return (
     <div className="app-frame">
+      <IdempotentSubmitGuard />
       <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
       <header className="app-header no-print">
         <Link className="brand" href={area === "admin" ? "/admin" : "/empreendedor"} aria-label="Plataforma Estímulo — início">
