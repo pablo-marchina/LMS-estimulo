@@ -1,8 +1,8 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.4  
+**Versão:** 4.5  
 **Data:** 2026-07-15  
-**Status:** fundação técnica reproduzível; comentários e uploads por aula implementados; produto oficial ainda incompleto
+**Status:** fundação técnica reproduzível; must-haves genéricos do LMS implementados; produto oficial ainda incompleto
 
 ## Hierarquia de referência
 
@@ -43,23 +43,26 @@ O Supabase não será promovido a produção.
 
 O repositório já contém:
 
-- aplicação Next.js com rotas de participante, operação, upload e download protegido;
+- aplicação Next.js com áreas de participante, operação e validação pública de certificado;
 - bridge de identidade e camada de aplicação de servidor;
-- 251 migrations executáveis;
+- 257 migrations executáveis;
 - replay limpo e equivalência estrutural;
-- 18 contratos públicos de RPC;
-- backend E2E com publicação, matrícula, diagnóstico, atividade, quick check, RLS, idempotência, concorrência, eventos, outbox e pontos;
+- 18 contratos públicos históricos de RPC e superfícies server-only adicionais;
+- backend E2E com publicação, matrícula, diagnóstico, atividade, avaliações, RLS, idempotência, concorrência, eventos, outbox e pontos;
 - motor configurável de formulário, arquétipos, classificação e ativações;
 - persistência transacional e outbox do resultado configurável;
 - comentários por aula com moderação, histórico, eventos e outbox;
 - uploads de prática com storage privado, quarentena, scan, consentimento, revisão, eventos e outbox;
+- avaliação multiquestão com tentativas, correção e estados de aprovação/reprovação;
+- emissão idempotente de selos e certificados por regras versionadas;
+- carteira de credenciais, código de validação, página pública e impressão em PDF pelo navegador;
 - porta HubSpot e adapter em memória;
 - lockfile e instalação reproduzível em Ubuntu e Windows;
 - contenção do legado de RPCs e helpers.
 
 Essa fundação não equivale ao produto final. A vertical atual ainda usa configuração sintética.
 
-A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring e desempate ainda não foram aprovados.
+A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring, avaliações e regras de credencial ainda não foram aprovados.
 
 ## Bloqueadores da entrega
 
@@ -67,14 +70,13 @@ Fonte: [DELIVERY_BLOCKERS.md](docs/implementation/DELIVERY_BLOCKERS.md).
 
 ```text
 PRODUCT-CONFIGURATION = open
-LMS-MUST-HAVES = open
 IDENTITY-SITE-INTEGRATION = open
 HUBSPOT-PHYSICAL-INTEGRATION = open
 BROWSER-ACCESSIBILITY = open
 AWS-STAGING = open
 ```
 
-O legado contido e a nomenclatura histórica são dívida técnica não bloqueante.
+O gate técnico de must-haves do LMS foi encerrado. O legado contido e a nomenclatura histórica são dívida técnica não bloqueante.
 
 ## Documentação canônica
 
