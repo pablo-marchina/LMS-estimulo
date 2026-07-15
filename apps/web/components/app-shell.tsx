@@ -5,11 +5,14 @@ import { signOutAction } from "@/app/entrar/actions";
 export function AppShell({ area, email, children }: { area: "empreendedor" | "admin"; email: string; children: ReactNode }) {
   const links = area === "admin"
     ? [{ href: "/admin", label: "Operação" }]
-    : [{ href: "/empreendedor", label: "Minhas jornadas" }];
+    : [
+        { href: "/empreendedor", label: "Minhas jornadas" },
+        { href: "/empreendedor/credenciais", label: "Credenciais" }
+      ];
 
   return (
     <div className="app-frame">
-      <header className="app-header">
+      <header className="app-header no-print">
         <Link className="brand" href={area === "admin" ? "/admin" : "/empreendedor"} aria-label="Plataforma Estímulo — início">
           <span className="brand-mark" aria-hidden="true">E</span>
           <span><strong>Estímulo</strong><small>Desenvolvimento do empreendedor</small></span>
