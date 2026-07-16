@@ -1,47 +1,149 @@
-# Bridge de identidade Supabase/Cognito
+# Bridge de identidade Supabase/Cognito/HubSpot
 
-**Versão:** 0.2  
-**Estado:** contrato e adapter Supabase implementados; prova com token real pendente
+**Versão:** 1.0  
+**Data:** 2026-07-16  
+**Estado:** contrato técnico parcial; integração oficial de identidade pendente
 
-## Fluxo
+## Autoridade e objetivo
+
+`premissas-desenvolvimento.md` exige:
+
+- identificação de clientes com crédito no mesmo registro HubSpot;
+- criação de clientes sem crédito no HubSpot;
+- associação futura do crédito ao mesmo usuário;
+- coleta ou resolução de nome, e-mail, CPF, telefone e CNPJ opcional;
+- captura de UTM;
+- login integrado à experiência oficial da Estímulo.
+
+Este documento define o mecanismo técnico sem reduzir esses requisitos.
+
+## Fluxo esperado
 
 ```text
-JWT recebido pela API
-→ adapter do provedor verifica assinatura, issuer, audience e expiração
-→ identidade normalizada {provider, issuer, subject, email, emailVerified, fingerprint}
-→ iam.resolve_external_identity(...)
-→ user_account_id interno
-→ app_private.set_request_context(...)
-→ transação de domínio protegida por RLS
+entrada pelo site Estímulo
+→ autenticação no provedor autorizado
+→ validação de token, issuer, audience e expiração
+→ coleta/resolução de nome, e-mail, CPF, telefone, CNPJ opcional e UTM
+→ normalização de identidade externa
+→ resolução do user_account interno
+→ busca e deduplicação no HubSpot
+→ vínculo ou criação de contato/empresa
+→ registro dos identificadores cruzados
+→ sessão interna autorizada
+→ contexto transacional PostgreSQL
 ```
 
-## Regras
+## Identidades separadas
 
-- JWT, refresh token e documento bruto de claims não são persistidos.
-- Chave primária do domínio nunca é `sub` do Supabase ou Cognito.
-- Identidade externa é única por `(issuer, subject)`.
-- E-mail não verificado não cria conta.
-- Colisão por e-mail não vincula contas automaticamente.
-- Mudança de provedor não troca o `user_account_id`.
-- Contexto é `SET LOCAL` e desaparece ao finalizar a transação.
+O domínio preserva:
 
-## Supabase
+- identidade externa de autenticação;
+- conta interna `iam.user_account`;
+- empreendedor;
+- negócio/empresa;
+- contato/empresa/objeto no HubSpot;
+- operação de crédito;
+- organização operadora.
 
-O adapter usa o JWKS do projeto para tokens RS256/ES256 e mantém cache de dez minutos. Para projetos ainda em HS256, ele consulta `/auth/v1/user`, mantendo o Auth server no caminho de validação. A publishable key é usada somente na chamada pública; nunca substitui o JWT do usuário.
+Nenhum desses identificadores deve ser usado como substituto silencioso de outro.
 
-## AWS
+## Regras de autenticação
 
-O futuro adapter Cognito deve implementar o mesmo contrato, validando issuer do user pool, audience/client id, assinatura, expiração e `sub`. Nenhuma policy SQL será alterada quando o provedor mudar.
+- JWT, refresh token e documento bruto de claims não são persistidos;
+- chave primária do domínio nunca é somente o `sub` do provedor;
+- identidade externa é única por `(issuer, subject)`;
+- e-mail deve ser verificado;
+- colisão por e-mail não vincula contas automaticamente;
+- mudança de provedor não troca o `user_account_id` interno;
+- sessões administrativas exigem conta autorizada da Estímulo;
+- recursos de teste falham fechados em produção.
 
-## Testes
+## Regras de dados de entrada
 
-A suíte atual cobre:
+Antes da ativação oficial, definir e testar:
 
-- RS256;
-- ES256;
-- token expirado;
-- fallback HS256;
-- normalização de e-mail;
-- ausência de tokens no retorno.
+- nome e nome preferido;
+- e-mail normalizado e verificado;
+- CPF validado e protegido;
+- telefone normalizado;
+- CNPJ opcional e associação ao negócio;
+- UTMs e origem;
+- consentimentos e aviso de privacidade;
+- dados mínimos versus complementares;
+- atualização e correção de dados.
 
-A prova real requer criar um usuário de teste controlado no Supabase, obter access token e executar o adapter contra o projeto compartilhado.
+## Resolução no HubSpot
+
+A busca deve usar regras aprovadas, não apenas e-mail.
+
+Possíveis sinais:
+
+- ID HubSpot já conhecido;
+- CPF;
+- CNPJ e associação;
+- e-mail;
+- telefone;
+- identificador de operação de crédito;
+- ID interno previamente sincronizado.
+
+Estados possíveis:
+
+```text
+single_match
+no_match_create
+multiple_matches_manual_resolution
+conflict_blocked
+existing_contact_new_company
+existing_contact_existing_credit
+```
+
+Merge automático só é permitido quando a regra for explicitamente aprovada e auditável.
+
+## Contexto transacional
+
+Após a identidade ser validada e resolvida, a aplicação deve estabelecer contexto interno para autorização e RLS:
+
+```sql
+SET LOCAL app.user_account_id = '<uuid>';
+SET LOCAL app.organization_id = '<uuid>';
+```
+
+O contexto deve ser derivado pelo servidor, nunca aceito diretamente do cliente.
+
+## Provedores
+
+### Supabase development/test
+
+O adapter pode validar tokens do projeto autorizado e resolver a identidade interna. A prova real ainda requer usuário controlado e fluxo completo, inclusive HubSpot sandbox.
+
+### AWS production
+
+O adapter de produção deve validar o provedor escolhido, inicialmente Cognito ou alternativa aprovada, mantendo o mesmo contrato interno.
+
+A troca de provedor não altera entidades de domínio nem dados HubSpot.
+
+## Cadastro de teste
+
+O cadastro público de teste:
+
+- existe somente para desenvolvimento;
+- não coleta todos os campos oficiais;
+- não resolve identidade HubSpot real;
+- não integra o site;
+- não encerra este requisito.
+
+## Gates
+
+```text
+site_entry_flow_defined = false
+real_identity_provider_selected = false
+name_email_cpf_phone_cnpj_utm_flow_tested = false
+hubspot_identity_search_implemented = false
+hubspot_contact_creation_implemented = false
+hubspot_company_and_credit_association_implemented = false
+deduplication_and_conflict_rules_approved = false
+participant_and_admin_permissions_tested = false
+supabase_real_token_flow_tested = false
+aws_identity_flow_tested = false
+production_test_bypasses_disabled = true
+```
