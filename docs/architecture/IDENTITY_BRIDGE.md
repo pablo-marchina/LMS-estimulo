@@ -1,21 +1,19 @@
 # Bridge de identidade Supabase/Cognito/HubSpot
 
-**Versão:** 1.0  
+**Versão:** 1.1  
 **Data:** 2026-07-16  
-**Estado:** contrato técnico parcial; integração oficial de identidade pendente
+**Estado:** contrato técnico parcial; integração oficial pendente
 
 ## Autoridade e objetivo
 
 `premissas-desenvolvimento.md` exige:
 
-- identificação de clientes com crédito no mesmo registro HubSpot;
-- criação de clientes sem crédito no HubSpot;
-- associação futura do crédito ao mesmo usuário;
-- coleta ou resolução de nome, e-mail, CPF, telefone e CNPJ opcional;
-- captura de UTM;
-- login integrado à experiência oficial da Estímulo.
+- clientes com crédito vinculados ao registro correto;
+- criação de clientes sem crédito para associação futura;
+- coleta ou resolução de nome, e-mail, CPF, telefone, CNPJ opcional e UTM;
+- login integrado à experiência Estímulo.
 
-Este documento define o mecanismo técnico sem reduzir esses requisitos.
+A DEC-070 limita os dados enviados pelo LMS ao HubSpot a identificadores mínimos de vínculo, engajamento e dados úteis para cálculos aprovados.
 
 ## Fluxo esperado
 
@@ -23,12 +21,12 @@ Este documento define o mecanismo técnico sem reduzir esses requisitos.
 entrada pelo site Estímulo
 → autenticação no provedor autorizado
 → validação de token, issuer, audience e expiração
-→ coleta/resolução de nome, e-mail, CPF, telefone, CNPJ opcional e UTM
-→ normalização de identidade externa
+→ coleta ou resolução dos campos obrigatórios
+→ normalização da identidade externa
 → resolução do user_account interno
 → busca e deduplicação no HubSpot
-→ vínculo ou criação de contato/empresa
-→ registro dos identificadores cruzados
+→ vínculo ou criação do registro CRM
+→ persistência dos identificadores cruzados
 → sessão interna autorizada
 → contexto transacional PostgreSQL
 ```
@@ -40,25 +38,25 @@ O domínio preserva:
 - identidade externa de autenticação;
 - conta interna `iam.user_account`;
 - empreendedor;
-- negócio/empresa;
-- contato/empresa/objeto no HubSpot;
+- negócio;
+- contato/empresa no HubSpot;
 - operação de crédito;
 - organização operadora.
 
-Nenhum desses identificadores deve ser usado como substituto silencioso de outro.
+Nenhum identificador substitui silenciosamente outro.
 
 ## Regras de autenticação
 
-- JWT, refresh token e documento bruto de claims não são persistidos;
-- chave primária do domínio nunca é somente o `sub` do provedor;
+- JWT e refresh token não são persistidos;
+- chave do domínio nunca é apenas o `sub` externo;
 - identidade externa é única por `(issuer, subject)`;
 - e-mail deve ser verificado;
 - colisão por e-mail não vincula contas automaticamente;
-- mudança de provedor não troca o `user_account_id` interno;
-- sessões administrativas exigem conta autorizada da Estímulo;
+- mudança de provedor não troca o `user_account_id`;
+- sessões administrativas exigem autorização Estímulo;
 - recursos de teste falham fechados em produção.
 
-## Regras de dados de entrada
+## Dados de entrada
 
 Antes da ativação oficial, definir e testar:
 
@@ -66,25 +64,24 @@ Antes da ativação oficial, definir e testar:
 - e-mail normalizado e verificado;
 - CPF validado e protegido;
 - telefone normalizado;
-- CNPJ opcional e associação ao negócio;
+- CNPJ opcional e vínculo ao negócio;
 - UTMs e origem;
 - consentimentos e aviso de privacidade;
-- dados mínimos versus complementares;
-- atualização e correção de dados.
+- atualização e correção.
+
+Esses dados podem já existir no HubSpot como dados CRM. A integração do LMS usa somente os identificadores mínimos necessários para localizar ou associar os sinais permitidos pela DEC-070.
 
 ## Resolução no HubSpot
 
-A busca deve usar regras aprovadas, não apenas e-mail.
+A busca pode considerar:
 
-Possíveis sinais:
-
-- ID HubSpot já conhecido;
+- ID HubSpot conhecido;
 - CPF;
 - CNPJ e associação;
 - e-mail;
 - telefone;
-- identificador de operação de crédito;
-- ID interno previamente sincronizado.
+- identificador de crédito;
+- ID interno sincronizado.
 
 Estados possíveis:
 
@@ -97,40 +94,50 @@ existing_contact_new_company
 existing_contact_existing_credit
 ```
 
-Merge automático só é permitido quando a regra for explicitamente aprovada e auditável.
+Merge automático somente com regra aprovada e auditável.
+
+## Identificadores persistidos para integração
+
+O LMS deve preferir:
+
+- `user_account_id` interno;
+- `hubspot_contact_id`;
+- `hubspot_company_id` quando necessário;
+- `credit_operation_id` quando autorizado;
+- hashes ou fingerprints necessários para reconciliação.
+
+Não é necessário repetir CPF, telefone ou e-mail em cada evento de engajamento.
 
 ## Contexto transacional
 
-Após a identidade ser validada e resolvida, a aplicação deve estabelecer contexto interno para autorização e RLS:
+Após validação e resolução:
 
 ```sql
 SET LOCAL app.user_account_id = '<uuid>';
 SET LOCAL app.organization_id = '<uuid>';
 ```
 
-O contexto deve ser derivado pelo servidor, nunca aceito diretamente do cliente.
+O contexto é derivado pelo servidor.
 
 ## Provedores
 
 ### Supabase development/test
 
-O adapter pode validar tokens do projeto autorizado e resolver a identidade interna. A prova real ainda requer usuário controlado e fluxo completo, inclusive HubSpot sandbox.
+O adapter pode validar tokens do projeto autorizado e resolver identidade interna. A prova real exige usuário controlado e fluxo com HubSpot sandbox.
 
 ### AWS production
 
-O adapter de produção deve validar o provedor escolhido, inicialmente Cognito ou alternativa aprovada, mantendo o mesmo contrato interno.
-
-A troca de provedor não altera entidades de domínio nem dados HubSpot.
+O adapter de produção deve validar Cognito ou alternativa aprovada, mantendo o mesmo contrato interno.
 
 ## Cadastro de teste
 
-O cadastro público de teste:
+O cadastro de teste:
 
 - existe somente para desenvolvimento;
 - não coleta todos os campos oficiais;
 - não resolve identidade HubSpot real;
 - não integra o site;
-- não encerra este requisito.
+- não encerra o requisito.
 
 ## Gates
 
@@ -142,6 +149,7 @@ hubspot_identity_search_implemented = false
 hubspot_contact_creation_implemented = false
 hubspot_company_and_credit_association_implemented = false
 deduplication_and_conflict_rules_approved = false
+minimal_linking_identifiers_defined = false
 participant_and_admin_permissions_tested = false
 supabase_real_token_flow_tested = false
 aws_identity_flow_tested = false
