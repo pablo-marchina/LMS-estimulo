@@ -62,6 +62,7 @@ test("authenticated participants keep valid direct destinations", () => {
 
 test("authenticated operators keep only destinations for accessible organizations", () => {
   assert.equal(isAuthorizedDestination(operator, "/admin?organization=organization-1"), true);
+  assert.equal(resolveAuthenticatedDestination(operator, "/admin"), "/admin?organization=organization-1");
   assert.equal(isAuthorizedDestination(operator, "/admin?organization=organization-2"), false);
   assert.equal(
     resolveAuthenticatedDestination(operator, "/admin?organization=organization-1&instance=journey-1"),
