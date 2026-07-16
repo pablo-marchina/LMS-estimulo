@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isProtectedPath } from "@/lib/auth/navigation.js";
 
 const BROWSER_E2E_COOKIE = "estimulo_browser_e2e";
 
@@ -17,16 +18,22 @@ function localSyntheticSession(request: NextRequest): boolean {
   return request.cookies.get(BROWSER_E2E_COOKIE)?.value === token;
 }
 
+function redirectToLogin(request: NextRequest) {
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/entrar";
+  loginUrl.search = "";
+  loginUrl.searchParams.set("returnTo", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+  return NextResponse.redirect(loginUrl);
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
-  const protectedPath = request.nextUrl.pathname.startsWith("/empreendedor")
-    || request.nextUrl.pathname.startsWith("/capacitacao")
-    || request.nextUrl.pathname.startsWith("/admin");
+  const protectedPath = isProtectedPath(request.nextUrl.pathname);
   if (protectedPath && localSyntheticSession(request)) return response;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return response;
+  if (!url || !anonKey) return protectedPath ? redirectToLogin(request) : response;
 
   const client = createServerClient(url, anonKey, {
     cookies: {
@@ -39,8 +46,8 @@ export async function proxy(request: NextRequest) {
     }
   });
   const { data } = await client.auth.getUser();
-  if (protectedPath && !data.user) return NextResponse.redirect(new URL("/entrar", request.url));
+  if (protectedPath && !data.user) return redirectToLogin(request);
   return response;
 }
 
-export const config = { matcher: ["/entrar", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };
+export const config = { matcher: ["/", "/entrar", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };
