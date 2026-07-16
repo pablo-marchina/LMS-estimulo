@@ -1,33 +1,36 @@
 # Plataforma Estímulo — índice atual
 
-**Versão:** 4.7  
-**Data:** 2026-07-15  
-**Status:** fundação técnica reproduzível; must-haves genéricos do LMS, catálogo inicial e cadastro controlado de teste implementados; produto oficial ainda incompleto
+**Versão:** 5.0  
+**Data:** 2026-07-16  
+**Status:** fontes reconciliadas; fundação técnica reproduzível; produto oficial incompleto
 
-## Hierarquia de referência
+## Hierarquia vinculante
 
-Em caso de conflito:
+A fonte canônica de resolução de conflitos é [SOURCE_AUTHORITY_HIERARCHY.md](docs/product/SOURCE_AUTHORITY_HIERARCHY.md).
 
-1. documentos oficiais de referência fornecidos pela Estímulo;
-2. alterações posteriores explicitamente aprovadas pela Estímulo;
-3. decisões atuais que interpretam as referências sem modificá-las;
-4. estado real do repositório e dos ambientes autorizados;
-5. documentação técnica e histórico Git.
+```text
+1. premissas-desenvolvimento.md
+2. demais documentos do pacote, exceto para escolhas técnicas
+3. decisões posteriores explicitamente aprovadas
+4. issues do GitHub
+5. ADRs, documentação técnica, código e testes
+```
 
-ADRs, código e protótipos não podem redefinir silenciosamente o produto.
+Para questões técnicas, segurança, evidência dos ambientes, documentação oficial e melhores práticas definem o mecanismo. Nenhuma decisão técnica pode reduzir silenciosamente requisito superior.
 
 ## Objetivo final
 
-Entregar uma plataforma web LMS em produção na AWS que:
+Entregar uma plataforma web LMS, desenvolvida internamente e em produção na AWS, que:
 
 - publique a Jornada OpenAI;
 - opere o diagnóstico e os quatro arquétipos oficiais;
-- personalize a experiência;
-- registre interações, progresso e pontos;
-- ofereça comentários, uploads, provas, selos e certificados;
-- disponibilize uma biblioteca de conteúdos próprios e externos governados;
-- integre site, identidade, HubSpot e contexto autorizado;
-- suporte futuras jornadas sem mudança estrutural.
+- personalize a experiência por perfil e contexto autorizado;
+- registre todas as ações relevantes como eventos estruturados;
+- ofereça trilhas, conteúdos, comentários, avaliações, uploads, pontos, conquistas, ranking, selos e certificados;
+- possua interfaces completas de participante e administração;
+- integre site, identidade, HubSpot e contexto autorizado de crédito;
+- assegure que todos os dados do usuário capturados ou usados possuam representação no HubSpot;
+- preserve manutenibilidade, documentação e evolução interna.
 
 ## Ambientes e sistemas
 
@@ -35,65 +38,70 @@ Entregar uma plataforma web LMS em produção na AWS que:
 - branch principal: `main`;
 - Supabase: desenvolvimento e teste;
 - AWS: staging e produção;
-- PostgreSQL: banco operacional, eventos e outbox;
-- HubSpot: User 360 e projeções de relacionamento.
+- PostgreSQL: banco operacional, eventos, outbox e auditoria técnica;
+- HubSpot: centro das informações do usuário e destino obrigatório dos dados relacionados ao usuário;
+- GitHub issues: backlog funcional obrigatório;
+- pacote de referências: autoridade de produto e conteúdo conforme a hierarquia.
 
 O Supabase não será promovido a produção.
 
 ## Runtime atual
 
-O repositório já contém:
+O repositório contém:
 
 - aplicação Next.js com áreas de participante, operação e validação pública de certificado;
 - identidade visual da Estímulo aplicada ao login e ao shell autenticado;
-- bridge de identidade e camada de aplicação de servidor;
-- cadastro público opcional para desenvolvimento/teste, desabilitado por padrão e bloqueado em produção;
-- provisionamento service-role-only de perfil mínimo de empreendedor marcado como dado de teste;
+- bridge de identidade e camada server-only;
+- cadastro opcional para desenvolvimento/teste, bloqueado em produção;
 - 265 migrations executáveis;
 - replay limpo e equivalência estrutural;
-- 18 contratos públicos históricos de RPC e superfícies server-only adicionais;
-- backend E2E com publicação, matrícula, diagnóstico, atividade, avaliações, RLS, idempotência, concorrência, eventos, outbox e pontos;
-- motor configurável de formulário, arquétipos, classificação e ativações;
-- persistência transacional e outbox do resultado configurável;
-- comentários por aula com moderação, histórico, eventos e outbox;
-- uploads de prática com storage privado, quarentena, scan, consentimento, revisão, eventos e outbox;
-- avaliação multiquestão com tentativas, correção e estados de aprovação/reprovação;
-- emissão idempotente de selos e certificados por regras versionadas;
-- carteira de credenciais, código de validação, página pública e impressão em PDF pelo navegador;
-- biblioteca versionada com artigos próprios, links HTTPS rastreados, busca textual PostgreSQL, filtros e associação opcional com jornadas;
-- administração editorial mínima de rascunho e publicação por hash;
-- Browser E2E sintético cobrindo a vertical crítica, teclado, reload e viewport mobile;
+- contratos públicos históricos de RPC;
+- backend E2E sintético com publicação, matrícula, diagnóstico, atividade, avaliações, RLS, idempotência, concorrência, eventos, outbox e pontos;
+- motor configurável de formulários, arquétipos, classificação e ativações;
+- comentários com moderação e histórico;
+- uploads privados com quarentena, estados de scan, consentimento e revisão;
+- avaliação multiquestão com tentativas;
+- emissão idempotente de selos e certificados;
+- carteira de credenciais, código de validação e impressão pelo navegador;
+- biblioteca versionada com artigos, links HTTPS, busca textual e filtros;
+- Browser E2E sintético de interface;
 - porta HubSpot e adapter em memória;
-- lockfile e instalação reproduzível em Ubuntu e Windows;
+- instalação reproduzível em Ubuntu e Windows;
 - contenção do legado de RPCs e helpers.
 
-Essa fundação não equivale ao produto final. A vertical principal ainda usa configuração sintética, a biblioteca ainda não possui conteúdo oficial carregado e o cadastro público de teste não substitui a integração oficial de identidade/site.
+Essa fundação não equivale ao produto final. A vertical principal ainda usa configuração sintética, o E2E de navegador substitui backend e storage reais, a biblioteca não possui conteúdo oficial completo e o cadastro de teste não substitui identidade/site/HubSpot.
 
-A baseline documental do diagnóstico registra 12 perguntas, 5 dimensões e 4 arquétipos. Texto final, alternativas, scoring, avaliações e regras de credencial ainda não foram aprovados.
-
-## Bloqueadores da entrega
+## Bloqueadores principais
 
 Fonte: [DELIVERY_BLOCKERS.md](docs/implementation/DELIVERY_BLOCKERS.md).
 
 ```text
 PRODUCT-CONFIGURATION = open
+OPENAI-JOURNEY-CONTENT = open
 IDENTITY-SITE-INTEGRATION = open
-HUBSPOT-PHYSICAL-INTEGRATION = open
+HUBSPOT-COMPLETE-USER-DATA = open
+REAL-FULLSTACK-E2E = open
 BROWSER-ACCESSIBILITY = open
+SECURITY-PRIVACY-REAL-USERS = open
 AWS-STAGING = open
 ```
 
-O gate técnico de must-haves do LMS foi encerrado. O legado contido e a nomenclatura histórica são dívida técnica não bloqueante.
+O gate técnico genérico de comentários, uploads, avaliações e credenciais não encerra os requisitos oficiais de produto.
 
 ## Documentação canônica
 
-### Produto e conteúdo
+### Autoridade, produto e escopo
 
+- [Hierarquia das fontes](docs/product/SOURCE_AUTHORITY_HIERARCHY.md)
 - [Premissas e escopo](docs/product/PREMISES_AND_SCOPE.md)
 - [Princípios da release inicial](docs/product/INITIAL_PRODUCTION_RELEASE_PRINCIPLES.md)
-- [Escopo multi-jornada](docs/product/MULTI_JOURNEY_PRODUCT_SCOPE.md)
+- [Escopo e extensibilidade de jornadas](docs/product/MULTI_JOURNEY_PRODUCT_SCOPE.md)
 - [Inventário da Jornada OpenAI](docs/product/OPENAI_JOURNEY_INVENTORY.md)
-- [Especificação da Jornada OpenAI](docs/journeys/OPENAI_JOURNEY_SPEC.md)
+- [Solicitações de informação](docs/product/INFORMATION_REQUESTS.md)
+
+### Jornada OpenAI
+
+- [Especificação](docs/journeys/OPENAI_JOURNEY_SPEC.md)
 - [Progressão](docs/journeys/OPENAI_PROGRESSION_RULES.md)
 - [Avaliações e práticas](docs/journeys/OPENAI_ASSESSMENT_AND_PRACTICE.md)
 - [Gamificação e credenciais](docs/journeys/OPENAI_GAMIFICATION_CREDENTIALS.md)
@@ -104,7 +112,7 @@ O gate técnico de must-haves do LMS foi encerrado. O legado contido e a nomencl
 - [Finalidade e guardrails](docs/research/DIAGNOSTIC_PURPOSE_AND_GUARDRAILS.md)
 - [Modelo de dimensões](docs/research/DIAGNOSTIC_DIMENSION_MODEL.md)
 - [Banco de itens](docs/research/DIAGNOSTIC_ITEM_BANK_V0_1.md)
-- [Solicitações de informação](docs/product/INFORMATION_REQUESTS.md)
+- [Manifesto estrutural bloqueado](config/official-diagnostic/v3/manifest.json)
 
 ### Implementação
 
@@ -117,18 +125,28 @@ O gate técnico de must-haves do LMS foi encerrado. O legado contido e a nomencl
 - [Fundação da aplicação](docs/implementation/APPLICATION_FOUNDATION.md)
 - [Contenção do legado](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
 
+### Decisões
+
+- [Registro de decisões](docs/decisions/DECISION_LOG.md)
+- [ADR HubSpot](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
+
 ### Integrações e ambientes
 
-- [ADR HubSpot](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
-- [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
+- [Fluxo HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Inventário mínimo HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
-- [Fronteira externa](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
+- [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
 - [Bridge de identidade](docs/architecture/IDENTITY_BRIDGE.md)
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
 - [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Arquitetura AWS](docs/architecture/AWS_PRODUCTION_REFERENCE_ARCHITECTURE.md)
 
-### Dados, segurança e operação
+## Regras de manutenção documental
 
-Os documentos existentes de banco, eventos, segurança e operação permanecem como referência técnica. Novos documentos especializados só devem ser criados quando uma capacidade obrigatória exigir informação que não caiba nos artefatos atuais.
+- mudanças de requisito devem identificar a fonte afetada;
+- lacuna não pode ser preenchida por heurística silenciosa;
+- decisão técnica conflitante deve virar bloqueador, não reinterpretação do produto;
+- estados declarados devem ser sustentados por evidência executável;
+- documentos de produto devem usar a hierarquia canônica;
+- documentos técnicos devem explicitar quais requisitos implementam;
+- issues, documentação, código e testes da mesma capacidade devem permanecer sincronizados.
