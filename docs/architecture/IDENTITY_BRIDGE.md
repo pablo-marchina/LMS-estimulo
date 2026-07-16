@@ -1,47 +1,157 @@
-# Bridge de identidade Supabase/Cognito
+# Bridge de identidade Supabase/Cognito/HubSpot
 
-**Versão:** 0.2  
-**Estado:** contrato e adapter Supabase implementados; prova com token real pendente
+**Versão:** 1.1  
+**Data:** 2026-07-16  
+**Estado:** contrato técnico parcial; integração oficial pendente
 
-## Fluxo
+## Autoridade e objetivo
+
+`premissas-desenvolvimento.md` exige:
+
+- clientes com crédito vinculados ao registro correto;
+- criação de clientes sem crédito para associação futura;
+- coleta ou resolução de nome, e-mail, CPF, telefone, CNPJ opcional e UTM;
+- login integrado à experiência Estímulo.
+
+A DEC-070 limita os dados enviados pelo LMS ao HubSpot a identificadores mínimos de vínculo, engajamento e dados úteis para cálculos aprovados.
+
+## Fluxo esperado
 
 ```text
-JWT recebido pela API
-→ adapter do provedor verifica assinatura, issuer, audience e expiração
-→ identidade normalizada {provider, issuer, subject, email, emailVerified, fingerprint}
-→ iam.resolve_external_identity(...)
-→ user_account_id interno
-→ app_private.set_request_context(...)
-→ transação de domínio protegida por RLS
+entrada pelo site Estímulo
+→ autenticação no provedor autorizado
+→ validação de token, issuer, audience e expiração
+→ coleta ou resolução dos campos obrigatórios
+→ normalização da identidade externa
+→ resolução do user_account interno
+→ busca e deduplicação no HubSpot
+→ vínculo ou criação do registro CRM
+→ persistência dos identificadores cruzados
+→ sessão interna autorizada
+→ contexto transacional PostgreSQL
 ```
 
-## Regras
+## Identidades separadas
 
-- JWT, refresh token e documento bruto de claims não são persistidos.
-- Chave primária do domínio nunca é `sub` do Supabase ou Cognito.
-- Identidade externa é única por `(issuer, subject)`.
-- E-mail não verificado não cria conta.
-- Colisão por e-mail não vincula contas automaticamente.
-- Mudança de provedor não troca o `user_account_id`.
-- Contexto é `SET LOCAL` e desaparece ao finalizar a transação.
+O domínio preserva:
 
-## Supabase
+- identidade externa de autenticação;
+- conta interna `iam.user_account`;
+- empreendedor;
+- negócio;
+- contato/empresa no HubSpot;
+- operação de crédito;
+- organização operadora.
 
-O adapter usa o JWKS do projeto para tokens RS256/ES256 e mantém cache de dez minutos. Para projetos ainda em HS256, ele consulta `/auth/v1/user`, mantendo o Auth server no caminho de validação. A publishable key é usada somente na chamada pública; nunca substitui o JWT do usuário.
+Nenhum identificador substitui silenciosamente outro.
 
-## AWS
+## Regras de autenticação
 
-O futuro adapter Cognito deve implementar o mesmo contrato, validando issuer do user pool, audience/client id, assinatura, expiração e `sub`. Nenhuma policy SQL será alterada quando o provedor mudar.
+- JWT e refresh token não são persistidos;
+- chave do domínio nunca é apenas o `sub` externo;
+- identidade externa é única por `(issuer, subject)`;
+- e-mail deve ser verificado;
+- colisão por e-mail não vincula contas automaticamente;
+- mudança de provedor não troca o `user_account_id`;
+- sessões administrativas exigem autorização Estímulo;
+- recursos de teste falham fechados em produção.
 
-## Testes
+## Dados de entrada
 
-A suíte atual cobre:
+Antes da ativação oficial, definir e testar:
 
-- RS256;
-- ES256;
-- token expirado;
-- fallback HS256;
-- normalização de e-mail;
-- ausência de tokens no retorno.
+- nome e nome preferido;
+- e-mail normalizado e verificado;
+- CPF validado e protegido;
+- telefone normalizado;
+- CNPJ opcional e vínculo ao negócio;
+- UTMs e origem;
+- consentimentos e aviso de privacidade;
+- atualização e correção.
 
-A prova real requer criar um usuário de teste controlado no Supabase, obter access token e executar o adapter contra o projeto compartilhado.
+Esses dados podem já existir no HubSpot como dados CRM. A integração do LMS usa somente os identificadores mínimos necessários para localizar ou associar os sinais permitidos pela DEC-070.
+
+## Resolução no HubSpot
+
+A busca pode considerar:
+
+- ID HubSpot conhecido;
+- CPF;
+- CNPJ e associação;
+- e-mail;
+- telefone;
+- identificador de crédito;
+- ID interno sincronizado.
+
+Estados possíveis:
+
+```text
+single_match
+no_match_create
+multiple_matches_manual_resolution
+conflict_blocked
+existing_contact_new_company
+existing_contact_existing_credit
+```
+
+Merge automático somente com regra aprovada e auditável.
+
+## Identificadores persistidos para integração
+
+O LMS deve preferir:
+
+- `user_account_id` interno;
+- `hubspot_contact_id`;
+- `hubspot_company_id` quando necessário;
+- `credit_operation_id` quando autorizado;
+- hashes ou fingerprints necessários para reconciliação.
+
+Não é necessário repetir CPF, telefone ou e-mail em cada evento de engajamento.
+
+## Contexto transacional
+
+Após validação e resolução:
+
+```sql
+SET LOCAL app.user_account_id = '<uuid>';
+SET LOCAL app.organization_id = '<uuid>';
+```
+
+O contexto é derivado pelo servidor.
+
+## Provedores
+
+### Supabase development/test
+
+O adapter pode validar tokens do projeto autorizado e resolver identidade interna. A prova real exige usuário controlado e fluxo com HubSpot sandbox.
+
+### AWS production
+
+O adapter de produção deve validar Cognito ou alternativa aprovada, mantendo o mesmo contrato interno.
+
+## Cadastro de teste
+
+O cadastro de teste:
+
+- existe somente para desenvolvimento;
+- não coleta todos os campos oficiais;
+- não resolve identidade HubSpot real;
+- não integra o site;
+- não encerra o requisito.
+
+## Gates
+
+```text
+site_entry_flow_defined = false
+real_identity_provider_selected = false
+name_email_cpf_phone_cnpj_utm_flow_tested = false
+hubspot_identity_search_implemented = false
+hubspot_contact_creation_implemented = false
+hubspot_company_and_credit_association_implemented = false
+deduplication_and_conflict_rules_approved = false
+minimal_linking_identifiers_defined = false
+participant_and_admin_permissions_tested = false
+supabase_real_token_flow_tested = false
+aws_identity_flow_tested = false
+production_test_bypasses_disabled = true
+```

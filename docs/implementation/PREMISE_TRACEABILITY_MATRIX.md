@@ -1,46 +1,81 @@
 # Matriz de rastreabilidade das premissas atuais
 
-**Versão:** 3.1  
-**Data:** 2026-07-14  
-**Status:** ativo
+**Versão:** 4.1  
+**Data:** 2026-07-16  
+**Status:** ativo e alinhado ao pacote de referências
 
 ## Regra de uso
 
-A matriz rastreia somente requisitos necessários para o produto final. Uma capacidade é concluída quando requisito, implementação e prova de runtime concordam.
+A autoridade está definida em [SOURCE_AUTHORITY_HIERARCHY.md](../product/SOURCE_AUTHORITY_HIERARCHY.md). A DEC-070 define o escopo atual do HubSpot.
 
-| ID | Requisito | Estado | Lacuna necessária | Prova de conclusão |
-|---|---|---|---|---|
-| P-001 | referências oficiais prevalecem sobre ADRs, código e protótipos | Alinhado | manter documentos ativos coerentes | revisão documental sem conflito |
-| P-002 | Supabase somente em desenvolvimento/teste | Definido | impedir promoção direta | configuração e documentação de ambientes |
-| P-003 | AWS em staging e produção | Planejado | ambiente ainda não implantado | deploy, E2E, backup, restore e rollback |
-| P-004 | plataforma multi-jornada com OpenAI como primeira jornada | Fundação presente | Jornada OpenAI oficial não carregada | publicação da jornada sem hardcode no núcleo |
-| P-005 | formulário versionado com 12 perguntas, 5 dimensões e 4 arquétipos oficiais | Estrutura reconciliada; motor e persistência presentes | texto/opções, scoring, cortes, desempate, textos finais e ativações oficiais pendentes | configuração aprovada, casos de equivalência e diagnóstico oficial E2E |
-| P-006 | personalização por arquétipo, maturidade e contexto autorizado | Parcial | matriz de ativação e contexto real pendentes | resultado ativa jornada/recomendação correta e explicável |
-| P-007 | comentários por aula | Ausente | issue 61 | criar, visualizar e moderar comentário |
-| P-008 | upload de prática por aula/módulo | Parcial | storage/scan sem consumidor | upload, scan, consentimento e avaliação E2E |
-| P-009 | provas, selos e certificados | Parcial | regras e emissão final ausentes | aprovação/reprovação, emissão e validação |
-| P-010 | pontos e recompensas | Parcial | ledger existe; resgate mínimo ausente | saldo, histórico e solicitação de resgate |
-| P-011 | conteúdo próprio e de parceiros | Parcial | adapter/redirect final ausente | conteúdo autorizado embedado ou redirecionado |
-| P-012 | ações relevantes geram eventos estruturados | Parcial | completar cobertura das telas oficiais | rota/ação → evento sem duplicação |
-| P-013 | HubSpot como User 360 | Parcial | inventário e adapter real pendentes | projeções de identidade, diagnóstico e progresso no sandbox |
-| P-014 | event store preserva detalhe comportamental | Fundação presente | ampliar para novas funcionalidades | eventos e outbox dos must-haves |
-| P-015 | integração com site e login real | Ausente | identidade e entrada pelo site pendentes | sessão real e identidade única E2E |
-| P-016 | contexto de crédito não vira decisão automática | Protegido | integrar somente dados autorizados | personalização sem efeito decisório de crédito |
-| P-017 | frontend mobile e acessível | Parcial | browser E2E e auditoria pendentes | fluxos críticos em desktop e mobile |
-| P-018 | banco e runtime reproduzíveis | Atendido | preservar gates | replay de 245 migrations, equivalência, contratos e backend E2E |
-| P-019 | legado não cresce e não bloqueia entrega sem risco concreto | Atendido | alterar apenas por necessidade | containment permanece verde |
+Uma capacidade somente é concluída quando:
 
-## Itens explicitamente fora da matriz de bloqueio
+1. a fonte está identificada;
+2. a implementação corresponde à fonte;
+3. a prova usa o runtime adequado;
+4. conteúdo sintético não é apresentado como oficial;
+5. documentação, issue e código concordam.
 
-- renomeação integral de helpers legados;
-- quinta taxonomia de arquétipos sem decisão oficial;
-- promoção automática da Q13 do protótipo ao formulário oficial;
-- uso do scoring do protótipo como metodologia oficial;
-- score produtivo de crédito;
-- segunda jornada antes da OpenAI;
+## Matriz
+
+| ID | Fonte | Requisito | Estado | Lacuna | Prova de conclusão |
+|---|---|---|---|---|---|
+| P-001 | `premissas-desenvolvimento.md` | hierarquia de fontes definida | Alinhado | manter documentos coerentes | CI documental e revisão |
+| P-002 | `premissas-desenvolvimento.md` | produto desenvolvido e mantido internamente | Definido | impedir substituição por LMS externo | propriedade interna comprovada |
+| P-003 | `premissas-desenvolvimento.md` | issues como backlog funcional | Parcial | mapear issues aos requisitos | issue → implementação → teste |
+| P-004 | `premissas-desenvolvimento.md` | Supabase apenas em desenvolvimento/teste | Definido | impedir promoção direta | configuração por ambiente |
+| P-005 | `premissas-desenvolvimento.md` | AWS em staging e produção | Planejado | ambiente não implantado | deploy, E2E, backup e rollback |
+| P-006 | `premissas-desenvolvimento.md`, `trabalho.md` | ações relevantes geram eventos estruturados | Parcial | cobertura das telas oficiais | ação real → evento versionado |
+| P-007 | DEC-070 | HubSpot recebe vínculo mínimo, engajamento e dados úteis para cálculo | Ausente no runtime real | inventário, matriz, adapter e reconciliação | sandbox com as três classes e exclusões testadas |
+| P-008 | `premissas-desenvolvimento.md` | identidade existente e nova sem duplicação | Ausente | deduplicação e integração real | E2E de usuário existente, novo e crédito posterior |
+| P-009 | `premissas-desenvolvimento.md` | entrada resolve nome, e-mail, CPF, telefone, CNPJ opcional e UTM | Ausente no fluxo oficial | formulário, validação e consentimento | site/login real |
+| P-010 | fontes de arquétipos | diagnóstico com 12 perguntas, 5 dimensões e 4 arquétipos | Estrutura presente; conteúdo bloqueado | scoring, textos e casos oficiais | diagnóstico oficial E2E |
+| P-011 | `premissas-desenvolvimento.md` | diagnóstico editável e versionado | Parcial | integração oficial | publicação, captura e recálculo testados |
+| P-012 | documentos da Jornada OpenAI | jornada completa e publicável | Bloqueado | conteúdo, avaliações, progressão e acessibilidade | jornada oficial ponta a ponta |
+| P-013 | fontes de personalização | visibilidade por arquétipo e conteúdo geral sem diagnóstico | Parcial | matriz oficial | perfis recebem conteúdo correto |
+| P-014 | `premissas-desenvolvimento.md` | home completa | Parcial | carrossel, conteúdo e recompensas reais | browser E2E real |
+| P-015 | `premissas-desenvolvimento.md` | trilhas, labels, blocos e regras configuráveis | Parcial | UI/editor oficial | participante e admin operam trilha oficial |
+| P-016 | `premissas-desenvolvimento.md` | comentários por aula | Fundação implementada | moderação e operação reais | E2E real participante/operador |
+| P-017 | `premissas-desenvolvimento.md` | avaliação de utilidade em cinco estrelas | Ausente | modelo, evento, UI e relatório | avaliação persistida e consultável |
+| P-018 | `premissas-desenvolvimento.md` | quick checks e avaliações | Fundação implementada | conteúdo e regras oficiais | aprovação/reprovação oficial |
+| P-019 | premissas e issues | conteúdo e vídeo horizontal/vertical | Parcial | hospedagem, player e acessibilidade | desktop/mobile real |
+| P-020 | premissas e issues | uploads de prática | Fundação implementada | scanner real e AWS | upload → scan → revisão → download |
+| P-021 | `premissas-desenvolvimento.md` | perfil com diagnóstico, histórico e credenciais | Parcial | dados oficiais | perfil real |
+| P-022 | `premissas-desenvolvimento.md` | pontos, conquistas, recompensas e ranking | Parcial | regras e operação | ledger, UI e governança |
+| P-023 | `premissas-desenvolvimento.md` | administração de usuários | Ausente como gestão completa | busca, edição e suporte | operação auditada |
+| P-024 | `premissas-desenvolvimento.md` | administração integral de trilhas | Parcial | editor completo | versão oficial criada pela UI |
+| P-025 | `premissas-desenvolvimento.md` | biblioteca com labels e taxonomia | Fundação inicial | acervo e taxonomia oficiais | conteúdo criado e reutilizado |
+| P-026 | referências visuais | interface Estímulo e responsiva | Parcial | revisão visual | aprovação e acessibilidade |
+| P-027 | `premissas-desenvolvimento.md` | reutilização responsável do legado | Parcial | inventário de reaproveitamento | matriz de manter/substituir/remover |
+| P-028 | `premissas-desenvolvimento.md` | manutenção, docs e GitHub como aceite | Fundação presente | lint, reviews e proteção | gates comprovados |
+| P-029 | governança | sinais não decidem crédito sem validação | Protegido | manter gates | nenhuma decisão produtiva ativada |
+| P-030 | produção | E2E real atravessa navegador, identidade, banco, storage, scan e HubSpot | Ausente | vertical real | E2E em AWS staging/sandboxes |
+| P-031 | segurança/privacidade | tratamento governado de dados reais | Bloqueado | políticas e controles | revisão institucional e técnica |
+
+## Matriz específica HubSpot
+
+| Classe | Exemplos | Regra |
+|---|---|---|
+| `linking_identifier` | IDs internos, contato, empresa, operação | somente o mínimo necessário para associação |
+| `engagement_signal` | acesso, progresso, participação, tentativas, conclusão, credenciais | finalidade e granularidade aprovadas |
+| `calculation_input_or_result` | dimensões, arquétipo, features e resultados | cálculo versionado e governado |
+| `not_synced` | estado transacional, conteúdo, binários, logs e segredos | permanece no sistema apropriado |
+
+## Itens que não encerram requisito oficial isoladamente
+
+- fixture sintética;
+- Browser E2E com backend local substituído;
+- adapter HubSpot em memória;
+- interface sem conteúdo oficial;
+- certificado genérico;
+- estado de scan sem scanner real;
+- documentação AWS sem ambiente implantado.
+
+## Fora da primeira entrega, salvo aprovação
+
+- decisão automática de crédito;
 - aplicativo móvel nativo;
-- marketplace ou comunidade completos;
-- refatorações cosméticas;
-- documentação adicional sem requisito novo.
-
-A ordem operacional é mantida no registro de bloqueadores e nas issues, não em planos versionados separados.
+- compra de LMS externo;
+- segunda jornada publicada antes da OpenAI;
+- marketplace complexo;
+- refatoração cosmética de legado contido.

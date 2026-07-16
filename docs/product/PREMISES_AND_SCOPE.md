@@ -1,132 +1,257 @@
 # Premissas e escopo
 
-**Versão:** 0.6  
-**Data:** 2026-07-14  
-**Status:** baseline alinhada às referências oficiais; configuração diagnóstica ainda depende do pacote metodológico
+**Versão:** 1.1  
+**Data:** 2026-07-16  
+**Status:** baseline canônica alinhada ao pacote de referências e à decisão HubSpot mais recente
 
-## Hierarquia de referência
+## Autoridade documental
 
-1. documentos oficiais de referência fornecidos pela Estímulo;
-2. alterações posteriores explicitamente aprovadas pela Estímulo;
-3. decisões de produto e arquitetura que apenas interpretam as referências;
-4. estado real do repositório e dos ambientes autorizados;
-5. documentação técnica, código, protótipos e histórico legado.
+A ordem completa está em [SOURCE_AUTHORITY_HIERARCHY.md](SOURCE_AUTHORITY_HIERARCHY.md).
 
-Um ADR não pode modificar silenciosamente um requisito oficial. Quando houver alteração de produto, ela deve identificar a referência afetada e a aprovação correspondente.
+1. `premissas-desenvolvimento.md` é a maior autoridade;
+2. os demais documentos do pacote são autoridade para produto, negócio, conteúdo, pedagogia, operação e impacto, mas não para escolhas estritamente técnicas;
+3. decisões posteriores só substituem requisito quando aprovadas e rastreadas;
+4. issues detalham o backlog;
+5. ADRs, código e testes definem meios técnicos e evidência.
 
-Protótipos são evidência secundária e não podem alterar requisitos oficiais sem aprovação explícita.
+O escopo vigente do HubSpot está na [DEC-070](../decisions/HUBSPOT_SCOPE_DECISION.md).
 
 ## Problema central
 
-A Estímulo precisa transformar capacitação em uma camada integrada à jornada do empreendedor. As interações relevantes devem preservar contexto, sequência e temporalidade para personalização, relacionamento e pesquisa futura.
+A Estímulo precisa transformar capacitação em uma camada integrada à jornada do empreendedor e à jornada de crédito.
 
-## Resultado esperado
+A plataforma deve:
 
-A plataforma deverá:
+- centralizar uma experiência hoje fragmentada;
+- entregar conteúdo adequado ao perfil e ao momento do empreendedor;
+- criar progressão e engajamento recorrente;
+- registrar ações relevantes como eventos comportamentais estruturados;
+- preservar sequência, contexto e temporalidade;
+- gerar base confiável para relacionamento, personalização, mensuração e pesquisa futura.
 
-- operar jornadas e conteúdos próprios ou externos;
-- publicar inicialmente a Jornada OpenAI;
-- configurar e versionar formulários, avaliações e regras;
-- operar inicialmente os quatro arquétipos oficiais;
-- personalizar jornadas conforme diagnóstico e contexto autorizado;
-- registrar interações relevantes, progresso, avaliações e pontos;
-- oferecer comentários, uploads, provas, selos e certificados;
-- manter o HubSpot como visão integrada do empreendedor;
-- suportar múltiplas jornadas sem mudança estrutural;
-- operar em AWS nos ambientes de staging e produção.
+A primeira entrega não deve apresentar correlação como causalidade nem usar sinais educacionais como regra automática de crédito.
 
-## Ambientes e responsabilidades
+## Resultado final obrigatório
 
-- **Supabase:** desenvolvimento e teste;
-- **AWS:** staging e produção;
-- **PostgreSQL:** banco operacional do LMS, eventos, outbox, idempotência e auditoria técnica;
-- **HubSpot:** User 360, relacionamento e projeções de dados de negócio relevantes;
-- **storage autorizado:** arquivos, materiais, uploads e certificados.
+A entrega final é uma plataforma web LMS:
+
+- com as funcionalidades solicitadas pela Estímulo;
+- operando em produção na AWS;
+- mantida internamente;
+- documentada e reproduzível;
+- com experiência de participante e administração;
+- integrada ao site, identidade, HubSpot e sistemas autorizados;
+- com a Jornada OpenAI publicada;
+- preparada para utilizar dados comportamentais de forma governada.
+
+Fundação genérica, protótipo, ambiente Supabase ou vertical sintética não equivalem à entrega final.
+
+## Desenvolvimento interno
+
+O produto será desenvolvido e mantido internamente.
+
+Isso exclui:
+
+- compra de um LMS que substitua a plataforma;
+- terceirização da responsabilidade central de produto, código, arquitetura, dados ou manutenção;
+- dependência que impeça a equipe de operar e evoluir o produto.
+
+Permanecem permitidos os serviços de infraestrutura e integração definidos pelo projeto, incluindo AWS, Supabase de desenvolvimento/teste e HubSpot.
+
+## Repositório, issues e manutenção
+
+- repositório oficial: `pablo-marchina/LMS-estimulo`;
+- as issues são backlog funcional obrigatório;
+- o repositório anterior deve ser reutilizado quando seguro e justificável;
+- legado deve ser inventariado, contido e substituído somente quando necessário;
+- arquitetura, documentação, testes, migrations e CI são critérios de aceite;
+- nenhum artefato técnico pode redefinir requisito de produto.
+
+## Ambientes
+
+| Ambiente | Plataforma | Finalidade |
+|---|---|---|
+| local | ferramentas locais | desenvolvimento individual |
+| desenvolvimento/teste | Supabase autorizado | integração e QA |
+| staging | AWS | paridade, segurança, integrações e operação |
+| produção | AWS | operação real |
 
 Não haverá promoção direta do Supabase para produção.
 
-## HubSpot e dados do produto
+Credenciais presentes em materiais de referência devem ser rotacionadas e gerenciadas por secret managers.
 
-- Identidade, informações do negócio, contexto autorizado, diagnóstico vigente, progresso agregado, conclusão e sinais aprovados deverão estar disponíveis no HubSpot.
-- Eventos granulares e telemetria permanecem no event store, com projeção seletiva para o HubSpot.
-- A sincronização padrão usa outbox, retry idempotente e reconciliação.
-- Readback é obrigatório somente para escritas CRM críticas que precisem de confirmação antes de uso imediato.
-- O LMS não depende de round-trip síncrono ao HubSpot para cada resposta, avaliação ou registro de progresso.
-- Formulários, jornadas, conteúdos, provas e políticas editoriais são versionados na plataforma; o HubSpot recebe versões, resultados e referências relevantes.
-- Nenhum log técnico, segredo ou binário será enviado ao HubSpot sem finalidade explícita.
+## Dados comportamentais
 
-## Formulário e arquétipos
+A plataforma deve capturar dados úteis sobre a interação do usuário.
 
-- Formulários seguem definição–versão–instância.
-- Rascunhos são editáveis; versões publicadas são imutáveis.
-- A operação inicial usa Fazedor, Batalhador, Construtor e Navegador.
-- A versão 3 descrita na referência possui 12 perguntas e 5 dimensões.
-- As dimensões oficiais são Gestão financeira, Disciplina e hábito, Visão e planejamento, Perfil empreendedor e Relação com crédito e risco.
-- A maturidade operacional é um eixo separado do arquétipo.
-- A Q13 do protótipo Raio-X não integra o formulário oficial sem aprovação formal.
-- O scoring do protótipo não substitui a planilha/metodologia citada na referência.
-- Pesos, cortes, condicionais e regra de empate devem ser aprovados antes da publicação.
-- A arquitetura pode aceitar alterações futuras, mas isso não substitui a obrigação de publicar os quatro perfis definidos pela referência.
-- Arquétipos já atribuídos não são apagados do histórico.
-- Recálculo e override são explícitos, autorizados e auditáveis.
-- Confiança ou probabilidade somente será exibida quando sustentada pela metodologia aprovada.
+Regras obrigatórias:
+
+- ações relevantes do participante e do operador geram registro estruturado;
+- eventos preservam ator, objeto, momento, sequência, contexto, versão e finalidade;
+- eventos são idempotentes e auditáveis;
+- coleta deve ser segura, justificável e transparente;
+- dados sintéticos são identificados;
+- dados de capacitação não influenciam crédito produtivo sem validação e governança.
+
+“Máximo de dados” não autoriza coleta sem finalidade ou descumprimento legal.
+
+## Escopo do HubSpot
+
+O HubSpot não é o banco operacional nem o repositório integral do LMS.
+
+A integração do LMS com o HubSpot deve armazenar somente:
+
+- identificadores mínimos necessários para vincular o dado ao usuário correto;
+- informações de engajamento na plataforma;
+- informações que possam ajudar em cálculos, classificações, personalização, análise ou pesquisa aprovados.
+
+Exemplos de engajamento:
+
+- acesso e sessões;
+- progresso e conclusão;
+- participação, comentários e avaliações de utilidade;
+- tentativas, resultados e retomadas;
+- pontos, conquistas, recompensas, selos e certificados;
+- abandono, recorrência e sequência de ações.
+
+Exemplos de informações úteis para cálculo:
+
+- respostas e resultados do diagnóstico quando necessários;
+- dimensões, arquétipo e maturidade;
+- variáveis de contexto autorizadas;
+- indicadores derivados e features versionadas;
+- resultados de classificações e personalizações;
+- desfechos usados em pesquisa aprovada.
+
+O PostgreSQL permanece como banco operacional, event store, outbox, histórico detalhado e fonte de processamento.
+
+A matriz HubSpot deve classificar cada dado como:
+
+```text
+linking_identifier
+engagement_signal
+calculation_input_or_result
+not_synced
+```
+
+Permanecem fora do HubSpot por padrão:
+
+- estado transacional detalhado;
+- configurações editoriais e conteúdo completo;
+- payloads brutos sem finalidade aprovada;
+- arquivos binários e URLs assinadas;
+- logs técnicos, filas, retries e segredos.
+
+Nenhuma informação educacional ou comportamental pode influenciar decisão de crédito sem validação metodológica, governança, análise de vieses e aprovação institucional.
+
+## Identidade e entrada pelo site
+
+O acesso deve coletar ou resolver:
+
+- nome;
+- e-mail;
+- CPF;
+- telefone;
+- CNPJ opcional;
+- UTMs e origem.
+
+Esses dados podem existir no HubSpot como dados CRM independentes do LMS. A integração do LMS deve usar somente os identificadores mínimos necessários para localizar ou associar corretamente o registro.
+
+Clientes com crédito devem ser vinculados ao registro existente. Clientes sem crédito devem ser criados de forma que uma operação futura possa ser associada sem duplicação silenciosa.
+
+Cadastro de teste não encerra o requisito de integração oficial.
+
+## Diagnóstico e personalização
+
+O diagnóstico:
+
+- é opcional;
+- deve ser editável e versionado;
+- preserva perguntas, alternativas, cálculo, versão, resultado e histórico;
+- opera inicialmente Fazedor, Batalhador, Construtor e Navegador;
+- mantém maturidade como eixo separado;
+- permite evolução sem destruir histórico;
+- não publica scoring ou desempate não homologado.
+
+Usuários sem diagnóstico visualizam conteúdos sem restrição por arquétipo.
 
 ## Jornada OpenAI
 
-A primeira jornada publicada deve conter:
+A Jornada OpenAI deve seguir os documentos editoriais do pacote:
 
-- boas-vindas e bloco base opcional;
-- trilhas de Marketing e Vendas e de Gestão;
-- bloco avançado com Codex conforme regra aprovada;
+- boas-vindas e potencial da IA;
+- bloco base opcional;
+- Marketing e Vendas com IA;
+- Gestão com IA;
+- desenvolvimento avançado com Codex;
 - vídeos, materiais, prompts, templates e práticas;
-- quick checks, provas, tentativas e critérios de conclusão;
-- pontos, selos e certificados;
-- comentários e uploads previstos nas aulas.
+- quick checks, avaliações, pontos, credenciais, comentários e uploads previstos.
 
-## Conteúdo externo
+Divergências editoriais permanecem bloqueadas até reconciliação.
 
-Conteúdo de parceiros deve declarar, no mínimo:
+## Interface do participante
 
-- provedor;
-- URL ou identificador;
-- autorização de uso;
-- forma de exibição ou redirecionamento;
-- regra de conclusão;
-- tracking mínimo;
-- fallback quando indisponível.
+### Home
 
-## Crédito
+- anúncios;
+- trilhas disponíveis;
+- continuar progresso;
+- barra de progresso;
+- menu;
+- recompensas, pontos e credenciais.
 
-O momento da jornada de crédito pode ser usado para personalizar capacitação e relacionamento.
+### Trilhas e atividades
 
-Ficam fora do escopo da primeira entrega:
+- catálogo e labels;
+- visibilidade por arquétipo;
+- blocos expansíveis;
+- regras configuráveis;
+- comentários;
+- avaliação em cinco estrelas;
+- quick checks;
+- conteúdo multimídia;
+- práticas e uploads.
+
+### Perfil e engajamento
+
+- dados do usuário;
+- diagnóstico;
+- certificados e selos;
+- histórico de engajamento;
+- progresso e pontuação;
+- conquistas, recompensas e ranking governado.
+
+## Interface administrativa
+
+A área administrativa deve oferecer:
+
+- gestão de usuários;
+- gestão de trilhas, blocos, atividades e regras;
+- biblioteca com labels e taxonomia;
+- gestão do diagnóstico e cálculo;
+- avaliações, práticas, comentários e moderação;
+- selos, certificados, pontos e recompensas;
+- relatórios e acompanhamento;
+- publicação e histórico.
+
+## Fora da primeira entrega, salvo aprovação
 
 - decisão automática de crédito;
-- score produtivo de aprovação ou rejeição;
 - alteração automática de taxa, limite ou garantia;
-- uso produtivo do arquétipo sem validação e governança específicas.
-
-A modelagem deve preservar dados para pesquisa futura, sem apresentar hipóteses como resultados validados.
-
-## Fora do escopo necessário
-
-- microserviços sem justificativa;
-- múltiplos provedores sem necessidade;
 - aplicativo móvel nativo;
-- segunda jornada antes da conclusão da OpenAI;
-- marketplace complexo de recompensas;
-- substituição integral de legado já contido;
-- refatorações cosméticas sem impacto na entrega;
-- produção no Supabase.
+- compra de LMS externo;
+- segunda jornada publicada antes da OpenAI;
+- refatorações sem impacto concreto.
 
-## Princípios
+## Princípios de aceite
 
-1. Referências oficiais prevalecem sobre ADRs, código e mockups.
-2. A Jornada OpenAI e os quatro arquétipos oficiais são as entradas prioritárias.
-3. Regras e versões publicadas preservam histórico.
-4. O HubSpot concentra a visão operacional; o LMS preserva o detalhe transacional e comportamental.
-5. Toda ação relevante possui evento, finalidade e teste proporcionais ao risco.
-6. Dívida técnica contida não bloqueia a entrega sem risco ou dependência concreta.
-7. Supabase é somente desenvolvimento/teste e AWS staging é gate de produção.
-8. Código, integrações, testes e documentação da mesma capacidade mudam juntos.
-9. Lacunas metodológicas não serão preenchidas por heurística silenciosa.
+1. `premissas-desenvolvimento.md` prevalece.
+2. Os demais documentos do pacote prevalecem em assuntos não técnicos.
+3. Código não redefine produto.
+4. Toda ação relevante gera dado estruturado.
+5. O HubSpot recebe somente vínculo mínimo, engajamento e dados úteis para cálculos aprovados.
+6. Configurações publicadas preservam versão e histórico.
+7. Supabase é desenvolvimento/teste; AWS é staging/produção.
+8. Desenvolvimento e manutenção permanecem internos.
+9. Código, testes, integrações e documentação mudam juntos.
+10. Lacunas não são preenchidas por heurística silenciosa.

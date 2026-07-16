@@ -1,135 +1,231 @@
 # Solicitações de informação
 
-Este documento lista exatamente o que precisa ser buscado. Não inclui nomes de pessoas; apenas informações e artefatos.
+**Versão:** 1.1  
+**Data:** 2026-07-16  
+**Status:** ativo
 
-## IR-001 — Repositório completo
+A hierarquia está em [SOURCE_AUTHORITY_HIERARCHY.md](SOURCE_AUTHORITY_HIERARCHY.md), e o escopo HubSpot está na [DEC-070](../decisions/HUBSPOT_SCOPE_DECISION.md).
 
-**Estado:** atendido para o repositório atual.
+Não incluir tokens, chaves, senhas, cookies ou dados pessoais reais em documentos, issues, PRs ou chat.
 
-O repositório, migrations, documentação e histórico executável estão disponíveis. Novos ZIPs só são necessários quando houver material externo ainda não incorporado ao Git.
+## IR-001 — Pacote de referências e proveniência
+
+**Estado:** pacote recebido; preservação formal pendente.
+
+Registrar:
+
+- nomes originais dos arquivos;
+- data de recebimento;
+- hashes;
+- responsável pela aprovação;
+- versões ou substituições posteriores;
+- local institucional seguro;
+- relação com documentos canônicos.
 
 ## IR-002 — Inventário do HubSpot sandbox
 
-Fornecer export ou documentação com:
-- plano/licença;
-- objetos usados;
-- propriedades de contato, empresa e negócio;
-- pipelines e etapas;
-- workflows;
-- listas;
-- objetos personalizados;
-- associações;
-- webhooks e eventos personalizados disponíveis;
-- regras de duplicidade;
-- identificadores usados;
-- limites de API;
-- integrações atuais.
+Fornecer as informações descritas em [HUBSPOT_INVENTORY_REQUEST.md](../integrations/HUBSPOT_INVENTORY_REQUEST.md), incluindo:
 
-Não enviar tokens ou chaves no chat.
+- portal, licença e sandbox;
+- objetos, propriedades e associações;
+- custom objects e behavioral events;
+- regras de identidade e deduplicação;
+- objetos e estados de crédito;
+- workflows, webhooks e automações;
+- limites de API e batch;
+- catálogo de sinais de engajamento;
+- catálogo de variáveis e resultados úteis para cálculo;
+- catálogo de dados `not_synced`;
+- reconciliação, acesso e privacidade.
 
 ## IR-003 — Fluxo e dados de crédito
 
 Obter:
-- estados possíveis da solicitação;
+
+- estados da solicitação;
 - transições e motivos;
 - dados criados em cada estado;
-- critérios e códigos de reprovação;
-- significado operacional de “quase aprovado”;
-- dados de desembolso, parcela, atraso, regularização e encerramento;
+- códigos de reprovação;
+- significado de “quase aprovado”;
+- desembolso, parcelas, atraso e regularização;
 - identificadores de pessoa, empresa e operação;
-- frequência e latência das atualizações;
-- fonte da verdade de cada campo;
-- desfechos que poderão ser usados em pesquisa futura.
+- frequência e latência;
+- fonte da verdade por campo;
+- momentos de capacitação e intervenção;
+- desfechos para pesquisa futura.
 
 ## IR-004 — Dados históricos
 
-Confirmar existência, formato e identificadores de:
-- participação em cursos, mentorias e WhatsApp;
+Confirmar existência, formato, qualidade e identificadores de:
+
+- cursos, mentorias e WhatsApp;
 - presença, conclusão, pesquisas e avaliações;
 - aplicação de aprendizados;
 - aprovação, reprovação e inadimplência;
-- dados que permitam relacionar capacitação e crédito legitimamente.
+- contatos, empresas e operações;
+- vínculos legítimos entre capacitação e crédito;
+- cobertura, consentimentos e viés de seleção.
 
 ## IR-005 — Conteúdo final da Jornada OpenAI
 
-Confirmar:
-- todos os arquivos e URLs;
-- ordem e pré-requisitos;
-- duração;
-- avaliações;
-- atividades práticas;
+Confirmar e entregar:
+
+- vídeos, slides, transcrições e legendas;
+- prompts, templates, mapas e materiais;
+- URLs e direitos de uso;
+- ordem, pré-requisitos e durações;
+- quick checks e avaliações finais;
+- respostas, justificativas e nota mínima;
+- práticas e rubricas;
+- tentativas e feedback;
 - critérios de conclusão;
-- pontos, selos e certificado;
-- acessibilidade;
-- direitos de uso;
+- pontos, selos e certificados;
+- equivalências acessíveis;
 - status editorial.
 
 ## IR-006 — Regras internas de dados e segurança
 
 Obter:
-- política de privacidade e retenção;
+
+- política de privacidade;
+- inventário de tratamentos;
 - classificação dos dados;
-- requisitos de consentimento;
+- bases legais;
+- textos de consentimento quando aplicáveis;
+- retenção e legal hold;
 - regras de acesso;
-- processo de resposta a incidentes;
-- restrições para uso de dados comportamentais e score;
-- exigências de fornecedores de nuvem e localização dos dados.
+- direitos dos titulares;
+- processo de incidentes;
+- restrições para dados comportamentais e score;
+- exigências de fornecedores e localização.
 
-## IR-007 — Decisões e evidências para liberar o gate de segurança
+## IR-007 — Evidências para usuários reais
 
-Obter e aprovar, sem compartilhar segredos no chat:
+Obter e aprovar:
 
-- entidade jurídica controladora e escopo das responsabilidades;
-- encarregado, ato de designação ou análise de dispensa, canal público e substituição;
-- bases legais por atividade de tratamento;
-- aviso de privacidade e textos de consentimento versionados;
-- prazos de retenção, gatilhos, anonimização e legal holds;
-- canal e procedimento de direitos dos titulares;
-- playbook, contatos e critérios de comunicação de incidentes;
-- contratos, DPAs, regiões, subprocessadores e transferências de Supabase, AWS e HubSpot;
-- conta, região, rede, domínios, KMS, IAM, Secrets Manager, backup/PITR e logs AWS;
-- RPO/RTO e relatório de teste de restauração;
-- inventário real do HubSpot e fluxo real de crédito;
-- governança para qualquer uso de sinais em crédito: finalidade, revisão humana, explicação, contestação, equidade, validação e monitoramento;
-- RIPD efetivo para perfilamento/alto risco, quando aplicável.
+- controlador e responsabilidades;
+- encarregado e canal;
+- bases por atividade;
+- aviso de privacidade;
+- retenção, anonimização e exclusão;
+- procedimento de direitos;
+- playbook de incidente;
+- contratos, DPAs, regiões e subprocessadores;
+- conta, região, rede, domínios, KMS, IAM e secrets AWS;
+- RPO/RTO e teste de restauração;
+- inventário HubSpot e fluxo de crédito;
+- governança para uso futuro de sinais em crédito;
+- RIPD quando aplicável;
+- scanner real de arquivos;
+- rate limiting;
+- secret scanning e rotação de credenciais.
 
-**Motivo:** o código e o banco não podem decidir essas matérias. O gate de produção permanece bloqueado até que as evidências sejam registradas e verificadas.
+## IR-008 — Pacote oficial do diagnóstico
 
-## IR-008 — Pacote oficial do diagnóstico e dos quatro arquétipos
+**Prioridade:** P0.
 
-**Prioridade:** P0 — bloqueia a configuração oficial.
+Entregar ou aprovar:
 
-Entregar ou aprovar formalmente:
-
-1. identificação da versão vigente do instrumento;
-2. texto exato das 12 perguntas;
+1. versão vigente;
+2. texto das 12 perguntas;
 3. instruções e períodos de referência;
-4. alternativas e chaves estáveis;
-5. perguntas condicionais e suas regras;
-6. regras de randomização;
-7. obrigatoriedade de cada item;
-8. vínculo entre alternativas e as cinco dimensões;
-9. pesos ou contribuições por dimensão e por arquétipo;
-10. normalização, cortes e prioridades;
-11. regra de empate ou resultado inconclusivo;
-12. tratamento de resposta ausente;
-13. exemplos oficiais de respostas e resultado esperado;
-14. textos finais dos quatro resultados;
-15. plano de ação e ativações permitidas por arquétipo;
-16. planilha de iteração e log de revisão citados na referência;
-17. relatório ou evidência metodológica da validação citada;
-18. decisão explícita sobre a Q13 do protótipo Raio-X;
-19. aprovação de linguagem, privacidade e consequências.
+4. alternativas e chaves;
+5. condicionais;
+6. randomização;
+7. obrigatoriedade;
+8. vínculo com cinco dimensões;
+9. pesos e contribuições;
+10. normalização e cortes;
+11. empate ou inconclusivo;
+12. resposta ausente;
+13. casos oficiais de entrada e saída;
+14. textos dos quatro resultados;
+15. plano de ação e ativações;
+16. planilha de iteração e revisão;
+17. evidência metodológica;
+18. decisão sobre Q13;
+19. aprovação de linguagem e privacidade;
+20. estratégia Typeform e versionamento.
 
-### Estado já reconciliado
+Estado reconciliado:
 
-- quantidade oficial de perguntas: 12;
-- quantidade oficial de dimensões: 5;
-- quantidade inicial de arquétipos: 4;
-- maturidade operacional: eixo separado;
-- Q13 do protótipo: não integra o formulário oficial sem aprovação;
-- scoring do protótipo: evidência secundária, não metodologia oficial.
+- 12 perguntas;
+- 5 dimensões;
+- 4 arquétipos;
+- maturidade separada;
+- Q13 não oficial sem aprovação;
+- scoring do protótipo não oficial.
 
-### Critério de encerramento
+## IR-009 — Identidade e integração com o site
 
-A solicitação só será encerrada quando uma configuração de draft puder ser reproduzida integralmente a partir dos artefatos aprovados, comparada com casos oficiais e publicada sem completar lacunas por heurística.
+Definir:
+
+- origem do login;
+- SSO ou credenciais;
+- nome, e-mail, CPF, telefone e CNPJ opcional;
+- UTM;
+- validação e consentimento;
+- associação com contato HubSpot;
+- criação de novo contato;
+- merge e conflito;
+- recuperação de conta;
+- usuários administrativos;
+- clientes com e sem crédito;
+- identificadores mínimos usados pelo LMS;
+- testes em Supabase e AWS.
+
+## IR-010 — Catálogo de dados HubSpot
+
+Aprovar quatro catálogos:
+
+### `linking_identifier`
+
+Somente IDs e chaves mínimos necessários para localizar ou associar o usuário.
+
+### `engagement_signal`
+
+Eventos e agregados de acesso, progresso, participação, avaliação, práticas, gamificação, credenciais, abandono e retorno.
+
+### `calculation_input_or_result`
+
+Entradas, features e resultados úteis para diagnóstico, classificação, personalização, análise ou pesquisa, com origem, versão, qualidade e governança.
+
+### `not_synced`
+
+Estado transacional detalhado, configuração e conteúdo editorial, payloads brutos sem finalidade, binários, logs, filas, retries e segredos.
+
+## IR-011 — Regras de gamificação e participação
+
+Aprovar:
+
+- pontos e proteção contra abuso;
+- conquistas;
+- recompensas e resgate;
+- ranking e privacidade;
+- emissão e revogação de credenciais;
+- avaliação em cinco estrelas;
+- moderação e denúncia;
+- SLA de revisão de práticas.
+
+## IR-012 — Guia visual e assets
+
+Obter:
+
+- guia de marca;
+- logos;
+- tipografia e cores;
+- ícones e componentes;
+- critérios de uso dos mockups;
+- requisitos mobile;
+- aprovação visual.
+
+## Critério geral de encerramento
+
+Uma solicitação é encerrada somente quando:
+
+- o artefato foi recebido ou a decisão aprovada;
+- versão e origem foram registradas;
+- documentação e backlog foram atualizados;
+- implementação correspondente pode ser reproduzida;
+- testes proporcionais existem;
+- nenhuma lacuna foi preenchida por heurística silenciosa.

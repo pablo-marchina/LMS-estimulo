@@ -1,88 +1,92 @@
-# Escopo multi-jornada da Plataforma Estímulo
+# Escopo de jornadas da Plataforma Estímulo
 
-**Versão:** 0.1  
-**Data:** 2026-07-08  
-**Status:** Premissa oficial corrigida
+**Versão:** 1.0  
+**Data:** 2026-07-16  
+**Status:** alinhado às fontes; extensibilidade técnica sem ampliar a primeira entrega
 
-## 1. Regra central
+## Autoridade
 
-A Plataforma Estímulo é um produto SaaS/LMS multi-jornada desde a primeira release de produção.
+`premissas-desenvolvimento.md` e os documentos da Jornada OpenAI são as fontes superiores de produto.
+
+O pacote fornecido exige a Jornada OpenAI e uma plataforma configurável de trilhas, conteúdos e administração. Ele não exige que uma segunda jornada completa seja criada ou publicada antes da primeira entrega.
+
+## Regra central
 
 A Jornada OpenAI é:
 
-- a primeira jornada com conteúdo implementado;
-- a primeira jornada publicada para usuários reais;
-- o primeiro caso completo usado para validar o funcionamento ponta a ponta.
+- a jornada oficial prioritária;
+- a jornada que deve ser publicada na primeira release;
+- o primeiro fluxo real usado para validar a plataforma ponta a ponta.
 
-Ela não é:
+A arquitetura deve evitar acoplamento desnecessário que impeça futuras jornadas, mas a extensibilidade é uma decisão técnica subordinada à entrega oficial.
 
-- o limite funcional do produto;
-- um caso especial no domínio;
-- a única jornada suportada pelo banco;
-- a única jornada que a administração pode criar ou publicar;
-- justificativa para decisões técnicas acopladas ao seu conteúdo.
+## Requisitos da primeira release
 
-## 2. Capacidades exigidas já na primeira release
+A primeira release deve permitir operar produtivamente a Jornada OpenAI com:
 
-A release inicial deverá permitir, de forma produtiva:
+- definição e versão publicável;
+- trilhas, blocos e atividades;
+- conteúdos internos e externos;
+- labels e elegibilidade por arquétipo;
+- avaliações, práticas e uploads;
+- progressão e conclusão;
+- pontos, conquistas, recompensas, selos e certificados;
+- eventos comportamentais;
+- administração;
+- integração HubSpot;
+- histórico imutável das versões usadas por participantes.
 
-1. criar uma nova definição de jornada;
-2. criar e editar versões em rascunho;
-3. associar cursos, módulos, conteúdos, avaliações e práticas reutilizáveis;
-4. configurar etapas, transições, pré-requisitos e critérios de conclusão;
-5. revisar e aprovar uma versão;
-6. publicar uma versão imutável;
-7. inscrever participantes e fixá-los à versão publicada;
-8. capturar eventos usando o mesmo envelope canônico;
-9. aplicar permissões e escopos iguais aos de qualquer outra jornada;
-10. descontinuar ou substituir uma versão sem corromper o histórico;
-11. consultar progresso, eventos e resultados por jornada;
-12. operar integrações e intervenções sem lógica exclusiva da OpenAI.
+## Extensibilidade técnica obrigatória
 
-## 3. O que pode permanecer para depois
+O núcleo não deve depender de:
 
-Pode ser posterior à primeira release:
+- UUIDs fixos da Jornada OpenAI;
+- tabelas exclusivas para a jornada;
+- enums de conteúdo que impeçam novos tipos sem justificativa;
+- condicionais dispersas como `if journey == openai`;
+- regras editoriais codificadas na interface;
+- migrations necessárias apenas para alterar conteúdo;
+- duplicação de orquestração para cada nova jornada.
 
-- criação editorial de uma segunda jornada completa;
-- produção de vídeos, avaliações e atividades de novas jornadas;
-- lançamento público de outros conteúdos;
-- regras avançadas específicas de novos programas.
+Formulários, jornadas, trilhas, conteúdos, avaliações e credenciais devem ser configuráveis e versionados na medida necessária para cumprir a primeira entrega.
 
-Isso não altera a exigência de que a plataforma já aceite esses elementos.
+## O que não é gate da primeira release
 
-## 4. Prova obrigatória de extensibilidade
+Sem nova fonte ou issue aprovada, não bloqueiam a primeira produção:
 
-Antes do gate de produção, deverá ser executado um teste com uma segunda jornada sintética, contendo pelo menos:
+- criação editorial de uma segunda jornada;
+- publicação de uma segunda jornada para usuários reais;
+- administração avançada de programas não previstos;
+- prova completa com conteúdo de outro parceiro;
+- marketplace multi-programa;
+- abstrações genéricas sem consumidor real.
 
-- uma definição;
-- duas versões, sendo uma publicada;
-- uma trilha;
-- dois módulos;
-- três atividades de tipos diferentes;
-- uma avaliação;
-- uma regra de progressão;
-- uma inscrição de teste;
-- eventos de início, progresso e conclusão.
+## Prova proporcional de extensibilidade
 
-O teste será aprovado somente se não exigir:
+A extensibilidade pode ser validada com fixture sintética mínima ou testes de contrato, desde que isso não substitua o E2E real da Jornada OpenAI.
 
-- migration específica da jornada;
-- nova enumeração exclusiva;
-- alteração do núcleo de orquestração;
-- condição `if journey == ...`;
-- duplicação de tabelas;
-- endpoint exclusivo sem justificativa genérica.
+Uma prova sintética deve apenas confirmar que o núcleo não possui acoplamento indevido. Ela não é uma capacidade de produto nem pode ser apresentada como jornada entregue.
 
-## 5. Linguagem oficial
+## Prioridade de implementação
+
+```text
+1. Jornada OpenAI oficial e fluxo real
+2. identidade, HubSpot, AWS e operação
+3. requisitos funcionais das issues
+4. remoção de acoplamentos concretos encontrados
+5. novas jornadas após aprovação
+```
+
+## Linguagem oficial
 
 Usar:
 
-> “A Jornada OpenAI é a primeira jornada implementada e publicada em uma plataforma multi-jornada.”
+> “A Jornada OpenAI é a jornada oficial da primeira release. A arquitetura evita impedir futuras jornadas.”
 
 Evitar:
 
-> “O produto é limitado à Jornada OpenAI.”
+> “Uma segunda jornada produtiva é obrigatória antes da primeira release.”
 
-> “A plataforma terá apenas uma jornada.”
+> “A plataforma está concluída porque uma jornada sintética passou.”
 
-> “O suporte a múltiplas jornadas é uma evolução futura.”
+> “Multi-jornada autoriza adiar a experiência completa da Jornada OpenAI.”

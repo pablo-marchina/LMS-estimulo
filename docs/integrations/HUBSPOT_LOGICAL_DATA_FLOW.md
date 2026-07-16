@@ -1,135 +1,182 @@
 # Fluxo lógico de integração com HubSpot
 
-**Versão:** 0.3  
-**Data:** 2026-07-14  
-**Status:** fluxo lógico simplificado; adapter real pendente
+**Versão:** 1.1  
+**Data:** 2026-07-16  
+**Status:** escopo aprovado; adapter real pendente
 
-## Papel do HubSpot
+## Objetivo
 
-O HubSpot é o User 360 da Estímulo e concentra os dados necessários para relacionamento e acompanhamento do empreendedor.
+Este fluxo implementa [ADR-003](../decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md).
 
-Projeções prioritárias:
+O PostgreSQL é o banco operacional e detalhado. O HubSpot recebe apenas identificadores mínimos de vínculo, sinais de engajamento e informações úteis para cálculos aprovados.
 
-- identidade e negócio;
-- vínculo com a jornada de crédito;
-- versão e resultado vigente do diagnóstico;
-- arquétipo vigente;
-- matrícula e progresso agregado;
-- conclusão, selos e certificados;
-- sinais comportamentais aprovados;
-- segmentos, tarefas e comunicações.
+## Categorias sincronizadas
 
-O HubSpot não substitui o banco operacional do LMS nem o event store detalhado.
+### Identificadores mínimos
 
-## Fluxo de saída do LMS
+- ID interno do usuário;
+- ID do contato HubSpot;
+- ID da empresa quando necessário;
+- ID da operação de crédito quando necessário;
+- chaves de associação aprovadas.
+
+CPF, CNPJ, e-mail e telefone podem ser consultados para resolução de identidade, mas a integração do LMS não deve duplicá-los em payloads de engajamento além do necessário.
+
+### Engajamento
+
+- acesso, frequência e retorno;
+- início, progresso e conclusão;
+- atividade, trilha e jornada;
+- participação e avaliação de utilidade;
+- tentativas e resultados agregados;
+- práticas e uploads por estado;
+- pontos, conquistas, recompensas e credenciais;
+- abandono, retomada e sequência de marcos.
+
+### Dados úteis para cálculo
+
+- respostas selecionadas e resultados do diagnóstico;
+- dimensões, arquétipo e maturidade;
+- features derivadas de comportamento;
+- contexto autorizado;
+- classificações, recomendações e ativações;
+- desfechos de pesquisa ou avaliação.
+
+Cada variável precisa de finalidade, versão e governança.
+
+## Fluxo de saída
 
 ```text
 participante ou operador executa ação
-→ LMS valida e persiste a transação
+→ LMS valida identidade, autorização e estado
+→ PostgreSQL persiste estado detalhado
 → evento e outbox são gravados atomicamente
-→ worker transforma a projeção necessária
+→ transformer consulta a matriz HubSpot
+→ item é agregado, minimizado ou descartado conforme classificação
 → adapter escreve no HubSpot com idempotência
-→ sucesso encerra a entrega
-→ falha segue retry e reconciliação
+→ receipt é registrado
+→ falha segue retry ou reconciliação
 ```
 
-A experiência do participante não depende, por padrão, da confirmação síncrona do HubSpot.
+A experiência do participante não depende por padrão da confirmação síncrona do HubSpot.
 
-## Escritas que exigem confirmação
+## Matriz de sincronização
 
-Readback deve ser usado quando a confirmação do CRM é necessária antes do próximo efeito, como:
-
-- criação ou vínculo de identidade CRM;
-- alteração de dado crítico consumido imediatamente por workflow externo;
-- escrita sujeita a conflito de versão;
-- ação irreversível baseada na confirmação externa.
-
-Para progresso, avaliações e eventos comuns, confirmação assíncrona e reconciliação são suficientes.
-
-## Fluxo de entrada do HubSpot
-
-```text
-webhook HubSpot
-→ validação de assinatura e replay
-→ registro do receipt
-→ resolução de contato/empresa
-→ atualização do snapshot autorizado
-→ evento de integração
-→ reconciliação quando necessário
-```
-
-Dados do HubSpot que podem influenciar o LMS incluem identidade, empresa, segmento, status de crédito autorizado e preferências de relacionamento.
-
-## Matriz de projeção
-
-Cada projeção deve declarar:
+Cada item deve declarar:
 
 ```text
 source_entity_or_event
+sync_classification
 business_purpose
+calculation_or_engagement_use
 hubspot_object
-hubspot_property_or_association
+property_event_or_association
 transformation
+aggregation_window
 sync_frequency
+maximum_delay
 sensitivity
 retention
 reconciliation_rule
 ```
 
-Não é necessário criar um objeto HubSpot para cada entidade interna do LMS.
+Valores de `sync_classification`:
 
-## Configuração do produto
+```text
+linking_identifier
+engagement_signal
+calculation_input_or_result
+not_synced
+```
 
-Formulários, jornadas, conteúdos, avaliações, arquétipos e regras são versionados na plataforma.
+## Granularidade
 
-O HubSpot recebe:
+A representação pode usar:
 
-- identificador da definição e versão publicada;
-- resultado vigente e histórico necessário para operação;
-- agregados e referências úteis para segmentação e relacionamento.
+- propriedades de contato ou empresa;
+- custom behavioral events;
+- objetos personalizados;
+- atividades de timeline;
+- snapshots ou agregados temporais;
+- resultados calculados e versionados.
 
-A edição completa dessas estruturas não depende de modelagem editorial dentro do CRM.
+Não é obrigatório enviar cada evento bruto. A granularidade escolhida deve preservar a utilidade aprovada para engajamento ou cálculo.
+
+## Escritas com readback
+
+Readback é usado quando a próxima ação depende da confirmação, incluindo:
+
+- resolução ou criação de contato;
+- deduplicação;
+- associação com empresa ou crédito;
+- escrita crítica consumida por workflow externo;
+- atualização com expectativa de versão.
+
+## Fluxo de entrada
+
+```text
+webhook ou leitura programada
+→ validação de origem, assinatura e replay
+→ receipt e idempotência
+→ resolução de identidade
+→ validação da versão/atualidade
+→ atualização de snapshot autorizado no LMS
+→ evento de integração
+```
+
+Somente dados autorizados do HubSpot podem influenciar o LMS.
+
+## Dados não sincronizados
+
+- configurações editoriais completas;
+- conteúdo integral de aulas;
+- banco de questões como catálogo;
+- respostas abertas e comentários integrais sem finalidade específica;
+- arquivos binários;
+- URLs assinadas;
+- logs, traces, filas e retries;
+- segredos e tokens;
+- dados temporários sem uso de engajamento ou cálculo.
 
 ## Indisponibilidade
 
 Quando o HubSpot estiver indisponível:
 
-- ações do LMS continuam sendo persistidas;
-- projeções permanecem pendentes na outbox;
-- retries usam backoff e idempotência;
-- erros permanentes são enviados para reconciliação;
-- apenas funcionalidades que exigem estado CRM atual ficam degradadas.
+- ações continuam no PostgreSQL;
+- itens elegíveis permanecem na outbox;
+- retries usam backoff, jitter e idempotência;
+- `429` respeita limites aplicáveis;
+- falhas permanentes seguem para reconciliação;
+- backlog e idade geram alertas;
+- recuperação deve provar ausência de perda dos itens sincronizáveis.
 
 ## Requisitos do adapter real
 
 - autenticação e scopes mínimos;
-- mapeamento de contato e empresa;
-- batch quando vantajoso;
+- inventário de objetos e propriedades;
+- busca e deduplicação;
+- propriedades, objetos e eventos adequados;
+- batch;
 - idempotência;
-- tratamento de `429` e `5xx`;
-- webhooks quando disponíveis;
+- tratamento de `429`, `4xx` e `5xx`;
+- webhooks;
+- readback;
 - observabilidade sem payload sensível;
-- reconciliação periódica;
+- reconciliação;
 - testes no sandbox.
-
-## Dados que não devem ser projetados por padrão
-
-- cada clique ou visualização bruta;
-- logs técnicos;
-- tokens e segredos;
-- arquivos binários;
-- payloads completos sem finalidade operacional;
-- dados temporários de retry além do necessário.
 
 ## Critério de conclusão
 
 ```text
 hubspot_inventory_complete = true
-projection_matrix_approved = true
+hubspot_sync_matrix_approved = true
 real_adapter_implemented = true
-identity_mapping_tested = true
-idempotency_and_retry_tested = true
+identity_linking_tested = true
+engagement_signal_sync_tested = true
+calculation_variable_sync_tested = true
+not_synced_rules_tested = true
+idempotency_retry_rate_limit_tested = true
 reconciliation_tested = true
 critical_readback_tested = true
-lms_outage_independence_tested = true
+outage_backlog_recovery_tested = true
 ```

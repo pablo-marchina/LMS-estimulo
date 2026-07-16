@@ -1,20 +1,22 @@
 # Contrato do adapter HubSpot
 
-**Versão:** 0.2  
-**Data:** 2026-07-14  
+**Versão:** 1.1  
+**Data:** 2026-07-16  
 **Status:** porta e adapter de teste existentes; adapter real pendente
 
 ## Objetivo
 
-Isolar a aplicação da API física do HubSpot e garantir sincronização idempotente, observável e reconciliável.
+Isolar a aplicação da API física do HubSpot e sincronizar somente:
 
-O contrato não torna o HubSpot banco operacional do LMS e não exige readback antes de toda regra de negócio.
+- identificadores mínimos de vínculo;
+- sinais de engajamento na plataforma;
+- entradas, features e resultados úteis para cálculos aprovados.
 
-## Porta existente
+O PostgreSQL continua responsável pelo estado operacional, event store e histórico detalhado.
 
-A aplicação depende de `HubSpotDataGateway`, não de SDK ou endpoint específico.
+## Porta atual
 
-Operações disponíveis:
+A aplicação depende de `HubSpotDataGateway`:
 
 ```text
 write(command)
@@ -22,123 +24,175 @@ readBack(receipt)
 read(query)
 ```
 
-A porta e o `InMemoryHubSpotAdapter` podem ser reaproveitados no adapter real.
+A porta pode evoluir, mas o domínio não deve depender do SDK ou da estrutura física da conta.
 
-## Escrita
+## Classificação obrigatória
 
-Cada comando deve declarar, no mínimo:
+Todo comando deve possuir:
 
 ```text
+syncClassification
+businessPurpose
+calculationOrEngagementUse
+sourceRecordId
+sourceRecordHash
 idempotencyKey
-kind
 objectType
 objectId opcional
-expectedVersion opcional
+associationTargets
 payload
+sensitivity
+requiresReadback
+occurredAt
 ```
+
+`syncClassification` aceita:
+
+```text
+linking_identifier
+engagement_signal
+calculation_input_or_result
+```
+
+Itens classificados como `not_synced` não geram comando HubSpot.
+
+## Capacidades do adapter real
+
+- localizar ou criar contato quando necessário;
+- localizar empresa e operação relacionada;
+- resolver identificadores mínimos e conflitos;
+- materializar propriedades;
+- publicar eventos ou atividades de engajamento;
+- materializar objetos personalizados quando justificado;
+- atualizar features e resultados calculados;
+- executar batch;
+- validar webhooks;
+- consultar estado para readback e reconciliação;
+- listar divergências e reprocessar entregas.
+
+## Escrita
 
 O adapter deve:
 
 - impedir duplicação por idempotência;
 - tratar conflitos de versão;
-- traduzir erros retryable;
-- registrar tentativa e resultado sem expor dados sensíveis;
-- suportar batch quando aplicável.
+- traduzir erros retryable e permanentes;
+- respeitar `429` e limites;
+- suportar batch;
+- retornar receipt rastreável;
+- não aceitar segredo em payload de negócio;
+- validar que a categoria possui finalidade e destino aprovados.
 
 ## Readback
 
-Readback é uma capacidade do adapter, usada quando a confirmação externa é necessária.
+Readback é obrigatório para:
 
-Casos típicos:
-
-- criação de objeto cujo ID será usado imediatamente;
-- escrita crítica sujeita a workflow externo;
+- criação ou resolução de contato/empresa;
+- deduplicação e associação crítica;
+- vínculo com operação de crédito;
+- escrita consumida imediatamente por workflow externo;
 - atualização com expectativa de versão;
-- verificação durante reconciliação.
+- reconciliação.
 
-Não é requisito executar write/readback antes de cada classificação, avaliação, progresso ou ponto.
+Não é necessário bloquear cada ação de aprendizagem durante a sincronização assíncrona.
 
 ## Leitura e snapshots
 
-Leituras do HubSpot usadas pelo LMS devem registrar origem suficiente para auditoria:
+Leituras devem registrar:
 
 ```text
 portalId
 objectType
 objectId
+associationContext
 propertyOrPayloadVersion
 hubspotUpdatedAt
 retrievedAt
-snapshotHash quando necessário
+snapshotHash
+sourceQuery
 ```
 
-Validação de idade e hash é obrigatória apenas quando a regra depender da atualidade ou integridade exata do snapshot.
+## Cobertura de engajamento
+
+O adapter deve suportar destinos para:
+
+- acesso e recorrência;
+- progresso e conclusão;
+- participação e utilidade;
+- tentativas e resultados agregados;
+- práticas e uploads por status;
+- pontos, conquistas, recompensas e ranking;
+- selos e certificados;
+- abandono, retomada e sequência de marcos.
+
+## Cobertura de cálculo
+
+O adapter deve suportar:
+
+- respostas selecionadas quando necessárias;
+- dimensões e escores;
+- arquétipo e maturidade;
+- features comportamentais derivadas;
+- variáveis contextuais autorizadas;
+- resultados de classificação, personalização e pesquisa.
+
+Cada variável deve carregar versão, origem e finalidade.
+
+## Dados excluídos
+
+O adapter não deve sincronizar automaticamente:
+
+- configurações e conteúdo editorial;
+- payloads brutos sem finalidade;
+- arquivos binários e URLs assinadas;
+- logs, traces, filas e retries;
+- tokens, credenciais e segredos;
+- dados temporários de processamento.
 
 ## Adapter em memória
 
-`InMemoryHubSpotAdapter` existe para testes e reproduz:
+O `InMemoryHubSpotAdapter` reproduz criação, atualização, idempotência, readback, atraso de visibilidade, `429`, `5xx` e concorrência.
 
-- criação e atualização;
-- idempotência;
-- conflitos de versão;
-- readback;
-- atraso de visibilidade;
-- `429` e `5xx`;
-- alteração concorrente.
+Ele não comprova:
 
-Ele não define o modelo físico da conta e não é adapter produtivo.
+- modelo físico da conta;
+- limites reais da licença;
+- webhooks reais;
+- cobertura de engajamento e cálculo;
+- operação produtiva.
 
-## Fluxos suportados
-
-### Sincronização assíncrona padrão
+## Fluxo assíncrono
 
 ```text
 outbox do LMS
+→ filtro e transformação pela matriz
 → write idempotente
-→ sucesso ou retry
-→ reconciliação em falha permanente
+→ receipt
+→ sucesso, retry ou reconciliação
 ```
 
-### Escrita crítica
+## Reconciliação
 
-```text
-write
-→ readback
-→ validar identidade/versão
-→ liberar efeito dependente
-```
+A reconciliação deve detectar:
 
-### Entrada do HubSpot
+- item elegível não entregue;
+- registro ou associação ausente;
+- versão atrasada;
+- hash divergente;
+- duplicidade;
+- feature ou resultado desatualizado;
+- categoria sem destino;
+- backlog acima do SLO.
 
-```text
-webhook ou leitura programada
-→ validar origem
-→ atualizar snapshot autorizado
-→ registrar evento de integração
-```
+Deve oferecer dry run, relatório, correção idempotente e auditoria.
 
-## Pendências do adapter real
-
-- autenticação;
-- scopes;
-- objetos e propriedades;
-- associações;
-- busca e deduplicação;
-- batch endpoints;
-- webhooks;
-- limites de requisição;
-- tradução de erros;
-- testes no sandbox.
-
-## Testes existentes
-
-O comando abaixo continua disponível para validar as capacidades mais estritas do gateway:
+## Testes
 
 ```bash
 npm run test:hubspot-contracts
 ```
 
-Esses testes são utilitários de integração, não gate obrigatório para toda mudança de frontend.
+Os testes atuais validam o contrato abstrato, não a integração física.
 
 ## Gates
 
@@ -147,8 +201,13 @@ hubspot_gateway_contract_defined = true
 hubspot_test_adapter_implemented = true
 hubspot_real_adapter_implemented = false
 hubspot_inventory_complete = false
-projection_matrix_approved = false
+hubspot_sync_matrix_approved = false
+engagement_signals_mapped = false
+calculation_variables_mapped = false
+not_synced_categories_documented = false
 async_sync_tested = false
 critical_readback_tested = false
+rate_limit_tested = false
 reconciliation_tested = false
+outage_recovery_tested = false
 ```
