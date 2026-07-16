@@ -1,22 +1,18 @@
-# Solicitação de inventário completo do HubSpot
+# Solicitação de inventário do HubSpot
 
-**Versão:** 1.0  
+**Versão:** 1.1  
 **Data:** 2026-07-16  
 **Status:** P0 para adapter real e usuários reais
 
 ## Objetivo
 
-Obter as informações necessárias para cumprir a premissa de que todos os dados do usuário capturados ou usados possuam representação no HubSpot.
+Obter as informações necessárias para sincronizar, a partir do LMS:
 
-O inventário deve permitir definir:
+- identificadores mínimos de vínculo;
+- dados de engajamento;
+- dados úteis para cálculos aprovados.
 
-- identidade única;
-- modelo físico;
-- eventos comportamentais;
-- associações com negócio e crédito;
-- volumes e limites;
-- segurança;
-- sincronização e reconciliação.
+O inventário não deve transformar o HubSpot no repositório integral do LMS.
 
 Não enviar tokens, segredos, cookies, senhas ou exportações de dados pessoais reais por documentos, issues ou chat.
 
@@ -24,120 +20,108 @@ Não enviar tokens, segredos, cookies, senhas ou exportações de dados pessoais
 
 - portal ID;
 - sandbox ou test account;
-- hubs, tiers e add-ons contratados;
-- disponibilidade de custom objects;
-- disponibilidade de custom behavioral events;
+- hubs, tiers e add-ons;
+- custom objects disponíveis;
+- custom behavioral events disponíveis;
 - limites de propriedades, objetos, eventos e armazenamento;
-- modelo de autenticação aprovado;
-- responsável administrativo;
+- modelo de autenticação;
 - scopes concedíveis;
-- política de criação de app privado ou público;
+- responsável administrativo;
 - limites diários, por segundo e de batch.
 
 ## Objetos e identificadores
 
 - contatos;
 - empresas;
-- negócios/deals;
-- tickets;
-- objetos usados para crédito;
-- objetos usados para capacitação ou relacionamento;
-- objetos personalizados existentes;
-- IDs externos aceitos;
+- deals ou objetos de crédito;
+- objetos de capacitação existentes;
+- objetos personalizados;
+- IDs externos;
 - regras de CPF, CNPJ, e-mail e telefone;
-- regras de deduplicação e merge;
+- deduplicação e merge;
 - associações contato–empresa–crédito;
-- identificadores das bases externas;
-- propriedades já usadas para perfil, segmento, crédito, jornada ou capacitação.
+- identificadores das bases externas.
+
+A integração do LMS deve usar somente os identificadores necessários para localizar e associar corretamente os sinais.
 
 ## Workflows e operação
 
 - workflows que leem ou escrevem campos relevantes;
-- listas e segmentos ativos;
+- listas e segmentos;
 - pipelines e etapas;
-- automações Zapier ou integrações existentes;
+- integrações existentes;
 - SLAs operacionais;
-- responsáveis por dados e CRM;
 - convenção de nomes;
-- processo de aprovação de propriedades/objetos;
+- aprovação de novas propriedades ou objetos;
 - processo de correção de duplicidades;
 - política de arquivamento e exclusão.
 
 ## APIs e eventos
 
-- endpoints disponíveis;
-- batch endpoints;
-- search endpoints;
+- endpoints de objetos, search e batch;
 - webhooks;
 - custom behavioral events;
-- timeline/engagements;
-- import APIs quando aplicável;
-- limites e headers de rate limit;
-- comportamento de consistência eventual;
-- suporte a idempotência externa;
+- timeline ou engagements;
+- headers e limites de rate limit;
+- consistência eventual;
+- suporte a idempotência;
 - retenção de eventos;
 - mecanismos de replay.
 
-## Matriz completa de dados a aprovar
+## Matriz de sincronização
 
-A integração deve mapear todas as categorias de dados do usuário. A matriz define como representar cada categoria, não se ela será ignorada.
+Cada campo ou evento deve receber uma classificação:
 
-| Categoria | Exemplos | Finalidade | Destino físico | Frequência | Histórico | Sensibilidade |
-|---|---|---|---|---|---|---|
-| identidade | nome, e-mail, CPF, telefone, CNPJ | identidade única | a definir | criação/alteração | sim | pessoal |
-| aquisição | UTM, origem, campanha | relacionamento e análise | a definir | entrada/alteração | sim | operacional |
-| negócio | empresa, setor, porte, vínculo | User 360 | a definir | criação/alteração | sim | pessoal/negócio |
-| crédito | operação, etapa e contexto autorizado | jornada e personalização | a definir | alteração | sim | elevado |
-| diagnóstico | versão, respostas, resultado | personalização e pesquisa | a definir | resposta/conclusão/recálculo | sim | elevado |
-| arquétipo e maturidade | atribuição, histórico, override | personalização | a definir | alteração | sim | elevado |
-| elegibilidade e recomendação | trilhas visíveis e ativações | experiência | a definir | decisão | sim | comportamental |
-| progresso | sessão, atividade, conclusão | acompanhamento | a definir | evento/marco | sim | comportamental |
-| avaliações | respostas, tentativas, utilidade | aprendizagem | a definir | submissão | sim | comportamental |
-| participação | comentários e interações | engajamento | a definir | evento | sim | pessoal |
-| práticas e uploads | envio, consentimento, scan, revisão | evidência | a definir | alteração | sim | elevado |
-| gamificação | pontos, conquistas, ranking, recompensas | engajamento | a definir | evento/marco | sim | comportamental |
-| credenciais | selos, certificados, revogação | reconhecimento | a definir | emissão/alteração | sim | operacional |
-| comunicação | tarefa, mensagem, intervenção | relacionamento | a definir | evento | sim | pessoal |
-| eventos comportamentais | ação, sequência, tempo, contexto | dados e pesquisa | a definir | evento/lote | sim | comportamental |
+```text
+linking_identifier
+engagement_signal
+calculation_input_or_result
+not_synced
+```
 
-## Eventos de alto volume
+### Identificadores mínimos
 
-Para cada ação do usuário, avaliar:
+| Dado | Finalidade | Destino | Regra de uso |
+|---|---|---|---|
+| ID interno | vínculo | a definir | obrigatório para rastreabilidade |
+| ID contato HubSpot | vínculo | contato | obrigatório quando resolvido |
+| ID empresa | vínculo | associação | somente quando necessário |
+| ID operação de crédito | vínculo/contexto | associação | somente quando autorizado |
 
-- custom behavioral event;
-- custom object;
-- engagement/timeline;
-- batch;
-- snapshot/agregado;
-- referência íntegra ao detalhe recuperável.
+### Engajamento
 
-A estratégia deve preservar no mínimo:
+| Categoria | Exemplos | Frequência possível | Granularidade a definir |
+|---|---|---|---|
+| acesso | primeiro/último acesso, frequência | evento ou agregado | diária/semanal/evento |
+| progresso | início, percentual, conclusão | evento ou marco | atividade/trilha/jornada |
+| participação | comentário, avaliação de utilidade | evento | metadado ou conteúdo aprovado |
+| avaliação | tentativa, aprovação, resultado | evento ou agregado | avaliação/versão |
+| prática | envio, scan, revisão | alteração de estado | sem binário |
+| gamificação | pontos, conquistas, recompensas | evento ou saldo | ledger/agregado |
+| credenciais | selo, certificado, revogação | evento | credencial/versão |
+| retenção | abandono, retorno, recorrência | agregado | janela temporal |
 
-- ID do usuário;
-- tipo da ação;
-- timestamp;
-- sequência;
-- jornada/atividade;
-- versão;
-- contexto;
-- ID do evento de origem.
+### Dados úteis para cálculo
 
-Qualquer redução de granularidade precisa ser tecnicamente justificada e aprovada.
+| Categoria | Exemplos | Condição de sincronização |
+|---|---|---|
+| diagnóstico | respostas selecionadas, dimensões, resultado | necessário ao cálculo aprovado |
+| perfil derivado | arquétipo, maturidade, confiança | metodologia versionada |
+| features | frequência, consistência, conclusão | definição e versão aprovadas |
+| contexto | momento autorizado, segmento | finalidade documentada |
+| resultado | classificação, recomendação, ativação | rastreabilidade e explicação |
+| pesquisa | variáveis e desfechos | protocolo e governança aprovados |
 
-## Arquivos
+### Não sincronizados
 
-Definir como o HubSpot representará:
-
-- tipo do arquivo;
-- proprietário;
-- atividade/jornada;
-- consentimento de uso;
-- status de scan;
-- status de revisão;
-- referência segura;
-- retenção.
-
-Não armazenar segredo, URL assinada temporária nem arquivo bloqueado.
+- configuração editorial completa;
+- conteúdo integral;
+- catálogo de questões e alternativas;
+- respostas abertas sem finalidade específica;
+- arquivos binários e URLs assinadas;
+- logs, traces, filas e retries;
+- segredos e tokens;
+- dados temporários sem uso de engajamento ou cálculo.
 
 ## Privacidade e acesso
 
@@ -146,24 +130,22 @@ Obter:
 - times e perfis com acesso;
 - campos sensíveis;
 - mecanismos de ocultação;
-- exportação e atendimento ao titular;
+- exportação e direitos do titular;
 - retenção e exclusão;
 - logs de acesso;
-- regras de uso em workflow;
-- restrições de crédito;
-- regiões e subprocessadores aplicáveis.
+- restrições para uso em crédito;
+- regiões e subprocessadores.
 
 ## Reconciliação
 
-Definir consultas e relatórios para detectar:
+Definir consultas para detectar:
 
-- contato ausente;
-- associação ausente;
-- dado desatualizado;
-- evento não entregue;
+- contato ou associação ausente;
+- sinal elegível não entregue;
+- feature ou resultado desatualizado;
 - duplicidade;
 - hash divergente;
-- categoria sem destino;
+- categoria sem decisão de sincronização;
 - backlog acima do limite;
 - erro permanente.
 
@@ -173,16 +155,14 @@ Definir consultas e relatórios para detectar:
 hubspot_account_metadata_received = true
 hubspot_sandbox_available = true
 license_and_feature_limits_recorded = true
-identity_and_deduplication_defined = true
-company_and_credit_associations_defined = true
-all_user_data_categories_inventoried = true
-complete_user_data_matrix_approved = true
-behavioral_event_strategy_approved = true
+identity_linking_defined = true
+engagement_catalog_approved = true
+calculation_variable_catalog_approved = true
+not_synced_catalog_approved = true
+hubspot_sync_matrix_approved = true
 required_scopes_approved = true
 api_and_batch_limits_recorded = true
 webhook_strategy_defined = true
 privacy_and_access_rules_recorded = true
 reconciliation_queries_defined = true
 ```
-
-Somente depois desse gate o adapter real pode ser considerado corretamente especificado.
