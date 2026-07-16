@@ -7,7 +7,7 @@ const root = resolve(import.meta.dirname, '../..');
 const read = (file) => readFile(resolve(root, file), 'utf8');
 
 async function findMigration(suffix) {
-  const names = (await readdir(resolve(root, 'supabase/migrations'))
+  const names = (await readdir(resolve(root, 'supabase/migrations')))
     .filter((name) => name.endsWith(suffix))
     .sort();
   assert.equal(names.length, 1, `expected one migration ending with ${suffix}`);
