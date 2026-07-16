@@ -142,7 +142,7 @@ npm run test:browser-e2e
 - [Hierarquia das fontes](docs/product/SOURCE_AUTHORITY_HIERARCHY.md)
 - [Índice do projeto](PROJECT_INDEX.md)
 - [Premissas e escopo](docs/product/PREMISES_AND_SCOPE.md)
-- [DEC-070 — Escopo HubSpot](docs/decisions/DEC-070-HUBSPOT-SCOPE.md)
+- [DEC-070 — Escopo HubSpot](docs/decisions/HUBSPOT_SCOPE_DECISION.md)
 - [Registro de decisões](docs/decisions/DECISION_LOG.md)
 - [Matriz de rastreabilidade](docs/implementation/PREMISE_TRACEABILITY_MATRIX.md)
 - [Bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md)
