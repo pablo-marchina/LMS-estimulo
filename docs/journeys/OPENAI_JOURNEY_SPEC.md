@@ -1,6 +1,6 @@
 # Especificação da Jornada OpenAI
 
-**Versão da especificação:** 1.0  
+**Versão:** 1.1  
 **Data:** 2026-07-16  
 **Status:** estrutura reconciliada; publicação bloqueada por decisões editoriais
 
@@ -10,25 +10,24 @@ A hierarquia está em [SOURCE_AUTHORITY_HIERARCHY.md](../product/SOURCE_AUTHORIT
 
 Para a Jornada OpenAI:
 
-1. `premissas-desenvolvimento.md` define os requisitos superiores da plataforma;
-2. os documentos de conteúdo do pacote são as fontes editoriais e pedagógicas;
+1. `premissas-desenvolvimento.md` define requisitos superiores da plataforma;
+2. os documentos de conteúdo do pacote são fontes editoriais e pedagógicas;
 3. esta especificação organiza as fontes sem substituí-las;
 4. código, fixtures e protótipos não são fonte editorial;
-5. divergências não são resolvidas por heurística.
+5. divergências não são resolvidas por heurística;
+6. a sincronização HubSpot segue a [DEC-070](../decisions/DEC-070-HUBSPOT-SCOPE.md).
 
-## Fontes editoriais do pacote
+## Fontes editoriais
 
 | Fonte | Papel |
 |---|---|
-| `draft-validacao-jornada-capacitacao-ia-digital-mei_me.md` | visão geral, fluxo, avaliações, envio de resultado e gamificação |
-| `Bloco-01-boas-vindas-e-potencial-da-ia .docx.md` | bloco de boas-vindas e potencial da IA |
+| `draft-validacao-jornada-capacitacao-ia-digital-mei_me.md` | visão geral, fluxo e gamificação |
+| `Bloco-01-boas-vindas-e-potencial-da-ia .docx.md` | boas-vindas e potencial da IA |
 | `bloco-02-base-opcional.docx.md` | bloco base opcional |
-| `trilha-01-marketing-e-vendas-com-ia.docx.md` | Marketing e Vendas com IA |
-| `trilha-02-gestao-com-ia.docx.md` | Gestão com IA |
-| `trilha-03-desenvolvimento-avancado-com-codex.docx.md` | desenvolvimento avançado com Codex |
-| `premissas-desenvolvimento.md` | funcionalidades LMS, dados, HubSpot, interfaces e produção |
-
-Documentos institucionais, arquétipos e jornada de crédito complementam público, linguagem, personalização e contexto, mas não alteram silenciosamente o roteiro editorial.
+| `trilha-01-marketing-e-vendas-com-ia.docx.md` | Marketing e Vendas |
+| `trilha-02-gestao-com-ia.docx.md` | Gestão |
+| `trilha-03-desenvolvimento-avancado-com-codex.docx.md` | desenvolvimento com Codex |
+| `premissas-desenvolvimento.md` | funcionalidades LMS, dados, interfaces e produção |
 
 ## Identidade da jornada
 
@@ -36,13 +35,13 @@ Documentos institucionais, arquétipos e jornada de crédito complementam públi
 |---|---|
 | Programa | Capacitação de Crédito |
 | Jornada | Capacitação em IA para MEI/ME — Estímulo e OpenAI |
-| Público | MEIs e microempresas, com conteúdo inicial e extensão avançada |
+| Público | MEIs e microempresas |
 | Idioma | Português do Brasil |
 | Canal | Plataforma web responsiva |
 | Modalidade | Assíncrona, curta, prática e modular |
 | Ferramenta principal | ChatGPT |
 | Ferramenta avançada | Codex |
-| Status | `draft` até fechamento dos gates editoriais |
+| Status | `draft` até fechamento editorial |
 
 ## Objetivo
 
@@ -52,12 +51,12 @@ Permitir que pequenos empreendedores usem IA de forma prática e segura para:
 - vendas e atendimento;
 - organização e gestão;
 - produção de materiais;
-- criação de artefatos digitais com Codex;
-- reflexão sobre aplicações no próprio negócio.
+- criação de artefatos digitais;
+- reflexão sobre aplicações no negócio.
 
-Conclusão não comprova impacto econômico, melhora de crédito ou redução de risco.
+Conclusão não comprova impacto econômico ou redução de risco de crédito.
 
-## Estrutura oficial atual
+## Estrutura atual
 
 ```text
 entrada
@@ -69,25 +68,25 @@ entrada
    └─ desenvolvimento avançado com Codex conforme regra aprovada
 ```
 
-A ordem exata de desbloqueio, certificados e dependências deve seguir a versão editorial aprovada. A plataforma deve suportar as regras como dados versionados.
+A ordem de desbloqueio, certificados e dependências deve seguir a versão editorial aprovada e ser armazenada como dados versionados.
 
 ## Bloco 1 — Boas-vindas e potencial da IA
 
 Objetivos:
 
-- apresentar a iniciativa Estímulo e OpenAI;
-- reduzir ansiedade e aproximar IA da realidade do empreendedor;
-- apresentar o professor e o propósito da capacitação;
+- apresentar a iniciativa;
+- reduzir ansiedade;
+- aproximar IA da realidade do empreendedor;
 - mostrar aplicações práticas;
-- explicar o funcionamento da jornada;
-- gerar primeira participação e reflexão.
+- explicar a jornada;
+- gerar primeira participação.
 
-Capacidades de plataforma associadas:
+Capacidades associadas:
 
 - vídeo e slides;
-- comentários ou interação prevista;
+- interação prevista;
 - materiais complementares;
-- avaliação final do bloco;
+- avaliação final;
 - selo conforme regra aprovada;
 - eventos de acesso, progresso, participação e conclusão.
 
@@ -95,45 +94,29 @@ Capacidades de plataforma associadas:
 
 Objetivos:
 
-- ensinar como formular pedidos melhores;
-- apresentar contexto, tarefa, restrições e formato;
-- incentivar revisão iterativa;
-- apresentar configurações e personalização do ChatGPT;
+- formular pedidos melhores;
+- usar contexto, tarefa, restrições e formato;
+- revisar iterativamente;
+- configurar e personalizar o ChatGPT;
 - abordar segurança e uso responsável.
 
-Regras confirmadas:
+O bloco é opcional, pode ser recomendado e não se torna obrigatório sem aprovação.
 
-- o bloco é opcional;
-- a plataforma pode recomendá-lo;
-- sua conclusão e reconhecimento devem ser versionados;
-- não deve ser transformado em obrigatório sem aprovação.
+## Trilha 1 — Marketing e Vendas
 
-## Trilha 1 — Marketing e Vendas com IA
-
-Resultados esperados incluem apoio para:
+Resultados esperados:
 
 - identidade visual inicial;
 - ideias e calendário de conteúdo;
 - imagens e legendas;
-- peças de produto/serviço;
+- peças de produto ou serviço;
 - scripts de atendimento e vendas;
 - respostas a objeções;
 - mensagens e propostas comerciais.
 
-A trilha deve possuir:
+## Trilha 2 — Gestão
 
-- aulas curtas;
-- demonstrações;
-- pausas práticas;
-- quick checks;
-- materiais;
-- avaliação final;
-- entrega prática quando definida;
-- selo e/ou credencial conforme regra aprovada.
-
-## Trilha 2 — Gestão com IA
-
-Resultados esperados incluem apoio para:
+Resultados esperados:
 
 - organização de dados e arquivos;
 - tabela financeira inicial;
@@ -142,36 +125,33 @@ Resultados esperados incluem apoio para:
 - proposta comercial;
 - leitura inicial assistida de contrato.
 
-Guardrail editorial:
+Guardrail:
 
 > IA é apoio e não substitui contador, advogado ou gestor responsável.
 
-A trilha deve possuir aulas, práticas, avaliações e reconhecimento versionados.
-
-## Trilha 3 — Desenvolvimento avançado com Codex
+## Trilha 3 — Codex
 
 Objetivos:
 
 - explicar Codex como agente de desenvolvimento;
-- mostrar instalação e alternativas de uso;
-- transformar um pedido em projeto;
+- transformar pedido em projeto;
 - criar e revisar artefatos digitais;
-- executar testes e revisar mudanças;
+- executar testes;
 - abordar Git, comandos, credenciais, dados e publicação segura.
 
-Resultados previstos incluem:
+Resultados previstos:
 
 - site simples;
 - proposta estruturada;
 - formulário ou artefato equivalente;
 - testes e validação de build;
-- preparação para compartilhamento/publicação.
+- preparação para compartilhamento.
 
-A duração, pré-requisitos, avaliação e credencial final devem seguir aprovação editorial; divergências atuais permanecem bloqueadas.
+Duração, pré-requisitos, avaliação e credencial final permanecem bloqueados até aprovação.
 
 ## Padrão pedagógico
 
-Cada unidade deve procurar representar separadamente:
+Cada unidade deve representar separadamente:
 
 1. problema real;
 2. exemplo guiado;
@@ -181,55 +161,46 @@ Cada unidade deve procurar representar separadamente:
 6. material complementar;
 7. avaliação de utilidade em cinco estrelas.
 
-Esses itens geram eventos distintos. Assistir conteúdo não equivale a compreender, aplicar ou obter resultado de negócio.
+Assistir conteúdo não equivale a compreender, aplicar ou obter resultado no negócio.
 
-## Camadas de avaliação
+## Avaliações
 
-A plataforma deve suportar:
+A plataforma suporta:
 
-- participação/comentários;
-- quick check por aula ou atividade;
-- avaliação de bloco/trilha;
+- participação e comentários;
+- quick check;
+- avaliação de bloco ou trilha;
 - prova final quando definida;
 - atividade prática;
 - revisão humana;
-- avaliação de utilidade em estrelas;
+- avaliação em estrelas;
 - tentativas e feedback;
 - histórico completo.
 
-Ainda devem ser aprovados:
-
-- perguntas e alternativas;
-- respostas e justificativas;
-- nota mínima;
-- limite e intervalo de tentativas;
-- randomização;
-- feedback;
-- regras de desbloqueio.
+Ainda devem ser aprovados perguntas, alternativas, respostas, notas, tentativas, randomização, feedback e desbloqueio.
 
 ## Práticas e uploads
 
-Quando previstos, os envios devem registrar:
+Quando previstos, os envios registram:
 
 - participante;
 - atividade e versão;
 - tipo de entrega;
 - arquivo ou conteúdo;
-- consentimento/autorização de uso;
+- consentimento de uso;
 - termos vigentes;
 - status de scan;
 - revisão e feedback;
-- seleção para caso de estudo;
-- eventos e sincronização HubSpot.
+- seleção para caso;
+- eventos estruturados.
 
-Envio para divulgação depende de autorização explícita e revisão. Dados sensíveis devem ser removidos ou bloqueados.
+O HubSpot recebe apenas os sinais de engajamento e variáveis de cálculo elegíveis pela DEC-070, como estado do envio, conclusão, avaliação e resultado derivado. Binários e payloads brutos permanecem fora do CRM.
 
 ## Gamificação e credenciais
 
-A plataforma deve suportar:
+A plataforma suporta:
 
-- pontos;
-- histórico do ledger;
+- pontos e ledger;
 - conquistas;
 - recompensas;
 - ranking;
@@ -237,47 +208,43 @@ A plataforma deve suportar:
 - certificados;
 - revogação e validação pública.
 
-Valores, critérios, dependências e proteções contra abuso permanecem configuração editorial a aprovar.
+Valores e critérios permanecem configuração editorial a aprovar.
 
 ## Personalização
 
-A visibilidade e recomendação podem considerar:
+Pode considerar:
 
 - arquétipo;
-- maturidade operacional;
+- maturidade;
 - diagnóstico realizado ou não;
 - contexto autorizado de crédito;
 - comportamento anterior;
 - prontidão para a ferramenta.
 
-Na primeira versão:
-
-- usuário sem diagnóstico vê conteúdo sem label restritiva de arquétipo;
-- regras oficiais de ativação devem ser versionadas;
-- personalização não pode influenciar crédito automaticamente.
+Usuário sem diagnóstico vê conteúdo sem restrição por arquétipo. Personalização não influencia crédito automaticamente.
 
 ## Eventos obrigatórios
 
-A jornada deve registrar, conforme aplicável:
+Conforme aplicável:
 
 - visualização e início;
 - progresso de mídia;
-- conclusão de seção e atividade;
+- conclusão;
 - resposta e tentativa;
 - comentário;
-- avaliação por estrelas;
+- avaliação em estrelas;
 - prática e upload;
 - scan e revisão;
 - ponto e conquista;
-- emissão ou revogação de credencial;
+- credencial;
 - recomendação e ativação;
 - abandono, retomada e conclusão.
 
-Todos os dados do usuário capturados ou usados devem possuir representação HubSpot conforme matriz aprovada.
+Todos permanecem no event store detalhado. Somente eventos ou agregados classificados como `engagement_signal` ou `calculation_input_or_result` são sincronizados ao HubSpot.
 
-## Requisitos de interface
+## Interface
 
-A Jornada OpenAI deve operar nas telas superiores definidas nas premissas:
+A jornada deve operar em:
 
 - home;
 - catálogo de trilhas;
@@ -285,26 +252,23 @@ A Jornada OpenAI deve operar nas telas superiores definidas nas premissas:
 - atividade multimídia;
 - comentários;
 - avaliação;
-- prática/upload;
+- prática e upload;
 - perfil;
 - engajamento;
 - administração de usuários, trilhas e biblioteca.
 
 ## Bloqueadores editoriais
 
-- divergências de duração;
-- numeração e unidades conflitantes;
-- vídeos, slides e materiais finais;
+- divergências de duração e numeração;
+- mídias e materiais finais;
 - avaliações completas;
 - critérios de conclusão;
-- rubricas;
-- obrigatoriedade das práticas;
-- regras de pontos;
-- regras de selos e certificados;
+- rubricas e práticas;
+- regras de pontos e credenciais;
 - termos de upload;
 - transcrições e acessibilidade;
 - revisão de segurança, finanças, contratos e privacidade;
-- adequação da experiência de ChatGPT/Codex ao acesso real do público.
+- adequação de ChatGPT e Codex ao acesso real do público.
 
 ## Critério de publicação
 
@@ -321,5 +285,5 @@ upload_terms_approved = true
 accessibility_assets_ready = true
 journey_configuration_publishable = true
 real_participant_e2e_passed = true
-hubspot_user_data_sync_passed = true
+hubspot_engagement_and_calculation_sync_passed = true
 ```
