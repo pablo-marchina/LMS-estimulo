@@ -16,7 +16,7 @@ A resolução de conflitos segue [SOURCE_AUTHORITY_HIERARCHY.md](docs/product/SO
 5. ADRs, documentação técnica, código e testes
 ```
 
-A decisão mais recente de escopo do HubSpot está em [DEC-070](docs/decisions/DEC-070-HUBSPOT-SCOPE.md).
+A decisão mais recente de escopo do HubSpot está em [DEC-070](docs/decisions/HUBSPOT_SCOPE_DECISION.md).
 
 ## Objetivo final
 
@@ -128,7 +128,7 @@ AWS-STAGING = open
 
 ### Decisões e implementação
 
-- [DEC-070 — Escopo HubSpot](docs/decisions/DEC-070-HUBSPOT-SCOPE.md)
+- [DEC-070 — Escopo HubSpot](docs/decisions/HUBSPOT_SCOPE_DECISION.md)
 - [Registro de decisões](docs/decisions/DECISION_LOG.md)
 - [ADR HubSpot](docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md)
 - [Rastreabilidade](docs/implementation/PREMISE_TRACEABILITY_MATRIX.md)
