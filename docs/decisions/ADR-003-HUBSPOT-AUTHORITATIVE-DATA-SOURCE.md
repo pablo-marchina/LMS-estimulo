@@ -1,236 +1,187 @@
-# ADR-003 — HubSpot como centro das informações do usuário
+# ADR-003 — HubSpot para engajamento e dados úteis a cálculos
 
-**Status:** refinada e alinhada à fonte superior  
+**Status:** aprovado e refinado  
 **Data original:** 2026-07-10  
 **Última revisão:** 2026-07-16  
 **Escopo:** plataforma LMS e integrações da Estímulo
 
 ## Autoridade
 
-Esta decisão implementa `premissas-desenvolvimento.md` conforme [SOURCE_AUTHORITY_HIERARCHY.md](../product/SOURCE_AUTHORITY_HIERARCHY.md).
-
-O requisito superior é:
-
-> todos os dados capturados ou usados relacionados ao usuário devem estar no HubSpot, que será o centro de suas informações.
-
-Este ADR pode escolher o mecanismo técnico, mas não pode limitar o conjunto de dados do usuário representado no CRM.
+Esta decisão implementa `premissas-desenvolvimento.md`, [SOURCE_AUTHORITY_HIERARCHY.md](../product/SOURCE_AUTHORITY_HIERARCHY.md) e a atualização aprovada em 2026-07-16.
 
 ## Contexto
 
-A plataforma precisa simultaneamente:
+A plataforma precisa registrar interações detalhadas, operar com consistência transacional e disponibilizar no HubSpot sinais úteis à operação e aos cálculos futuros.
 
-- registrar todas as ações relevantes do usuário como dados estruturados;
-- manter consistência transacional, versionamento, idempotência e auditoria;
-- operar durante indisponibilidades temporárias de integrações;
-- centralizar no HubSpot identidade, relacionamento, comportamento, progresso, contexto e histórico do usuário;
-- permitir associação futura entre capacitação e crédito no mesmo registro.
-
-Usar o HubSpot como banco transacional síncrono de cada ação criaria acoplamento e risco operacional. Usar apenas projeções seletivas, por outro lado, não atenderia à exigência de centralização completa dos dados do usuário.
+Transformar o HubSpot no repositório integral do LMS criaria acoplamento, custo, volume e riscos de privacidade desnecessários. Armazenar somente dados agregados sem regra clara poderia, por outro lado, eliminar sinais relevantes de engajamento ou cálculo.
 
 ## Decisão
 
 ### 1. Papel do HubSpot
 
-O HubSpot é o centro recuperável das informações do usuário e deve possuir representação de todas as categorias de dados do usuário capturadas ou utilizadas pelo LMS.
+O HubSpot recebe somente:
 
-Isso inclui, no mínimo:
+1. **identificadores mínimos de vínculo**, necessários para associar o registro ao contato, empresa ou operação corretos;
+2. **informações de engajamento do usuário na plataforma**;
+3. **informações que possam ajudar em cálculos aprovados**, incluindo entradas, features e resultados de diagnóstico, classificação, personalização, análise ou pesquisa.
 
-- identidade, contato, CPF, telefone e CNPJ quando aplicável;
-- UTMs, origem e consentimentos relevantes;
-- negócio e vínculos com empresas;
-- vínculo e momento da jornada de crédito;
-- diagnóstico, respostas, versão, resultado e histórico;
-- arquétipo vigente e histórico de atribuições;
-- maturidade e outros contextos usados na personalização;
-- matrículas, trilhas disponíveis e recomendações;
-- progresso, sessões, atividades, avaliações e tentativas;
-- comentários, avaliações de utilidade e práticas;
-- uploads e referências seguras aos arquivos;
-- pontos, conquistas, ranking, recompensas, selos e certificados;
-- eventos comportamentais e sua sequência/contexto;
-- comunicações, tarefas, segmentos e intervenções;
-- dados usados ou produzidos em pesquisas futuras autorizadas.
+O HubSpot não é:
 
-A representação pode usar propriedades, objetos padrão, objetos personalizados, associações, eventos ou outros recursos aprovados da conta real.
+- banco transacional das aulas;
+- event store integral;
+- repositório de conteúdo editorial;
+- storage de arquivos;
+- sistema de logs técnicos;
+- destino automático de todo campo existente no LMS.
 
 ### 2. Papel do PostgreSQL
 
-O PostgreSQL permanece o banco operacional e técnico do LMS para:
+O PostgreSQL é a fonte operacional e detalhada para:
 
-- transações e concorrência;
 - definições e versões;
-- sessões e estado operacional;
+- matrículas, sessões e estado;
+- respostas e tentativas completas;
+- comentários e submissões;
 - eventos granulares;
 - outbox, inbox e idempotência;
-- auditoria técnica;
-- processamento e reconciliação;
-- disponibilidade do produto durante falhas temporárias do CRM.
+- auditoria e reconciliação;
+- arquivos e metadados operacionais;
+- cálculo e histórico reproduzível.
 
-O PostgreSQL não substitui a obrigação de representação no HubSpot. Ele é a origem operacional e o mecanismo de entrega confiável.
+### 3. Classificação da sincronização
 
-### 3. Matriz completa de dados
-
-Cada categoria de dado do usuário deve declarar:
+Cada campo, evento ou feature deve ser classificado como:
 
 ```text
-source_entity_or_event
-business_name
-business_purpose
-personal_data_classification
-hubspot_object
-hubspot_property_event_or_association
-representation_mode
-transformation
-sync_frequency
-maximum_acceptable_delay
-retention
-access_scope
-reconciliation_rule
-failure_owner
+linking_identifier
+engagement_signal
+calculation_input_or_result
+not_synced
 ```
 
-A matriz não decide se um dado do usuário será integrado. Ela decide **como** será integrado.
+A matriz deve declarar:
 
-Exceções somente são permitidas quando:
+```text
+source
+classification
+business_purpose
+calculation_or_engagement_use
+hubspot_destination
+transformation
+aggregation
+sync_frequency
+sensitivity
+retention
+reconciliation_rule
+```
 
-- o item não é informação do usuário, como segredo ou log puramente técnico;
-- existe limitação técnica, contratual, legal ou de volume comprovada;
-- uma representação alternativa preserva a recuperação e a rastreabilidade;
-- a exceção é aprovada e registrada.
+### 4. Dados de engajamento
 
-### 4. Eventos comportamentais
+Podem ser sincronizados, conforme finalidade e granularidade aprovadas:
 
-Todas as ações relevantes devem ser persistidas como eventos estruturados no event store.
+- primeiro e último acesso;
+- frequência, recorrência e retorno;
+- início, progresso e conclusão;
+- consumo de conteúdo e retomada;
+- participação, comentários e avaliações de utilidade;
+- tentativas, aprovação e resultados agregados;
+- práticas e uploads por status, sem binário;
+- pontos, conquistas, recompensas, selos e certificados;
+- abandono e sequência de marcos;
+- recomendações e ativações recebidas.
 
-O HubSpot deve receber representação recuperável desses eventos por uma estratégia aprovada, que pode ser:
+O corpo integral de comentários, respostas abertas ou arquivos só será sincronizado quando houver finalidade específica e aprovação de privacidade.
 
-- evento comportamental ou custom behavioral event;
-- objeto personalizado associado ao contato/empresa;
-- atividade/timeline adequada;
-- agregado acompanhado de referência íntegra ao detalhe;
-- lote ou snapshot quando a conta não suportar um registro por evento.
+### 5. Dados úteis para cálculo
 
-Uma referência ou agregado só encerra o requisito quando a operação consegue recuperar o detalhe exigido e a solução foi aprovada. “Não projetar cliques por padrão” não é mais uma regra válida para ações do usuário abrangidas pela premissa.
+Podem ser sincronizados quando forem necessários a um cálculo aprovado e versionado:
 
-### 5. Sincronização
+- respostas selecionadas do diagnóstico;
+- escores por dimensão;
+- arquétipo e maturidade;
+- confiança, corte ou motivo de abstenção quando metodologicamente válidos;
+- variáveis contextuais autorizadas;
+- features derivadas de engajamento;
+- resultado de classificação ou personalização;
+- desfechos usados em avaliação ou pesquisa.
 
-O fluxo padrão é assíncrono e confiável:
+“Pode ajudar no cálculo” não autoriza sincronização indiscriminada. Cada variável precisa de finalidade, versão, origem, qualidade e governança.
+
+### 6. Dados não sincronizados por padrão
+
+- configurações editoriais completas;
+- conteúdos, questões e alternativas como catálogo;
+- payloads brutos sem utilidade aprovada;
+- logs técnicos, traces, filas e retries;
+- segredos e tokens;
+- arquivos binários e URLs assinadas;
+- dados temporários de processamento;
+- informação duplicada sem necessidade operacional ou analítica.
+
+### 7. Sincronização
 
 ```text
 transação no LMS
 → estado + evento + outbox
-→ worker de transformação
+→ transformação conforme matriz
 → escrita idempotente no HubSpot
 → receipt
 → retry ou reconciliação
 ```
 
-Readback é obrigatório quando a ação seguinte depende de confirmação do HubSpot, por exemplo:
+Readback é obrigatório quando a próxima ação depende da confirmação do CRM, como resolução de identidade, associação com empresa/crédito ou escrita crítica usada imediatamente.
 
-- resolução ou criação de identidade;
-- deduplicação de contato/empresa;
-- associação com operação de crédito;
-- escrita crítica consumida imediatamente por workflow externo;
-- confirmação de versão antes de ação irreversível.
+### 8. Identidade
 
-Progresso e estudo podem continuar durante indisponibilidade temporária, desde que nenhuma informação seja perdida e o backlog de sincronização seja monitorado.
+Dados CRM de identidade podem existir no HubSpot independentemente do LMS. A integração do LMS usa somente identificadores mínimos para localizar e associar os sinais ao registro correto.
 
-### 6. Identidade única
-
-Clientes com crédito devem ser vinculados ao mesmo registro já existente.
-
-Clientes sem crédito devem ser criados com:
-
-- nome;
-- e-mail;
-- CPF;
-- telefone;
-- CNPJ opcional;
-- origem/UTMs;
-- identificadores internos necessários.
-
-Quando houver crédito posterior, a operação deve ser associada ao mesmo usuário. Deduplicação não pode depender apenas de e-mail e deve seguir regras aprovadas para CPF, CNPJ, telefone, associações e conflitos.
-
-### 7. Configuração e conteúdo
-
-Formulários, jornadas, avaliações e políticas editoriais podem ser administrados e versionados no LMS.
-
-O HubSpot deve receber as informações relacionadas ao usuário e as referências/versões necessárias para interpretar seu histórico. Não é obrigatório transformar toda entidade editorial sem usuário associado em objeto CRM.
-
-### 8. Arquivos
-
-Binários permanecem em storage privado apropriado.
-
-O HubSpot recebe, quando o arquivo fizer parte do histórico do usuário:
-
-- tipo e finalidade;
-- proprietário e contexto;
-- status de segurança e revisão;
-- consentimento de uso;
-- identificador/referência segura;
-- metadados necessários para operação.
-
-URLs assinadas temporárias, segredos e conteúdo inseguro não são persistidos no CRM.
+Deduplicação não deve depender apenas de e-mail e precisa de regras aprovadas para CPF, CNPJ, telefone, IDs internos e conflitos.
 
 ### 9. Privacidade e crédito
 
-A obrigação de centralização não elimina:
-
-- minimização técnica;
-- controle de acesso;
-- finalidade;
-- retenção;
-- transparência;
-- direitos do titular;
-- necessidade de validação antes de uso em crédito.
-
-Nenhum arquétipo ou sinal educacional pode aprovar, reprovar ou alterar crédito sem governança específica.
+- dados sincronizados possuem finalidade, acesso e retenção;
+- dados sensíveis usam granularidade mínima necessária;
+- uso em cálculo deve ser explicável e versionado;
+- sinais educacionais ou comportamentais não podem decidir crédito sem validação metodológica, análise de vieses, revisão humana e aprovação institucional.
 
 ## Consequências
 
 ### Positivas
 
-- cumpre a premissa de centro único das informações do usuário;
-- preserva robustez transacional no LMS;
-- permite visão completa de identidade, aprendizagem e relacionamento;
-- reduz perda de dados durante falhas de integração;
-- prepara a base para pesquisa futura e intervenções.
+- mantém o HubSpot útil para relacionamento e análise;
+- reduz volume e duplicação desnecessários;
+- preserva detalhe e reprodutibilidade no PostgreSQL;
+- permite evolução de cálculos sem transformar o CRM em banco operacional;
+- melhora governança e minimização.
 
 ### Riscos
 
-- maior volume e complexidade no HubSpot;
-- necessidade provável de objetos/eventos personalizados;
-- limites de API e licença;
-- maior responsabilidade de privacidade;
-- necessidade de reconciliação e monitoramento permanentes;
-- possível necessidade de agregação aprovada para eventos de alta frequência.
+- perda de detalhe se agregações forem mal definidas;
+- sincronização de variáveis sem finalidade clara;
+- divergência entre PostgreSQL e HubSpot;
+- uso indevido de sinais em crédito.
 
-Esses riscos devem ser resolvidos tecnicamente ou escalados como bloqueadores. Não autorizam reduzir o requisito silenciosamente.
+Esses riscos exigem matriz, testes, reconciliação e governança.
 
 ## Gates obrigatórios
 
 ```text
 hubspot_inventory_complete = true
 hubspot_license_and_limits_verified = true
-complete_user_data_matrix_approved = true
-identity_deduplication_rules_approved = true
+hubspot_sync_matrix_approved = true
+identity_linking_rules_approved = true
 hubspot_real_adapter_implemented = true
-all_user_data_categories_mapped = true
-behavioral_event_representation_tested = true
-idempotency_retry_and_rate_limit_tested = true
+engagement_signals_mapped = true
+calculation_variables_mapped = true
+not_synced_categories_documented = true
+idempotency_retry_rate_limit_tested = true
 reconciliation_tested = true
-critical_write_readback_tested = true
+critical_readback_tested = true
 outage_backlog_recovery_tested = true
-personal_data_access_controls_tested = true
-credit_decision_from_unvalidated_training_signal = false
-raw_secrets_sent_to_hubspot = false
+credit_decision_from_unvalidated_signal = false
+raw_secrets_or_binaries_sent = false
 ```
 
 ## Relação com decisões anteriores
 
-Esta revisão:
-
-- preserva PostgreSQL como banco operacional;
-- preserva sincronização assíncrona e outbox;
-- substitui a interpretação de que somente “projeções relevantes” escolhidas tecnicamente precisam chegar ao HubSpot;
-- implementa DEC-066 e a autoridade de `premissas-desenvolvimento.md`.
+Esta revisão preserva PostgreSQL, outbox e sincronização assíncrona, mas substitui a interpretação de que todos os dados do LMS deveriam ser representados no HubSpot.
