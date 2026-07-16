@@ -1,29 +1,40 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 3.9  
-**Data:** 2026-07-15  
-**Status:** ativo
+**Versão:** 4.0  
+**Data:** 2026-07-16  
+**Status:** ativo e alinhado à hierarquia canônica
 
-Este documento registra somente estado, lacunas e critérios de encerramento. A ordem de execução e o plano de ação não são versionados no repositório.
+Este documento registra estado, lacunas e critérios de encerramento. A fonte superior é [SOURCE_AUTHORITY_HIERARCHY.md](../product/SOURCE_AUTHORITY_HIERARCHY.md).
 
 ## Regras
 
-- `P0` bloqueia a implementação oficial ou a entrada de usuários reais;
+- `P0` bloqueia a entrada de usuários reais ou a entrega oficial;
 - `P1` deve ser resolvido antes da produção;
+- `P2` pode ser resolvido após piloto somente com aceite explícito;
 - configuração sintética não encerra requisito oficial;
+- teste de interface com backend sintético não encerra E2E real;
+- capacidade genérica não encerra regra de conteúdo oficial;
 - dívida técnica contida não é bloqueador sem risco ou dependência concreta;
 - encerramento exige evidência executável proporcional ao requisito;
-- migrations aplicadas não são editadas.
+- migrations aplicadas nunca são editadas;
+- limitação técnica não reduz requisito superior; gera bloqueador e alternativas.
 
 ## Bloqueadores ativos
 
 | ID | Severidade | Lacuna | Critério de encerramento |
 |---|---|---|---|
-| `PRODUCT-CONFIGURATION` | P0 | o manifesto estrutural existe e impede inferências, mas ainda faltam perguntas/opções homologadas, scoring, desempate, textos finais, ativações, avaliações, regras de credencial e Jornada OpenAI publicável | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
-| `IDENTITY-SITE-INTEGRATION` | P0 | o cadastro controlado de teste existe, mas login real, entrada pelo site e ciclo oficial de identidade não estão comprovados | identidade única, sessão e permissões testadas |
-| `HUBSPOT-PHYSICAL-INTEGRATION` | P0 | adapter e modelo físico reais ausentes | inventário, matriz de projeção, retry, reconciliação e E2E no sandbox |
-| `BROWSER-ACCESSIBILITY` | P1 | Browser E2E, teclado básico e viewport mobile estão comprovados; falta auditoria completa de acessibilidade | auditoria WCAG, correções e reexecução dos fluxos críticos |
-| `AWS-STAGING` | P1 | staging não implantado | deploy, TLS, secrets, logs, backup, restore e rollback |
+| `PRODUCT-CONFIGURATION` | P0 | faltam perguntas/opções homologadas, scoring, normalização, desempate, textos finais, ativações e casos oficiais | configuração oficial reproduzível, casos de referência, publicação controlada e E2E |
+| `OPENAI-JOURNEY-CONTENT` | P0 | conteúdos, mídias, avaliações, práticas, progressão, regras de credenciais, termos e acessibilidade ainda não formam uma versão publicável | pacote editorial homologado e jornada oficial E2E |
+| `IDENTITY-SITE-INTEGRATION` | P0 | cadastro de teste existe, mas login real, entrada pelo site, CPF/CNPJ/telefone/UTM e identidade única não estão comprovados | usuário existente e novo resolvidos, sessão e permissões testadas, dados sincronizados |
+| `HUBSPOT-COMPLETE-USER-DATA` | P0 | há porta e adapter em memória, mas não há inventário, matriz completa, objetos/eventos reais nem cobertura de todos os dados do usuário | todas as categorias mapeadas, adapter real, identidade/deduplicação, eventos, retry, rate limit e reconciliação no sandbox |
+| `REAL-FULLSTACK-E2E` | P0 | backend E2E e Browser E2E existem separadamente; o navegador sintético substitui identidade, RPC, banco e storage | navegador → identidade real → banco → storage/scan → credencial → HubSpot sandbox |
+| `SECURITY-PRIVACY-REAL-USERS` | P0 | ainda faltam políticas, bases, retenção, direitos, scanner real, rate limiting, secret scanning e operação de incidente | revisão de segurança/privacidade, controles implementados e evidência operacional |
+| `PARTICIPANT-MUST-HAVES` | P0 | avaliação de cinco estrelas, ranking/recompensas reais, formatos de vídeo e partes da home/perfil ainda não estão completas | requisitos de participante das premissas e issues operando com dados oficiais |
+| `ADMIN-MUST-HAVES` | P0 | administração atual não cobre gestão completa de usuários, diagnóstico, trilhas, biblioteca, gamificação e relatórios | operador autorizado configura e acompanha todas as capacidades publicadas |
+| `BROWSER-ACCESSIBILITY` | P1 | teclado básico e viewport mobile sintéticos existem; falta auditoria completa e conteúdo oficial acessível | auditoria WCAG, legendas/transcrições, correções e reexecução dos fluxos reais |
+| `AWS-STAGING` | P1 | staging não implantado | deploy, TLS, IAM, secrets, logs, banco, storage, filas, backup, restore e rollback |
+| `LEGACY-REUSE-EVIDENCE` | P2 | a premissa exige reutilização máxima responsável do repositório anterior, mas não há matriz explícita | inventário de componentes reutilizados, descartados e justificativas |
+| `GITHUB-MAINTENANCE-HARDENING` | P1 | CI existe, mas faltam lint, secret scanning comprovado, revisão humana obrigatória e proteção verificável | gates, branch protection, review e supply-chain hardening comprovados |
 
 ## Subgates da configuração oficial
 
@@ -48,7 +59,23 @@ openai_credential_rules_approved = false
 openai_journey_editorial_gate_closed = false
 ```
 
-## Gates técnicos encerrados
+## Subgates do HubSpot
+
+```text
+hubspot_inventory_complete = false
+hubspot_license_and_limits_verified = false
+complete_user_data_matrix_approved = false
+identity_deduplication_rules_approved = false
+hubspot_real_adapter_implemented = false
+all_user_data_categories_mapped = false
+behavioral_event_representation_tested = false
+critical_readback_tested = false
+rate_limit_tested = false
+reconciliation_tested = false
+outage_backlog_recovery_tested = false
+```
+
+## Gates técnicos já comprovados
 
 ```text
 recovered_migration_count = 245
@@ -60,24 +87,12 @@ public_rpc_contracts_passed = true
 backend_e2e_replayed = true
 configurable_product_persistence_e2e_passed = true
 activity_comments_e2e_passed = true
-activity_comments_remote_surface_verified = true
-practice_uploads_e2e_passed = true
-practice_uploads_remote_surface_verified = true
-storage_and_scan_have_runtime_consumer = true
-multi_question_assessment_ui_passed = true
+practice_uploads_database_e2e_passed = true
 learning_credentials_e2e_passed = true
-learning_credentials_remote_surface_verified = true
-certificate_public_page_implemented = true
-certificate_direct_anonymous_rpc_disabled = true
-browser_e2e_synthetic_vertical_passed = true
 content_library_e2e_passed = true
-content_library_remote_surface_verified = true
+browser_e2e_synthetic_vertical_passed = true
 test_public_signup_disabled_by_default = true
 test_public_signup_production_guard_present = true
-test_public_signup_service_role_provisioning_present = true
-test_public_signup_grants_verified = true
-official_brand_asset_applied = true
-lms_must_haves_technical_gate_closed = true
 rls_negative_checks_passed = true
 idempotency_and_concurrency_passed = true
 events_and_outbox_passed = true
@@ -86,10 +101,29 @@ clean_install_windows_passed = true
 typecheck_and_build_passed = true
 ```
 
-O gate técnico de must-haves do LMS está encerrado para comentários, uploads, avaliações, selos e certificados genéricos. A primeira vertical da biblioteca também possui catálogo versionado, busca textual, conteúdo nativo, referências externas rastreadas e administração mínima. O cadastro público é apenas uma facilidade controlada de desenvolvimento/teste e não encerra `IDENTITY-SITE-INTEGRATION`. A publicação da Jornada OpenAI continua bloqueada pelas versões oficiais de conteúdo, correção e regras de credencial, registradas em `PRODUCT-CONFIGURATION`.
+## Limites das provas existentes
 
-O manifesto em `config/official-diagnostic/v3/manifest.json` é deliberadamente bloqueado. Ele registra apenas estrutura confirmada e não autoriza seed, preview ou publicação enquanto os artefatos P0 permanecerem ausentes ou conflitantes.
+- o backend E2E usa fixtures sintéticas;
+- o Browser E2E usa identidade, estado, RPCs e storage sintéticos;
+- o adapter HubSpot é em memória;
+- o estado de scan não comprova scanner de malware real;
+- o Supabase não comprova AWS;
+- selos e certificados genéricos não comprovam regras oficiais;
+- biblioteca técnica não comprova acervo oficial;
+- cadastro de teste não comprova identidade/site.
+
+## Gate documental encerrado
+
+```text
+source_authority_hierarchy_defined = true
+premissas_desenvolvimento_is_highest_authority = true
+zip_documents_authoritative_for_non_technical_domains = true
+technical_decisions_cannot_reduce_product_requirements = true
+hubspot_complete_user_data_requirement_restored = true
+multi_journey_not_an_unapproved_product_gate = true
+secret_literals_not_authoritative_for_repository_storage = true
+```
 
 ## Dívida não bloqueante
 
-Os helpers e RPCs legados permanecem inventariados e contidos. Não haverá substituição em massa nem refatoração cosmética no caminho crítico.
+Os helpers e RPCs legados permanecem inventariados e contidos. Sua substituição deve ocorrer somente quando necessária para segurança, integração, AWS, manutenção ou requisito oficial.
