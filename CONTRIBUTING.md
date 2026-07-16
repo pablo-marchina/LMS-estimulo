@@ -1,6 +1,6 @@
 # Guia de contribuição
 
-Este repositório é a fonte oficial do código da Plataforma Estímulo. A especificação do produto segue [SOURCE_AUTHORITY_HIERARCHY.md](docs/product/SOURCE_AUTHORITY_HIERARCHY.md), e o escopo atual do HubSpot segue [DEC-070](docs/decisions/DEC-070-HUBSPOT-SCOPE.md).
+Este repositório é a fonte oficial do código da Plataforma Estímulo. A especificação do produto segue [SOURCE_AUTHORITY_HIERARCHY.md](docs/product/SOURCE_AUTHORITY_HIERARCHY.md), e o escopo atual do HubSpot segue [DEC-070](docs/decisions/HUBSPOT_SCOPE_DECISION.md).
 
 ## Hierarquia obrigatória
 
@@ -33,13 +33,11 @@ Decisão técnica não reduz requisito superior sem aprovação explícita.
 
 ### Branch
 
-Formato:
-
 ```text
 <tipo>/<escopo>-<descricao-curta>
 ```
 
-Tipos permitidos:
+Tipos:
 
 ```text
 feat fix docs refactor test ci chore security hotfix
@@ -48,8 +46,6 @@ feat fix docs refactor test ci chore security hotfix
 Usar kebab-case, escopo claro e excluir branch após merge.
 
 ### Issue
-
-As issues são backlog funcional, mas não superam as fontes.
 
 Uma issue deve registrar:
 
@@ -66,19 +62,18 @@ Uma issue deve registrar:
 
 Um PR deve:
 
-- possuir mudança concreta e revisável;
+- possuir mudança concreta;
 - usar título Conventional Commits;
 - citar a fonte afetada;
 - explicar problema, decisão e impacto;
 - declarar efeitos em banco, eventos, dados, HubSpot e ambientes;
 - incluir testes e documentação;
 - diferenciar prova real de sintética;
-- permanecer draft enquanto houver bloqueador do próprio escopo;
 - não afirmar conclusão além da evidência.
 
 Preferir squash merge.
 
-## Commits e títulos
+## Commits
 
 ```text
 <tipo>(<escopo>): <descricao imperativa>
@@ -105,12 +100,10 @@ ci(web): enforce production build
 
 ### Documentação
 
-Em `docs/**`:
-
 - documentos canônicos: `UPPER_SNAKE_CASE.md`;
 - ADRs: `ADR-NNN-TITULO-EM-KEBAB-MAIUSCULO.md`;
 - contratos legíveis por máquina: kebab-case com versão real;
-- não usar `final`, `final2`, `novo` ou `copia` como versão;
+- não usar pseudo-versões como `final2`;
 - não versionar outputs de teste ou scans;
 - mudança de requisito identifica fonte e aprovação.
 
@@ -120,9 +113,9 @@ Em `docs/**`:
 YYYYMMDDHHMMSS_mNN[_sufixo]_<descricao_em_snake_case>.sql
 ```
 
-- migration aplicada nunca é editada ou renomeada;
+- migration aplicada nunca é editada;
 - correção cria nova migration;
-- DDL deve ser PostgreSQL-portável salvo adapter documentado;
+- DDL é PostgreSQL-portável salvo adapter documentado;
 - nenhuma migration sem delta de schema;
 - replay, RLS, índices e recuperação são obrigatórios.
 
@@ -141,7 +134,7 @@ Nunca versionar:
 .artifacts/
 ```
 
-Exceção: entrada canônica, contrato versionado ou fixture usada por teste ativo.
+Exceção: entrada canônica, contrato versionado ou fixture ativa.
 
 ## Qualidade mínima
 
@@ -150,22 +143,22 @@ instalação reproduzível
 higiene do repositório
 lint
 verificação de tipos
-testes unitários e de contrato
+testes
 build de produção
 validação de migrations e eventos
 varredura de segredos
 documentação sincronizada
 ```
 
-O lockfile npm é canônico e deve permanecer sem drift após `npm ci`.
+O lockfile npm deve permanecer sem drift após `npm ci`.
 
 ## Banco e ambientes
 
-- Supabase autorizado: desenvolvimento/teste;
+- Supabase: desenvolvimento/teste;
 - AWS: staging e produção;
 - migrations no Git: fonte do schema;
-- teste no Supabase não substitui AWS staging;
-- mudança manual remota só conta após reprodução em código e teste;
+- Supabase não substitui AWS staging;
+- mudança manual remota exige reprodução em código e teste;
 - credenciais ficam em secret manager.
 
 ## Dados e HubSpot
@@ -177,8 +170,7 @@ Toda coleta ou uso de dado declara:
 - acesso e retenção;
 - evento canônico;
 - classificação HubSpot;
-- frequência e reconciliação;
-- teste.
+- frequência, reconciliação e teste.
 
 Classificações:
 
@@ -189,9 +181,9 @@ calculation_input_or_result
 not_synced
 ```
 
-Somente as três primeiras podem gerar sincronização, e apenas com finalidade aprovada.
+Somente as três primeiras podem gerar sincronização, com finalidade aprovada.
 
-Permanecem fora do HubSpot por padrão:
+Ficam fora por padrão:
 
 - estado transacional detalhado;
 - conteúdo e configuração editorial;
@@ -220,7 +212,7 @@ Segredos expostos devem ser rotacionados e o histórico verificado.
 3. correção funcional;
 4. eventos e classificação HubSpot;
 5. migrations e contratos;
-6. manutenibilidade e dependências;
+6. manutenibilidade;
 7. testes e evidência real versus sintética;
-8. documentação e nomenclatura;
+8. documentação;
 9. ausência de artefatos desnecessários.
