@@ -1,95 +1,111 @@
 # Estratégia de ambientes e nuvem
 
-**Versão:** 0.1  
-**Data:** 2026-07-08  
-**Status:** Direção aprovada; serviços AWS detalhados serão validados no E12
+**Versão:** 1.0  
+**Data:** 2026-07-16  
+**Status:** direção definida pela premissa; implementação AWS pendente
 
-## 1. Decisão
+## Autoridade
+
+`premissas-desenvolvimento.md` determina:
+
+- Supabase para desenvolvimento e testes;
+- AWS para staging e produção final.
+
+Este documento define os meios técnicos. Os demais documentos do pacote não são autoridade para escolhas de serviços, topologia ou implementação de nuvem.
+
+## Decisão
 
 A plataforma utilizará:
 
-- **Supabase** para desenvolvimento local, CI e ambiente compartilhado de testes/QA;
-- **AWS** para staging equivalente à produção e para produção final.
+- **local** para desenvolvimento individual e testes rápidos;
+- **Supabase gerenciado** para desenvolvimento compartilhado, integração e QA;
+- **AWS staging** para provar paridade de produção;
+- **AWS production** para operação real.
 
-Supabase é um acelerador de testes, não o runtime arquitetural definitivo. Nenhuma regra central do produto poderá depender de um serviço proprietário do Supabase sem adapter e equivalente definido na AWS.
+Supabase é ambiente de desenvolvimento/teste e não o runtime final. Nenhuma regra central deve depender exclusivamente de um recurso proprietário sem adapter ou equivalente AWS comprovado.
 
-## 2. Ambientes oficiais
+## Ambientes oficiais
 
 | Ambiente | Plataforma | Finalidade | Dados | Tráfego real |
 |---|---|---|---|---|
-| `local` | Supabase CLI + serviços locais | desenvolvimento rápido, migrations, seeds, testes de RLS e integração | fictícios/sintéticos | não |
-| `test` | projeto Supabase gerenciado | QA compartilhado, testes integrados, revisão de produto | sintéticos ou anonimizados | não |
-| `staging` | AWS | validação de paridade de produção, carga, segurança, deploy, rollback e integrações reais em sandbox | sintéticos/anonimizados | não |
-| `production` | AWS | operação real | reais | sim |
+| `local` | serviços locais | desenvolvimento, migrations e testes | sintéticos | não |
+| `development/test` | Supabase autorizado | integração, QA e revisão | sintéticos ou anonimizados aprovados | não |
+| `staging` | AWS | paridade, segurança, carga, integrações, backup e rollback | sintéticos/anonimizados | não |
+| `production` | AWS | operação oficial | reais | sim |
 
-## 3. Regra de promoção
+## Promoção
 
 ```text
 local
-→ CI com Supabase efêmero
-→ Supabase test/QA
+→ CI
+→ Supabase development/test
 → AWS staging
 → gate de produção
 → AWS production
 ```
 
-Nenhuma release poderá seguir diretamente do Supabase para produção. O gate em AWS staging é obrigatório porque autenticação, IAM, storage, filas, rede, observabilidade e comportamento operacional diferem.
+Nenhuma release pode seguir diretamente do Supabase para produção.
 
-## 4. Fonte única de verdade de schema
+## Fonte de verdade técnica
 
-A fonte de verdade será o repositório Git:
+O repositório Git contém:
 
-- migrations SQL PostgreSQL portáveis;
-- seeds separados por ambiente;
+- migrations portáveis;
+- configuração por ambiente sem segredos;
 - schemas de eventos;
 - contratos de API;
-- infraestrutura como código da AWS;
-- políticas e testes de autorização.
+- infraestrutura como código;
+- políticas e testes de autorização;
+- runbooks e evidências de operação.
 
-O dashboard do Supabase e o console da AWS não serão fontes primárias de configuração. Mudanças manuais emergenciais deverão ser convertidas em código versionado.
+Console do Supabase e console AWS não são fonte primária. Mudança manual emergencial deve ser registrada e convertida em código.
 
-## 5. Política de dados por ambiente
+## Política de dados
 
-### Local e test
+### Local e desenvolvimento/teste
 
 - dados sintéticos por padrão;
-- dados reais somente após anonimização/pseudonimização aprovada;
-- chaves e endpoints próprios;
-- e-mails e notificações redirecionados ou bloqueados;
-- integrações externas em sandbox;
-- sem cópia integral de produção.
+- dados reais somente com anonimização/pseudonimização aprovada;
+- credenciais próprias do ambiente;
+- e-mails e notificações bloqueados ou redirecionados;
+- integrações em sandbox;
+- nenhuma cópia integral de produção;
+- usuários e cadastros claramente marcados como teste.
 
 ### Staging
 
-- topologia equivalente à produção;
+- mesma arquitetura lógica da produção;
 - escala menor permitida;
-- mesmas classes de serviço e políticas essenciais;
-- integrações em sandbox;
-- testes de migration, rollback, backup, restauração e carga.
+- integrações reais em sandbox;
+- dados sintéticos ou anonimizados;
+- testes de migration, backup, restauração, carga e rollback;
+- validação da sincronização completa com HubSpot sandbox.
 
 ### Produção
 
 - dados reais;
 - menor privilégio;
-- alta disponibilidade conforme SLO;
+- alta disponibilidade conforme SLO aprovado;
 - backups e recuperação testados;
 - auditoria e alertas ativos;
-- acesso administrativo controlado e registrado.
+- acesso administrativo controlado;
+- nenhuma feature exclusiva de teste ativa.
 
-## 6. Requisitos de paridade
+## Paridade
 
-Devem permanecer iguais entre Supabase e AWS:
+Devem permanecer equivalentes:
 
-- versão principal do PostgreSQL;
+- versão suportada do PostgreSQL;
 - migrations e constraints;
 - schemas de domínio;
-- contrato de eventos;
+- contratos de eventos;
 - regras de negócio;
-- adapter de identidade interno;
+- identidade interna;
 - modelo de arquivos;
 - código da aplicação;
-- testes funcionais e E2E;
-- formato de observabilidade OpenTelemetry.
+- testes funcionais;
+- semântica da outbox, idempotência e reconciliação;
+- instrumentação OpenTelemetry.
 
 Podem variar atrás de adapters:
 
@@ -97,28 +113,54 @@ Podem variar atrás de adapters:
 - object storage;
 - fila;
 - secret manager;
-- serviço de e-mail;
-- implementação de observabilidade;
-- infraestrutura de compute.
+- e-mail;
+- observabilidade;
+- compute;
+- adapter físico de banco e pooling.
 
-## 7. Gate de produção
+## Segredos
 
-Antes da promoção, staging deve comprovar:
+Valores sensíveis presentes em fontes de referência não são copiados para o repositório.
 
-1. migrations aplicadas do zero e a partir da versão anterior;
-2. testes de RLS/autorização positivos e negativos;
-3. autenticação Cognito e mapeamento de identidade interna;
-4. upload/download por URLs assinadas no S3;
-5. outbox, SQS, retries e DLQ;
-6. sincronização e reconciliação HubSpot;
-7. backup e restauração do RDS;
-8. deploy e rollback;
-9. logs, métricas, traces e alertas;
-10. teste multi-jornada com a OpenAI e uma jornada sintética;
-11. teste de carga acordado;
-12. revisão de segurança e privacidade.
+- `.env.example` contém somente placeholders;
+- valores reais ficam em secret manager ou ambiente autorizado;
+- segredos expostos devem ser rotacionados;
+- CI deve executar secret scanning;
+- imagens, logs, artifacts e PRs não podem conter credenciais.
 
-## 8. Fontes técnicas oficiais
+## Gate de AWS staging
 
-- Supabase: desenvolvimento local, migrations, seeds e testes.
-- AWS: ECS/Fargate, RDS PostgreSQL, S3, SQS, Cognito, Secrets Manager e CloudWatch.
+Staging deve comprovar:
+
+1. container e deploy automatizado;
+2. migrations em RDS PostgreSQL;
+3. autenticação e identidade interna;
+4. autorização positiva e negativa;
+5. upload e download no S3;
+6. scanner real e promoção segura de arquivos;
+7. outbox, SQS, retries e DLQ;
+8. integração completa e reconciliação HubSpot;
+9. backup e restauração do RDS;
+10. deploy e rollback;
+11. logs, métricas, traces e alertas;
+12. E2E real da Jornada OpenAI;
+13. acessibilidade dos fluxos críticos;
+14. teste de carga acordado;
+15. revisão de segurança e privacidade.
+
+Uma jornada sintética pode testar extensibilidade técnica, mas não é gate de produto nem substitui a Jornada OpenAI oficial.
+
+## Direção técnica inicial
+
+A baseline proposta continua sendo:
+
+- ECS/Fargate ou alternativa AWS tecnicamente justificada;
+- RDS PostgreSQL;
+- S3;
+- Cognito ou provedor de identidade aprovado;
+- SQS e DLQ;
+- Secrets Manager/SSM;
+- CloudWatch e OpenTelemetry;
+- Route 53, ACM, CloudFront, WAF e ALB conforme necessidade.
+
+A escolha final deve ser comprovada em staging e pode mudar por decisão técnica registrada, desde que preserve os requisitos superiores.
