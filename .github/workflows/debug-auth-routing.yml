@@ -1,9 +1,9 @@
 name: Debug auth routing
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/web-direct-link-session-routing
+      - main
 
 permissions:
   contents: read
