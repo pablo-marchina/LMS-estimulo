@@ -67,8 +67,20 @@ export function isAuthorizedDestination(identity, value) {
   return false;
 }
 
+function withDefaultOperatorOrganization(identity, destination) {
+  const parsed = new URL(destination, INTERNAL_BASE_URL);
+  if (!matchesAnyPrefix(parsed.pathname, OPERATOR_ROUTE_PREFIXES)) return destination;
+  if (parsed.searchParams.has("organization")) return destination;
+  const organization = operatorOrganizations(identity)[0];
+  if (!organization) return destination;
+  parsed.searchParams.set("organization", organization.organization_id);
+  return `${parsed.pathname}${parsed.search}`;
+}
+
 export function resolveAuthenticatedDestination(identity, requestedReturnTo) {
   const destination = sanitizeReturnTo(requestedReturnTo);
-  if (destination && isAuthorizedDestination(identity, destination)) return destination;
+  if (destination && isAuthorizedDestination(identity, destination)) {
+    return withDefaultOperatorOrganization(identity, destination);
+  }
   return defaultAuthenticatedDestination(identity);
 }
