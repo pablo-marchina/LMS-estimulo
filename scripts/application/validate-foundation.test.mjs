@@ -7,7 +7,7 @@ const root = resolve(import.meta.dirname, '../..');
 const read = (file) => readFile(resolve(root, file), 'utf8');
 
 async function findMigration(suffix) {
-  const names = (await readdir(resolve(root, 'supabase/migrations')))
+  const names = (await readdir(resolve(root, 'supabase/migrations'))
     .filter((name) => name.endsWith(suffix))
     .sort();
   assert.equal(names.length, 1, `expected one migration ending with ${suffix}`);
@@ -115,10 +115,12 @@ test('cadastro público existe somente sob gate explícito de teste', async () =
   assert.ok(gate.includes('ALLOWED_APP_ENVIRONMENTS.has'));
 });
 
-test('login direciona participante e operador conforme identidade interna', async () => {
+test('login direciona participante e operador conforme política compartilhada', async () => {
   const action = await read('apps/web/app/entrar/actions.ts');
-  assert.ok(action.includes('auth.identity.entrepreneur_id'));
-  assert.ok(action.includes('/admin?organization='));
+  const navigation = await read('apps/web/lib/auth/navigation.js');
+  assert.ok(action.includes('resolveAuthenticatedDestination'));
+  assert.ok(navigation.includes('identity.entrepreneur_id'));
+  assert.ok(navigation.includes('/admin?organization='));
 });
 
 test('atividade renderiza o heading real do conteúdo versionado', async () => {
