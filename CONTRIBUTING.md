@@ -1,25 +1,39 @@
 # Guia de contribuição
 
-Este repositório é a fonte oficial do código da Plataforma Estímulo. `Estimulo_all` e as decisões explícitas posteriores da Estímulo têm precedência sobre código, schemas, mockups e documentos conflitantes.
+Este repositório é a fonte oficial do código da Plataforma Estímulo. A especificação do produto segue [docs/product/SOURCE_AUTHORITY_HIERARCHY.md](docs/product/SOURCE_AUTHORITY_HIERARCHY.md).
+
+## Hierarquia obrigatória
+
+```text
+1. premissas-desenvolvimento.md
+2. demais documentos do pacote para produto, negócio, conteúdo, pedagogia, operação e impacto
+3. decisões posteriores explicitamente aprovadas
+4. issues do GitHub
+5. ADRs, documentação técnica, código e testes
+```
+
+Para escolhas estritamente técnicas, usar segurança, evidência dos ambientes, documentação oficial e melhores práticas. Nenhuma escolha técnica pode reduzir requisito superior sem aprovação explícita.
 
 ## Princípios
 
 1. Não realizar commits diretos em `main`.
 2. Cada PR deve tratar uma preocupação coesa.
-3. Código, migrations, contratos, testes e documentação da mesma capacidade mudam juntos.
-4. Nenhuma capacidade é concluída sem evidência executável.
+3. Código, migrations, contratos, testes, issues e documentação da mesma capacidade mudam juntos.
+4. Nenhuma capacidade é concluída sem evidência executável proporcional.
 5. Supabase é desenvolvimento/teste; AWS é staging/produção.
-6. Regras de domínio não dependem diretamente de SDKs de Supabase ou AWS.
+6. Regras de domínio não dependem diretamente de SDKs de infraestrutura sem adapter.
 7. Não criar tabelas, adapters ou serviços paralelos sem auditar a lacuna.
-8. Dados e eventos novos exigem finalidade, classificação, retenção e decisão HubSpot.
-9. Arquivos substituídos são apagados da árvore ativa; o histórico Git é o arquivo histórico.
-10. Outputs gerados ficam em artifacts do CI ou arquivos locais ignorados, nunca em `docs/**`.
+8. Todas as ações relevantes do usuário geram evento estruturado.
+9. Todos os dados do usuário capturados ou usados possuem representação HubSpot.
+10. Arquivos substituídos são removidos da árvore ativa; o histórico Git preserva versões.
+11. Outputs gerados ficam em artifacts do CI ou arquivos locais ignorados.
+12. Lacuna de fonte não é preenchida por heurística silenciosa.
 
-## Ciclo de vida de branch, issue e PR
+## Branch, issue e PR
 
 ### Branch
 
-Criar branch somente quando existir uma mudança concreta que será submetida a PR.
+Criar branch somente para mudança concreta que será submetida a PR.
 
 Formato:
 
@@ -41,36 +55,29 @@ Tipos permitidos:
 
 Regras:
 
-- letras minúsculas, números e hífens;
+- minúsculas, números e hífens;
 - kebab-case;
-- incluir o workstream quando aplicável;
-- não usar nome de pessoa, data solta ou termos genéricos;
-- reutilizar o branch ativo quando o trabalho pertence ao mesmo PR;
-- excluir o branch imediatamente após merge;
-- branch substituído deve ter o PR fechado e ser excluído.
-
-Exemplos:
-
-```text
-feat/e14-archetype-assignment
-fix/web-auth-session-expiry
-refactor/database-runtime-recovery
-ci/database-migration-replay
-```
+- escopo claro;
+- não usar nome de pessoa ou termos genéricos;
+- excluir branch após merge;
+- fechar PR substituído.
 
 ### Issue
 
-Não criar issue para toda tarefa ou bloqueador.
+As issues são backlog funcional obrigatório, mas não superam as fontes.
 
-Uma issue é justificada somente quando pelo menos uma condição existe:
+Uma issue deve possuir:
 
-- o trabalho é independente de qualquer PR atual;
-- possui responsável ou prazo próprio;
-- depende de decisão externa;
-- precisa sobreviver a mais de um PR;
-- é bug reproduzível que ainda não será corrigido.
+- problema e fonte do requisito;
+- experiência ou comportamento esperado;
+- critérios de aceite;
+- dados/eventos afetados;
+- destino HubSpot;
+- segurança e privacidade;
+- dependências;
+- evidência necessária para fechamento.
 
-Checklist, subtarefa de implementação e bloqueador pertencente a um PR permanecem no PR ou no registro canônico correspondente.
+Uma issue não pode remover ou restringir requisito superior sem decisão aprovada.
 
 ### Pull request
 
@@ -78,12 +85,13 @@ Um PR deve:
 
 - ter mudança concreta e revisável;
 - usar título Conventional Commits;
+- citar a fonte de produto afetada;
 - explicar problema, decisão e impacto;
 - declarar efeitos em banco, eventos, dados pessoais, HubSpot e ambientes;
 - incluir testes e documentação;
 - permanecer draft enquanto gates conhecidos estiverem abertos;
-- ser fechado quando substituído;
-- não permanecer aberto sem próximo passo executável.
+- não afirmar conclusão além da evidência;
+- ser fechado quando substituído.
 
 Preferir squash merge.
 
@@ -106,40 +114,39 @@ Exemplos:
 ```text
 feat(diagnostics): add versioned archetype assignment
 fix(eventing): prevent duplicate outbox delivery
-docs(e14): update runtime gap
+docs(product): align source authority
 ci(web): enforce production build
 ```
 
-Evitar mensagens como `update files`, `changes`, `fix stuff` ou commits com assuntos sem relação.
-
-## Nomenclatura de arquivos
+## Nomenclatura
 
 ### TypeScript e React
 
 - módulos, utilitários e componentes: kebab-case;
 - componentes exportados: PascalCase;
 - hooks: `use-<nome>.ts`;
-- testes: mesmo nome do alvo com `.test.ts`, `.test.tsx`, `.test.mjs` ou `.spec.ts`;
-- nomes reservados do Next.js permanecem conforme o framework;
-- segmentos dinâmicos usam o identificador do domínio.
+- testes: mesmo nome do alvo com sufixo de teste;
+- nomes reservados do Next.js seguem o framework;
+- segmentos dinâmicos usam identificadores de domínio.
 
 ### Documentação
 
 Em `docs/**`:
 
-- documentos humanos canônicos: `UPPER_SNAKE_CASE.md`;
+- documentos canônicos: `UPPER_SNAKE_CASE.md`;
 - ADRs: `ADR-NNN-TITULO-EM-KEBAB-MAIUSCULO.md`;
-- contratos máquina-legíveis: kebab-case com versão real;
+- contratos legíveis por máquina: kebab-case com versão real;
 - não usar `final`, `final2`, `novo`, `copia` ou datas como pseudo-versão;
-- não versionar output de teste, build, validação, smoke test, scan de integridade ou histórico remoto gerado;
-- não criar diretório de arquivo histórico: conteúdo substituído é removido e recuperável pelo Git.
+- não versionar outputs de testes ou scans;
+- documentos de produto devem citar a hierarquia de fontes;
+- mudança de requisito deve identificar a fonte substituída e a aprovação.
 
 ### Migrations
 
 Formato:
 
 ```text
-YYYYMMDDHHMMSS_mNN[_sufixo]_<descrição_em_snake_case>.sql
+YYYYMMDDHHMMSS_mNN[_sufixo]_<descricao_em_snake_case>.sql
 ```
 
 Regras:
@@ -147,9 +154,9 @@ Regras:
 - migration aplicada nunca é editada ou renomeada;
 - correção cria nova migration;
 - DDL deve ser PostgreSQL-portável salvo adapter documentado;
-- nenhuma migration é criada antes do delta de schema;
-- replay, RLS, índices e rollback operacional são obrigatórios;
-- migrations históricas fora da convenção são mantidas somente para reconciliar versões remotas e devem ser registradas como exceção.
+- nenhuma migration é criada sem delta de schema;
+- replay, RLS, índices e recuperação são obrigatórios;
+- migrations históricas fora da convenção permanecem apenas para reconciliação.
 
 ## Artefatos gerados
 
@@ -166,7 +173,7 @@ Nunca versionar:
 .artifacts/
 ```
 
-Exceção: um JSON/YAML é permitido quando é entrada canônica, contrato versionado ou fixture ainda executada por teste ativo.
+Exceção: entrada canônica, contrato versionado ou fixture usada por teste ativo.
 
 ## Qualidade mínima
 
@@ -185,15 +192,33 @@ varredura de segredos
 documentação sincronizada
 ```
 
-O repositório ainda não possui lockfile npm canônico. Até resolver isso, a instalação não pode ser descrita como totalmente determinística.
+O lockfile npm é canônico e deve permanecer sem drift após `npm ci`.
 
 ## Banco e ambientes
 
-- Supabase `cfpfeavjlgheqqiaqtzv`: desenvolvimento/teste apenas;
+- Supabase autorizado: desenvolvimento/teste apenas;
 - AWS: staging e produção;
-- migrations no Git são a fonte do schema;
+- migrations no Git são fonte do schema;
 - teste no Supabase não substitui AWS staging;
-- mudança manual remota não conta como implementação até ser reproduzida por migration e teste.
+- mudança manual remota não é implementação até ser reproduzida por código e teste;
+- credenciais ficam em secret manager e nunca em documentação.
+
+## Dados e HubSpot
+
+Toda coleta ou uso de dado do usuário deve declarar:
+
+- fonte superior;
+- finalidade;
+- classificação;
+- acesso;
+- retenção;
+- evento canônico;
+- representação HubSpot;
+- frequência de sincronização;
+- reconciliação;
+- teste.
+
+A matriz HubSpot decide como representar a categoria, não se ela será descartada. Exceções precisam de justificativa e aprovação.
 
 ## Segurança
 
@@ -203,17 +228,19 @@ Nunca versionar:
 - dados pessoais reais;
 - payloads de produção;
 - arquivos `.env`;
-- segredos de Supabase, HubSpot ou AWS.
+- segredos de Supabase, HubSpot ou AWS;
+- valores sensíveis presentes nas fontes.
 
-Usar somente dados sintéticos. Toda coleta nova declara finalidade, retenção, acesso e projeção no HubSpot.
+Segredos expostos devem ser rotacionados e o histórico deve ser verificado.
 
 ## Ordem de revisão
 
-1. aderência a `Estimulo_all` e premissas atuais;
-2. segurança, LGPD e integridade;
+1. aderência à hierarquia e à fonte do requisito;
+2. segurança, privacidade e integridade;
 3. correção funcional;
-4. migrations e eventos;
-5. manutenibilidade e dependências;
-6. testes;
-7. documentação e nomenclatura;
-8. ausência de arquivos, branches, issues e PRs desnecessários.
+4. cobertura de dados/eventos/HubSpot;
+5. migrations e contratos;
+6. manutenibilidade e dependências;
+7. testes e evidência real versus sintética;
+8. documentação e nomenclatura;
+9. ausência de artefatos ou trabalho desnecessário.
