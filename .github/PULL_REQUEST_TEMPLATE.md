@@ -4,7 +4,7 @@
 
 ## Fonte e autoridade
 
-<!-- Cite a fonte: premissas-desenvolvimento, documento do pacote, decisão aprovada ou issue. -->
+<!-- Cite premissas-desenvolvimento, documento do pacote, decisão aprovada ou issue. -->
 
 - Fonte superior afetada:
 - Requisito preservado ou alterado:
@@ -12,20 +12,20 @@
 
 ## Escopo
 
-<!-- Liste somente as capacidades alteradas por este PR. -->
+<!-- Liste somente as capacidades alteradas. -->
 
 ## Decisões e alternativas
 
-<!-- Registre decisões não óbvias. Decisão técnica não pode reduzir requisito superior silenciosamente. -->
+<!-- Decisão técnica não pode reduzir requisito superior silenciosamente. -->
 
 ## Evidências
 
-<!-- Inclua comandos, resultados, screenshots ou artifacts reproduzíveis. Diferencie prova sintética de prova real. Não inclua segredos ou dados pessoais reais. -->
+<!-- Diferencie prova sintética de prova real. Não inclua segredos ou dados pessoais reais. -->
 
 ### Qualidade
 
 - [ ] Instalação executada com o método canônico
-- [ ] Lint aprovado ou bloqueio explicitamente documentado
+- [ ] Lint aprovado ou bloqueio documentado
 - [ ] Typecheck aprovado
 - [ ] Testes relevantes aprovados
 - [ ] Build de produção concluído
@@ -38,24 +38,26 @@
 - [ ] Migration aditiva criada e replay validado
 - [ ] RLS, índices, constraints e triggers revisados
 - [ ] Estado, evento e outbox permanecem atômicos
-- [ ] Toda ação nova do usuário possui evento estruturado
+- [ ] Toda ação nova relevante possui evento estruturado
 - [ ] Schemas de eventos foram versionados e validados
 
 ### Dados, privacidade e HubSpot
 
-- [ ] Este PR não cria nova coleta ou inferência de dados
+- [ ] Este PR não cria nova coleta ou inferência
 - [ ] Finalidade, classificação, retenção e acesso foram definidos
-- [ ] Toda categoria de dado do usuário possui representação HubSpot
-- [ ] A matriz HubSpot define objeto/propriedade/evento, frequência e reconciliação
-- [ ] Nenhum log técnico, segredo ou binário inseguro é enviado ao HubSpot
+- [ ] Cada novo dado/evento foi classificado como `linking_identifier`, `engagement_signal`, `calculation_input_or_result` ou `not_synced`
+- [ ] Somente identificadores mínimos, engajamento e dados úteis para cálculos aprovados geram sincronização HubSpot
+- [ ] Itens `not_synced` possuem justificativa e permanecem no sistema apropriado
+- [ ] Nenhum conteúdo editorial, binário, URL assinada, log técnico, token ou segredo é enviado ao HubSpot
+- [ ] Variáveis de cálculo possuem origem, versão e finalidade
 - [ ] Dados de teste são sintéticos e marcados
 - [ ] Uso em crédito permanece bloqueado quando não validado
 
 ### Ambientes e segurança
 
-- [ ] Supabase é usado somente como desenvolvimento/teste
+- [ ] Supabase é usado somente em desenvolvimento/teste
 - [ ] A mudança preserva ou comprova portabilidade para AWS
-- [ ] Nenhuma dependência de infraestrutura entrou no domínio sem adapter
+- [ ] Dependências de infraestrutura permanecem atrás de adapters
 - [ ] O gate de AWS staging permanece explícito
 - [ ] Segredos não foram incluídos
 - [ ] Secret scanning relevante foi executado
@@ -65,14 +67,14 @@
 
 - [ ] Este PR não altera experiência do usuário
 - [ ] Desktop e mobile foram verificados
-- [ ] Teclado, foco, labels e mensagens de erro foram revisados
-- [ ] Conteúdo multimídia considera legenda/transcrição quando aplicável
+- [ ] Teclado, foco, labels e erros foram revisados
+- [ ] Conteúdo multimídia considera legenda/transcrição
 - [ ] Guia visual e mockups foram usados como referência subordinada
 
 ## Riscos e rollback
 
-<!-- Como detectar falha? Como pausar, reverter, reconciliar ou recuperar? -->
+<!-- Como detectar, pausar, reverter, reconciliar ou recuperar? -->
 
 ## Fora do escopo
 
-<!-- Liste itens deliberadamente adiados sem removê-los do requisito superior. -->
+<!-- Liste itens adiados sem removê-los do requisito superior. -->
