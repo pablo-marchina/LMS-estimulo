@@ -4,7 +4,7 @@
 **Data:** 2026-07-16  
 **Status:** ativo
 
-A hierarquia está em [SOURCE_AUTHORITY_HIERARCHY.md](SOURCE_AUTHORITY_HIERARCHY.md), e o escopo HubSpot está na [DEC-070](../decisions/DEC-070-HUBSPOT-SCOPE.md).
+A hierarquia está em [SOURCE_AUTHORITY_HIERARCHY.md](SOURCE_AUTHORITY_HIERARCHY.md), e o escopo HubSpot está na [DEC-070](../decisions/HUBSPOT_SCOPE_DECISION.md).
 
 Não incluir tokens, chaves, senhas, cookies ou dados pessoais reais em documentos, issues, PRs ou chat.
 
@@ -28,7 +28,7 @@ Fornecer as informações descritas em [HUBSPOT_INVENTORY_REQUEST.md](../integra
 
 - portal, licença e sandbox;
 - objetos, propriedades e associações;
-- custom objects e behavioral events disponíveis;
+- custom objects e behavioral events;
 - regras de identidade e deduplicação;
 - objetos e estados de crédito;
 - workflows, webhooks e automações;
