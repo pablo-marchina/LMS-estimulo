@@ -14,6 +14,8 @@ A ordem completa está em [SOURCE_AUTHORITY_HIERARCHY.md](SOURCE_AUTHORITY_HIERA
 4. issues detalham o backlog;
 5. ADRs, código e testes definem meios técnicos e evidência.
 
+O escopo vigente do HubSpot está na [DEC-070](../decisions/HUBSPOT_SCOPE_DECISION.md).
+
 ## Problema central
 
 A Estímulo precisa transformar capacitação em uma camada integrada à jornada do empreendedor e à jornada de crédito.
