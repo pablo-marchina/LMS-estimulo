@@ -1,6 +1,6 @@
 # Bridge de identidade Supabase/Cognito/HubSpot
 
-**Versão:** 1.1  
+**Versão:** 1.2  
 **Data:** 2026-07-16  
 **Estado:** contrato técnico parcial; integração oficial pendente
 
@@ -15,11 +15,39 @@
 
 A DEC-070 limita os dados enviados pelo LMS ao HubSpot a identificadores mínimos de vínculo, engajamento e dados úteis para cálculos aprovados.
 
+## Canais de entrada e comportamento de sessão
+
+A plataforma aceita dois canais de entrada equivalentes:
+
+- links publicados no site da Estímulo;
+- links diretos para páginas internas da plataforma.
+
+O site da Estímulo funciona inicialmente como origem do link, sem pressupor single sign-on. O comportamento obrigatório é:
+
+```text
+link para uma rota da plataforma
+→ sessão válida: abrir diretamente a rota solicitada
+→ sessão ausente ou expirada: abrir /entrar preservando a rota interna
+→ autenticação concluída: retornar à rota solicitada quando autorizada
+→ rota incompatível com o perfil: abrir o destino padrão autorizado
+```
+
+A rota de retorno:
+
+- deve ser relativa e interna;
+- não pode apontar para outro domínio;
+- não pode produzir loop com `/entrar` ou `/cadastro`;
+- deve preservar a query string necessária;
+- deve ser validada contra o perfil empreendedor ou as organizações operacionais do usuário.
+
+Usuários participantes têm `/empreendedor` como destino padrão. Usuários exclusivamente operacionais têm `/admin` associado a uma organização para a qual possuam permissão de execução de jornadas.
+
 ## Fluxo esperado
 
 ```text
-entrada pelo site Estímulo
-→ autenticação no provedor autorizado
+entrada pelo site Estímulo ou link direto
+→ verificação de sessão
+→ autenticação no provedor autorizado quando necessária
 → validação de token, issuer, audience e expiração
 → coleta ou resolução dos campos obrigatórios
 → normalização da identidade externa
@@ -28,6 +56,7 @@ entrada pelo site Estímulo
 → vínculo ou criação do registro CRM
 → persistência dos identificadores cruzados
 → sessão interna autorizada
+→ retorno ao destino interno solicitado ou destino padrão
 → contexto transacional PostgreSQL
 ```
 
@@ -54,7 +83,9 @@ Nenhum identificador substitui silenciosamente outro.
 - colisão por e-mail não vincula contas automaticamente;
 - mudança de provedor não troca o `user_account_id`;
 - sessões administrativas exigem autorização Estímulo;
-- recursos de teste falham fechados em produção.
+- recursos de teste falham fechados em produção;
+- a existência de uma sessão válida evita uma nova tela de login;
+- autenticação não substitui a verificação de autorização da rota solicitada.
 
 ## Dados de entrada
 
@@ -123,11 +154,13 @@ O contexto é derivado pelo servidor.
 
 ### Supabase development/test
 
-O adapter pode validar tokens do projeto autorizado e resolver identidade interna. A prova real exige usuário controlado e fluxo com HubSpot sandbox.
+O adapter atual pode validar tokens do projeto autorizado e resolver identidade interna. A prova real exige usuário controlado e fluxo com HubSpot sandbox.
 
 ### AWS production
 
-O adapter de produção deve validar Cognito ou alternativa aprovada, mantendo o mesmo contrato interno.
+Amazon Cognito é o provedor de destino definido para produção. O adapter de produção deve manter o mesmo contrato interno usado em desenvolvimento e validar issuer, audience, expiração, e-mail verificado e revogação de sessão.
+
+Uma federação futura com o site da Estímulo poderá usar OpenID Connect ou SAML sem alterar as identidades internas do LMS.
 
 ## Cadastro de teste
 
@@ -142,8 +175,9 @@ O cadastro de teste:
 ## Gates
 
 ```text
-site_entry_flow_defined = false
-real_identity_provider_selected = false
+site_entry_flow_defined = true
+real_identity_provider_selected = true
+direct_link_session_routing_implemented = true
 name_email_cpf_phone_cnpj_utm_flow_tested = false
 hubspot_identity_search_implemented = false
 hubspot_contact_creation_implemented = false
