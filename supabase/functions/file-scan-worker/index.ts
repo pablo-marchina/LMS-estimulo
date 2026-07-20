@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { externalScannerHeaders, manualReviewResult, normalizeExternalScanResponse, validateExternalScannerUrl } from "./scanner-contract.mjs";
 
 const PROJECT_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -7,6 +8,10 @@ const QUEUE_CODE = "file_scan";
 const DEFAULT_BATCH_SIZE = 5;
 const DEFAULT_VISIBILITY_SECONDS = 120;
 const MAX_BATCH_SIZE = 10;
+const MAX_SCAN_BYTES = 25 * 1024 * 1024;
+const EXTERNAL_SCANNER_URL = Deno.env.get("MALWARE_SCANNER_URL")?.trim() ?? "";
+const EXTERNAL_SCANNER_API_KEY = Deno.env.get("MALWARE_SCANNER_API_KEY")?.trim() ?? "";
+const EXTERNAL_SCANNER_TIMEOUT_MS = Number(Deno.env.get("MALWARE_SCANNER_TIMEOUT_MS") ?? "20000");
 const EICAR_SIGNATURE = "X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*";
 
 interface QueueDelivery {
@@ -88,41 +93,38 @@ async function callRpc<T>(client: SupabaseClient, name: string, args: Record<str
   return data as T;
 }
 
-async function proofScan(client: SupabaseClient, payload: Record<string, unknown>): Promise<ScanResult> {
-  const profile = requiredString(payload.uploadProfileCode, "upload_profile_code");
-  if (profile !== "e12_storage_proof") {
-    throw new Error("scanner_not_configured_for_profile");
-  }
-
+async function downloadVerifiedFile(client: SupabaseClient, payload: Record<string, unknown>) {
   const bucketName = requiredString(payload.bucket, "bucket");
   const objectKey = requiredString(payload.objectKey, "object_key");
   const expectedHash = requiredString(payload.sha256, "sha256").toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(expectedHash)) throw new Error("sha256_invalid");
   const expectedContentType = normalizeContentType(payload.contentType);
-  const expectedSize = boundedInteger(payload.sizeBytes, -1, 0, 5 * 1024 * 1024);
+  const expectedSize = boundedInteger(payload.sizeBytes, -1, 0, MAX_SCAN_BYTES);
 
-  if (expectedContentType !== "text/plain") {
+  const download = await client.storage.from(bucketName).download(objectKey);
+  if (download.error || !download.data) {
+    throw new Error(`storage_download_failed:${errorText(download.error)}`);
+  }
+  const bytes = await download.data.arrayBuffer();
+  if (bytes.byteLength !== expectedSize) throw new Error("file_size_mismatch");
+  const actualHash = hex(await crypto.subtle.digest("SHA-256", bytes));
+  if (actualHash !== expectedHash) throw new Error("file_hash_mismatch");
+  return { bytes, expectedHash, expectedContentType, expectedSize };
+}
+
+async function proofScan(client: SupabaseClient, payload: Record<string, unknown>): Promise<ScanResult> {
+  const file = await downloadVerifiedFile(client, payload);
+  if (file.expectedContentType !== "text/plain") {
     return {
       scanStatus: "unsupported",
       threats: [],
-      statusReasons: [{ code: "proof_scanner_text_only", contentType: expectedContentType }],
+      statusReasons: [{ code: "proof_scanner_text_only", contentType: file.expectedContentType }],
       scannerProvider: "e12-proof-integrity-scanner",
       scannerVersion: "1.0.0",
       providerReference: crypto.randomUUID(),
     };
   }
-
-  const bucket = client.storage.from(bucketName);
-  const download = await bucket.download(objectKey);
-  if (download.error || !download.data) {
-    throw new Error(`storage_download_failed:${errorText(download.error)}`);
-  }
-
-  const bytes = await download.data.arrayBuffer();
-  if (bytes.byteLength !== expectedSize) throw new Error("file_size_mismatch");
-  const actualHash = hex(await crypto.subtle.digest("SHA-256", bytes));
-  if (actualHash !== expectedHash) throw new Error("file_hash_mismatch");
-
-  const text = new TextDecoder().decode(bytes);
+  const text = new TextDecoder().decode(file.bytes);
   const infected = text.includes(EICAR_SIGNATURE);
   return {
     scanStatus: infected ? "infected" : "clean",
@@ -132,6 +134,62 @@ async function proofScan(client: SupabaseClient, payload: Record<string, unknown
     scannerVersion: "1.0.0",
     providerReference: crypto.randomUUID(),
   };
+}
+
+async function externalScan(client: SupabaseClient, payload: Record<string, unknown>): Promise<ScanResult> {
+  if (!EXTERNAL_SCANNER_URL || !EXTERNAL_SCANNER_API_KEY) {
+    return manualReviewResult("external_scanner_not_configured", crypto.randomUUID());
+  }
+
+  let scannerUrl: string;
+  try {
+    scannerUrl = validateExternalScannerUrl(EXTERNAL_SCANNER_URL);
+  } catch {
+    return manualReviewResult("external_scanner_configuration_invalid", crypto.randomUUID());
+  }
+
+  const file = await downloadVerifiedFile(client, payload);
+  const timeout = Number.isInteger(EXTERNAL_SCANNER_TIMEOUT_MS)
+    && EXTERNAL_SCANNER_TIMEOUT_MS >= 1000
+    && EXTERNAL_SCANNER_TIMEOUT_MS <= 120000
+    ? EXTERNAL_SCANNER_TIMEOUT_MS
+    : 20000;
+  let scannerResponse: Response;
+  try {
+    scannerResponse = await fetch(scannerUrl, {
+      method: "POST",
+      headers: externalScannerHeaders({
+        apiKey: EXTERNAL_SCANNER_API_KEY,
+        sha256: file.expectedHash,
+        contentType: file.expectedContentType,
+        sizeBytes: file.expectedSize,
+      }),
+      body: file.bytes,
+      signal: AbortSignal.timeout(timeout),
+    });
+  } catch (error) {
+    throw new Error(`external_scanner_unavailable:${errorText(error)}`);
+  }
+
+  if ([408, 425, 429].includes(scannerResponse.status) || scannerResponse.status >= 500) {
+    throw new Error(`external_scanner_retryable_http:${scannerResponse.status}`);
+  }
+  if (!scannerResponse.ok) {
+    return manualReviewResult(`external_scanner_rejected_request_${scannerResponse.status}`, crypto.randomUUID());
+  }
+
+  const responseBody = await scannerResponse.json().catch(() => null);
+  try {
+    return normalizeExternalScanResponse(responseBody);
+  } catch {
+    return manualReviewResult("external_scanner_response_invalid", crypto.randomUUID());
+  }
+}
+
+async function scanFile(client: SupabaseClient, payload: Record<string, unknown>): Promise<ScanResult> {
+  const profile = requiredString(payload.uploadProfileCode, "upload_profile_code");
+  if (profile === "e12_storage_proof") return proofScan(client, payload);
+  return externalScan(client, payload);
 }
 
 async function ensureReleased(
@@ -180,11 +238,11 @@ async function ensureReleased(
 
 function isPermanentFailure(message: string) {
   return [
-    "scanner_not_configured_for_profile",
     "upload_profile_code_required",
     "bucket_required",
     "object_key_required",
     "sha256_required",
+    "sha256_invalid",
     "invalid_integer_parameter",
     "file_size_mismatch",
     "file_hash_mismatch",
@@ -265,7 +323,7 @@ async function processDelivery(client: SupabaseClient, workerId: string, deliver
       };
     }
 
-    const scanResult = await proofScan(client, delivery.payload);
+    const scanResult = await scanFile(client, delivery.payload);
     const appliedData = await callRpc<unknown>(client, "file_apply_scan_result", {
       p_queue_job_id: delivery.job_id,
       p_file_object_id: fileObjectId,
