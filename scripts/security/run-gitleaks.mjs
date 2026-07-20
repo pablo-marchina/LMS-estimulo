@@ -36,10 +36,33 @@ function readRedactedHistoricalContext(finding) {
   const lines = historical.stdout.split(/\r?\n/u);
   const start = Math.max(0, finding.StartLine - 3);
   const end = Math.min(lines.length, finding.StartLine + 2);
-  return lines.slice(start, end).map((line, index) => ({
-    line: start + index + 1,
-    text: redactContext(line),
-  }));
+  const target = lines[finding.StartLine - 1] || "";
+  const literalMatch = target.match(/["'`]([^"'`]*)["'`]/u);
+  const bindingLine = lines
+    .slice(0, finding.StartLine)
+    .reverse()
+    .find((line) => /\b(?:const|let|var)\s+[A-Za-z_$][\w$]*\s*=/u.test(line));
+  const bindingMatch = bindingLine?.match(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=/u);
+  const literal = literalMatch?.[1] || "";
+  const literalShape = /^[A-Z0-9_]+$/u.test(literal)
+    ? "UPPER_SNAKE_IDENTIFIER"
+    : /^[a-z0-9._-]+$/u.test(literal)
+      ? "LOWER_IDENTIFIER"
+      : /^[a-f0-9]+$/iu.test(literal)
+        ? "HEX_LIKE"
+        : /^[A-Za-z0-9+/=]+$/u.test(literal)
+          ? "BASE64_LIKE"
+          : "OTHER";
+
+  return {
+    bindingIdentifier: bindingMatch?.[1] || null,
+    literalLength: literal.length || null,
+    literalShape,
+    lines: lines.slice(start, end).map((line, index) => ({
+      line: start + index + 1,
+      text: redactContext(line),
+    })),
+  };
 }
 
 async function main() {
