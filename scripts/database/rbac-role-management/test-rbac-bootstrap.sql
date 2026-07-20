@@ -45,8 +45,8 @@ begin
 
   begin
     perform public.bootstrap_organization_role_manager(
-      v_org,v_manager_two_membership,
-      'Destino conflitante','bootstrap-role-manager-0001'
+      v_org,v_manager_one_membership,
+      'Motivo conflitante','bootstrap-role-manager-0001'
     );
     raise exception 'conflicting bootstrap replay unexpectedly succeeded';
   exception when others then
