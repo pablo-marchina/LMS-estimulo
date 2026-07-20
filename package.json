@@ -33,10 +33,11 @@
     "scan:secrets": "node scripts/security/run-gitleaks.mjs",
     "test:secret-scanning": "node scripts/security/test-gitleaks.mjs",
     "test:database-clean-replay": "npm run validate:migration-history && npm run replay:database-clean && npm run validate:schema-equivalence && npm run validate:public-rpc-contracts",
-    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence && npm run test:activity-comments && npm run test:practice-uploads && npm run test:learning-credentials && npm run test:content-library && npm run test:test-public-signup",
+    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence && npm run test:activity-comments && npm run test:practice-uploads && npm run test:learning-credentials && npm run test:content-library && npm run test:test-public-signup && npm run test:rbac-role-management",
     "test:application-foundation": "node --test scripts/application/*.test.mjs",
     "test:migration-history": "node --test scripts/database/migration-history/*.test.mjs",
-    "test:public-rpc-contracts": "node --test scripts/database/public-rpc-contracts/*.test.mjs"
+    "test:public-rpc-contracts": "node --test scripts/database/public-rpc-contracts/*.test.mjs",
+    "test:rbac-role-management": "node scripts/database/rbac-role-management/run.mjs"
   },
   "engines": {
     "node": ">=22.0.0"
