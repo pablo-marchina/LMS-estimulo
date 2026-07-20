@@ -33,8 +33,13 @@ function readRedactedHistoricalContext(finding) {
   );
 
   if (historical.status !== 0 || !historical.stdout) return null;
-  const line = historical.stdout.split(/\r?\n/u)[finding.StartLine - 1] || "";
-  return redactContext(line);
+  const lines = historical.stdout.split(/\r?\n/u);
+  const start = Math.max(0, finding.StartLine - 3);
+  const end = Math.min(lines.length, finding.StartLine + 2);
+  return lines.slice(start, end).map((line, index) => ({
+    line: start + index + 1,
+    text: redactContext(line),
+  }));
 }
 
 async function main() {
@@ -87,7 +92,7 @@ async function main() {
       line: finding.StartLine || finding.Line || null,
       commit: finding.Commit || null,
       fingerprint: finding.Fingerprint || null,
-      redactedContext: readRedactedHistoricalContext(finding),
+      redactedContextWindow: readRedactedHistoricalContext(finding),
     }));
     const safeReport = {
       status: "LEAKS_FOUND",
