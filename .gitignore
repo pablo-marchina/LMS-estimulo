@@ -11,3 +11,7 @@ node_modules/
 .next/
 **/.next/
 **/*.tsbuildinfo
+
+# Local source packages may contain unsanitized credentials or generated artifacts.
+estimulo-ref*.zip
+impulso-empreendedor.zip
