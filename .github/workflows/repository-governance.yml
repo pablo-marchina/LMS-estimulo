@@ -118,6 +118,7 @@ jobs:
         with:
           name: gitleaks-safe-${{ github.run_id }}-${{ github.run_attempt }}
           path: .artifacts/gitleaks-safe.json
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 5
           compression-level: 9
