@@ -20,20 +20,20 @@ test("environment examples expose safe defaults for branding and test signup", a
   assert.match(rootExample, /^SUPABASE_SERVICE_ROLE_KEY=replace-with-service-role-key$/m);
 });
 
-test("public signup is explicitly test-only and fails closed in production", async () => {
+test("synthetic signup is explicitly test-only and fails closed in production", async () => {
   const gate = await read("apps/web/lib/auth/test-public-signup.ts");
   assert.match(gate, /process\.env\.NODE_ENV !== "production"/);
   assert.match(gate, /new Set\(\["development", "test"\]\)/);
   assert.match(gate, /PUBLIC_SIGNUP_TEST_MODE/);
   assert.match(gate, /SUPABASE_SERVICE_ROLE_KEY/);
 
-  const page = await read("apps/web/app/cadastro/page.tsx");
+  const page = await read("apps/web/app/cadastro/teste/page.tsx");
   assert.match(page, /if \(!testPublicSignupEnabled\(\)\) notFound\(\)/);
   assert.match(page, /Uso restrito a testes/);
 });
 
 test("signup creates a confirmed test account and provisions only a participant profile", async () => {
-  const action = await read("apps/web/app/cadastro/actions.ts");
+  const action = await read("apps/web/app/cadastro/teste/actions.ts");
   assert.match(action, /auth\.admin\.createUser/);
   assert.match(action, /email_confirm: true/);
   assert.match(action, /test_public_signup: true/);
@@ -67,4 +67,37 @@ test("database provisioning is service-role-only and marked as test data", async
   assert.match(migration, /'test_only', true/);
   assert.match(migration, /revoke all on function .* from public, anon, authenticated/is);
   assert.match(migration, /grant execute on function .* to service_role/is);
+});
+
+test("production signup requires confirmed email and provisions only through server contracts", async () => {
+  const [page, action, callback, completion, runtime, proxy] = await Promise.all([
+    read("apps/web/app/cadastro/page.tsx"),
+    read("apps/web/app/cadastro/actions.ts"),
+    read("apps/web/app/auth/confirm/route.ts"),
+    read("apps/web/app/cadastro/concluir/actions.ts"),
+    read("apps/web/lib/auth/public-signup-provisioning.ts"),
+    read("apps/web/proxy.ts"),
+  ]);
+  assert.match(page, /createPublicAccountAction/);
+  assert.match(action, /auth\.signUp/);
+  assert.match(action, /emailRedirectTo/);
+  assert.doesNotMatch(action, /auth\.admin\.createUser/);
+  assert.match(callback, /verifyOtp/);
+  assert.match(callback, /exchangeCodeForSession/);
+  assert.match(completion, /getAuthContext/);
+  assert.match(runtime, /provision_public_signup_participant/);
+  assert.match(proxy, /estimulo_first_touch|FIRST_TOUCH_COOKIE/);
+  assert.doesNotMatch(action + completion, /cpf/i);
+  assert.doesNotMatch(action + completion, /hubspot/i);
+});
+
+test("first-touch cookie is HttpOnly and UTM values are bounded", async () => {
+  const [proxy, attribution] = await Promise.all([
+    read("apps/web/proxy.ts"),
+    read("apps/web/lib/auth/first-touch.ts"),
+  ]);
+  assert.match(proxy, /httpOnly: true/);
+  assert.match(proxy, /sameSite: "lax"/);
+  assert.match(attribution, /MAX_UTM_LENGTH = 200/);
+  assert.match(attribution, /landing_path/);
 });
