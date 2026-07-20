@@ -1,4 +1,4 @@
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,11 +6,8 @@ import { fileURLToPath } from "node:url";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(currentDir, "../../..");
 const outputDir = resolve(repositoryRoot, ".tmp/hubspot-contracts");
+const compiledTestDir = resolve(outputDir, "scripts/integrations/hubspot-contracts");
 const tsconfigPath = resolve(currentDir, "tsconfig.json");
-const testPath = resolve(
-  outputDir,
-  "scripts/integrations/hubspot-contracts/hubspot-contracts.test.mjs"
-);
 
 const compilerCandidates = [
   resolve(repositoryRoot, "node_modules/typescript/bin/tsc"),
@@ -33,7 +30,13 @@ try {
     throw new Error(`HubSpot contract compilation failed with status ${compile.status ?? "unknown"}.`);
   }
 
-  const test = spawnSync(process.execPath, ["--test", testPath], {
+  const testPaths = readdirSync(compiledTestDir)
+    .filter((name) => name.endsWith(".test.mjs"))
+    .sort()
+    .map((name) => resolve(compiledTestDir, name));
+  if (testPaths.length < 1) throw new Error("No compiled HubSpot contract tests were found.");
+
+  const test = spawnSync(process.execPath, ["--test", ...testPaths], {
     cwd: repositoryRoot,
     stdio: "inherit"
   });
