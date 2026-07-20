@@ -4,38 +4,41 @@ import { testPublicSignupEnabled } from "@/lib/auth/test-public-signup";
 import { signInAction } from "./actions";
 
 const errorMessages: Record<string, string> = {
-  campos_obrigatorios: "Preencha e-mail e senha.",
-  credenciais_invalidas: "Não foi possível entrar com essas credenciais.",
-  identidade_nao_vinculada: "A autenticação foi concluída, mas a identidade interna ainda não está vinculada.",
-  acesso_nao_autorizado: "Sua identidade não possui acesso ativo a uma jornada ou área operacional.",
-  cadastro_indisponivel: "O cadastro público está desabilitado neste ambiente.",
-  cadastro_incompleto: "A conta foi autenticada, mas o perfil de teste não pôde ser concluído."
+  campos_obrigatorios: "Informe e-mail e senha.",
+  credenciais_invalidas: "E-mail ou senha inválidos.",
+  identidade_nao_vinculada: "Não foi possível resolver a identidade interna.",
+  acesso_nao_autorizado: "A identidade não possui acesso ativo à plataforma.",
+  cadastro_indisponivel: "O cadastro de teste está desabilitado neste ambiente.",
+  cadastro_incompleto: "A conta foi autenticada, mas o perfil de teste não pôde ser concluído.",
+  confirmacao_invalida: "O link de confirmação é inválido ou expirou.",
+  confirmacao_necessaria: "Confirme seu e-mail antes de concluir o cadastro.",
 };
 
 export default async function SignInPage({ searchParams }: { searchParams: Promise<{ erro?: string; cadastro?: string }> }) {
   const { erro, cadastro } = await searchParams;
-  const publicSignupEnabled = testPublicSignupEnabled();
-
+  const allowTestSignup = testPublicSignupEnabled();
   return (
     <main className="auth-page">
-      <section className="auth-card" aria-labelledby="login-title">
+      <section className="auth-card">
         <EstimuloBrand centered />
-        <p className="eyebrow">Plataforma de jornadas</p>
-        <h1 id="login-title">Entre para continuar seu desenvolvimento</h1>
-        <p className="lead">Acesse as jornadas disponibilizadas para o seu negócio.</p>
+        <div className="auth-heading">
+          <p className="eyebrow">Plataforma Estímulo</p>
+          <h1>Entrar</h1>
+          <p>Use sua identidade confirmada para acessar a jornada ou a operação autorizada.</p>
+        </div>
         {cadastro === "criado" ? <p className="form-message form-message--success" role="status">Conta de teste criada. Você já pode entrar.</p> : null}
+        {cadastro === "confirmacao" ? <p className="form-message form-message--success" role="status">Conta criada. Abra o e-mail de confirmação para continuar.</p> : null}
         {erro ? <p className="form-message form-message--error" role="alert">{errorMessages[erro] ?? "Não foi possível entrar."}</p> : null}
         <form action={signInAction} className="stack">
           <label>E-mail<input name="email" type="email" autoComplete="email" required /></label>
           <label>Senha<input name="password" type="password" autoComplete="current-password" required /></label>
-          <button className="button button--primary" type="submit">Entrar</button>
+          <button className="button button--primary button--large" type="submit">Entrar</button>
         </form>
-        {publicSignupEnabled ? (
-          <div className="auth-alternative">
-            <span>Ambiente de teste</span>
-            <Link className="button button--secondary" href="/cadastro">Criar conta de teste</Link>
-          </div>
-        ) : <p className="support-note">O acesso é concedido por convite e vinculado à identidade interna do Estímulo.</p>}
+        <div className="stack auth-footer">
+          <Link className="button button--secondary" href="/cadastro">Criar conta</Link>
+          {allowTestSignup ? <Link href="/cadastro/teste">Criar conta de teste</Link> : null}
+          <p>O cadastro público cria somente um perfil de participante. Acesso administrativo exige concessão explícita.</p>
+        </div>
       </section>
     </main>
   );
