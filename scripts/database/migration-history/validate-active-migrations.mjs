@@ -30,6 +30,7 @@ const expectedActiveMigrations = Object.freeze([
   '20260720172500_rbac_event_schemas.sql',
   '20260720173000_rbac_role_management.sql',
   '20260720174500_rbac_role_manager_bootstrap.sql',
+  '20260720175500_rbac_transaction_time.sql',
 ]);
 
 export async function validateActiveMigrations() {
