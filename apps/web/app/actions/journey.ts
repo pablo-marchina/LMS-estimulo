@@ -7,12 +7,14 @@ import { getAuthContext } from "@/lib/auth/context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
+import { utilityRatingRuntime } from "@/lib/utility-rating/runtime";
 
 const uuid = z.string().uuid();
 const integer = z.coerce.number().int().nonnegative();
 const commentBody = z.string().trim().min(1).max(2000);
 const moderationStatus = z.enum(["visible", "hidden"]);
 const practiceReviewStatus = z.enum(["accepted", "rejected"]);
+const utilityRatingValue = z.coerce.number().int().min(1).max(5);
 
 async function actorId() {
   const auth = await getAuthContext();
@@ -128,6 +130,20 @@ export async function reviewPracticeSubmissionAction(formData: FormData) {
     String(formData.get("idempotency_key") || randomUUID())
   );
   redirect(`/admin?organization=${organization}&pratica=revisada#praticas`);
+}
+
+export async function rateActivityUtilityAction(formData: FormData) {
+  const actor = await actorId();
+  const journey = uuid.parse(formData.get("journey_instance_id"));
+  const step = uuid.parse(formData.get("step_instance_id"));
+  const rating = utilityRatingValue.parse(formData.get("rating"));
+  await utilityRatingRuntime.rate(
+    actor,
+    step,
+    rating,
+    String(formData.get("idempotency_key") || randomUUID())
+  );
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&utilidade=registrada#utilidade`);
 }
 
 export async function submitQuickCheckAction(formData: FormData) {
