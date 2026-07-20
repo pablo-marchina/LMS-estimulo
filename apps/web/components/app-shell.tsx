@@ -10,7 +10,8 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
         { href: "/admin", label: "Operação" },
         { href: "/admin/biblioteca", label: "Biblioteca" },
         { href: "/admin/usuarios", label: "Usuários" },
-        { href: "/admin/maturidade", label: "Maturidade" }
+        { href: "/admin/maturidade", label: "Maturidade" },
+        { href: "/admin/integracoes", label: "Integrações" }
       ]
     : [
         { href: "/empreendedor", label: "Painel" },
