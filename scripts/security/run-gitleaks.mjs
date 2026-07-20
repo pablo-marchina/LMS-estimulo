@@ -14,6 +14,29 @@ async function persistSafeReport(report) {
   await writeFile(safeReportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
+function redactContext(line) {
+  if (!line) return null;
+
+  return line
+    .replace(/(["'`])(?:\\.|(?!\1).)*\1/g, "$1[REDACTED]$1")
+    .replace(/[A-Za-z0-9+/_=.-]{12,}/g, "[REDACTED]")
+    .slice(0, 240);
+}
+
+function readRedactedHistoricalContext(finding) {
+  if (!finding.Commit || !finding.File || !finding.StartLine) return null;
+
+  const historical = spawnSync(
+    "git",
+    ["show", `${finding.Commit}:${finding.File}`],
+    { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
+  );
+
+  if (historical.status !== 0 || !historical.stdout) return null;
+  const line = historical.stdout.split(/\r?\n/u)[finding.StartLine - 1] || "";
+  return redactContext(line);
+}
+
 async function main() {
   try {
     const result = spawnSync(
@@ -64,6 +87,7 @@ async function main() {
       line: finding.StartLine || finding.Line || null,
       commit: finding.Commit || null,
       fingerprint: finding.Fingerprint || null,
+      redactedContext: readRedactedHistoricalContext(finding),
     }));
     const safeReport = {
       status: "LEAKS_FOUND",
