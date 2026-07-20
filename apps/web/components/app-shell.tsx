@@ -8,7 +8,8 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
   const links = area === "admin"
     ? [
         { href: "/admin", label: "Operação" },
-        { href: "/admin/biblioteca", label: "Biblioteca" }
+        { href: "/admin/biblioteca", label: "Biblioteca" },
+        { href: "/admin/usuarios", label: "Usuários" }
       ]
     : [
         { href: "/empreendedor", label: "Painel" },
