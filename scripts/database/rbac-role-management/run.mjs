@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const files = [
+  "scripts/database/rbac-role-management/test-rbac-bootstrap.sql",
   "scripts/database/rbac-role-management/test-rbac-role-management.sql",
 ].map((file) => path.join(repositoryRoot, file));
 const databaseUrl = process.env.DATABASE_URL;
