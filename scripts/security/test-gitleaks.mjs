@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -21,8 +22,12 @@ try {
 
   await writeFile(cleanPath, "synthetic fixture without credentials\n", "utf8");
 
-  // Construct the fake token at runtime so the test source itself is not a finding.
-  const syntheticToken = ["ghp", "_", "A".repeat(36)].join("");
+  // Construct the entirely fake, high-entropy token only at runtime so this source is never a finding.
+  const syntheticBody = createHash("sha256")
+    .update("estimulo-gitleaks-negative-proof-v1")
+    .digest("base64url")
+    .slice(0, 36);
+  const syntheticToken = ["ghp", "_", syntheticBody].join("");
   await writeFile(leakPath, `GITHUB_TOKEN=${syntheticToken}\n`, "utf8");
 
   const clean = run(cleanPath, 17);
