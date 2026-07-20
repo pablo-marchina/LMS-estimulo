@@ -34,6 +34,7 @@ const expectedActiveMigrations = Object.freeze([
   '20260720180000_rbac_validity_window.sql',
   '20260720181500_public_signup.sql',
   '20260720183000_business_maturity_draft.sql',
+  '20260720183500_business_maturity_preview_api.sql',
 ]);
 
 export async function validateActiveMigrations() {
