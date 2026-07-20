@@ -108,7 +108,19 @@ jobs:
           test "$(gitleaks version)" = "$GITLEAKS_VERSION"
 
       - name: Scan complete Git history for secrets
+        id: secret-scan
+        continue-on-error: true
         run: npm run scan:secrets
+
+      - name: Preserve safe secret-scan metadata
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-safe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/gitleaks-safe.json
+          if-no-files-found: error
+          retention-days: 5
+          compression-level: 9
 
       - name: Prove secret scanner fails closed
         run: npm run test:secret-scanning
@@ -139,3 +151,10 @@ jobs:
           grep -Fx '.artifacts/' .gitignore
           grep -Fx 'estimulo-ref*.zip' .gitignore
           grep -Fx 'impulso-empreendedor.zip' .gitignore
+
+      - name: Enforce secret-scan result
+        if: steps.secret-scan.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "Secret scanning found historical or current findings. Review the redacted metadata artifact."
+          exit 1
