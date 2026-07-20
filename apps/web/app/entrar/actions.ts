@@ -38,7 +38,7 @@ export async function signInAction(formData: FormData) {
   if (auth.identity.entrepreneur_id) redirect("/empreendedor");
   const organization = auth.identity.organizations.find((item) => item.permissions.includes("journey.execution.read") || item.permissions.includes("journey.execution.manage"));
   if (organization) redirect(`/admin?organization=${organization.organization_id}`);
-  redirect("/entrar?erro=acesso_nao_autorizado");
+  redirect("/cadastro/concluir");
 }
 
 export async function signOutAction() {
