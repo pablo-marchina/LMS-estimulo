@@ -14,33 +14,37 @@ async function persistSafeReport(report) {
   await writeFile(safeReportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
-try {
-  const result = spawnSync(
-    command,
-    [
-      "git",
-      "--no-banner",
-      "--redact",
-      "--max-decode-depth=2",
-      "--max-archive-depth=1",
-      "--report-format=json",
-      `--report-path=${reportPath}`,
-    ],
-    { encoding: "utf8" },
-  );
+async function main() {
+  try {
+    const result = spawnSync(
+      command,
+      [
+        "git",
+        "--no-banner",
+        "--redact",
+        "--max-decode-depth=2",
+        "--max-archive-depth=1",
+        "--report-format=json",
+        `--report-path=${reportPath}`,
+      ],
+      { encoding: "utf8" },
+    );
 
-  if (result.error) {
-    const safeReport = { status: "TOOL_ERROR", findings: 0, error: result.error.message };
-    await persistSafeReport(safeReport);
-    console.error(JSON.stringify(safeReport));
-    process.exitCode = 2;
-  } else if (result.status === 0) {
-    const safeReport = { status: "PASS", findings: 0 };
-    await persistSafeReport(safeReport);
-    console.log(JSON.stringify(safeReport));
-  } else {
-    let findings = [];
+    if (result.error) {
+      const safeReport = { status: "TOOL_ERROR", findings: 0, error: result.error.message };
+      await persistSafeReport(safeReport);
+      console.error(JSON.stringify(safeReport));
+      return 2;
+    }
 
+    if (result.status === 0) {
+      const safeReport = { status: "PASS", findings: 0 };
+      await persistSafeReport(safeReport);
+      console.log(JSON.stringify(safeReport));
+      return 0;
+    }
+
+    let findings;
     try {
       findings = JSON.parse(await readFile(reportPath, "utf8"));
     } catch {
@@ -51,8 +55,7 @@ try {
       };
       await persistSafeReport(safeReport);
       console.error(JSON.stringify(safeReport));
-      process.exitCode = result.status || 2;
-      return;
+      return result.status || 2;
     }
 
     const safeFindings = findings.map((finding) => ({
@@ -60,6 +63,7 @@ try {
       file: finding.File || "unknown",
       line: finding.StartLine || finding.Line || null,
       commit: finding.Commit || null,
+      fingerprint: finding.Fingerprint || null,
     }));
     const safeReport = {
       status: "LEAKS_FOUND",
@@ -69,8 +73,10 @@ try {
 
     await persistSafeReport(safeReport);
     console.error(JSON.stringify(safeReport, null, 2));
-    process.exitCode = 1;
+    return 1;
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
   }
-} finally {
-  await rm(workspace, { recursive: true, force: true });
 }
+
+process.exitCode = await main();
