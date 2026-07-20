@@ -32,8 +32,8 @@ test("bootstrap requires explicit organization, membership, reason and idempoten
 test("bootstrap is service-role only and never infers a manager from email domain", () => {
   assert.match(source, /SUPABASE_SERVICE_ROLE_KEY/u);
   assert.match(source, /bootstrap_organization_role_manager/u);
-  assert.match(source, /--organization/u);
-  assert.match(source, /--membership/u);
+  assert.match(source, /values\.get\("organization"\)/u);
+  assert.match(source, /values\.get\("membership"\)/u);
   assert.doesNotMatch(source, /@estimulo\.org/u);
   assert.doesNotMatch(source, /console\.log\([^)]*serviceRoleKey/u);
 });
