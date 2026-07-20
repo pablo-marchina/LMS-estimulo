@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -6,6 +6,13 @@ import { spawnSync } from "node:child_process";
 const command = process.env.GITLEAKS_BIN || "gitleaks";
 const workspace = await mkdtemp(join(tmpdir(), "estimulo-gitleaks-report-"));
 const reportPath = join(workspace, "findings.json");
+const artifactDirectory = join(process.cwd(), ".artifacts");
+const safeReportPath = join(artifactDirectory, "gitleaks-safe.json");
+
+async function persistSafeReport(report) {
+  await mkdir(artifactDirectory, { recursive: true });
+  await writeFile(safeReportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
 
 try {
   const result = spawnSync(
@@ -23,18 +30,27 @@ try {
   );
 
   if (result.error) {
-    console.error(`Gitleaks could not start: ${result.error.message}`);
+    const safeReport = { status: "TOOL_ERROR", findings: 0, error: result.error.message };
+    await persistSafeReport(safeReport);
+    console.error(JSON.stringify(safeReport));
     process.exitCode = 2;
   } else if (result.status === 0) {
-    console.log(JSON.stringify({ status: "PASS", findings: 0 }));
+    const safeReport = { status: "PASS", findings: 0 };
+    await persistSafeReport(safeReport);
+    console.log(JSON.stringify(safeReport));
   } else {
     let findings = [];
 
     try {
       findings = JSON.parse(await readFile(reportPath, "utf8"));
     } catch {
-      console.error("Gitleaks failed without a readable redacted report.");
-      if (result.stderr) console.error(result.stderr.trim());
+      const safeReport = {
+        status: "REPORT_ERROR",
+        findings: 0,
+        exitCode: result.status || 2,
+      };
+      await persistSafeReport(safeReport);
+      console.error(JSON.stringify(safeReport));
       process.exitCode = result.status || 2;
       return;
     }
@@ -45,14 +61,14 @@ try {
       line: finding.StartLine || finding.Line || null,
       commit: finding.Commit || null,
     }));
+    const safeReport = {
+      status: "LEAKS_FOUND",
+      count: safeFindings.length,
+      findings: safeFindings,
+    };
 
-    console.error(
-      JSON.stringify(
-        { status: "LEAKS_FOUND", count: safeFindings.length, findings: safeFindings },
-        null,
-        2,
-      ),
-    );
+    await persistSafeReport(safeReport);
+    console.error(JSON.stringify(safeReport, null, 2));
     process.exitCode = 1;
   }
 } finally {
