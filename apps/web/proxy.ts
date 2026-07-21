@@ -36,9 +36,10 @@ function withFirstTouch(response: NextResponse, request: NextRequest): NextRespo
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+  const administrativePath = request.nextUrl.pathname.startsWith("/admin");
   const protectedPath = request.nextUrl.pathname.startsWith("/empreendedor")
     || request.nextUrl.pathname.startsWith("/capacitacao")
-    || request.nextUrl.pathname.startsWith("/admin")
+    || administrativePath
     || request.nextUrl.pathname.startsWith("/cadastro/concluir");
   if (protectedPath && localSyntheticSession(request)) return withFirstTouch(response, request);
 
@@ -53,14 +54,15 @@ export async function proxy(request: NextRequest) {
         for (const { name, value } of values) request.cookies.set(name, value);
         response = NextResponse.next({ request });
         for (const { name, value, options } of values) response.cookies.set(name, value, options);
-      }
-    }
+      },
+    },
   });
   const { data } = await client.auth.getUser();
   if (protectedPath && !data.user) {
-    return withFirstTouch(NextResponse.redirect(new URL("/entrar", request.url)), request);
+    const destination = administrativePath ? "/entrar/administracao" : "/entrar";
+    return withFirstTouch(NextResponse.redirect(new URL(destination, request.url)), request);
   }
   return withFirstTouch(response, request);
 }
 
-export const config = { matcher: ["/entrar", "/cadastro/:path*", "/auth/:path*", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };
+export const config = { matcher: ["/entrar/:path*", "/cadastro/:path*", "/auth/:path*", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };
