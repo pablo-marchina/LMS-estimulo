@@ -15,12 +15,13 @@ const [adminEmailPolicy, adminLayout, participantSignIn, adminSignIn, adminCallb
   readFile("apps/web/lib/hubspot/sync-policy.ts", "utf8"),
 ]);
 
-test("administrative entry requires Google, the exact Estímulo domain and active RBAC", () => {
+test("administrative entry requires Google, verified OAuth claims, the exact Estímulo domain and active RBAC", () => {
   assert.match(adminEmailPolicy, /ESTIMULO_ADMIN_DOMAIN = "estimulo\.org"/u);
   assert.match(adminEmailPolicy, /email\.slice\(separator \+ 1\) === ESTIMULO_ADMIN_DOMAIN/u);
   assert.match(adminSignIn, /provider:\s*"google"/u);
   assert.match(adminSignIn, /hd:\s*"estimulo\.org"/u);
-  assert.match(adminCallback, /isGoogleAuthProvider\(user\)/u);
+  assert.match(adminCallback, /auth\.getClaims\(\)/u);
+  assert.match(adminCallback, /isGoogleAuthProvider\(user, claimsData\.claims\.amr\)/u);
   assert.match(adminCallback, /isEstimuloAdministrativeEmail\(email\)/u);
   assert.match(adminCallback, /administrativeOrganization\(auth\.identity\)/u);
   assert.match(adminCallback, /client\.auth\.signOut/u);
