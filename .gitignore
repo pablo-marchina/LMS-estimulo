@@ -12,6 +12,8 @@ node_modules/
 **/.next/
 **/*.tsbuildinfo
 
-# Local source packages may contain unsanitized credentials or generated artifacts.
-estimulo-ref*.zip
-impulso-empreendedor.zip
+# Local archives and generated packages do not belong in Git.
+*.zip
+*.tar
+*.tar.gz
+*.tgz
