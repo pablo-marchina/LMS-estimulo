@@ -7,7 +7,7 @@ import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
 import { decodeFirstTouch, FIRST_TOUCH_COOKIE } from "@/lib/auth/first-touch";
 import { provisionPublicSignupParticipant } from "@/lib/auth/public-signup-provisioning";
-import { isValidCpf, protectCpf } from "@/lib/identity/cpf";
+import { isValidCpf, protectCpf, type ProtectedCpf } from "@/lib/identity/cpf";
 
 const schema = z.object({
   preferredName: z.string().trim().min(2).max(120),
@@ -30,7 +30,7 @@ export async function completePublicSignupAction(formData: FormData) {
     redirect(`/cadastro/concluir?erro=${cpfIssue ? "cpf_invalido" : "dados_invalidos"}`);
   }
 
-  let protectedCpf;
+  let protectedCpf: ProtectedCpf;
   try {
     protectedCpf = protectCpf(parsed.data.cpf, auth.identity.user_account_id);
   } catch (error) {
