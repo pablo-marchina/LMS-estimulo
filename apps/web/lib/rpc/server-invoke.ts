@@ -1,6 +1,7 @@
 import "server-only";
 import { browserE2EEnabled } from "@/lib/browser-e2e/config";
 import { invokeSyntheticRpc } from "@/lib/browser-e2e/synthetic-runtime";
+import { syntheticSupplementalRpc } from "@/lib/browser-e2e/synthetic-supplemental-rpc";
 import { normalizeLegacyRpcArgumentsForSynthetic } from "@/lib/journey-runtime/legacy-rpc-arguments";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 
@@ -14,6 +15,8 @@ export class ServerRpcError extends Error {
 export async function invokeServerRpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   if (browserE2EEnabled()) {
     try {
+      const supplemental = syntheticSupplementalRpc(name, args);
+      if (supplemental.handled) return supplemental.value as T;
       return await invokeSyntheticRpc<T>(name, normalizeLegacyRpcArgumentsForSynthetic(name, args));
     } catch (error) {
       const message = error instanceof Error ? error.message : "BROWSER_E2E_RPC_ERROR";
