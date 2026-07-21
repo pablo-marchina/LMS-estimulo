@@ -9,10 +9,9 @@ This directory is a **blocked, parameterized staging baseline**, not evidence th
 - non-root, read-only-root-filesystem ECS Fargate task;
 - immutable ECR repository and digest-pinned deployment input;
 - encrypted CloudWatch logs;
-- KMS-encrypted, versioned, non-public quarantine and protected S3 buckets;
-- encrypted SQS malware-scan queue and dead-letter queue;
+- one KMS-encrypted, versioned and non-public S3 bucket for participant evidence;
 - private encrypted PostgreSQL RDS with an AWS-managed master password;
-- alarms for ALB 5xx, scan backlog age, DLQ messages and RDS free storage.
+- alarms for ALB 5xx and RDS free storage.
 
 ## Build the environment-specific image
 
@@ -28,7 +27,7 @@ docker build \
 
 The Dockerfile rejects missing values and non-HTTPS URLs. These values are public client configuration, not secrets. The same values are repeated in `public_environment` for server-side runtime access. A built image must not be promoted to another environment with different `NEXT_PUBLIC_*` values.
 
-Only server-side credentials such as `SUPABASE_SERVICE_ROLE_KEY`, HubSpot tokens and scanner API keys belong in Secrets Manager.
+Only server-side credentials such as `SUPABASE_SERVICE_ROLE_KEY`, CPF protection keys and HubSpot tokens belong in Secrets Manager.
 
 ## Deliberate deployment block
 
@@ -56,15 +55,14 @@ terraform plan -var-file=staging.auto.tfvars
 
 ## Portability blockers
 
-The current Next.js runtime still uses Supabase Auth, Storage and RPC APIs. The declared RDS, S3 and SQS resources are not yet selected by production adapters. Before AWS staging can prove the target architecture, the project still needs:
+The current Next.js runtime still uses Supabase Auth, Storage and RPC APIs. The declared RDS and S3 resources are not yet selected by production adapters. Before AWS staging can prove the target architecture, the project still needs:
 
 1. identity decision and adapter, such as Cognito or an approved retained provider;
 2. direct PostgreSQL/RDS data access replacing Supabase RPC coupling where required;
-3. S3 quarantine/release adapter;
-4. SQS file-scan worker adapter;
-5. database migration/bootstrap and restore rehearsal;
-6. actual account, network, certificate, domain and secret configuration;
-7. image build, ECR scan and public-config matching evidence;
-8. end-to-end staging evidence and rollback exercise.
+3. private S3 evidence-storage adapter with signed access and retention rules;
+4. database migration/bootstrap and restore rehearsal;
+5. actual account, network, certificate, domain and secret configuration;
+6. image build, ECR scan and public-config matching evidence;
+7. end-to-end staging evidence and rollback exercise.
 
 Until those gates pass, this stack is deployment scaffolding only and must not be described as production-ready.
