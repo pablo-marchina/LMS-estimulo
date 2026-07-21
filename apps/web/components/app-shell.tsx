@@ -11,12 +11,14 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
         { href: "/admin/biblioteca", label: "Biblioteca" },
         { href: "/admin/usuarios", label: "Usuários" },
         { href: "/admin/maturidade", label: "Maturidade" },
+        { href: "/admin/engajamento", label: "Engajamento" },
         { href: "/admin/integracoes", label: "Integrações" }
       ]
     : [
         { href: "/empreendedor", label: "Painel" },
         { href: "/capacitacao/biblioteca", label: "Biblioteca" },
-        { href: "/empreendedor/credenciais", label: "Credenciais" }
+        { href: "/empreendedor/credenciais", label: "Credenciais" },
+        { href: "/empreendedor/perfil", label: "Perfil" }
       ];
   const areaLabel = area === "admin" ? "Área de operação" : "Área do empreendedor";
 
