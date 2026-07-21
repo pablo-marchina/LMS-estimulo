@@ -2,37 +2,44 @@
 
 ## Princípio
 
-O domínio não depende de `pg_cron`, `pg_net` ou PGMQ. Esses componentes são adapters do ambiente de teste. Produção preserva `job_id`, deduplication key, receipt/attempt, idempotência, DLQ, métricas e reconciliação.
+O domínio não deve depender de `pg_cron`, `pg_net`, PGMQ ou APIs específicas do Supabase. Esses componentes continuam ativos no ambiente de desenvolvimento; a migração AWS exige adapters com os mesmos contratos de idempotência, receipt, tentativa, DLQ e reconciliação.
 
-## Mapeamento
+## Estado do baseline
 
-| Contrato | Supabase de testes | AWS staging/produção |
-|---|---|---|
-| Queue | PGMQ logged queue | SQS Standard |
-| DLQ | PGMQ queue separada | SQS DLQ + redrive policy |
-| Consumo contínuo | pg_cron + pg_net | Lambda event source mapping |
-| Limite de concorrência | configuração do dispatcher | maximum concurrency do event source mapping |
-| Visibility | `pgmq.read` / `set_vt` | SQS visibility timeout / ChangeMessageVisibility |
-| Métricas | snapshots PostgreSQL | CloudWatch + projeção governada |
-| Alarme | `operational_alerts` | CloudWatch Alarm + SNS/PagerDuty, mantendo registro interno |
-| Reconciliação | pg_cron | EventBridge Scheduler ou ECS/Lambda de manutenção |
-| Autorização | token único + service role | IAM execution role e resource policies |
-| Arquivos | Supabase Storage | S3 quarantine/protected |
-| Scan | scanner técnico | GuardDuty Malware Protection ou scanner aprovado |
+| Contrato | Desenvolvimento atual | Recurso declarado no baseline AWS | Adapter ativo no runtime |
+|---|---|---|---|
+| Banco operacional | PostgreSQL/Supabase RPC | RDS PostgreSQL privado e criptografado | não |
+| Identidade | Supabase Auth | ainda não declarado | não |
+| Arquivos | Supabase Storage | S3 quarantine/protected | não |
+| Fila de scan | fila PostgreSQL | SQS Standard + DLQ | não |
+| Scanner | Edge Function + provider externo opcional | worker AWS ainda pendente | somente Supabase Edge |
+| Web | Next.js local/CI | ECS/Fargate + ALB | scaffolding |
+| Secrets | ambiente Supabase/local | Secrets Manager por ARN | scaffolding |
+| Observabilidade | tabelas/logs atuais | CloudWatch + SNS | scaffolding |
 
-SQS Standard deve ser tratado como entrega pelo menos uma vez; o estado governado e os efeitos continuam idempotentes. Métricas operacionais equivalentes incluem backlog visível, mensagens não visíveis e idade da mensagem mais antiga. A DLQ precisa de alarme próprio.
+## Contratos preservados
 
-## Diferença importante
+- IDs e chaves de deduplicação permanecem canônicos;
+- processamento é pelo menos uma vez;
+- efeitos precisam ser idempotentes;
+- arquivos só deixam quarantine após resultado `clean` válido;
+- ausência de scanner real produz `manual_review`, nunca liberação;
+- outbox PostgreSQL continua a origem confiável da integração;
+- DLQ precisa de alarme e fluxo de redrive controlado.
 
-EventBridge Scheduler possui precisão de minuto e não é o mecanismo ideal para polling frequente da fila. O consumo principal deve ser orientado pelo event source mapping SQS → Lambda. Scheduler fica para reconciliação, métricas complementares, redrive controlado e limpeza.
+## Decisão de consumo
 
-## Gate AWS
+O baseline declara SQS/DLQ, mas não inventa o worker. A escolha entre Lambda event source mapping e ECS worker deve considerar tamanho do arquivo, duração do scan, concorrência, custo e limites do provider. EventBridge Scheduler fica reservado para reconciliação, métricas e limpeza, não polling rápido.
 
-Antes da produção:
+## Gate de paridade
 
-1. provisionar RDS, SQS/DLQ, Lambda, S3, KMS e observabilidade por IaC;
-2. executar testes de paridade com duplicata, visibility, crash pós-efeito, DLQ e redrive;
-3. testar concorrência e partial batch response;
-4. definir reserved/maximum concurrency e orçamento;
-5. validar alarmes e runbooks em staging;
-6. substituir thresholds provisórios por SLOs aprovados.
+Antes de ativar qualquer adapter AWS:
+
+1. teste de duplicata e idempotência;
+2. visibility timeout e extensão;
+3. crash após efeito e antes do ack;
+4. retry, DLQ e redrive;
+5. backlog e idade da mensagem;
+6. quarantine, clean, infected, unsupported e manual review;
+7. reconciliação entre banco, fila e storage;
+8. rollback para o adapter anterior sem perda de estado.
