@@ -68,7 +68,7 @@ test("participant signup requires the Supabase confirmation callback", async () 
 });
 
 test("administration has a separate Google-only entrypoint with server validation", async () => {
-  const [participantPage, participantAction, adminPage, adminAction, callback, layout, context] = await Promise.all([
+  const [participantPage, participantAction, adminPage, adminAction, callback, layout, context, provider] = await Promise.all([
     read("apps/web/app/entrar/page.tsx"),
     read("apps/web/app/entrar/actions.ts"),
     read("apps/web/app/entrar/administracao/page.tsx"),
@@ -76,6 +76,7 @@ test("administration has a separate Google-only entrypoint with server validatio
     read("apps/web/app/auth/admin/callback/route.ts"),
     read("apps/web/app/admin/layout.tsx"),
     read("apps/web/lib/auth/context.ts"),
+    read("apps/web/lib/auth/provider.ts"),
   ]);
 
   assert.match(participantPage, /href="\/entrar\/administracao"/);
@@ -92,13 +93,19 @@ test("administration has a separate Google-only entrypoint with server validatio
   assert.match(adminAction, /skipBrowserRedirect:\s*true/);
 
   assert.match(callback, /exchangeCodeForSession/);
-  assert.match(callback, /isGoogleAuthProvider\(user\)/);
+  assert.match(callback, /auth\.getClaims\(\)/);
+  assert.match(callback, /isGoogleAuthProvider\(user, claimsData\.claims\.amr\)/);
   assert.match(callback, /isEstimuloAdministrativeEmail\(email\)/);
   assert.match(callback, /administrativeOrganization\(auth\.identity\)/);
   assert.match(callback, /client\.auth\.signOut/);
   assert.match(layout, /auth\.provider !== "google"/);
   assert.match(layout, /administrativeOrganization\(auth\.identity\)/);
-  assert.match(context, /provider:\s*string/);
+  assert.match(context, /auth\.getClaims\(\)/);
+  assert.match(context, /resolveAuthProvider\(user, claimsData\.claims\.amr\)/);
+  assert.match(provider, /methods\.has\("oauth"\)/);
+  assert.match(provider, /last_sign_in_at/);
+  assert.match(provider, /mostRecentlyUsedOAuthProvider/);
+  assert.match(provider, /authenticationMethods\(amr\)\.has\("oauth"\)/);
 });
 
 test("first-touch attribution remains HttpOnly and limited to participant signup", async () => {
