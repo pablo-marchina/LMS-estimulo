@@ -1,156 +1,120 @@
 # Arquitetura de referência para produção na AWS
 
-**Versão:** 0.1  
-**Status:** Baseline proposto; dimensionamento e IaC serão fechados no E12
+**Versão:** 0.2  
+**Status:** scaffolding Terraform de staging implementado; recursos não aplicados e adapters AWS ainda não selecionados pelo runtime
 
 ## 1. Objetivo
 
-Hospedar a plataforma multi-jornada em uma arquitetura gerenciada, segura, observável e compatível com o modelo já definido.
+Hospedar a plataforma em uma arquitetura gerenciada, segura, observável e compatível com o modelo de domínio. A existência do baseline não comprova staging nem produção.
 
-## 2. Baseline proposto
+## 2. Baseline executável disponível
+
+O diretório `infra/aws/terraform` declara, de forma parametrizada:
 
 ```text
 Internet
-  ↓
-Route 53 + ACM
-  ↓
-CloudFront + AWS WAF
-  ↓
+  ↓ HTTPS
 Application Load Balancer
   ↓
-ECS/Fargate web-api service ──────────────┐
-  │                                       │
-  ├── Amazon RDS for PostgreSQL           │
-  ├── Amazon S3                           │
-  ├── Amazon Cognito                      │
-  ├── Amazon SQS + DLQ                    │
-  ├── AWS Secrets Manager / SSM           │
-  └── HubSpot / OpenAI / SES              │
-                                          │
-ECS/Fargate worker services ◀── SQS ──────┘
+ECS/Fargate web service
 
-OpenTelemetry/ADOT
-  ↓
-CloudWatch Logs, Metrics, Alarms + X-Ray
+VPC
+  ├── subnets públicas: ALB + NAT
+  ├── subnets privadas: ECS
+  └── subnets isoladas: RDS PostgreSQL
+
+S3 quarantine/protected ── SQS file_scan + DLQ
+KMS ── RDS / S3 / SQS / CloudWatch
+CloudWatch alarms ── SNS
 ```
 
-## 3. Serviços propostos
+O Terraform é bloqueado por padrão. `confirm_deployment=false`, a conta deve corresponder ao ID esperado, a imagem deve usar digest SHA-256 e os secrets são fornecidos apenas por ARN.
+
+## 3. Evidência de empacotamento
+
+- imagem baseada em `node:22.16.0-bookworm-slim`;
+- instalação reproduzível por `npm ci`;
+- output standalone do Next.js;
+- execução como UID/GID 1001;
+- root filesystem read-only no task definition;
+- healthcheck de liveness;
+- `/api/health/live` independente de banco;
+- `/api/health/ready` fail-closed e ligado à readiness do PostgreSQL;
+- nenhum secret server-side incorporado à imagem.
+
+O build standalone e o comportamento 200/503 dos probes foram comprovados localmente. A imagem OCI ainda precisa ser construída e escaneada em ambiente com Docker/BuildKit.
+
+## 4. Serviços declarados
 
 ### Compute
 
-- imagens no Amazon ECR;
-- serviço `web-api` em Amazon ECS com AWS Fargate;
-- workers separados por responsabilidade quando necessário;
-- tarefas agendadas por EventBridge Scheduler;
-- Auto Scaling orientado por CPU, memória, latência e profundidade de fila;
-- containers sem estado local persistente.
+- ECR imutável, scan on push e criptografia KMS;
+- ECS/Fargate em subnets privadas;
+- mínimo de duas tarefas;
+- usuário não-root e volumes efêmeros limitados;
+- ALB HTTPS com certificado ACM;
+- Auto Scaling por CPU;
+- logs criptografados no CloudWatch.
 
 ### Banco
 
-- Amazon RDS for PostgreSQL;
-- subnets privadas;
-- criptografia KMS;
-- TLS obrigatório;
-- automated backups e point-in-time recovery;
-- Multi-AZ na produção conforme SLO;
-- acesso somente por security groups autorizados;
-- pooling controlado; RDS Proxy será avaliado por carga e custo.
+- RDS PostgreSQL privado e criptografado;
+- senha mestre gerenciada pela AWS;
+- backups automáticos, logs e Performance Insights;
+- deletion protection e snapshot final;
+- acesso somente pelo security group da aplicação.
 
-### Identidade
+Staging permanece Single-AZ no baseline. Produção exige stack separada, Multi-AZ e SLO aprovado.
 
-- Amazon Cognito User Pools;
-- OIDC/OAuth 2.0;
-- MFA obrigatório para perfis administrativos;
-- mapeamento de `sub` externo para identidade interna;
-- autorização de domínio e RLS independentes do Cognito.
+### Arquivos e assíncrono
 
-### Arquivos
-
-- buckets S3 privados separados por ambiente e classe;
-- URLs assinadas curtas;
-- versionamento e lifecycle;
-- criptografia KMS quando aplicável;
-- bloqueio de acesso público;
-- scan antes da promoção do arquivo;
-- CloudFront somente para conteúdo que possa ser distribuído com segurança.
-
-### Assíncrono
-
-- SQS Standard para comandos/jobs tolerantes a entrega pelo menos uma vez;
-- DLQ por fila;
-- outbox PostgreSQL como origem confiável;
-- inbox/idempotência nos consumidores;
-- EventBridge somente quando roteamento ou agendamento trouxer benefício claro.
-
-### Secrets e configuração
-
-- AWS Secrets Manager para credenciais rotacionáveis;
-- SSM Parameter Store para configuração não secreta;
-- task roles IAM com menor privilégio;
-- nenhuma credencial estática em imagem ou repositório.
+- buckets S3 privados, versionados, KMS, ACLs/policies públicas bloqueadas e SSE-C bloqueado;
+- separação quarantine/protected;
+- SQS de scan e DLQ com redrive;
+- alarmes de idade da fila e presença na DLQ.
 
 ### Observabilidade
 
-- instrumentação OpenTelemetry no código;
-- AWS Distro for OpenTelemetry quando adotado;
-- CloudWatch Logs/Metrics/Alarms;
-- X-Ray para traces distribuídos;
-- correlation IDs alinhados ao envelope de eventos;
-- alarmes de disponibilidade, erro, latência, backlog, DLQ, banco e integração.
+- container insights;
+- logs de aplicação e banco;
+- alarmes para 5xx do ALB, fila, DLQ e armazenamento do RDS;
+- tópico SNS parametrizado.
 
-### Edge e segurança
+## 5. Estado real do runtime
 
-- Route 53;
-- certificados ACM;
-- CloudFront;
-- AWS WAF;
-- ALB;
-- VPC com serviços internos em subnets privadas;
-- NAT/endpoints privados avaliados por custo e segurança;
-- CloudTrail e AWS Config/Security Hub a avaliar no baseline de segurança.
+O Next.js continua usando Supabase Auth, Storage e RPC APIs. O baseline AWS ainda não substitui:
 
-## 4. Topologia por ambiente
+- identidade por Cognito ou outro provedor aprovado;
+- RPC REST do Supabase por acesso direto ao RDS;
+- Supabase Storage por S3;
+- filas internas por SQS;
+- Edge Functions por workers AWS.
 
-### Staging
+Assim, RDS, S3 e SQS declarados ainda não constituem a infraestrutura ativa da aplicação.
 
-- mesma arquitetura lógica;
-- tamanhos menores;
-- integrações em sandbox;
-- Single-AZ permitido para componentes não críticos, desde que a diferença seja registrada;
-- banco restaurável a partir de dados sintéticos/anonimizados.
+## 6. Decisões fechadas para o baseline de staging
 
-### Produção
+- Terraform como IaC inicial;
+- ECS/Fargate para o web service;
+- RDS PostgreSQL tradicional;
+- S3 quarantine/protected;
+- SQS Standard + DLQ;
+- Secrets Manager por ARN;
+- ALB HTTPS sem CloudFront/WAF nesta primeira prova.
 
-- Multi-AZ para banco conforme SLO;
-- mínimo de tarefas definido para evitar ponto único de falha;
-- backups, alarmes e runbooks ativos;
-- rollout blue/green ou rolling com rollback automatizado;
-- acesso administrativo restrito e auditado.
+CloudFront, WAF, Cognito, workers, RDS Proxy, endpoints privados, ADOT/X-Ray e estratégia blue/green permanecem decisões posteriores baseadas em carga, risco e custo.
 
-## 5. Decisões pendentes
+## 7. Gates ainda obrigatórios
 
-- RDS PostgreSQL tradicional versus Aurora PostgreSQL;
-- ECS/Fargate versus alternativa AWS equivalente;
-- CDK versus Terraform;
-- estratégia de deploy do Next.js;
-- número e separação inicial dos workers;
-- RDS Proxy/PgBouncer;
-- serviços de scan de arquivos;
-- solução exata de analytics/BI;
-- retenção e replicação de backups;
-- região AWS final.
+1. conta, região, certificado, rede, domínio e secret ARNs aprovados;
+2. build OCI e scan da imagem;
+3. adapters de identidade, RDS, S3 e SQS;
+4. migrations e bootstrap em RDS limpo;
+5. scanner real com amostras clean/infected em sandbox;
+6. HubSpot sandbox e inventário físico;
+7. deploy de staging e E2E real;
+8. alarmes, rollback, backup, PITR e restore exercitados;
+9. segurança, privacidade, acessibilidade e conteúdo homologados;
+10. stack de produção aprovada separadamente.
 
-## 6. Requisitos de validação
-
-A arquitetura só será aprovada após provas técnicas de:
-
-- build e execução do container;
-- migrations no RDS;
-- Cognito e contexto interno de RLS;
-- uploads S3;
-- outbox → SQS → worker;
-- retries e DLQ;
-- tracing OpenTelemetry;
-- deploy e rollback;
-- backup e restauração;
-- conectividade com HubSpot e OpenAI via secrets e egress controlado.
+Até essas provas, o termo correto é **scaffolding de staging**, não produção pronta.
