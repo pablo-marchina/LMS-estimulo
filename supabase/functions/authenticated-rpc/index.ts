@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
+const currentIdentityOperation = "e14_resolve_current_identity";
 const allowedRpcs = new Set([
   "abort_practice_upload",
   "confirm_practice_upload",
@@ -75,6 +76,11 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
+async function fingerprint(value: unknown): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value)));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (request: Request) => {
   if (request.method !== "POST") {
     return json(405, { ok: false, code: "METHOD_NOT_ALLOWED", message: "POST required" });
@@ -108,7 +114,7 @@ Deno.serve(async (request: Request) => {
   const args = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args)
     ? payload.args as Record<string, unknown>
     : null;
-  if (!allowedRpcs.has(name) || !args) {
+  if ((!allowedRpcs.has(name) && name !== currentIdentityOperation) || !args) {
     return json(400, { ok: false, code: "RPC_NOT_ALLOWED", message: "RPC is not allowlisted" });
   }
 
@@ -117,17 +123,44 @@ Deno.serve(async (request: Request) => {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   const { data: userData, error: userError } = await userClient.auth.getUser(accessToken);
-  if (userError || !userData.user?.email_confirmed_at) {
+  const user = userData.user;
+  const email = user?.email?.trim().toLowerCase() ?? "";
+  const provider = typeof user?.app_metadata?.provider === "string" ? user.app_metadata.provider : "";
+  if (userError || !user?.email_confirmed_at || !email || !["email", "google"].includes(provider)) {
     return json(401, { ok: false, code: "VERIFIED_SESSION_REQUIRED", message: "Session could not be verified" });
   }
 
-  const { data: identity, error: identityError } = await userClient.rpc("e14_resolve_current_identity");
+  const issuer = `${supabaseUrl.replace(/\/$/, "")}/auth/v1`;
+  const claimsFingerprint = await fingerprint({
+    issuer,
+    subject: user.id,
+    email,
+    provider,
+    audience: user.aud,
+    appMetadata: user.app_metadata,
+  });
+
+  const admin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+  const { data: identity, error: identityError } = await admin.rpc("e14_resolve_identity", {
+    p_provider: provider,
+    p_issuer: issuer,
+    p_subject: user.id,
+    p_email_normalized: email,
+    p_email_verified: true,
+    p_claims_fingerprint: claimsFingerprint,
+  });
   if (identityError || !identity?.user_account_id) {
     return json(403, {
       ok: false,
       code: identityError?.code ?? "IDENTITY_RESOLUTION_FAILED",
       message: identityError?.message ?? "Internal identity unavailable",
     });
+  }
+
+  if (name === currentIdentityOperation) {
+    return json(200, { ok: true, data: identity });
   }
 
   const actorArgument = legacyActorArgument.has(name) ? "a" : "p_actor_user_account_id";
@@ -139,9 +172,6 @@ Deno.serve(async (request: Request) => {
     });
   }
 
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
   const { data, error } = await admin.rpc(name, args);
   if (error) {
     return json(400, { ok: false, code: error.code ?? "RPC_ERROR", message: error.message });
