@@ -15,20 +15,23 @@ Código, migrations, container standalone e Terraform não autorizam operação 
 ## Evidências técnicas concluídas
 
 - RLS interno abrangente e contratos server-only;
+- tabelas server-only sem policies permanecem sem grants para `anon` e `authenticated`;
 - redaction e secret scanning de repositório;
 - cadastro público com confirmação e sem admin por domínio;
 - RBAC administrativo explícito, revogável, temporal e auditável;
-- 275 migrations reproduzíveis e testes transacionais no Supabase de desenvolvimento;
+- 276 migrations reproduzíveis e testes transacionais no Supabase de desenvolvimento;
+- zero avisos de foreign keys sem índice após a migration corretiva;
 - maturidade em draft, sem atribuição, crédito ou CRM;
 - nota de utilidade 1–5 com histórico append-only e exclusão de crédito;
 - scanner externo fail-closed: sem provider, arquivo permanece em `manual_review`;
 - política HubSpot allowlist e adapter HTTP real desabilitado sem inventário/token;
 - build Next.js standalone, processo não-root e probes live/ready;
-- Terraform de staging com guard, imagem por digest, secrets por ARN e dados privados/criptografados.
+- Terraform de staging com guard, imagem por digest, configuração pública no build, secrets por ARN e dados privados/criptografados.
 
 ## Evidências ainda não obtidas
 
 - rotação/revogação da credencial historicamente exposta;
+- proteção contra senhas vazadas habilitada no provedor de identidade;
 - scanner real configurado e testado com clean/infected;
 - inventário HubSpot, token, scopes e write/readback em sandbox;
 - configuração oficial dos quatro arquétipos;
