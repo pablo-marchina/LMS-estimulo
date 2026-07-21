@@ -8,6 +8,7 @@ const errorMessages: Record<string, string> = {
   credenciais_invalidas: "E-mail ou senha inválidos.",
   identidade_nao_vinculada: "Não foi possível resolver a identidade interna.",
   acesso_nao_autorizado: "A identidade não possui acesso ativo à plataforma.",
+  permissao_administrativa_necessaria: "O e-mail Estímulo foi confirmado, mas ainda não possui um papel administrativo ativo.",
   cadastro_indisponivel: "O cadastro de teste está desabilitado neste ambiente.",
   cadastro_incompleto: "A conta foi autenticada, mas o perfil de teste não pôde ser concluído.",
   confirmacao_invalida: "O link de confirmação é inválido ou expirou.",
@@ -24,7 +25,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <div className="auth-heading">
           <p className="eyebrow">Plataforma Estímulo</p>
           <h1>Entrar</h1>
-          <p>Use sua identidade confirmada para acessar a jornada ou a operação autorizada.</p>
+          <p>Participantes entram com a conta confirmada. A área administrativa aceita somente e-mails <strong>@estimulo.org</strong> com papel ativo.</p>
         </div>
         {cadastro === "criado" ? <p className="form-message form-message--success" role="status">Conta de teste criada. Você já pode entrar.</p> : null}
         {cadastro === "confirmacao" ? <p className="form-message form-message--success" role="status">Conta criada. Abra o e-mail de confirmação para continuar.</p> : null}
@@ -37,7 +38,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
         <div className="stack auth-footer">
           <Link className="button button--secondary" href="/cadastro">Criar conta</Link>
           {allowTestSignup ? <Link href="/cadastro/teste">Criar conta de teste</Link> : null}
-          <p>O cadastro público cria somente um perfil de participante. Acesso administrativo exige concessão explícita.</p>
+          <p>O cadastro público cria um perfil de participante. Acesso administrativo exige e-mail Estímulo confirmado e permissões RBAC explícitas.</p>
         </div>
       </section>
     </main>
