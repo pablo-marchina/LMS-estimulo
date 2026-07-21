@@ -21,9 +21,7 @@ secret_arns = {
   SUPABASE_SERVICE_ROLE_KEY = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace-service-role"
   CPF_ENCRYPTION_KEY        = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace-cpf-encryption"
   CPF_LOOKUP_HMAC_KEY       = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace-cpf-hmac"
-  # Optional after external approvals:
+  # Optional after external approval:
   # HUBSPOT_PRIVATE_APP_TOKEN = "arn:aws:secretsmanager:..."
   # HUBSPOT_PORTAL_ID         = "arn:aws:secretsmanager:..."
-  # MALWARE_SCANNER_URL       = "arn:aws:secretsmanager:..."
-  # MALWARE_SCANNER_API_KEY   = "arn:aws:secretsmanager:..."
 }
