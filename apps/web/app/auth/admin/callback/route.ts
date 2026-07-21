@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { isGoogleAuthProvider } from "@/lib/auth/provider";
-import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { journeyRuntime, JourneyRpcError } from "@/lib/journey-runtime/rpc";
 import { createSessionClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
@@ -69,8 +69,11 @@ export async function GET(request: NextRequest) {
       return redirectTo(request, "/entrar/administracao?erro=permissao_necessaria");
     }
     return redirectTo(request, `/admin?organization=${encodeURIComponent(organization.organization_id)}`);
-  } catch {
+  } catch (error) {
     await client.auth.signOut();
+    if (error instanceof JourneyRpcError && error.message.includes("identity_link_required")) {
+      return redirectTo(request, "/entrar/administracao?erro=identidade_desvinculada");
+    }
     return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
   }
 }
