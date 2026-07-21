@@ -4,7 +4,7 @@ export function participantNextHref(state: JourneyState): string {
   const query = `?journey=${encodeURIComponent(state.journey_instance_id)}`;
   if (state.journey_status === "completed") return `/empreendedor/resultado${query}`;
   if (!state.d || state.d.status !== "completed") return `/empreendedor/diagnostico${query}`;
-  if (state.s) return `/empreendedor/atividade/${state.s.step_instance_id}${query}`;
+  if (state.s) return `/empreendedor/jornada/${encodeURIComponent(state.journey_instance_id)}`;
   return `/empreendedor/resultado${query}`;
 }
 
@@ -13,7 +13,7 @@ export function participantNextActionLabel(state: JourneyState): string {
   if (state.journey_status === "available") return "Começar jornada";
   if (!state.d || state.d.status !== "completed") return "Continuar diagnóstico";
   if (state.q?.passed) return "Ver resultado";
-  if (state.s) return "Continuar aprendizagem";
+  if (state.s) return "Abrir trilha";
   return "Continuar jornada";
 }
 
@@ -21,7 +21,7 @@ export function participantCurrentStageLabel(state: JourneyState): string {
   if (state.journey_status === "completed") return "Resultado disponível";
   if (!state.d || state.d.status !== "completed") return "Diagnóstico inicial";
   if (state.q?.passed) return "Conclusão da jornada";
-  if (state.s) return "Atividade em andamento";
+  if (state.s) return "Atividades da trilha disponíveis";
   return "Preparando próxima etapa";
 }
 
@@ -40,7 +40,10 @@ export function statusLabel(status: string): string {
     completed: "Concluída",
     failed: "Revisão necessária",
     passed: "Aprovada",
-    active: "Ativa"
+    active: "Ativa",
+    locked: "Bloqueada",
+    skipped: "Ignorada",
+    cancelled: "Cancelada",
   };
   return labels[status] ?? status.replaceAll("_", " ");
 }
