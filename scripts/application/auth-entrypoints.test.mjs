@@ -96,7 +96,9 @@ test("administration has a separate Google-only entrypoint with server validatio
   assert.match(callback, /auth\.getClaims\(\)/);
   assert.match(callback, /isGoogleAuthProvider\(user, claimsData\.claims\.amr\)/);
   assert.match(callback, /isEstimuloAdministrativeEmail\(email\)/);
-  assert.match(callback, /administrativeOrganization\(auth\.identity\)/);
+  assert.match(callback, /journeyRuntime\.resolveIdentity/);
+  assert.match(callback, /administrativeOrganization\(identity\)/);
+  assert.doesNotMatch(callback, /getAuthContext/);
   assert.match(callback, /client\.auth\.signOut/);
   assert.match(layout, /auth\.provider !== "google"/);
   assert.match(layout, /administrativeOrganization\(auth\.identity\)/);

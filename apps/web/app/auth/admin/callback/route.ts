@@ -1,8 +1,9 @@
+import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
-import { getAuthContext } from "@/lib/auth/context";
 import { isGoogleAuthProvider } from "@/lib/auth/provider";
+import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { createSessionClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
@@ -41,17 +42,35 @@ export async function GET(request: NextRequest) {
     return redirectTo(request, "/entrar/administracao?erro=dominio_invalido");
   }
 
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || auth.provider !== "google") {
+  const issuer = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/auth/v1`;
+  const claimsFingerprint = createHash("sha256")
+    .update(JSON.stringify({
+      issuer,
+      subject: user.id,
+      email,
+      provider: "google",
+      audience: user.aud,
+      amr: claimsData.claims.amr,
+    }))
+    .digest("hex");
+
+  try {
+    const identity = await journeyRuntime.resolveIdentity({
+      provider: "google",
+      issuer,
+      subject: user.id,
+      email,
+      emailVerified: true,
+      claimsFingerprint,
+    });
+    const organization = administrativeOrganization(identity);
+    if (!organization) {
+      await client.auth.signOut();
+      return redirectTo(request, "/entrar/administracao?erro=permissao_necessaria");
+    }
+    return redirectTo(request, `/admin?organization=${encodeURIComponent(organization.organization_id)}`);
+  } catch {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
   }
-
-  const organization = administrativeOrganization(auth.identity);
-  if (!organization) {
-    await client.auth.signOut();
-    return redirectTo(request, "/entrar/administracao?erro=permissao_necessaria");
-  }
-
-  return redirectTo(request, `/admin?organization=${encodeURIComponent(organization.organization_id)}`);
 }
