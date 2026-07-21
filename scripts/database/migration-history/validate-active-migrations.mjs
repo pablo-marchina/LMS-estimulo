@@ -38,6 +38,9 @@ const expectedActiveMigrations = Object.freeze([
   '20260720184500_activity_utility_ratings.sql',
   '20260720185000_application_readiness.sql',
   '20260720185500_fk_covering_indexes.sql',
+  '20260720190000_protected_cpf_signup.sql',
+  '20260720190500_participant_engagement_hub.sql',
+  '20260720190600_participant_engagement_hub_fix.sql',
 ]);
 
 export async function validateActiveMigrations() {
