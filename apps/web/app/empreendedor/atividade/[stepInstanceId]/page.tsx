@@ -19,14 +19,11 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 
 const practiceStatus: Record<string, string> = {
   upload_pending: "Aguardando envio",
-  processing: "Verificação de segurança",
   awaiting_review: "Aguardando revisão",
   available: "Disponível",
   accepted: "Aceita",
   rejected: "Revisão solicitada",
-  failed: "Falha no envio",
-  blocked: "Arquivo bloqueado",
-  manual_review: "Revisão de segurança"
+  failed: "Falha no envio"
 };
 
 const practiceErrors: Record<string, string> = {
@@ -104,9 +101,9 @@ export default async function ActivityPage({
         <div>
           <p className="eyebrow">Aplicação prática</p>
           <h2 id="pratica-titulo">Envie sua evidência</h2>
-          <p className="support-note">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo fica privado, passa por verificação de segurança e só pode ser baixado depois de liberado.</p>
+          <p className="support-note">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo permanece privado e é validado por formato, tamanho, hash e autorização de acesso.</p>
         </div>
-        {query.pratica === "enviada" ? <StatusPanel title="Arquivo recebido" tone="success"><p>A evidência foi registrada e entrou na verificação de segurança.</p></StatusPanel> : null}
+        {query.pratica === "enviada" ? <StatusPanel title="Arquivo recebido" tone="success"><p>A evidência foi registrada e já está disponível para a etapa de revisão aplicável.</p></StatusPanel> : null}
         {query.pratica === "erro" ? <StatusPanel title="Envio não concluído" tone="warning"><p>{practiceError}</p></StatusPanel> : null}
         {canUpload ? <form action="/api/practice-uploads" method="post" encType="multipart/form-data" className="card stack">
           <input type="hidden" name="journey_instance_id" value={journey} />
@@ -117,7 +114,6 @@ export default async function ActivityPage({
           {practice.terms_version ? <p className="metadata">Termos aplicáveis: {practice.terms_version}.</p> : null}
           <button className="button button--primary" type="submit">Enviar evidência</button>
         </form> : <StatusPanel title="Limite de envios atingido" tone="info"><p>Esta atividade não aceita novos arquivos no momento.</p></StatusPanel>}
-
         {submissions.length === 0 ? <StatusPanel title="Nenhuma evidência enviada" tone="info"><p>Seu histórico de envios aparecerá aqui.</p></StatusPanel> : <div className="practice-list">
           {submissions.map((submission) => <article className="practice-card" key={submission.id}>
             <div className="practice-header"><strong>Envio {submission.submission_number}</strong><span className="status-pill">{practiceStatus[submission.status] ?? submission.status}</span><time dateTime={submission.submitted_at}>{dateFormatter.format(new Date(submission.submitted_at))}</time></div>
