@@ -36,6 +36,7 @@ const expectedActiveMigrations = Object.freeze([
   '20260720183000_business_maturity_draft.sql',
   '20260720183500_business_maturity_preview_api.sql',
   '20260720184500_activity_utility_ratings.sql',
+  '20260720185000_application_readiness.sql',
 ]);
 
 export async function validateActiveMigrations() {
