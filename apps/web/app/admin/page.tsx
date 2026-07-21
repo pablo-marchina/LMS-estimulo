@@ -18,14 +18,11 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 
 const practiceStatus: Record<string, string> = {
   upload_pending: "Aguardando envio",
-  processing: "Verificação de segurança",
   awaiting_review: "Aguardando revisão",
   available: "Disponível",
   accepted: "Aceita",
   rejected: "Revisão solicitada",
-  failed: "Falha no envio",
-  blocked: "Arquivo bloqueado",
-  manual_review: "Revisão de segurança"
+  failed: "Falha no envio"
 };
 
 function fileSize(value: number | null): string | null {
@@ -78,7 +75,7 @@ export default async function AdminPage({
     </div> : <StatusPanel title="Consulta disponível" tone="info"><p>As ações de publicação e matrícula não estão disponíveis para este vínculo.</p></StatusPanel>}
 
     {canReviewPractice ? <section className="stack stack--large" id="praticas" aria-labelledby="revisao-praticas-titulo">
-      <div><p className="eyebrow">Evidências</p><h2 id="revisao-praticas-titulo">Revisão de práticas</h2><p className="support-note">Somente arquivos liberados pela verificação de segurança podem ser baixados ou avaliados.</p></div>
+      <div><p className="eyebrow">Evidências</p><h2 id="revisao-praticas-titulo">Revisão de práticas</h2><p className="support-note">Arquivos privados validados por autorização, formato, tamanho e hash podem ser baixados e avaliados.</p></div>
       {practices.length === 0 ? <StatusPanel title="Nenhuma prática" tone="info"><p>Ainda não há evidências enviadas nesta organização.</p></StatusPanel> : <div className="practice-list">{practices.map((practice) => <article className="practice-card" key={practice.id}>
         <div className="practice-header"><strong>{practice.participant_name}</strong><span className="status-pill">{practiceStatus[practice.status] ?? practice.status}</span><time dateTime={practice.submitted_at}>{dateFormatter.format(new Date(practice.submitted_at))}</time></div>
         <p className="metadata">{practice.activity_title} · envio {practice.submission_number}</p>
@@ -87,22 +84,8 @@ export default async function AdminPage({
         {practice.review_feedback ? <p className="moderation-reason"><strong>Feedback atual:</strong> {practice.review_feedback}</p> : null}
         {practice.can_download ? <Link className="button button--secondary" href={`/api/practice-submissions/${practice.id}/download`}>Baixar evidência</Link> : null}
         {practice.status === "awaiting_review" ? <div className="review-actions">
-          <form action={reviewPracticeSubmissionAction} className="stack review-form">
-            <input type="hidden" name="organization_id" value={organization.organization_id} />
-            <input type="hidden" name="submission_id" value={practice.id} />
-            <input type="hidden" name="status" value="accepted" />
-            <input type="hidden" name="idempotency_key" value={randomUUID()} />
-            <label>Feedback opcional<textarea name="feedback" rows={2} maxLength={2000} placeholder="Registre uma orientação para o participante." /></label>
-            <button className="button button--primary" type="submit">Aceitar prática</button>
-          </form>
-          <form action={reviewPracticeSubmissionAction} className="stack review-form">
-            <input type="hidden" name="organization_id" value={organization.organization_id} />
-            <input type="hidden" name="submission_id" value={practice.id} />
-            <input type="hidden" name="status" value="rejected" />
-            <input type="hidden" name="idempotency_key" value={randomUUID()} />
-            <label>Motivo da revisão<textarea name="feedback" rows={2} minLength={1} maxLength={2000} required placeholder="Explique o que precisa ser ajustado." /></label>
-            <button className="button button--secondary" type="submit">Solicitar ajuste</button>
-          </form>
+          <form action={reviewPracticeSubmissionAction} className="stack review-form"><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="submission_id" value={practice.id} /><input type="hidden" name="status" value="accepted" /><input type="hidden" name="idempotency_key" value={randomUUID()} /><label>Feedback opcional<textarea name="feedback" rows={2} maxLength={2000} placeholder="Registre uma orientação para o participante." /></label><button className="button button--primary" type="submit">Aceitar prática</button></form>
+          <form action={reviewPracticeSubmissionAction} className="stack review-form"><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="submission_id" value={practice.id} /><input type="hidden" name="status" value="rejected" /><input type="hidden" name="idempotency_key" value={randomUUID()} /><label>Motivo da revisão<textarea name="feedback" rows={2} minLength={1} maxLength={2000} required placeholder="Explique o que precisa ser ajustado." /></label><button className="button button--secondary" type="submit">Solicitar ajuste</button></form>
         </div> : null}
       </article>)}</div>}
     </section> : null}
@@ -111,24 +94,8 @@ export default async function AdminPage({
       <div><p className="eyebrow">Participação</p><h2 id="moderacao-comentarios-titulo">Moderação de comentários</h2><p className="support-note">Comentários visíveis podem ser ocultados com justificativa. Comentários ocultos podem ser restaurados sem apagar o histórico.</p></div>
       {comments.length === 0 ? <StatusPanel title="Nenhum comentário" tone="info"><p>Ainda não há comentários para moderar nesta organização.</p></StatusPanel> : <div className="comment-list">{comments.map((comment) => <article className="comment-card" key={comment.id}>
         <div className="comment-header"><strong>{comment.author_name}</strong><span className="status-pill">{comment.status === "visible" ? "Visível" : "Oculto"}</span><time dateTime={comment.created_at}>{dateFormatter.format(new Date(comment.created_at))}</time></div>
-        <p className="metadata">{comment.activity_title}</p>
-        <p>{comment.body}</p>
-        {comment.moderation_reason ? <p className="moderation-reason"><strong>Motivo atual:</strong> {comment.moderation_reason}</p> : null}
-        {comment.status === "visible" ? <form action={moderateActivityCommentAction} className="stack moderation-form">
-          <input type="hidden" name="organization_id" value={organization.organization_id} />
-          <input type="hidden" name="comment_id" value={comment.id} />
-          <input type="hidden" name="status" value="hidden" />
-          <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <label>Justificativa<textarea name="reason" rows={2} minLength={1} maxLength={500} required placeholder="Explique por que o comentário deve ser ocultado." /></label>
-          <button className="button button--secondary" type="submit">Ocultar comentário</button>
-        </form> : <form action={moderateActivityCommentAction}>
-          <input type="hidden" name="organization_id" value={organization.organization_id} />
-          <input type="hidden" name="comment_id" value={comment.id} />
-          <input type="hidden" name="status" value="visible" />
-          <input type="hidden" name="reason" value="" />
-          <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <button className="button button--secondary" type="submit">Restaurar comentário</button>
-        </form>}
+        <p className="metadata">{comment.activity_title}</p><p>{comment.body}</p>{comment.moderation_reason ? <p className="moderation-reason"><strong>Motivo atual:</strong> {comment.moderation_reason}</p> : null}
+        {comment.status === "visible" ? <form action={moderateActivityCommentAction} className="stack moderation-form"><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="comment_id" value={comment.id} /><input type="hidden" name="status" value="hidden" /><input type="hidden" name="idempotency_key" value={randomUUID()} /><label>Justificativa<textarea name="reason" rows={2} minLength={1} maxLength={500} required placeholder="Explique por que o comentário deve ser ocultado." /></label><button className="button button--secondary" type="submit">Ocultar comentário</button></form> : <form action={moderateActivityCommentAction}><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="comment_id" value={comment.id} /><input type="hidden" name="status" value="visible" /><input type="hidden" name="reason" value="" /><input type="hidden" name="idempotency_key" value={randomUUID()} /><button className="button button--secondary" type="submit">Restaurar comentário</button></form>}
       </article>)}</div>}
     </section> : null}
 
