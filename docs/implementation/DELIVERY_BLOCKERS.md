@@ -1,6 +1,6 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 6.0  
+**Versão:** 6.1  
 **Data:** 2026-07-21  
 **Status:** ativo
 
@@ -25,8 +25,8 @@ Este documento registra somente gates de produto, segurança, integração e ope
 | `EXPOSED-CREDENTIAL-ROTATION` | P0 | arquivos sanitizados e secret scanning implementado | rotação, revogação e análise de uso não confirmadas | confirmação externa, revisão de logs e ausência de uso indevido |
 | `PRODUCT-CONFIGURATION` | P0 | motor configurável, persistência, versionamento, abstention e preview disponíveis | wording, opções, scoring, normalização, desempate, textos, ativações e casos oficiais ausentes | configuração aprovada e diagnóstico real E2E |
 | `OPENAI-JOURNEY-CONTENT` | P0 | runtime, biblioteca, atividades, avaliações, práticas, credenciais e navegação disponíveis | pacote editorial, mídias, avaliações e regras oficiais não homologados | jornada oficial publicável e E2E |
-| `PARTICIPANT-EXPERIENCE` | P0 | painel, retomada, progresso, atividades, comentários, uploads, avaliações, biblioteca e credenciais implementados | carrossel administrável, ranking, recompensas, perfil completo, player final e conteúdo oficial ainda incompletos | experiência integral operando com dados e regras oficiais |
-| `ADMIN-EXPERIENCE` | P0 | e-mail Estímulo obrigatório, RBAC, usuários, biblioteca, operação, maturidade draft e integrações implementados | editores completos de trilhas, diagnóstico, anúncios, gamificação e relatórios não concluídos | equipe autorizada configura e acompanha toda a release pela UI |
+| `PARTICIPANT-EXPERIENCE` | P0 | painel, carrossel, retomada, blocos expansíveis, escolha entre atividades disponíveis, progresso, comentários, uploads, avaliações, biblioteca, recompensas, ranking pseudonimizado, perfil, pontos e credenciais implementados | conteúdo oficial, player multimídia final, regras homologadas e prova assistiva ainda ausentes | experiência integral operando com dados, conteúdo e regras oficiais |
+| `ADMIN-EXPERIENCE` | P0 | e-mail Estímulo obrigatório, RBAC, usuários, biblioteca, operação, maturidade draft, anúncios, engajamento e integrações implementados | editores completos de trilhas, diagnóstico, gamificação/recompensas e relatórios finais não concluídos | equipe autorizada configura e acompanha toda a release pela UI |
 | `IDENTITY-SITE-INTEGRATION` | P0 | cadastro público, confirmação, UTM, CPF protegido e participante inicial implementados | site oficial, usuário existente, telefone, CNPJ opcional, recuperação e migração real ausentes | usuário novo e existente resolvidos sem duplicidade no ambiente-alvo |
 | `CPF-KEY-MANAGEMENT` | P0 | validação, AES-256-GCM, HMAC e tabela server-only implementados | chaves reais, rotação, recovery e operação institucional ausentes | keys em secret manager, rotação exercitada e fluxo de suporte aprovado |
 | `IDENTITY-PASSWORD-PROTECTION` | P1 | autenticação confirmada e configuração server-only | proteção contra senhas vazadas e política final do provedor ausentes | proteção habilitada e política de senha/sessão comprovada |
@@ -96,18 +96,22 @@ official_identity_provider = pending
 
 ```text
 recovered_migration_count = 245
-active_migration_count = 32
-total_migration_count = 277
+active_migration_count = 37
+total_migration_count = 282
 clean_replay_previously_passed = true
 schema_equivalence_previously_passed = true
 public_rpc_contracts_previously_passed = true
 backend_e2e_synthetic_passed = true
 browser_e2e_synthetic_passed = true
+identity_experience_database_test_passed = true
+participant_engagement_hub_test_passed = true
+participant_journey_outline_test_passed = true
 hubspot_contract_tests_previously_passed = true
-typecheck_and_build_previously_passed = true
+typecheck_and_build_after_latest_experience_changes = pending
 standalone_liveness_passed = true
 standalone_readiness_fail_closed_passed = true
 terraform_scaffolding_present = true
+supabase_unindexed_foreign_key_advisories = 0
 secret_scanning_implemented = true
 secret_scanning_ci_passed = false
 credential_rotation_confirmed = false
