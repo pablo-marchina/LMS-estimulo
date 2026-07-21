@@ -3,10 +3,12 @@ begin;
 do $$
 declare
   v_participant_actor uuid;
+  v_participant_journey uuid;
   v_operator_actor uuid;
   v_organization_id uuid;
   v_saved jsonb;
   v_hub jsonb;
+  v_outline jsonb;
   v_cpf jsonb;
 begin
   select om.user_account_id,om.organization_id
@@ -19,16 +21,18 @@ begin
   limit 1;
   if v_operator_actor is null then raise exception 'engagement operator fixture missing'; end if;
 
-  select distinct ua.id
-  into v_participant_actor
+  select distinct ua.id,instance.id
+  into v_participant_actor,v_participant_journey
   from iam.user_accounts ua
   join core.entrepreneurs entrepreneur on entrepreneur.user_account_id=ua.id
   join orchestration.enrollments enrollment on enrollment.entrepreneur_id=entrepreneur.id
   join catalog.journey_versions version on version.id=enrollment.journey_version_id
   join catalog.journey_definitions definition on definition.id=version.journey_definition_id
+  join orchestration.journey_instances instance on instance.enrollment_id=enrollment.id
   where ua.status='active'
     and entrepreneur.status='active'
     and definition.owner_organization_id=v_organization_id
+    and exists(select 1 from orchestration.path_assignments assignment where assignment.journey_instance_id=instance.id)
   limit 1;
   if v_participant_actor is null then raise exception 'participant fixture missing'; end if;
 
@@ -58,6 +62,19 @@ begin
   if jsonb_typeof(v_hub->'ranking')<>'array' then raise exception 'ranking contract invalid'; end if;
   if jsonb_typeof(v_hub->'rewards')<>'array' then raise exception 'reward contract invalid'; end if;
   if jsonb_typeof(v_hub->'point_history')<>'array' then raise exception 'point history contract invalid'; end if;
+
+  v_outline:=public.get_participant_journey_outline(v_participant_actor,v_participant_journey);
+  if v_outline->>'journey_title' is null then raise exception 'journey title missing'; end if;
+  if jsonb_array_length(v_outline->'modules')<1 then raise exception 'journey module missing'; end if;
+  if jsonb_array_length(v_outline#>'{modules,0,activities}')<1 then raise exception 'journey activity missing'; end if;
+  if v_outline#>>'{modules,0,activities,0,step_instance_id}' is null then raise exception 'outline step missing'; end if;
+
+  begin
+    perform public.get_participant_journey_outline(v_operator_actor,v_participant_journey);
+    raise exception 'unrelated operator should not read participant outline';
+  exception when others then
+    if sqlerrm not like '%JOURNEY_NOT_FOUND%' and sqlerrm not like '%PARTICIPANT_NOT_FOUND%' then raise; end if;
+  end;
 
   v_cpf:=public.provision_public_signup_participant_v2(
     v_participant_actor,'Participante transacional',null,
