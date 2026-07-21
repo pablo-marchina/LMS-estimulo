@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-const OFFICIAL_ESTIMULO_LOGO_URL =
-  "https://cdn.prod.website-files.com/63dbfdf887f6a1cca0e4cbcc/641253f973926c213bb9dabd_logo-estimulo.png";
+const OFFICIAL_ESTIMULO_LOGO_PATH = "/brand/estimulo-logo-horizontal-color.svg";
 
 export function EstimuloBrand({
   href,
@@ -12,7 +11,6 @@ export function EstimuloBrand({
   centered?: boolean;
   compact?: boolean;
 }) {
-  const logoUrl = process.env.NEXT_PUBLIC_ESTIMULO_LOGO_URL?.trim() || OFFICIAL_ESTIMULO_LOGO_URL;
   const className = [
     "brand",
     "brand--official",
@@ -24,13 +22,13 @@ export function EstimuloBrand({
     <span className="brand-logo-clearspace">
       <img
         className="brand-logo"
-        src={logoUrl}
-        width={206}
-        height={89}
+        src={OFFICIAL_ESTIMULO_LOGO_PATH}
+        width={480}
+        height={208}
         alt="Estímulo"
         loading="eager"
         decoding="async"
-        referrerPolicy="no-referrer"
+        fetchPriority="high"
       />
     </span>
   );
