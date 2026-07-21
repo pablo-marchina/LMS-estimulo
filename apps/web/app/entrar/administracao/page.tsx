@@ -8,6 +8,7 @@ const errorMessages: Record<string, string> = {
   conta_google_necessaria: "Use uma conta Google Workspace da Estímulo.",
   dominio_invalido: "Somente contas com e-mail @estimulo.org podem acessar a administração.",
   permissao_necessaria: "A conta foi autenticada, mas ainda não possui um papel administrativo ativo.",
+  identidade_desvinculada: "A conta Google foi recriada e precisa ser vinculada novamente ao acesso administrativo.",
 };
 
 export default async function AdministrativeSignInPage({
