@@ -6,7 +6,7 @@ Os requisitos ativos do produto estão em [`premissas-desenvolvimento.md`](premi
 
 ## Estado atual
 
-A fundação técnica e as principais capacidades do LMS estão implementadas e reproduzíveis. O produto oficial ainda não deve ser liberado para usuários reais enquanto os bloqueadores operacionais de [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md) permanecerem abertos.
+A fundação técnica, a experiência do participante e a administração integral estão implementadas no repositório e no ambiente de desenvolvimento. O produto oficial ainda não deve ser liberado para usuários reais enquanto os bloqueadores operacionais de [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md) permanecerem abertos.
 
 ```text
 Supabase = desenvolvimento e teste
@@ -16,10 +16,10 @@ PostgreSQL = banco operacional, eventos e outbox
 HubSpot = somente classes aprovadas e destinos explicitamente autorizados
 ```
 
-### Implementado no repositório e no ambiente de desenvolvimento
+### Implementado
 
-- 282 migrations executáveis, replay limpo, equivalência estrutural e contratos públicos de RPC;
-- aplicação Next.js com áreas de participante e administração;
+- 292 migrations executáveis, replay limpo, equivalência estrutural e contratos públicos de RPC;
+- aplicação Next.js com áreas distintas de participante e administração;
 - cadastro público com confirmação de e-mail, first-touch UTM e CPF obrigatório protegido;
 - CPF validado, cifrado com AES-256-GCM e deduplicado por HMAC server-only;
 - entrada administrativa restrita a e-mail confirmado `@estimulo.org` e autorização RBAC;
@@ -28,29 +28,34 @@ HubSpot = somente classes aprovadas e destinos explicitamente autorizados
 - perfil com diagnóstico, jornadas, histórico de pontos e credenciais;
 - trilha com blocos expansíveis e abertura de qualquer atividade liberada pelo backend;
 - comentários, uploads privados, moderação e revisão de práticas;
-- quarentena, estados de scan e adapter de scanner externo fail-closed;
+- arquivos privados validados por autorização, tipo, extensão, tamanho e SHA-256;
 - avaliações multiquestão e nota de utilidade em cinco estrelas;
 - progresso, ledger de pontos, selos, certificados e biblioteca versionada;
-- administração de anúncios e engajamento;
+- administração integral de jornadas, versões, trilhas, blocos, atividades, conteúdos e regras;
+- administração de diagnóstico, dimensões, perguntas, opções e arquétipos;
+- administração de pontos, selos, certificados, anúncios, usuários, papéis, biblioteca e integrações;
+- relatórios reais de participação, progresso, avaliações, práticas, pontos e credenciais;
 - motor configurável de formulários, arquétipos e ativações;
 - diagnóstico de maturidade em draft, sem atribuição, crédito ou CRM;
 - adapter HubSpot HTTP server-only e fail-closed;
 - integração controlada com sistemas externos existentes;
-- identidade visual Estímulo com assets locais;
-- Browser E2E sintético atualizado para a experiência de painel, perfil e blocos;
+- identidade visual Estímulo com assets locais, Poppins e paleta institucional;
+- Browser E2E sintético e harness E2E real autenticado;
 - imagem standalone não-root, liveness e readiness;
-- Terraform de staging com ECS, ALB, RDS, S3, SQS/DLQ, KMS e CloudWatch.
+- Terraform de staging com ECS, ALB, RDS, S3, KMS e CloudWatch.
 
-Essas provas ainda não equivalem ao produto final. Permanecem necessários, entre outros:
+O subsistema de scanner de malware foi removido integralmente do produto, banco, workers, filas, cron, contratos e configuração. Não existe provider, fila ou estado de scan ativo.
+
+### Gates externos ainda necessários
 
 - configuração oficial e homologada dos quatro arquétipos;
 - pacote editorial publicável da Jornada OpenAI;
 - telefone, CNPJ opcional e integração oficial com site e identidade;
 - inventário, credenciais e prova HubSpot em sandbox;
-- scanner real configurado e testado;
 - gestão institucional e rotação das chaves de CPF;
 - adapters AWS ativos e staging aplicado;
-- E2E real, backup, restore e rollback;
+- E2E real autenticado executado contra o ambiente implantado;
+- backup, restore e rollback;
 - aprovações de segurança, privacidade, jurídico, crédito, acessibilidade e conteúdo;
 - rotação/revogação confirmada da credencial historicamente exposta.
 
@@ -65,6 +70,22 @@ A área `/admin` exige simultaneamente:
 3. permissões RBAC correspondentes à operação.
 
 O domínio habilita a entrada administrativa, mas não concede poderes automaticamente.
+
+## Administração
+
+A administração integral está dividida em superfícies especializadas:
+
+- `/admin`: publicação, matrícula, comentários e revisão de práticas;
+- `/admin/produto`: jornadas, atividades, conteúdos, trilhas, blocos e regras;
+- `/admin/diagnostico`: dimensões, perguntas, opções e arquétipos;
+- `/admin/gamificacao`: pontos, selos e certificados;
+- `/admin/engajamento`: anúncios;
+- `/admin/biblioteca`: catálogo e publicação de conteúdos;
+- `/admin/usuarios`: vínculos e RBAC;
+- `/admin/relatorios`: indicadores e eventos operacionais;
+- `/admin/integracoes`: sistemas externos controlados.
+
+Drafts são editáveis; versões publicadas permanecem imutáveis. Toda gravação relevante é idempotente e auditada.
 
 ## Política HubSpot
 
@@ -94,6 +115,7 @@ Nenhum sinal educacional ou comportamental pode influenciar crédito sem valida�
 apps/web/                              aplicação Next.js
 apps/web/lib/auth/                     identidade e gates
 apps/web/lib/identity/                 proteção de identificadores pessoais
+apps/web/lib/admin/                    contratos da administração integral
 apps/web/lib/engagement/               anúncios, ranking, recompensas e histórico
 apps/web/lib/hubspot/                  política e adapter HubSpot
 apps/web/lib/configurable-product/     formulário, classificação e ativações
@@ -103,7 +125,8 @@ infra/aws/terraform/                   scaffolding de staging
 supabase/migrations/                   histórico executável
 supabase/functions/                    adapters de desenvolvimento/teste
 scripts/application/                   validações da aplicação
-scripts/database/                      replay, contratos e E2E
+scripts/database/                      replay, contratos e E2E de banco
+scripts/browser-e2e/                   E2E sintético e real autenticado
 docs/                                  produto, decisões, arquitetura e operação
 ```
 
@@ -121,7 +144,7 @@ cp .env.example apps/web/.env.local
 npm ci --ignore-scripts
 npm run typecheck:web
 npm run test:application-foundation
-npm run test:configurable-product
+npm run test:database-gates
 npm run build:web
 npm run dev:web
 ```
@@ -134,6 +157,7 @@ Nunca registre credenciais ou dados pessoais reais no Git.
 npm run validate:repository
 npm run validate:migration-history
 npm run test:database-gates
+npm run test:real-database-e2e
 npm run test:application-foundation
 npm run test:configurable-product
 npm run test:hubspot-contracts
@@ -141,6 +165,19 @@ npm run typecheck:web
 npm run build:web
 npm run test:browser-e2e
 ```
+
+A prova real autenticada exige um ambiente implantado e contas próprias de teste:
+
+```bash
+REAL_E2E_BASE_URL=https://staging.example.org \
+REAL_E2E_PARTICIPANT_EMAIL=participant-e2e@example.org \
+REAL_E2E_PARTICIPANT_PASSWORD=... \
+REAL_E2E_ADMIN_EMAIL=admin-e2e@estimulo.org \
+REAL_E2E_ADMIN_PASSWORD=... \
+npm run test:browser-e2e-real
+```
+
+O runner é read-only e verifica health/readiness, autenticação real, participante, administração integral, responsividade e identidade visual.
 
 ## Documentação principal
 
