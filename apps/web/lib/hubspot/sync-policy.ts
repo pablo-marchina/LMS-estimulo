@@ -12,6 +12,7 @@ import {
 export type HubSpotFieldCode =
   | "identity.user_account_id"
   | "identity.business_id"
+  | "identity.cpf"
   | "journey.started_at"
   | "journey.completed_at"
   | "activity.completed_at"
@@ -71,6 +72,7 @@ const semanticClassification: Readonly<Record<HubSpotFieldCode, {
 }>> = Object.freeze({
   "identity.user_account_id": { classification: "linking_identifier", reason: "minimum LMS user linkage" },
   "identity.business_id": { classification: "linking_identifier", reason: "minimum LMS business linkage" },
+  "identity.cpf": { classification: "linking_identifier", reason: "sensitive identity linkage; exact destination and legal approval required" },
   "journey.started_at": { classification: "engagement_signal", reason: "approved aggregate journey milestone candidate" },
   "journey.completed_at": { classification: "engagement_signal", reason: "approved aggregate journey milestone candidate" },
   "activity.completed_at": { classification: "engagement_signal", reason: "approved aggregate activity milestone candidate" },
