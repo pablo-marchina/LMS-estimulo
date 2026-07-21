@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,19 +8,39 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const baseUrl = String(process.env.REAL_E2E_BASE_URL ?? "").replace(/\/$/u, "");
 const participantEmail = process.env.REAL_E2E_PARTICIPANT_EMAIL ?? "";
 const participantPassword = process.env.REAL_E2E_PARTICIPANT_PASSWORD ?? "";
-const adminEmail = process.env.REAL_E2E_ADMIN_EMAIL ?? "";
-const adminPassword = process.env.REAL_E2E_ADMIN_PASSWORD ?? "";
+const adminSessionCookiesFile = process.env.REAL_E2E_ADMIN_SESSION_COOKIES_FILE ?? "";
 const artifactsDir = path.resolve(root, process.env.REAL_E2E_ARTIFACTS_DIR || ".artifacts/real-browser-e2e");
 const debuggingPort = Number(process.env.REAL_E2E_CDP_PORT || 9333);
 
-if (!baseUrl || !participantEmail || !participantPassword || !adminEmail || !adminPassword) {
-  throw new Error("REAL_E2E_BASE_URL and both participant/admin credential pairs are required");
+if (!baseUrl || !participantEmail || !participantPassword || !adminSessionCookiesFile) {
+  throw new Error("REAL_E2E_BASE_URL, participant credentials and REAL_E2E_ADMIN_SESSION_COOKIES_FILE are required");
 }
 const parsedBaseUrl = new URL(baseUrl);
 if (parsedBaseUrl.protocol !== "https:" && parsedBaseUrl.hostname !== "127.0.0.1" && parsedBaseUrl.hostname !== "localhost") {
   throw new Error("REAL_E2E_BASE_URL must use HTTPS outside localhost");
 }
-if (!adminEmail.toLowerCase().endsWith("@estimulo.org")) throw new Error("REAL_E2E_ADMIN_EMAIL must use @estimulo.org");
+
+const rawAdminCookies = JSON.parse(await readFile(path.resolve(root, adminSessionCookiesFile), "utf8"));
+if (!Array.isArray(rawAdminCookies) || rawAdminCookies.length === 0) {
+  throw new Error("REAL_E2E_ADMIN_SESSION_COOKIES_FILE must contain a non-empty JSON cookie array");
+}
+const adminCookies = rawAdminCookies.map((entry, index) => {
+  if (!entry || typeof entry !== "object" || typeof entry.name !== "string" || typeof entry.value !== "string") {
+    throw new Error(`invalid admin session cookie at index ${index}`);
+  }
+  const cookie = { ...entry };
+  if (typeof cookie.url === "string") {
+    const cookieUrl = new URL(cookie.url);
+    if (cookieUrl.origin !== parsedBaseUrl.origin) throw new Error(`admin cookie ${cookie.name} targets another origin`);
+  } else if (typeof cookie.domain === "string") {
+    const domain = cookie.domain.replace(/^\./u, "").toLowerCase();
+    const host = parsedBaseUrl.hostname.toLowerCase();
+    if (host !== domain && !host.endsWith(`.${domain}`)) throw new Error(`admin cookie ${cookie.name} targets another domain`);
+  } else {
+    cookie.url = parsedBaseUrl.origin;
+  }
+  return cookie;
+});
 await mkdir(artifactsDir, { recursive: true });
 
 function findChrome() {
@@ -113,13 +133,13 @@ async function clickText(text) {
   const clicked = await client.evaluate(`(() => { const target=[...document.querySelectorAll('button,a')].find((element)=>element.textContent?.trim()===${JSON.stringify(text)}); if (!target) return false; target.click(); return true; })()`);
   assert.equal(clicked, true, `click target not found: ${text}`);
 }
-async function login(email, password, destination) {
+async function loginParticipant() {
   await navigate(`${baseUrl}/entrar`);
-  await waitText("Entrar");
-  await fill('input[name="email"]', email);
-  await fill('input[name="password"]', password);
+  await waitText("Entrar como participante");
+  await fill('input[name="email"]', participantEmail);
+  await fill('input[name="password"]', participantPassword);
   await clickText("Entrar");
-  await waitUrl(destination);
+  await waitUrl("/empreendedor");
 }
 async function logout() {
   await clickText("Sair");
@@ -151,7 +171,7 @@ try {
   await Promise.all([client.send("Page.enable"), client.send("Runtime.enable"), client.send("DOM.enable"), client.send("Network.enable")]);
 
   currentStep = "participant authentication and dashboard";
-  await login(participantEmail, participantPassword, "/empreendedor");
+  await loginParticipant();
   await waitText("Continue de onde parou");
   await waitText("Ranking de pontos");
   assert.equal(await textIncludes("Recompensas"), true);
@@ -171,8 +191,13 @@ try {
   }
   await logout();
 
-  currentStep = "admin authentication and operation";
-  await login(adminEmail, adminPassword, "/admin");
+  currentStep = "Google administrative entry and authenticated session";
+  await navigate(`${baseUrl}/entrar/administracao`);
+  await waitText("Continuar com Google");
+  await client.send("Network.clearBrowserCookies");
+  await client.send("Network.setCookies", { cookies: adminCookies });
+  await navigate(`${baseUrl}/admin`);
+  await waitUrl("/admin");
   await waitText("Jornadas e evidências");
 
   currentStep = "integral product administration";
@@ -208,7 +233,7 @@ try {
     status: "passed",
     target: parsedBaseUrl.origin,
     mode: "real_authenticated_read_only",
-    flows: ["health", "participant_login", "dashboard", "profile", "library", "journey", "admin_login", "operation", "product", "diagnostic", "gamification", "reports", "users", "admin_library", "mobile_brand"],
+    flows: ["health", "participant_login", "dashboard", "profile", "library", "journey", "admin_google_entry", "admin_google_session", "operation", "product", "diagnostic", "gamification", "reports", "users", "admin_library", "mobile_brand"],
   };
   await writeFile(path.join(artifactsDir, "result.json"), JSON.stringify(result, null, 2), "utf8");
   process.stdout.write("[real-browser-e2e] passed\n");
