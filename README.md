@@ -30,8 +30,9 @@ HubSpot = vínculo mínimo, engajamento e dados úteis para cálculos aprovados
 
 ### Comprovado no repositório e no ambiente de desenvolvimento
 
-- 245 migrations recuperadas mais 30 migrations ativas, totalizando 275 migrations executáveis;
+- 245 migrations recuperadas mais 31 migrations ativas, totalizando 276 migrations executáveis;
 - replay limpo, equivalência estrutural e contratos públicos históricos de RPC;
+- chaves estrangeiras das capacidades novas cobertas por índices e verificadas pelos advisors do Supabase;
 - backend E2E sintético com publicação, matrícula, diagnóstico, atividade, avaliações, progresso, pontos, eventos e outbox;
 - aplicação Next.js com áreas de participante e operação;
 - cadastro público com confirmação de e-mail, first-touch UTM e papel inicial de participante;
@@ -62,6 +63,7 @@ Essas provas não equivalem ao produto final. Ainda faltam:
 - adapters ativos para identidade, RDS, S3 e SQS na AWS;
 - AWS staging aplicado, com backup, restore, rollback e E2E real;
 - decisões e aprovações de segurança, privacidade, jurídico, crédito, acessibilidade e conteúdo;
+- proteção contra senhas vazadas habilitada no provedor de identidade usado em cada ambiente;
 - rotação/revogação confirmada da credencial historicamente exposta;
 - autorização/licença para eventual cópia literal do projeto de referência.
 
