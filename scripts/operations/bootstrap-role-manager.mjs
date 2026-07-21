@@ -1,7 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
-import { pathToFileURL } from "node:url";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { loadEnvFile } from "node:process";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+
+function loadRepositoryEnvironment() {
+  const scriptDirectory = dirname(fileURLToPath(import.meta.url));
+  const envPath = resolve(scriptDirectory, "../../.env");
+  if (existsSync(envPath)) loadEnvFile(envPath);
+}
 
 export function parseBootstrapArguments(argv) {
   const values = new Map();
@@ -63,6 +72,7 @@ const isDirectExecution = process.argv[1]
   && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isDirectExecution) {
+  loadRepositoryEnvironment();
   bootstrapRoleManager().catch((error) => {
     process.stderr.write(`${error instanceof Error ? error.message : "ROLE_MANAGER_BOOTSTRAP_FAILED"}\n`);
     process.exitCode = 1;
