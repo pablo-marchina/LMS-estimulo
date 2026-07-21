@@ -66,21 +66,40 @@ variable "certificate_arn" {
   }
 }
 
+variable "public_environment" {
+  description = "Public configuration baked into the Next.js image at build time and repeated at runtime for server-side access."
+  type = object({
+    app_url             = string
+    supabase_url        = string
+    supabase_anon_key   = string
+  })
+
+  validation {
+    condition = (
+      can(regex("^https://", var.public_environment.app_url))
+      && can(regex("^https://", var.public_environment.supabase_url))
+      && length(trimspace(var.public_environment.supabase_anon_key)) >= 20
+    )
+    error_message = "public_environment URLs must use HTTPS and supabase_anon_key must be a non-empty public client key."
+  }
+}
+
 variable "secret_arns" {
-  description = "Secrets Manager ARNs mapped to runtime environment variable names. Secret values never enter Terraform state."
+  description = "Secrets Manager ARNs mapped only to server-side runtime variable names. Secret values never enter Terraform state."
   type        = map(string)
   sensitive   = true
 
   validation {
-    condition = alltrue([
-      for key in [
-        "NEXT_PUBLIC_APP_URL",
-        "NEXT_PUBLIC_SUPABASE_URL",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        "SUPABASE_SERVICE_ROLE_KEY"
-      ] : contains(keys(var.secret_arns), key) && can(regex("^arn:aws(-[a-z]+)?:secretsmanager:", var.secret_arns[key]))
-    ])
-    error_message = "secret_arns must contain Secrets Manager ARNs for the four required runtime variables."
+    condition = (
+      contains(keys(var.secret_arns), "SUPABASE_SERVICE_ROLE_KEY")
+      && alltrue([
+        for name, arn in var.secret_arns : (
+          !startswith(name, "NEXT_PUBLIC_")
+          && can(regex("^arn:aws(-[a-z]+)?:secretsmanager:", arn))
+        )
+      ])
+    )
+    error_message = "secret_arns must contain SUPABASE_SERVICE_ROLE_KEY, use Secrets Manager ARNs, and must not contain NEXT_PUBLIC_ variables."
   }
 }
 
