@@ -27,7 +27,7 @@ test("container build is pinned, standalone, non-root and rejects missing public
   assert.match(dockerfile, /USER nextjs/u);
   assert.match(dockerfile, /--uid 1001/u);
   assert.match(dockerfile, /api\/health\/live/u);
-  assert.doesNotMatch(dockerfile, /SUPABASE_SERVICE_ROLE_KEY|CPF_ENCRYPTION_KEY|CPF_LOOKUP_HMAC_KEY|HUBSPOT_PRIVATE_APP_TOKEN|MALWARE_SCANNER_API_KEY/u);
+  assert.doesNotMatch(dockerfile, /SUPABASE_SERVICE_ROLE_KEY|CPF_ENCRYPTION_KEY|CPF_LOOKUP_HMAC_KEY|HUBSPOT_PRIVATE_APP_TOKEN/u);
   assert.doesNotMatch(dockerfile, /https:\/\/build\.invalid|build-placeholder/u);
   assert.match(nextConfig, /output: "standalone"/u);
 });
@@ -74,7 +74,7 @@ test("public browser configuration is separate from server-side secrets", () => 
   assert.match(terraformReadme, /same values are repeated in `public_environment`/u);
 });
 
-test("Terraform baseline keeps compute and data private and encrypted", () => {
+test("Terraform baseline keeps compute and private evidence encrypted", () => {
   for (const pattern of [
     /assign_public_ip = false/u,
     /publicly_accessible\s+= false/u,
@@ -85,14 +85,14 @@ test("Terraform baseline keeps compute and data private and encrypted", () => {
     /user\s+= "1001:1001"/u,
     /image_tag_mutability = "IMMUTABLE"/u,
     /scan_on_push = true/u,
+    /resource "aws_s3_bucket" "evidence"/u,
     /block_public_acls\s+= true/u,
     /restrict_public_buckets\s+= true/u,
     /sse_algorithm\s+= "aws:kms"/u,
     /blocked_encryption_types = \["SSE-C"\]/u,
-    /deadLetterTargetArn/u,
-    /ApproximateAgeOfOldestMessage/u,
     /HTTPCode_Target_5XX_Count/u,
   ]) assert.match(terraformMain, pattern);
+  assert.doesNotMatch(terraformMain, /aws_sqs_queue|file_scan|deadLetterTargetArn|ApproximateAgeOfOldestMessage/u);
 });
 
 test("Terraform accepts only secret ARNs and documents remaining portability blockers", () => {
