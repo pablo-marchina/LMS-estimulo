@@ -8,6 +8,7 @@
   "scripts": {
     "dev:web": "npm --workspace @estimulo/web run dev",
     "build:web": "npm --workspace @estimulo/web run build",
+    "start:web": "npm --workspace @estimulo/web run start",
     "typecheck:web": "npm --workspace @estimulo/web run typecheck",
     "validate:repository": "node scripts/repository/validate-hygiene.mjs",
     "validate:dependency-lock": "node scripts/repository/validate-package-lock.mjs",
@@ -32,7 +33,7 @@
     "test:browser-e2e-real": "node scripts/browser-e2e/run-real-vertical.mjs",
     "scan:secrets": "node scripts/security/run-gitleaks.mjs",
     "test:secret-scanning": "node scripts/security/test-gitleaks.mjs",
-    "bootstrap:role-manager": "node scripts/operations/bootstrap-role-manager.mjs",
+    "bootstrap:role-manager": "node --env-file-if-exists=.env scripts/operations/bootstrap-role-manager.mjs",
     "test:database-clean-replay": "npm run validate:migration-history && npm run replay:database-clean && npm run validate:schema-equivalence && npm run validate:public-rpc-contracts",
     "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence && npm run test:activity-comments && npm run test:practice-uploads && npm run test:learning-credentials && npm run test:content-library && npm run test:rbac-role-management && npm run test:public-signup && npm run test:business-maturity-draft && npm run test:business-maturity-preview && npm run test:activity-utility-ratings && npm run test:application-readiness && npm run test:fk-covering-indexes && npm run test:identity-experience && npm run test:scanner-removal && npm run test:admin-product-management",
     "test:real-database-e2e": "npm run test:identity-experience && npm run test:admin-product-management && npm run test:scanner-removal",
