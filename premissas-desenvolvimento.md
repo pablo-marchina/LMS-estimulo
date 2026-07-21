@@ -1,68 +1,89 @@
-# Premissas de desenvolvimento — versão sanitizada
+# Premissas de desenvolvimento
 
-> Esta é a cópia canônica versionável das premissas fornecidas pela Estímulo. Valores operacionais e credenciais foram removidos. A sanitização não altera requisitos de produto. Credenciais compartilhadas em texto devem ser consideradas comprometidas, rotacionadas externamente e mantidas apenas em secret manager ou configuração segura por ambiente.
+> Documento canônico de requisitos do produto. Credenciais e valores operacionais não pertencem ao repositório e devem permanecer em configuração segura por ambiente.
 
-Ao desenvolver, pesquise e siga as melhores práticas de desenvolvimento de aplicação web e LMS
+## Entrega e engenharia
 
-A entrega final deve ser uma plataforma web LMS em produção/deploy em estado final com todas as features que a estimulo quer feitas
+- Entregar uma plataforma web LMS completa, implantada em produção e com todas as funcionalidades aprovadas pela Estímulo.
+- Desenvolver e manter internamente o produto, o código, a arquitetura, os dados e as regras de negócio.
+- Usar Supabase somente em desenvolvimento e testes; staging e produção usam AWS.
+- Manter arquitetura clara, legado contido, documentação operacional atualizada, testes proporcionais e boas práticas de GitHub.
+- Reutilizar ao máximo capacidades, fluxos e experiências existentes que atendam ao produto, preferindo integração ou adaptação segura a reconstrução parcial.
+- Registrar ações relevantes do usuário como eventos estruturados, versionados e auditáveis.
 
-Esse projeto será todo desenvolvido internamente, não existe a possibilidade de delegar/comprar algum serviço.
+## HubSpot
 
-github onde está sendo desenvolvido:  
-[https://github.com/pablo-marchina/LMS-estimulo.git](https://github.com/pablo-marchina/LMS-estimulo.git)  
-na aba issues tem features que devem serm implementadas, sempre verificar
+O PostgreSQL é o banco operacional e preserva o histórico detalhado. O HubSpot recebe somente itens explicitamente aprovados nas classes:
 
-para a entrega final e produção/deploy usaremos a AWS, mas para desenvolvimento e testes usaremos esse supabase:  
-[URL DO SUPABASE DE DESENVOLVIMENTO REMOVIDA — configurar por variável de ambiente segura]
-[CHAVE PUBLICÁVEL DO SUPABASE REMOVIDA — obter pela configuração autorizada do ambiente de desenvolvimento]
-[CONEXÃO DE BANCO REMOVIDA — credencial comprometida; rotacionar e usar secret manager]
-[CHAVE SECRETA DO SUPABASE REMOVIDA — credencial comprometida; rotacionar e usar secret manager]
+```text
+linking_identifier
+engagement_signal
+calculation_input_or_result
+```
 
-Pesquise e siga as melhores práticas de manutenção do github, Um dos pontos de máxima atenção do projeto deve ser a questão do legado do código, ele deve ter uma arquiterura e seguir uma estrutura clara e estruturada, aplicar padrões de projeto onde possível para manter uma consistência no projeto, sempre bem aplicados e mantidos, junto com a documentação, que deve ser estar sempre bem detalhada e refletir o estado atual do projeto, isso serve para o github como um todo, sempre utilizar as melhores práticas de manutenção
+Todo o restante é `not_synced`. Não sincronizar conteúdo integral, estado transacional detalhado, payloads brutos sem finalidade aprovada, arquivos, URLs assinadas, logs, filas, retries, segredos ou credenciais.
 
-A plataforma tem como objetivo capturar o máximo de dados sobre o usuário para usá lo posteriormente, ou seja, todas as ações do usuário na plataforma devem ser armazenadas como dados
+Nenhum dado educacional ou comportamental pode influenciar crédito sem validação metodológica, revisão de equidade, governança humana e aprovação jurídica e de privacidade.
 
-Todos os dados capturados ou usados devem estar no hubspot, ele será o centro de todas as informações do usuário
+## Identidade e entrada
 
-Reutilizar o máximo de código possível do [https://github.com/denilsontorres2024/plataforma-estimulo.git](https://github.com/denilsontorres2024/plataforma-estimulo.git)
+- Identificar clientes com crédito e vinculá-los ao mesmo registro autorizado no HubSpot.
+- Identificar clientes sem crédito sem criar duplicidade; caso obtenham crédito posteriormente, preservar o mesmo vínculo.
+- Capturar nome, e-mail, CPF, telefone, CNPJ opcional e UTM no fluxo de entrada/cadastro.
+- CPF é obrigatório, deve ter dígitos verificadores validados, ser cifrado no servidor e possuir somente um token HMAC para busca e deduplicação. O valor bruto não pode aparecer em metadata, URL, logs ou eventos.
+- O acesso à área administrativa exige e-mail confirmado no domínio exato `@estimulo.org` e papel RBAC ativo. O domínio habilita a entrada administrativa, mas não concede permissões por si só.
 
-Tela de login:  
-clientes com crédito precisam ser identificados no login e serem atribuídos ao mesmo id que já possuem hubspot 
+## Diagnóstico e personalização
 
-os clientes sem crédito precisam ser identificados pois eles não vão ter id no hubspot, então todas as informações do login precisam ser coletadas e criar um novo usuário com todas essas informações no hubspot de forma que caso ele faça o crédito depois ele todas as informações do crédito devem ir para o mesmo id
+- No primeiro acesso, oferecer formulário opcional para definição de arquétipo.
+- Perguntas, opções, cálculo, resultados e ativações devem ser editáveis, versionados e publicáveis sem mudança de código.
+- Trilhas devem possuir labels de elegibilidade por arquétipo.
+- Participantes sem diagnóstico veem somente trilhas gerais, sem restrição de arquétipo.
 
-o login tem que pedir as seguintes informações: nome, email, cpf, cnpj(opcional), telefone
+## Experiência do participante
 
-recolher UTM na página de login
+### Home
 
-Pesquise e siga as melhores práticas de desenvolvimento de interface de usuário
+- carrossel de anúncios;
+- trilhas elegíveis para o participante;
+- retomada do ponto onde parou;
+- barra de progresso;
+- navegação superior;
+- apresentação das recompensas possíveis.
 
-Plataforma:   
-A plataforma precisa seguir o guia de estilo da estimulo, e com base os mockups feito na lovable, [https://estimulo-hub.lovable.app/](https://estimulo-hub.lovable.app/)  ,ela terá uma interface do usuario e outra para os administradores da estímulo
+### Trilhas e atividades
 
-No primeiro login do usuário ele deverá responder um formulário para definir qual será o seu arquétipo, as perguntas, o arquétipos do resultado e como é calculado o resultado devem ser editados para possível alteração futura, ele não é obrigatório, queremos que o formulário esteja em typeform, precisamos pensar em uma solução
+- visualização das trilhas disponíveis;
+- blocos expansíveis com descrição e labels;
+- atividades do bloco acessíveis fora de ordem quando a regra permitir;
+- 100% dos requisitos para liberar selo e certificado;
+- comentários por atividade;
+- avaliação de utilidade em cinco estrelas;
+- quick check de aprendizagem;
+- conteúdos internos e externos nos formatos adequados;
+- suporte a vídeos horizontais e verticais, textos, arquivos, links, avaliações e práticas.
 
-Telas interface usuário:  
-\*As trilhas devem ter labels, uma das labels deverá dizer para quais usuários ele está disponível dependendo do arquétipo do usuário, caso ele não tenha feito o formulário, só apareceram as trilhas que não tem label que define arquétipo.  
-\*\*Abaixo estão elementos que as telas devem ter, esses são os obrigatórios, mas elas podem ter mais
+### Perfil e engajamento
 
-Home page: Painel carrossel para anúncios, visualizar somente as trilhas para aquele tipo de usuário, continuar de onde parei com barra de progresso, menu em cima, o que você pode ganhar de recompensas 
+- certificados e selos;
+- resultado do diagnóstico;
+- histórico de engajamento;
+- conquistas e recompensas;
+- histórico de pontuação;
+- ranking governado.
 
-Trilhas: visualização das trilhas que o usuário pode fazer, 
+## Experiência administrativa
 
-Na trilha: as atividades do bloco da trilha não precisam serem feitas em ordem, mas é necessário ter 100 de progresso para liberar selo e certificados, visualização por blocos expansíveis, colocar descrição/labels de cada bloco
+- autenticação por e-mail Estímulo confirmado e autorização RBAC;
+- gestão de usuários e papéis;
+- gestão integral de jornadas, trilhas, blocos, atividades, labels e regras;
+- gestão do diagnóstico e das ativações;
+- biblioteca de conteúdo com labels e taxonomia;
+- gestão de anúncios, gamificação, recompensas e relatórios;
+- moderação de comentários e revisão de práticas;
+- auditoria das ações administrativas.
 
-Atividades: comentários, avaliação de 5 estrela pra aula, sessão com pergunta curta para verificar aprendizagem da atividade de forma rápida, visualização de diferentes formas de conteúdo na visualização na forma correta, suporte para conteúdos internos e externos de todos os tipos
+## Interface
 
-Perfil: certificados, resultado do formulário, histórico de engajamento
-
-Engajamento: conquistas, o que você pode ganhar, histórico de pontuação, ranking
-
-Telas interface administrador:  
-\*Será logada usando o email do estímulo
-
-Usuários: tela para manejar os usuários da plataforma
-
-trilhas: tela para controlar todos o elementos que constituem a trilha
-
-Biblioteca de conteúdo: área com todos os conteúdos para serem usados nas trilhas, a biblioteca deve ter labels para organização
+- Seguir o guia de estilo oficial da Estímulo e manter experiência responsiva e acessível.
+- Preservar interfaces distintas e coerentes para participantes e equipe administrativa.
