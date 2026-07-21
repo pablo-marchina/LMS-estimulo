@@ -15,14 +15,20 @@ const [dockerfile, nextConfig, live, ready, migration, versions, variables, terr
   readFile("infra/aws/terraform/README.md", "utf8"),
 ]);
 
-test("container build is pinned, standalone and non-root", () => {
+test("container build is pinned, standalone, non-root and rejects missing public config", () => {
   assert.match(dockerfile, /FROM node:22\.16\.0-bookworm-slim/u);
   assert.match(dockerfile, /npm ci --ignore-scripts/u);
+  assert.match(dockerfile, /ARG NEXT_PUBLIC_APP_URL\n/u);
+  assert.match(dockerfile, /ARG NEXT_PUBLIC_SUPABASE_URL\n/u);
+  assert.match(dockerfile, /ARG NEXT_PUBLIC_SUPABASE_ANON_KEY\n/u);
+  assert.match(dockerfile, /missing build argument/u);
+  assert.match(dockerfile, /must use https/u);
   assert.match(dockerfile, /npm run build:web/u);
   assert.match(dockerfile, /USER nextjs/u);
   assert.match(dockerfile, /--uid 1001/u);
   assert.match(dockerfile, /api\/health\/live/u);
   assert.doesNotMatch(dockerfile, /SUPABASE_SERVICE_ROLE_KEY|HUBSPOT_PRIVATE_APP_TOKEN|MALWARE_SCANNER_API_KEY/u);
+  assert.doesNotMatch(dockerfile, /https:\/\/build\.invalid|build-placeholder/u);
   assert.match(nextConfig, /output: "standalone"/u);
 });
 
@@ -48,6 +54,19 @@ test("Terraform versions and deployment guard are explicit", () => {
   assert.match(variables, /@sha256:\[a-f0-9\]\{64\}/u);
   assert.match(tfvars, /confirm_deployment\s+= false/u);
   assert.doesNotMatch(terraformMain, /[0-9]{12}\.dkr\.ecr|arn:aws:acm:[^\n]*:[0-9]{12}/u);
+});
+
+test("public browser configuration is separate from server-side secrets", () => {
+  assert.match(variables, /variable "public_environment"/u);
+  assert.match(variables, /variable "secret_arns"/u);
+  assert.match(variables, /must not contain NEXT_PUBLIC_/u);
+  assert.match(terraformMain, /NEXT_PUBLIC_APP_URL/u);
+  assert.match(terraformMain, /NEXT_PUBLIC_SUPABASE_URL/u);
+  assert.match(terraformMain, /NEXT_PUBLIC_SUPABASE_ANON_KEY/u);
+  assert.match(terraformMain, /SUPABASE_SERVICE_ROLE_KEY/u);
+  assert.doesNotMatch(tfvars, /NEXT_PUBLIC_[A-Z_]+\s*=\s*"arn:aws:secretsmanager:/u);
+  assert.match(terraformReadme, /freezes every `NEXT_PUBLIC_\*` value/u);
+  assert.match(terraformReadme, /same values are repeated in `public_environment`/u);
 });
 
 test("Terraform baseline keeps compute and data private and encrypted", () => {
