@@ -27,6 +27,7 @@ test('workspace contém aplicação Next.js real em apps/web', async () => {
 test('rotas centrais e credenciais existem', async () => {
   for (const file of [
     'entrar/page.tsx',
+    'entrar/administracao/page.tsx',
     'cadastro/page.tsx',
     'empreendedor/page.tsx',
     'empreendedor/diagnostico/page.tsx',
@@ -104,25 +105,32 @@ test('admin não exige UUIDs digitados manualmente', async () => {
   assert.ok(!source.includes('ID da versão da jornada'));
 });
 
-test('cadastro público real e cadastro sintético permanecem separados', async () => {
+test('cadastro de participante e entrada administrativa permanecem separados', async () => {
   const login = await read('apps/web/app/entrar/page.tsx');
   const signup = await read('apps/web/app/cadastro/page.tsx');
-  const testSignup = await read('apps/web/app/cadastro/teste/page.tsx');
-  const gate = await read('apps/web/lib/auth/test-public-signup.ts');
+  const adminLogin = await read('apps/web/app/entrar/administracao/page.tsx');
+  const adminAction = await read('apps/web/app/entrar/administracao/actions.ts');
+  const adminCallback = await read('apps/web/app/auth/admin/callback/route.ts');
   assert.ok(login.includes('href="/cadastro"'));
-  assert.ok(login.includes('href="/cadastro/teste"'));
+  assert.ok(login.includes('href="/entrar/administracao"'));
+  assert.ok(!login.includes('/cadastro/teste'));
   assert.ok(signup.includes('createPublicAccountAction'));
   assert.ok(signup.includes('Acesso público'));
-  assert.ok(testSignup.includes('notFound()'));
-  assert.ok(gate.includes('PUBLIC_SIGNUP_TEST_MODE'));
-  assert.ok(gate.includes('process.env.NODE_ENV !== "production"'));
-  assert.ok(gate.includes('ALLOWED_APP_ENVIRONMENTS.has'));
+  assert.ok(adminLogin.includes('signInWithGoogleAction'));
+  assert.ok(!adminLogin.includes('type="password"'));
+  assert.ok(adminAction.includes('provider: "google"'));
+  assert.ok(adminAction.includes('hd: "estimulo.org"'));
+  assert.ok(adminCallback.includes('isGoogleAuthProvider(user)'));
+  assert.ok(adminCallback.includes('administrativeOrganization(auth.identity)'));
 });
 
-test('login direciona participante e operador conforme identidade interna', async () => {
-  const action = await read('apps/web/app/entrar/actions.ts');
-  assert.ok(action.includes('auth.identity.entrepreneur_id'));
-  assert.ok(action.includes('/admin?organization='));
+test('login direciona participante e operador por fluxos distintos', async () => {
+  const participantAction = await read('apps/web/app/entrar/actions.ts');
+  const adminCallback = await read('apps/web/app/auth/admin/callback/route.ts');
+  assert.ok(participantAction.includes('auth.identity.entrepreneur_id'));
+  assert.ok(participantAction.includes('/entrar/administracao?erro=conta_google_necessaria'));
+  assert.ok(!participantAction.includes('/admin?organization='));
+  assert.ok(adminCallback.includes('/admin?organization='));
 });
 
 test('atividade renderiza o heading real do conteúdo versionado', async () => {
