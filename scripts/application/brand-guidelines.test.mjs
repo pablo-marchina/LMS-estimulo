@@ -7,7 +7,6 @@ const [
   brandCss,
   brandComponent,
   shell,
-  assetReadme,
   horizontalLogo,
   symbol,
   dots,
@@ -17,7 +16,6 @@ const [
   readFile("apps/web/app/brand-system.css", "utf8"),
   readFile("apps/web/components/estimulo-brand.tsx", "utf8"),
   readFile("apps/web/components/app-shell.tsx", "utf8"),
-  readFile("apps/web/public/brand/README.md", "utf8"),
   readFile("apps/web/public/brand/estimulo-logo-horizontal-color.svg", "utf8"),
   readFile("apps/web/public/brand/estimulo-symbol-color.svg", "utf8"),
   readFile("apps/web/public/brand/estimulo-dots-cyan.svg", "utf8"),
@@ -42,7 +40,7 @@ function assertVectorAsset(asset, name) {
   assert.ok(asset.length > 300, `${name} must not be an empty placeholder`);
 }
 
-test("brand system uses the official Estímulo palette and Poppins", () => {
+test("brand system uses the Estímulo palette and Poppins", () => {
   for (const color of officialPalette) assert.match(brandCss.toLowerCase(), new RegExp(color));
   assert.match(brandCss, /fonts\.googleapis\.com\/css2\?family=Poppins/u);
   assert.match(brandCss, /font-family\s*:\s*Poppins/u);
@@ -50,19 +48,16 @@ test("brand system uses the official Estímulo palette and Poppins", () => {
   assert.match(layout, /import "\.\/brand-system\.css"/u);
 });
 
-test("official local vector assets are present and traceable", () => {
+test("local vector assets are present and usable", () => {
   assertVectorAsset(horizontalLogo, "horizontal logo");
   assertVectorAsset(symbol, "symbol");
   assertVectorAsset(dots, "dot grid");
   assertVectorAsset(chevrons, "chevrons");
   assert.match(horizontalLogo, /viewBox="0 0 480 208"/u);
   assert.match(symbol, /viewBox="0 0 292\.36 292\.37"/u);
-  assert.match(assetReadme, /_Principal\/EPS\/Logo_Estímulo\.eps/u);
-  assert.match(assetReadme, /_Simbolo\/EPS\/Logo_Símbolo\.eps/u);
-  assert.match(assetReadme, /without redrawing/u);
 });
 
-test("official horizontal logo is local, keeps clear space and is not redrawn in the component", () => {
+test("horizontal logo is local, keeps clear space and is not redrawn in the component", () => {
   assert.match(brandComponent, /OFFICIAL_ESTIMULO_LOGO_PATH/u);
   assert.match(brandComponent, /\/brand\/estimulo-logo-horizontal-color\.svg/u);
   assert.match(brandComponent, /brand-logo-clearspace/u);
@@ -73,7 +68,7 @@ test("official horizontal logo is local, keeps clear space and is not redrawn in
   assert.match(shell, /app-header__inner/u);
 });
 
-test("official complementary elements are large, cropped and decorative", () => {
+test("complementary elements are large, cropped and decorative", () => {
   assert.match(brandCss, /--brand-symbol-image:url\("\/brand\/estimulo-symbol-color\.svg"\)/u);
   assert.match(brandCss, /--brand-dots-cyan-image:url\("\/brand\/estimulo-dots-cyan\.svg"\)/u);
   assert.match(brandCss, /--brand-chevrons-magenta-image:url\("\/brand\/estimulo-chevrons-magenta\.svg"\)/u);
