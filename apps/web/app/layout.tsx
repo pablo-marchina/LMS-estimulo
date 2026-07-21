@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./brand-auth.css";
 import "./brand-system.css";
+import "./experience.css";
 
 export const metadata: Metadata = {
   title: { default: "Plataforma Estímulo", template: "%s | Estímulo" },
