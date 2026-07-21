@@ -4,8 +4,6 @@
 **Data:** 2026-07-21  
 **Status:** ativo
 
-Este documento registra somente gates de produto, segurança, integração e operação. Auditorias, cobertura e decisões de reaproveitamento de materiais externos não pertencem ao repositório.
-
 ## Regras
 
 - `P0` bloqueia usuários reais ou a entrega oficial;
@@ -102,7 +100,7 @@ clean_replay_previously_passed = true
 schema_equivalence_previously_passed = true
 public_rpc_contracts_previously_passed = true
 backend_e2e_synthetic_passed = true
-browser_e2e_synthetic_passed = true
+browser_e2e_synthetic_after_latest_experience_changes = pending
 identity_experience_database_test_passed = true
 participant_engagement_hub_test_passed = true
 participant_journey_outline_test_passed = true
