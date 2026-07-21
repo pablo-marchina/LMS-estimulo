@@ -9,12 +9,13 @@ RUN npm ci --ignore-scripts
 FROM dependencies AS builder
 WORKDIR /app
 COPY . .
-ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
-ARG NEXT_PUBLIC_SUPABASE_URL=https://build.invalid
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY=build-placeholder
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 ENV NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+RUN node -e "for (const name of ['NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY']) { if (!process.env[name]?.trim()) throw new Error('missing build argument: '+name); } for (const name of ['NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SUPABASE_URL']) { const url = new URL(process.env[name]); if (url.protocol !== 'https:') throw new Error(name+' must use https'); }"
 RUN npm run build:web
 
 FROM node:22.16.0-bookworm-slim AS runner
