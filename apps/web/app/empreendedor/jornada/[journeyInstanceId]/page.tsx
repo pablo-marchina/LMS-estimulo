@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
+import type { ParticipantJourneyOutline } from "@/lib/journey-runtime/outline-contracts";
 import { getParticipantJourneyOutline } from "@/lib/journey-runtime/outline-runtime";
 import { statusLabel } from "@/lib/journey-runtime/navigation";
 import { openJourneyActivityAction } from "./actions";
@@ -26,7 +27,7 @@ export default async function JourneyOutlinePage({
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
 
-  let outline;
+  let outline: ParticipantJourneyOutline;
   try {
     outline = await getParticipantJourneyOutline(auth.identity.user_account_id, journeyInstanceId);
   } catch {
