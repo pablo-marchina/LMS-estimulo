@@ -91,6 +91,40 @@ test("recreated Auth users relink only when the previous subject is orphaned", a
   assert.match(migration, /raise exception 'identity_link_required'/);
 });
 
+test("authenticated identity and runtime RPCs do not depend on a local service-role key", async () => {
+  const [currentIdentity, context, callback, serverInvoke, gateway, migration] = await Promise.all([
+    read("apps/web/lib/auth/current-identity.ts"),
+    read("apps/web/lib/auth/context.ts"),
+    read("apps/web/app/auth/admin/callback/route.ts"),
+    read("apps/web/lib/rpc/server-invoke.ts"),
+    read("supabase/functions/authenticated-rpc/index.ts"),
+    read("supabase/migrations/20260721202716_authenticated_current_identity_resolution.sql"),
+  ]);
+
+  assert.match(currentIdentity, /rpc\("e14_resolve_current_identity"\)/);
+  assert.match(context, /resolveCurrentIdentity\(session\)/);
+  assert.doesNotMatch(context, /journeyRuntime\.resolveIdentity|createHash|createPrivilegedClient/);
+  assert.match(callback, /resolveCurrentIdentity\(client\)/);
+  assert.doesNotMatch(callback, /journeyRuntime\.resolveIdentity|createHash|createPrivilegedClient/);
+
+  assert.match(serverInvoke, /auth\.getSession\(\)/);
+  assert.match(serverInvoke, /functions\/v1\/authenticated-rpc/);
+  assert.doesNotMatch(serverInvoke, /createPrivilegedClient|SUPABASE_SERVICE_ROLE_KEY/);
+
+  assert.match(gateway, /allowedRpcs/);
+  assert.match(gateway, /auth\.getUser\(accessToken\)/);
+  assert.match(gateway, /rpc\("e14_resolve_current_identity"\)/);
+  assert.match(gateway, /ACTOR_MISMATCH/);
+  assert.match(gateway, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(gateway, /admin\.rpc\(name, args\)/);
+
+  assert.match(migration, /auth\.uid\(\)/);
+  assert.match(migration, /auth\.jwt\(\)/);
+  assert.match(migration, /email_confirmed_at is not null/);
+  assert.match(migration, /grant execute on function public\.e14_resolve_current_identity\(\) to authenticated/);
+  assert.match(migration, /revoke all on function public\.e14_resolve_current_identity\(\) from anon/);
+});
+
 test("administration has a separate Google-only entrypoint with server validation", async () => {
   const [participantPage, participantAction, adminPage, adminAction, callback, layout, context, provider] = await Promise.all([
     read("apps/web/app/entrar/page.tsx"),
@@ -121,7 +155,7 @@ test("administration has a separate Google-only entrypoint with server validatio
   assert.match(callback, /auth\.getClaims\(\)/);
   assert.match(callback, /isGoogleAuthProvider\(user, claimsData\.claims\.amr\)/);
   assert.match(callback, /isEstimuloAdministrativeEmail\(email\)/);
-  assert.match(callback, /journeyRuntime\.resolveIdentity/);
+  assert.match(callback, /resolveCurrentIdentity\(client\)/);
   assert.match(callback, /administrativeOrganization\(identity\)/);
   assert.match(callback, /identity_link_required/);
   assert.match(callback, /identidade_desvinculada/);
