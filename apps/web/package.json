@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next dev",
-    "build": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next build --webpack",
-    "start": "node --env-file-if-exists=../../.env ../../node_modules/next/dist/bin/next start",
+    "dev": "node ../../scripts/runtime/run-web.mjs dev",
+    "build": "node ../../scripts/runtime/run-web.mjs build",
+    "start": "node ../../scripts/runtime/run-web.mjs start",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
