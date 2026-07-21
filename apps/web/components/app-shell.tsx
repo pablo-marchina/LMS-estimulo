@@ -8,10 +8,14 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
   const links = area === "admin"
     ? [
         { href: "/admin", label: "Operação" },
+        { href: "/admin/produto", label: "Produto" },
+        { href: "/admin/diagnostico", label: "Diagnóstico" },
+        { href: "/admin/gamificacao", label: "Gamificação" },
         { href: "/admin/biblioteca", label: "Biblioteca" },
         { href: "/admin/usuarios", label: "Usuários" },
+        { href: "/admin/engajamento", label: "Anúncios" },
+        { href: "/admin/relatorios", label: "Relatórios" },
         { href: "/admin/maturidade", label: "Maturidade" },
-        { href: "/admin/engajamento", label: "Engajamento" },
         { href: "/admin/integracoes", label: "Integrações" }
       ]
     : [
