@@ -3,6 +3,7 @@ import "./globals.css";
 import "./brand-auth.css";
 import "./brand-system.css";
 import "./experience.css";
+import "./admin-system.css";
 
 export const metadata: Metadata = {
   title: { default: "Plataforma Estímulo", template: "%s | Estímulo" },
