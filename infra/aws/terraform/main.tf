@@ -15,9 +15,6 @@ locals {
     DataClass   = "confidential"
   }
   required_secret_keys = toset([
-    "NEXT_PUBLIC_APP_URL",
-    "NEXT_PUBLIC_SUPABASE_URL",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY",
     "SUPABASE_SERVICE_ROLE_KEY"
   ])
   route53_enabled = var.domain_name != "" && var.route53_zone_id != ""
@@ -50,7 +47,7 @@ resource "terraform_data" "deployment_guard" {
     }
     precondition {
       condition     = alltrue([for key in local.required_secret_keys : contains(keys(var.secret_arns), key)])
-      error_message = "Required application secret ARNs are missing."
+      error_message = "Required server-side secret ARNs are missing."
     }
     precondition {
       condition     = (var.domain_name == "" && var.route53_zone_id == "") || (var.domain_name != "" && var.route53_zone_id != "")
