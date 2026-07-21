@@ -1,6 +1,6 @@
 resource "terraform_data" "identity_secret_guard" {
   input = {
-    cpf_encryption_key_arn = try(var.secret_arns["CPF_ENCRYPTION_KEY"], null)
+    cpf_encryption_key_arn  = try(var.secret_arns["CPF_ENCRYPTION_KEY"], null)
     cpf_lookup_hmac_key_arn = try(var.secret_arns["CPF_LOOKUP_HMAC_KEY"], null)
   }
 
@@ -14,7 +14,9 @@ resource "terraform_data" "identity_secret_guard" {
     }
     precondition {
       condition = (
-        var.secret_arns["CPF_ENCRYPTION_KEY"] != var.secret_arns["CPF_LOOKUP_HMAC_KEY"]
+        try(var.secret_arns["CPF_ENCRYPTION_KEY"], "") != ""
+        && try(var.secret_arns["CPF_LOOKUP_HMAC_KEY"], "") != ""
+        && try(var.secret_arns["CPF_ENCRYPTION_KEY"], "") != try(var.secret_arns["CPF_LOOKUP_HMAC_KEY"], "")
       )
       error_message = "CPF encryption and lookup HMAC must use independent secrets."
     }
