@@ -47,13 +47,14 @@ test("test signup runtime, route and privileged provisioning are absent", async 
   assert.match(removalMigration, /drop function if exists public\.provision_test_signup_participant/u);
 });
 
-test("participant confirmation requires an explicit post and recovers from preprocessed links", async () => {
+test("participant confirmation recovers from PKCE mismatch and reports resend failures", async () => {
   const [
     page,
     action,
     confirmationPage,
     confirmationAction,
     signInPage,
+    signInAction,
     completionPage,
     completionAction,
   ] = await Promise.all([
@@ -62,6 +63,7 @@ test("participant confirmation requires an explicit post and recovers from prepr
     read("apps/web/app/auth/confirm/page.tsx"),
     read("apps/web/app/auth/confirm/actions.ts"),
     read("apps/web/app/entrar/page.tsx"),
+    read("apps/web/app/entrar/actions.ts"),
     read("apps/web/app/cadastro/concluir/page.tsx"),
     read("apps/web/app/cadastro/concluir/actions.ts"),
   ]);
@@ -74,21 +76,31 @@ test("participant confirmation requires an explicit post and recovers from prepr
 
   assert.match(confirmationPage, /confirmEmailAction/);
   assert.match(confirmationPage, /resendConfirmationAction/);
-  assert.match(confirmationPage, /Confirmar e continuar/);
+  assert.match(confirmationPage, /Concluir confirmação/);
   assert.match(confirmationPage, /Entrar com minha senha/);
   assert.match(confirmationPage, /Reenviar confirmação/);
+  assert.match(confirmationPage, /Contas já confirmadas não recebem outro e-mail/);
+  assert.match(confirmationPage, /limite_envio/);
+  assert.match(confirmationPage, /envio_falhou/);
   assert.match(confirmationPage, /type="hidden" name="token_hash"/);
   assert.doesNotMatch(confirmationPage, /verifyOtp|exchangeCodeForSession|createSessionClient/);
 
   assert.match(confirmationAction, /^"use server";/);
   assert.match(confirmationAction, /verifyOtp/);
   assert.match(confirmationAction, /exchangeCodeForSession/);
+  assert.match(confirmationAction, /bad_code_verifier/);
+  assert.match(confirmationAction, /\/entrar\?cadastro=confirmado/);
   assert.match(confirmationAction, /auth\.getUser\(\)/);
   assert.match(confirmationAction, /email_confirmed_at/);
   assert.match(confirmationAction, /auth\.resend/);
   assert.match(confirmationAction, /emailRedirectTo/);
+  assert.match(confirmationAction, /authErrorStatus\(error\) === 429/);
+  assert.match(confirmationAction, /erro=limite_envio/);
+  assert.match(confirmationAction, /erro=envio_falhou/);
   assert.match(confirmationAction, /redirect\("\/cadastro\/concluir"\)/);
   assert.match(confirmationAction, /reenviado=1/);
+  assert.match(signInAction, /error\?\.code === "email_not_confirmed"/);
+  assert.match(signInAction, /erro=confirmacao_necessaria/);
   assert.match(signInPage, /cadastro === "confirmado"/);
   assert.match(signInPage, /link de confirmação já foi processado/);
   assert.match(completionPage, /name="cpf"/u);

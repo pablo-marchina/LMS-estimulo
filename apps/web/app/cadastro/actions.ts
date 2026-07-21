@@ -8,7 +8,7 @@ import { publicApplicationOrigin } from "@/lib/http-public-origin";
 const signupSchema = z.object({
   preferredName: z.string().trim().min(2).max(120),
   businessName: z.string().trim().max(160).optional(),
-  email: z.string().trim().email().max(320).transform((value) => value.toLowerCase()),
+  email: z.string().trim().email().max(320).transform((value: string) => value.toLowerCase()),
   password: z.string().min(10).max(128),
   passwordConfirmation: z.string(),
   terms: z.literal("accepted"),
@@ -47,9 +47,14 @@ export async function createPublicAccountAction(formData: FormData) {
   });
 
   if (error) {
-    const code = error.code === "user_already_exists" || error.code === "user_already_registered"
-      ? "usuario_existente"
-      : "criacao_falhou";
+    const rateLimited = error.status === 429
+      || error.code === "over_email_send_rate_limit"
+      || error.code?.includes("rate_limit");
+    const code = rateLimited
+      ? "limite_email"
+      : error.code === "user_already_exists" || error.code === "user_already_registered"
+        ? "usuario_existente"
+        : "criacao_falhou";
     redirect(`/cadastro?erro=${code}`);
   }
   if (data.session) redirect("/cadastro/concluir");

@@ -6,6 +6,7 @@ const errorMessages: Record<string, string> = {
   dados_invalidos: "Revise os campos e aceite os termos para continuar.",
   senhas_diferentes: "As senhas informadas são diferentes.",
   usuario_existente: "Já existe uma conta com este e-mail.",
+  limite_email: "O limite temporário do servidor de e-mail foi atingido. Aguarde antes de tentar novamente.",
   criacao_falhou: "Não foi possível criar a conta agora.",
 };
 

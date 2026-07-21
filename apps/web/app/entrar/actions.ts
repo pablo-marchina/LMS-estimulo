@@ -13,6 +13,7 @@ export async function signInAction(formData: FormData) {
 
   const client = await createSessionClient();
   const { error } = await client.auth.signInWithPassword({ email, password });
+  if (error?.code === "email_not_confirmed") redirect("/entrar?erro=confirmacao_necessaria");
   if (error) redirect("/entrar?erro=credenciais_invalidas");
 
   const auth = await getAuthContext();
