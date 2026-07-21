@@ -18,19 +18,25 @@ export function AppShell({ area, email, children }: { area: "empreendedor" | "ad
         { href: "/capacitacao/biblioteca", label: "Biblioteca" },
         { href: "/empreendedor/credenciais", label: "Credenciais" }
       ];
+  const areaLabel = area === "admin" ? "Área de operação" : "Área do empreendedor";
 
   return (
     <IdempotentSubmitBoundary>
-      <div className="app-frame">
+      <div className="app-frame" data-area={area}>
         <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
         <header className="app-header no-print">
-          <EstimuloBrand href={area === "admin" ? "/admin" : "/empreendedor"} compact />
-          <nav aria-label="Navegação principal">
-            {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
-          </nav>
-          <div className="session-summary">
-            <span>{email}</span>
-            <form action={signOutAction}><button className="button button--ghost" type="submit">Sair</button></form>
+          <div className="app-header__inner">
+            <div className="app-brand-cluster">
+              <EstimuloBrand href={area === "admin" ? "/admin" : "/empreendedor"} compact />
+              <span className="app-area-label">{areaLabel}</span>
+            </div>
+            <nav className="app-nav" aria-label="Navegação principal">
+              {links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}
+            </nav>
+            <div className="session-summary">
+              <span className="session-email" title={email}>{email}</span>
+              <form action={signOutAction}><button className="button button--ghost" type="submit">Sair</button></form>
+            </div>
           </div>
         </header>
         <main id="conteudo-principal" className="page-container" tabIndex={-1}>{children}</main>
