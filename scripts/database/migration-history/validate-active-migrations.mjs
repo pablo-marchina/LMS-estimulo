@@ -44,6 +44,16 @@ const expectedActiveMigrations = Object.freeze([
   '20260720190700_announcement_fk_indexes.sql',
   '20260720190800_participant_journey_outline.sql',
   '20260720190900_participant_journey_outline_fix.sql',
+  '20260720190940_disable_scanner_cron.sql',
+  '20260720190950_prepare_remove_malware_scanner.sql',
+  '20260720190960_remove_scanner_alert_dependencies.sql',
+  '20260720190970_remove_scanner_metric_dependencies.sql',
+  '20260720190980_remove_regenerated_scanner_metrics.sql',
+  '20260720191000_remove_malware_scanner.sql',
+  '20260720191005_drop_scanner_provider_queues.sql',
+  '20260720191500_integral_admin_product_management.sql',
+  '20260720191510_fix_admin_reporting_relations.sql',
+  '20260720191520_complete_integral_admin_role.sql',
 ]);
 
 export async function validateActiveMigrations() {
