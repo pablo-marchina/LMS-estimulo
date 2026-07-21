@@ -144,14 +144,14 @@ jobs:
       - name: Validate legacy RPC containment
         run: npm run validate:legacy-rpc-containment
 
-      - name: Confirm local artifacts and source packages remain ignored
+      - name: Confirm local artifacts and archives remain ignored
         shell: bash
         run: |
           set -euo pipefail
           grep -Fx '**/*.local.jsonl' .gitignore
           grep -Fx '.artifacts/' .gitignore
-          grep -Fx 'estimulo-ref*.zip' .gitignore
-          grep -Fx 'impulso-empreendedor.zip' .gitignore
+          grep -Fx '*.zip' .gitignore
+          grep -Fx '*.tar.gz' .gitignore
 
       - name: Enforce secret-scan result
         if: steps.secret-scan.outcome == 'failure'
