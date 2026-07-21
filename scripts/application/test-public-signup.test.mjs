@@ -15,9 +15,10 @@ test("environment examples expose safe defaults for branding and test signup", a
 
   assert.equal(rootExample, webExample, "root and web environment examples must remain synchronized");
   assert.match(rootExample, /^APP_ENV=development$/m);
+  assert.match(rootExample, /^NEXT_PUBLIC_APP_URL=http:\/\/localhost:3000$/m);
   assert.match(rootExample, /^PUBLIC_SIGNUP_TEST_MODE=false$/m);
-  assert.match(rootExample, /^NEXT_PUBLIC_ESTIMULO_LOGO_URL=https:\/\//m);
   assert.match(rootExample, /^SUPABASE_SERVICE_ROLE_KEY=replace-with-service-role-key$/m);
+  assert.doesNotMatch(rootExample, /NEXT_PUBLIC_ESTIMULO_LOGO_URL|cdn\.prod\.website-files\.com/);
 });
 
 test("synthetic signup is explicitly test-only and fails closed in production", async () => {
@@ -45,15 +46,15 @@ test("signup creates a confirmed test account and provisions only a participant 
   assert.match(runtime, /assertTestPublicSignupEnabled/);
 });
 
-test("the official Estimulo logo is used by login and authenticated shell", async () => {
+test("the official local Estimulo logo is used by login and authenticated shell", async () => {
   const [brand, login, shell] = await Promise.all([
     read("apps/web/components/estimulo-brand.tsx"),
     read("apps/web/app/entrar/page.tsx"),
     read("apps/web/components/app-shell.tsx")
   ]);
 
-  assert.match(brand, /logo-estimulo\.png/);
-  assert.match(brand, /NEXT_PUBLIC_ESTIMULO_LOGO_URL/);
+  assert.match(brand, /\/brand\/estimulo-logo-horizontal-color\.svg/);
+  assert.doesNotMatch(brand, /NEXT_PUBLIC_ESTIMULO_LOGO_URL|https?:\/\//);
   assert.match(brand, /alt="Estímulo"/);
   assert.match(login, /<EstimuloBrand centered \/>/);
   assert.match(shell, /<EstimuloBrand href=.*compact \/>/s);
