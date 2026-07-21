@@ -15,30 +15,39 @@ Código, migrations, container standalone e Terraform não autorizam operação 
 ## Evidências técnicas concluídas
 
 - RLS interno abrangente e contratos server-only;
-- tabelas server-only sem policies permanecem sem grants para `anon` e `authenticated`;
-- redaction e secret scanning de repositório;
-- cadastro público com confirmação e sem admin por domínio;
-- RBAC administrativo explícito, revogável, temporal e auditável;
-- 276 migrations reproduzíveis e testes transacionais no Supabase de desenvolvimento;
-- zero avisos de foreign keys sem índice após a migration corretiva;
+- tabelas server-only sem policies e sem grants para `anon` ou `authenticated`;
+- redaction e secret scanning;
+- cadastro público, confirmação de e-mail e first-touch UTM;
+- CPF obrigatório com dígitos verificadores, AES-256-GCM e HMAC independente;
+- CPF bruto ausente de metadata, URL, logs e eventos;
+- entrada administrativa restrita a e-mail confirmado `@estimulo.org`;
+- RBAC administrativo explícito, revogável, temporal e auditável; o domínio não concede permissões sozinho;
+- 282 migrations executáveis, incluindo correções append-only;
+- testes transacionais de CPF, anúncios, ranking, recompensas, histórico e outline da jornada no Supabase de desenvolvimento;
+- zero avisos de foreign keys sem índice nas capacidades novas;
+- painel com carrossel administrável, retomada, recompensas e ranking pseudonimizado;
+- perfil com diagnóstico, histórico, pontos e credenciais;
+- trilha com blocos expansíveis e abertura de qualquer atividade liberada pelo backend;
 - maturidade em draft, sem atribuição, crédito ou CRM;
 - nota de utilidade 1–5 com histórico append-only e exclusão de crédito;
 - scanner externo fail-closed: sem provider, arquivo permanece em `manual_review`;
-- política HubSpot allowlist e adapter HTTP real desabilitado sem inventário/token;
-- build Next.js standalone, processo não-root e probes live/ready;
+- política HubSpot limitada às três classes aprovadas e adapter HTTP desabilitado sem inventário/token;
+- build Next.js standalone previamente comprovado, processo não-root e probes live/ready;
 - Terraform de staging com guard, imagem por digest, configuração pública no build, secrets por ARN e dados privados/criptografados.
 
 ## Evidências ainda não obtidas
 
+- TypeScript, build e Browser E2E executados por runner após as mudanças mais recentes de experiência;
 - rotação/revogação da credencial historicamente exposta;
+- gestão e rotação institucional das chaves de CPF;
 - proteção contra senhas vazadas habilitada no provedor de identidade;
 - scanner real configurado e testado com clean/infected;
 - inventário HubSpot, token, scopes e write/readback em sandbox;
 - configuração oficial dos quatro arquétipos;
-- conteúdo oficial e assets da Jornada OpenAI;
-- autorização/licença para cópia literal do projeto de referência;
+- conteúdo oficial e mídias da Jornada OpenAI;
+- captura e tratamento aprovados de telefone e CNPJ opcional;
 - adapters AWS de identidade, RDS, S3 e SQS;
-- conta/região/certificado/domínio/secrets AWS;
+- conta, região, certificado, domínio e secrets AWS;
 - imagem OCI construída e escaneada;
 - Terraform validate/plan oficial e apply de staging;
 - E2E real em staging, rollback, backup, PITR e restore;
@@ -52,21 +61,21 @@ Código, migrations, container standalone e Terraform não autorizam operação 
 2. encarregado ou análise formal de dispensa, com canal público;
 3. aviso de privacidade e ROPA;
 4. bases legais, consentimentos, retenção, exclusão e legal hold;
-5. contratos, DPAs, subprocessadores e transferências;
-6. owners, contatos e exercício de resposta a incidentes;
-7. RPO/RTO e exercício de continuidade;
-8. governança de crédito, revisão humana, contestação, explicabilidade, equidade e monitoramento;
-9. aprovação metodológica, editorial e de acessibilidade;
-10. homologação do piloto.
+5. finalidade e tratamento de CPF, telefone, CNPJ e identificadores CRM;
+6. contratos, DPAs, subprocessadores e transferências;
+7. owners, contatos e exercício de resposta a incidentes;
+8. RPO/RTO e exercício de continuidade;
+9. governança de crédito, revisão humana, contestação, explicabilidade, equidade e monitoramento;
+10. aprovação metodológica, editorial, de acessibilidade e homologação do piloto.
 
 ## Regra comportamental e de crédito
 
-Dados educacionais e comportamentais permanecem fora de crédito por padrão. Maturidade, arquétipo, respostas, comentários e nota de utilidade não podem influenciar elegibilidade, risco ou decisão sem metodologia validada, revisão de vieses, governança humana, base legal e aprovação explícita. O banco e os adapters devem continuar falhando fechados.
+Dados educacionais e comportamentais permanecem fora de crédito por padrão. Maturidade, arquétipo, respostas, comentários, ranking e nota de utilidade não podem influenciar elegibilidade, risco ou decisão sem metodologia validada, revisão de vieses, governança humana, base legal e aprovação explícita.
 
 ## Regra de deploy
 
-- `main` não deve receber merge enquanto checks obrigatórios ou revisões estiverem pendentes;
+- `main` não recebe merge enquanto checks obrigatórios ou revisões estiverem pendentes;
 - produção exige stack separada e aprovação operacional;
 - `confirm_deployment=false` é o default do Terraform;
-- nenhum apply automático é permitido pelo repositório atual;
-- ausência de prova deve ser registrada como bloqueio, nunca convertida em `passed`.
+- nenhum apply automático é permitido;
+- ausência de prova permanece bloqueio e nunca é convertida em `passed`.
