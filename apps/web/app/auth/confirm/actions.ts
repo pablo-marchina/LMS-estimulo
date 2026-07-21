@@ -7,7 +7,7 @@ import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
 
 const otpTypes = new Set<EmailOtpType>(["signup", "email", "magiclink", "recovery", "invite", "email_change"]);
-const emailSchema = z.string().trim().email().max(320).transform((value) => value.toLowerCase());
+const emailSchema = z.string().trim().email().max(320).transform((value: string) => value.toLowerCase());
 
 function confirmationFailed(): never {
   redirect("/entrar?erro=confirmacao_invalida");
