@@ -47,27 +47,48 @@ test("test signup runtime, route and privileged provisioning are absent", async 
   assert.match(removalMigration, /drop function if exists public\.provision_test_signup_participant/u);
 });
 
-test("participant signup requires an idempotent Supabase confirmation callback", async () => {
-  const [page, action, callback, completionPage, completionAction] = await Promise.all([
+test("participant confirmation requires an explicit post and never consumes tokens on get", async () => {
+  const [page, action, confirmationPage, confirmationAction, completionPage, completionAction] = await Promise.all([
     read("apps/web/app/cadastro/page.tsx"),
     read("apps/web/app/cadastro/actions.ts"),
-    read("apps/web/app/auth/confirm/route.ts"),
+    read("apps/web/app/auth/confirm/page.tsx"),
+    read("apps/web/app/auth/confirm/actions.ts"),
     read("apps/web/app/cadastro/concluir/page.tsx"),
     read("apps/web/app/cadastro/concluir/actions.ts"),
   ]);
 
+  await assertMissing("apps/web/app/auth/confirm/route.ts");
   assert.match(page, /createPublicAccountAction/);
   assert.match(action, /auth\.signUp/);
   assert.match(action, /emailRedirectTo/);
   assert.doesNotMatch(action, /auth\.admin\.createUser|email_confirm:\s*true/);
-  assert.match(callback, /verifyOtp/);
-  assert.match(callback, /exchangeCodeForSession/);
-  assert.match(callback, /auth\.getUser\(\)/);
-  assert.match(callback, /email_confirmed_at/);
-  assert.match(callback, /callbackErrorCode/);
-  assert.match(callback, /\/cadastro\/concluir/);
+
+  assert.match(confirmationPage, /confirmEmailAction/);
+  assert.match(confirmationPage, /Confirmar e continuar/);
+  assert.match(confirmationPage, /type="hidden" name="token_hash"/);
+  assert.doesNotMatch(confirmationPage, /verifyOtp|exchangeCodeForSession|createSessionClient/);
+
+  assert.match(confirmationAction, /^"use server";/);
+  assert.match(confirmationAction, /verifyOtp/);
+  assert.match(confirmationAction, /exchangeCodeForSession/);
+  assert.match(confirmationAction, /auth\.getUser\(\)/);
+  assert.match(confirmationAction, /email_confirmed_at/);
+  assert.match(confirmationAction, /redirect\("\/cadastro\/concluir"\)/);
   assert.match(completionPage, /name="cpf"/u);
   assert.match(completionAction, /getAuthContext/);
+});
+
+test("recreated Auth users relink only when the previous subject is orphaned", async () => {
+  const migration = await read("supabase/migrations/20260721201146_relink_orphaned_external_identities.sql");
+
+  assert.match(migration, /from auth\.users au/);
+  assert.match(migration, /au\.id::text = trim\(p_subject\)/);
+  assert.match(migration, /au\.email_confirmed_at is not null/);
+  assert.match(migration, /au\.deleted_at is null/);
+  assert.match(migration, /raw_app_meta_data/);
+  assert.match(migration, /v_previous_subject/);
+  assert.match(migration, /set subject = trim\(p_subject\)/);
+  assert.match(migration, /raise exception 'identity_link_required'/);
 });
 
 test("administration has a separate Google-only entrypoint with server validation", async () => {
