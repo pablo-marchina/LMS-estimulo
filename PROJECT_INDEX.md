@@ -31,10 +31,12 @@ O PostgreSQL é o banco operacional. Só candidatos das três primeiras classes 
 
 ### Identidade
 
-- participante: cadastro público e e-mail confirmado;
+- participante: cadastro público, senha e e-mail confirmado;
 - CPF: obrigatório, validado, cifrado e deduplicado por HMAC;
-- administração: e-mail confirmado no domínio exato `@estimulo.org` mais RBAC ativo;
-- o domínio não concede permissões automaticamente.
+- administração: entrada separada por Google OAuth, e-mail verificado no domínio exato `@estimulo.org` e RBAC ativo;
+- autenticação administrativa por senha não é aceita;
+- o domínio e o parâmetro Google `hd` não concedem permissões automaticamente;
+- o cadastro público de teste e a função privilegiada associada foram removidos.
 
 ### Ambientes
 
