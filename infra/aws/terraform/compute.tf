@@ -165,7 +165,10 @@ resource "aws_ecs_task_definition" "web" {
     environment = [
       { name = "NODE_ENV", value = "production" },
       { name = "HOSTNAME", value = "0.0.0.0" },
-      { name = "PORT", value = "3000" }
+      { name = "PORT", value = "3000" },
+      { name = "NEXT_PUBLIC_APP_URL", value = var.public_environment.app_url },
+      { name = "NEXT_PUBLIC_SUPABASE_URL", value = var.public_environment.supabase_url },
+      { name = "NEXT_PUBLIC_SUPABASE_ANON_KEY", value = var.public_environment.supabase_anon_key }
     ]
     secrets = [for name, value_from in var.secret_arns : {
       name      = name
