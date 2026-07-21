@@ -1,6 +1,6 @@
 # Registro de bloqueadores da entrega
 
-**Versão:** 5.0  
+**Versão:** 5.1  
 **Data:** 2026-07-20  
 **Status:** ativo e alinhado à hierarquia canônica
 
@@ -27,6 +27,7 @@ A fonte superior é [SOURCE_AUTHORITY_HIERARCHY.md](../product/SOURCE_AUTHORITY_
 | `PRODUCT-CONFIGURATION` | P0 | motor configurável, persistência, versionamento, abstention e preview disponíveis | wording, opções, scoring, normalização, desempate, textos, ativações e casos oficiais ausentes | configuração oficial aprovada e diagnóstico real E2E |
 | `OPENAI-JOURNEY-CONTENT` | P0 | runtime, biblioteca, atividades, avaliações, práticas, credenciais e navegação genéricos disponíveis | pacote editorial, mídias, avaliações e regras oficiais não homologados | pacote editorial acessível, versionado e jornada oficial E2E |
 | `IDENTITY-SITE-INTEGRATION` | P0 | cadastro público, confirmação de e-mail, first-touch e papel inicial de participante implementados em Supabase de desenvolvimento | entrada pelo site oficial, identidade única e migração/prova com usuários reais | usuário novo e existente resolvidos com identidade oficial e permissões reais |
+| `IDENTITY-PASSWORD-PROTECTION` | P1 | autenticação exige confirmação e o serviço usa configuração server-only | proteção contra senhas vazadas está desativada no Supabase de desenvolvimento e o provedor oficial ainda não foi decidido | habilitar proteção no provedor usado e provar política de senha/sessão no ambiente-alvo |
 | `HUBSPOT-ENGAGEMENT-AND-CALCULATION-DATA` | P0 | política allowlist, adapter HTTP real server-only, idempotência, readback, conflito de versão e classificação de erros implementados | inventário do portal, IDs/objetos, propriedades, scopes, token, matriz e sandbox ausentes | destinos aprovados, escrita/leitura em sandbox, retry, reconciliação e backlog comprovados |
 | `REAL-MALWARE-SCANNER` | P0 | contrato externo HTTPS, validação estrita e fallback `manual_review` implantados | URL/token/provider e amostras reais não fornecidos | arquivos clean e infected testados no provider aprovado; somente clean é liberado |
 | `REAL-FULLSTACK-E2E` | P0 | backend e navegador sintéticos, readiness e adapters genéricos existentes | vertical real com identidade, banco, storage, scan e HubSpot sandbox ausente | navegador → identidade → banco → storage/scan → progresso/credencial → HubSpot sandbox |
@@ -80,8 +81,8 @@ outage_backlog_recovery_tested = false
 
 ```text
 recovered_migration_count = 245
-active_migration_count = 30
-total_migration_count = 275
+active_migration_count = 31
+total_migration_count = 276
 clean_replay_passed = true
 schema_equivalence_passed = true
 public_rpc_contracts_passed = true
@@ -97,6 +98,8 @@ business_maturity_draft_e2e_passed = true
 business_maturity_preview_e2e_passed = true
 activity_utility_rating_e2e_passed = true
 application_readiness_e2e_passed = true
+foreign_key_covering_indexes_passed = true
+supabase_unindexed_foreign_key_advisories = 0
 browser_e2e_synthetic_vertical_passed = true
 rls_negative_checks_passed = true
 idempotency_and_concurrency_passed = true
@@ -130,7 +133,8 @@ impulso_literal_code_reuse_authorized = false
 - cadastro Supabase não comprova identidade/site oficial;
 - sanitização do repositório não equivale à rotação da credencial externa;
 - acesso ao código-fonte do Impulso não equivale a autorização para copiar código ou assets;
-- jobs do GitHub Actions sem steps não fornecem evidência funcional positiva ou negativa.
+- jobs do GitHub Actions sem steps não fornecem evidência funcional positiva ou negativa;
+- avisos `unused_index` em um ambiente jovem não justificam remoção sem carga representativa.
 
 ## Gate documental
 
