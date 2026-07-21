@@ -137,9 +137,7 @@ async function captureFailure(error) {
 }
 
 async function ready() {
-  await waitFor(async () => {
-    return client.evaluate("document.readyState === 'complete' && Boolean(document.body)");
-  }, "document did not become ready");
+  await waitFor(async () => client.evaluate("document.readyState === 'complete' && Boolean(document.body)"), "document did not become ready");
 }
 
 async function navigate(url) {
@@ -215,17 +213,29 @@ try {
     client.send("Network.enable")
   ]);
 
-  currentStep = "technical login and dashboard";
+  currentStep = "technical login and complete dashboard";
   log(currentStep);
   await navigate(`${baseUrl}/api/e2e/session?token=${encodeURIComponent(token)}`);
   await waitUrl("/empreendedor");
-  await waitText("Painel do empreendedor");
+  await waitText("Continue de onde parou");
+  await waitText("Acontecendo agora");
+  await waitText("Primeira conquista");
+  await waitText("Ranking de pontos");
   assert.equal(await textIncludes("Jornada sintética OpenAI"), true);
 
   await client.evaluate("document.activeElement?.blur(); document.body.focus();");
   await client.send("Input.dispatchKeyEvent", { type: "rawKeyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
   await client.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
   assert.equal(await client.evaluate("document.activeElement?.textContent?.trim()"), "Pular para o conteúdo");
+
+  currentStep = "participant profile";
+  log(currentStep);
+  await clickText("Perfil");
+  await waitUrl("/empreendedor/perfil");
+  await waitText("Histórico de pontuação");
+  await waitText("Resultado do diagnóstico");
+  await navigate(`${baseUrl}/empreendedor`);
+  await waitText("Continue de onde parou");
 
   currentStep = "content library catalog and access replay";
   log(currentStep);
@@ -251,7 +261,7 @@ try {
   assert.equal(accessReplay.first.replayed, false);
   assert.equal(accessReplay.second.replayed, true);
   await navigate(`${baseUrl}/empreendedor`);
-  await waitText("Painel do empreendedor");
+  await waitText("Continue de onde parou");
 
   currentStep = "start journey";
   log(currentStep);
@@ -259,7 +269,7 @@ try {
   await waitUrl("/empreendedor/diagnostico");
   await waitText("Diagnóstico inicial");
 
-  currentStep = "complete diagnosis";
+  currentStep = "complete diagnosis and choose available activity";
   log(currentStep);
   const diagnosticSelected = await client.evaluate(`(() => {
     const fields = [...document.querySelectorAll('fieldset')];
@@ -272,6 +282,11 @@ try {
   })()`);
   assert.equal(diagnosticSelected, true);
   await clickText("Concluir diagnóstico");
+  await waitUrl("/empreendedor/jornada/");
+  await waitText("Blocos e atividades");
+  await waitText("Fundamentos");
+  await waitText("Entradas, regras e validação humana");
+  await clickText("Começar");
   await waitUrl("/empreendedor/atividade/");
   await waitText("Estruture uma solicitação para o ChatGPT");
 
@@ -347,18 +362,32 @@ try {
     screenHeight: 844
   });
   await navigate(`${baseUrl}/empreendedor`);
-  await waitText("Painel do empreendedor");
+  await waitText("Continue de onde parou");
   assert.equal(await client.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), true, "mobile dashboard has horizontal overflow");
   assert.equal(await textIncludes("Concluídas"), true);
   assert.equal(await textIncludes("Credenciais"), true);
+  await navigate(`${baseUrl}/empreendedor/perfil`);
+  await waitText("Histórico de pontuação");
+  assert.equal(await client.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), true, "mobile profile has horizontal overflow");
   await navigate(`${baseUrl}/capacitacao/biblioteca`);
   await waitText("Biblioteca de conteúdos");
   assert.equal(await client.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), true, "mobile library has horizontal overflow");
 
   const result = {
     status: "passed",
-    flow: ["technical_login", "dashboard", "library", "diagnosis", "activity", "comment", "upload", "assessment_retry", "credentials", "certificate"],
-    assertions: { keyboard: true, mobile: true, reload: true, duplicate_submission: true, library_access_replay: true }
+    flow: ["technical_login", "dashboard", "profile", "library", "diagnosis", "journey_outline", "activity", "comment", "upload", "assessment_retry", "credentials", "certificate"],
+    assertions: {
+      keyboard: true,
+      mobile: true,
+      reload: true,
+      duplicate_submission: true,
+      library_access_replay: true,
+      announcements: true,
+      rewards: true,
+      ranking: true,
+      expandable_blocks: true,
+      available_activity_choice: true
+    }
   };
   await writeFile(path.join(artifactsDir, "result.json"), JSON.stringify(result, null, 2), "utf8");
   log("synthetic browser vertical passed");
