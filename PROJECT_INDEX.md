@@ -14,7 +14,7 @@ Entregar uma plataforma LMS interna e operada pela Estímulo, publicada na AWS, 
 - identidade, site e HubSpot integrados;
 - segurança, acessibilidade e operação comprovadas.
 
-Os requisitos ativos estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md). Materiais de análise de referências e cobertura não fazem parte da documentação do repositório.
+Os requisitos ativos estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md). Materiais de análise de fontes externas e cobertura não fazem parte da documentação do repositório.
 
 ## Decisões vigentes
 
@@ -86,7 +86,7 @@ scripts/                        validação, replay e E2E
 - [Bridge de identidade](docs/architecture/IDENTITY_BRIDGE.md)
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
 - [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
-- [Arquitetura AWS](docs/architecture/AWS_PRODUCTION_REFERENCE_ARCHITECTURE.md)
+- [Arquitetura-alvo AWS](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
 
 ## Gates de release
 
