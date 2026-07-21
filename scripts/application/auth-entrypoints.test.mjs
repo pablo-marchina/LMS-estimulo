@@ -47,7 +47,7 @@ test("test signup runtime, route and privileged provisioning are absent", async 
   assert.match(removalMigration, /drop function if exists public\.provision_test_signup_participant/u);
 });
 
-test("participant signup requires the Supabase confirmation callback", async () => {
+test("participant signup requires an idempotent Supabase confirmation callback", async () => {
   const [page, action, callback, completionPage, completionAction] = await Promise.all([
     read("apps/web/app/cadastro/page.tsx"),
     read("apps/web/app/cadastro/actions.ts"),
@@ -62,6 +62,9 @@ test("participant signup requires the Supabase confirmation callback", async () 
   assert.doesNotMatch(action, /auth\.admin\.createUser|email_confirm:\s*true/);
   assert.match(callback, /verifyOtp/);
   assert.match(callback, /exchangeCodeForSession/);
+  assert.match(callback, /auth\.getUser\(\)/);
+  assert.match(callback, /email_confirmed_at/);
+  assert.match(callback, /callbackErrorCode/);
   assert.match(callback, /\/cadastro\/concluir/);
   assert.match(completionPage, /name="cpf"/u);
   assert.match(completionAction, /getAuthContext/);
@@ -87,6 +90,7 @@ test("administration has a separate Google-only entrypoint with server validatio
 
   assert.match(adminPage, /signInWithGoogleAction/);
   assert.match(adminPage, /Continuar com Google/);
+  assert.match(adminPage, /identidade_desvinculada/);
   assert.doesNotMatch(adminPage, /type="password"|signInWithPassword/);
   assert.match(adminAction, /provider:\s*"google"/);
   assert.match(adminAction, /hd:\s*"estimulo\.org"/);
@@ -98,6 +102,8 @@ test("administration has a separate Google-only entrypoint with server validatio
   assert.match(callback, /isEstimuloAdministrativeEmail\(email\)/);
   assert.match(callback, /journeyRuntime\.resolveIdentity/);
   assert.match(callback, /administrativeOrganization\(identity\)/);
+  assert.match(callback, /identity_link_required/);
+  assert.match(callback, /identidade_desvinculada/);
   assert.doesNotMatch(callback, /getAuthContext/);
   assert.match(callback, /client\.auth\.signOut/);
   assert.match(layout, /auth\.provider !== "google"/);
