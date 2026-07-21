@@ -21,20 +21,18 @@ export function EstimuloBrand({
   ].filter(Boolean).join(" ");
 
   const content = (
-    <>
-      <span className="brand-logo-frame">
-        <img
-          className="brand-logo"
-          src={logoUrl}
-          width={180}
-          height={64}
-          alt="Estímulo"
-          loading="eager"
-          referrerPolicy="no-referrer"
-        />
-      </span>
-      {compact ? null : <span className="brand-caption">Desenvolvimento do empreendedor</span>}
-    </>
+    <span className="brand-logo-clearspace">
+      <img
+        className="brand-logo"
+        src={logoUrl}
+        width={206}
+        height={89}
+        alt="Estímulo"
+        loading="eager"
+        decoding="async"
+        referrerPolicy="no-referrer"
+      />
+    </span>
   );
 
   return href
