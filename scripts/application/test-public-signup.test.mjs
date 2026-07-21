@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const read = (relative) => readFile(path.join(root, relative), "utf8");
 
-test("environment examples expose safe defaults for branding and test signup", async () => {
+test("environment examples expose safe defaults for branding, CPF protection and test signup", async () => {
   const [rootExample, webExample] = await Promise.all([
     read(".env.example"),
     read("apps/web/.env.example")
@@ -18,6 +18,8 @@ test("environment examples expose safe defaults for branding and test signup", a
   assert.match(rootExample, /^NEXT_PUBLIC_APP_URL=http:\/\/localhost:3000$/m);
   assert.match(rootExample, /^PUBLIC_SIGNUP_TEST_MODE=false$/m);
   assert.match(rootExample, /^SUPABASE_SERVICE_ROLE_KEY=replace-with-service-role-key$/m);
+  assert.match(rootExample, /^CPF_ENCRYPTION_KEY=replace-with-base64-encoded-32-byte-key$/m);
+  assert.match(rootExample, /^CPF_LOOKUP_HMAC_KEY=replace-with-independent-base64-encoded-32-byte-key$/m);
   assert.doesNotMatch(rootExample, /NEXT_PUBLIC_ESTIMULO_LOGO_URL|cdn\.prod\.website-files\.com/);
 });
 
@@ -70,13 +72,15 @@ test("database provisioning is service-role-only and marked as test data", async
   assert.match(migration, /grant execute on function .* to service_role/is);
 });
 
-test("production signup requires confirmed email and provisions only through server contracts", async () => {
-  const [page, action, callback, completion, runtime, proxy] = await Promise.all([
+test("production signup requires confirmed email and protects CPF through server contracts", async () => {
+  const [page, action, callback, completionPage, completion, runtime, cpf, proxy] = await Promise.all([
     read("apps/web/app/cadastro/page.tsx"),
     read("apps/web/app/cadastro/actions.ts"),
     read("apps/web/app/auth/confirm/route.ts"),
+    read("apps/web/app/cadastro/concluir/page.tsx"),
     read("apps/web/app/cadastro/concluir/actions.ts"),
     read("apps/web/lib/auth/public-signup-provisioning.ts"),
+    read("apps/web/lib/identity/cpf.ts"),
     read("apps/web/proxy.ts"),
   ]);
   assert.match(page, /createPublicAccountAction/);
@@ -85,11 +89,18 @@ test("production signup requires confirmed email and provisions only through ser
   assert.doesNotMatch(action, /auth\.admin\.createUser/);
   assert.match(callback, /verifyOtp/);
   assert.match(callback, /exchangeCodeForSession/);
+  assert.match(completionPage, /name="cpf"/);
+  assert.match(completionPage, /CPF é obrigatório/u);
   assert.match(completion, /getAuthContext/);
-  assert.match(runtime, /provision_public_signup_participant/);
+  assert.match(completion, /protectCpf\(parsed\.data\.cpf/u);
+  assert.match(runtime, /provision_public_signup_participant_v2/);
+  assert.match(runtime, /p_cpf_lookup_hmac/);
+  assert.match(runtime, /p_cpf_ciphertext_base64/);
+  assert.match(cpf, /CPF_ENCRYPTION_KEY/);
+  assert.match(cpf, /CPF_LOOKUP_HMAC_KEY/);
   assert.match(proxy, /estimulo_first_touch|FIRST_TOUCH_COOKIE/);
-  assert.doesNotMatch(action + completion, /cpf/i);
-  assert.doesNotMatch(action + completion, /hubspot/i);
+  assert.doesNotMatch(action + completion, /user_metadata[\s\S]*cpf|searchParams[\s\S]*cpf|console\./i);
+  assert.doesNotMatch(action + completion + runtime, /hubspot/i);
 });
 
 test("first-touch cookie is HttpOnly and UTM values are bounded", async () => {
