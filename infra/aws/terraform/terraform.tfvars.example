@@ -8,11 +8,17 @@ domain_name             = ""
 route53_zone_id          = ""
 alarm_email              = ""
 
+# These values are public browser configuration. The exact same values must be
+# passed as NEXT_PUBLIC_* build arguments when producing container_image.
+public_environment = {
+  app_url           = "https://staging.example.org"
+  supabase_url      = "https://replace.supabase.co"
+  supabase_anon_key = "replace-with-public-anon-or-publishable-key"
+}
+
+# Only server-side credentials belong in Secrets Manager.
 secret_arns = {
-  NEXT_PUBLIC_APP_URL           = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace"
-  NEXT_PUBLIC_SUPABASE_URL      = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace"
-  NEXT_PUBLIC_SUPABASE_ANON_KEY = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace"
-  SUPABASE_SERVICE_ROLE_KEY     = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace"
+  SUPABASE_SERVICE_ROLE_KEY = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace"
   # Optional after external approvals:
   # HUBSPOT_PRIVATE_APP_TOKEN = "arn:aws:secretsmanager:..."
   # HUBSPOT_PORTAL_ID         = "arn:aws:secretsmanager:..."
