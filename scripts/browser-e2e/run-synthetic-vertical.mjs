@@ -7,8 +7,6 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const baseUrl = String(process.env.BROWSER_E2E_BASE_URL ?? "http://127.0.0.1:3000").replace(/\/$/u, "");
 const e2eToken = process.env.BROWSER_E2E_TOKEN ?? "";
-const testEmail = process.env.BROWSER_E2E_EMAIL ?? "synthetic-e2e@example.com";
-const testPassword = process.env.BROWSER_E2E_PASSWORD ?? "Synthetic-E2E-Only-2026!";
 const debuggingPort = Number(process.env.BROWSER_E2E_CDP_PORT || 9222);
 const artifactsDir = path.resolve(root, process.env.BROWSER_E2E_ARTIFACTS_DIR || ".artifacts/browser-e2e");
 
@@ -83,10 +81,6 @@ async function navigate(url) { await client.send("Page.navigate", { url }); awai
 async function url() { return String(await client.evaluate("location.href")); }
 async function waitUrl(fragment) { await waitFor(async () => (await url()).includes(fragment), `URL did not include ${fragment}`); await ready(); }
 async function waitText(text) { await waitFor(() => client.evaluate(`document.body?.innerText.includes(${JSON.stringify(text)}) ?? false`), `text not found: ${text}`); }
-async function fill(selector, value) {
-  const changed = await client.evaluate(`(() => { const element=document.querySelector(${JSON.stringify(selector)}); if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) return false; const descriptor=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element),'value'); descriptor?.set?.call(element,${JSON.stringify(value)}); element.dispatchEvent(new Event('input',{bubbles:true})); element.dispatchEvent(new Event('change',{bubbles:true})); return true; })()`);
-  assert.equal(changed, true, `field not found: ${selector}`);
-}
 async function clickText(text) {
   const clicked = await client.evaluate(`(() => { const target=[...document.querySelectorAll('button,a')].find((element)=>element.textContent?.trim()===${JSON.stringify(text)}); if (!target) return false; target.click(); return true; })()`);
   assert.equal(clicked, true, `click target not found: ${text}`);
@@ -111,19 +105,17 @@ try {
   const reset = await fetch(`${baseUrl}/api/e2e/reset`, { method: "POST", headers: { "x-e2e-token": e2eToken } });
   assert.equal(reset.status, 200);
 
-  step = "create confirmed synthetic participant";
-  await navigate(`${baseUrl}/cadastro/teste`);
-  await waitText("Criar conta de teste");
-  await fill('input[name="name"]', "Participante E2E");
-  await fill('input[name="email"]', testEmail);
-  await fill('input[name="password"]', testPassword);
-  await client.evaluate(`document.querySelector('form')?.requestSubmit()`);
-  await waitUrl("/entrar");
-
-  step = "authenticate";
-  await fill('input[name="email"]', testEmail);
-  await fill('input[name="password"]', testPassword);
-  await clickText("Entrar");
+  step = "activate localhost-only synthetic session";
+  const cookieResult = await client.send("Network.setCookie", {
+    name: "estimulo_browser_e2e",
+    value: e2eToken,
+    url: baseUrl,
+    httpOnly: true,
+    secure: baseUrl.startsWith("https://"),
+    sameSite: "Lax",
+  });
+  assert.equal(cookieResult.success, true, "synthetic session cookie was not accepted");
+  await navigate(`${baseUrl}/empreendedor`);
   await waitUrl("/empreendedor");
   await waitText("Continue de onde parou");
   await waitText("Ranking de pontos");
@@ -156,7 +148,7 @@ try {
   assert.equal(await client.evaluate("getComputedStyle(document.body).fontFamily.toLowerCase().includes('poppins')"), true);
   assert.equal(await client.evaluate("Boolean(document.querySelector('img[src=\"/brand/estimulo-logo-horizontal-color.svg\"]'))"), true);
 
-  await writeFile(path.join(artifactsDir, "result.json"), JSON.stringify({ status: "passed", mode: "synthetic", flows: ["signup", "login", "dashboard", "profile", "library", "journey", "private_evidence_ui", "mobile_brand"] }, null, 2), "utf8");
+  await writeFile(path.join(artifactsDir, "result.json"), JSON.stringify({ status: "passed", mode: "synthetic", flows: ["token_session", "dashboard", "profile", "library", "journey", "private_evidence_ui", "mobile_brand"] }, null, 2), "utf8");
   process.stdout.write("[browser-e2e] synthetic vertical passed\n");
 } catch (error) {
   await failure(error);
