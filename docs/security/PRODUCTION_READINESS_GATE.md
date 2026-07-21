@@ -22,35 +22,39 @@ Código, migrations, container standalone e Terraform não autorizam operação 
 - CPF bruto ausente de metadata, URL, logs e eventos;
 - entrada administrativa restrita a e-mail confirmado `@estimulo.org`;
 - RBAC administrativo explícito, revogável, temporal e auditável; o domínio não concede permissões sozinho;
-- 282 migrations executáveis, incluindo correções append-only;
+- 292 migrations executáveis, incluindo correções append-only;
 - testes transacionais de CPF, anúncios, ranking, recompensas, histórico e outline da jornada no Supabase de desenvolvimento;
+- administração integral comprovada para jornadas, atividades, trilhas, regras, diagnóstico, pontos, selos, certificados e relatórios;
+- idempotência e negativa de permissão comprovadas nos contratos administrativos;
 - zero avisos de foreign keys sem índice nas capacidades novas;
 - painel com carrossel administrável, retomada, recompensas e ranking pseudonimizado;
 - perfil com diagnóstico, histórico, pontos e credenciais;
 - trilha com blocos expansíveis e abertura de qualquer atividade liberada pelo backend;
 - maturidade em draft, sem atribuição, crédito ou CRM;
 - nota de utilidade 1–5 com histórico append-only e exclusão de crédito;
-- scanner externo fail-closed: sem provider, arquivo permanece em `manual_review`;
+- scanner de malware removido: zero worker, função, tabela, coluna, fila, schedule, cron ou schema de evento ativo;
+- arquivos privados validados por autorização, tipo, extensão, tamanho e SHA-256;
 - política HubSpot limitada às três classes aprovadas e adapter HTTP desabilitado sem inventário/token;
+- harness de navegador E2E real autenticado e read-only implementado;
 - build Next.js standalone previamente comprovado, processo não-root e probes live/ready;
 - Terraform de staging com guard, imagem por digest, configuração pública no build, secrets por ARN e dados privados/criptografados.
 
 ## Evidências ainda não obtidas
 
-- TypeScript, build e Browser E2E executados por runner após as mudanças mais recentes de experiência;
+- TypeScript e build executados por runner após a administração integral;
+- execução do Browser E2E real contra URL implantada com contas reais de teste;
 - rotação/revogação da credencial historicamente exposta;
 - gestão e rotação institucional das chaves de CPF;
 - proteção contra senhas vazadas habilitada no provedor de identidade;
-- scanner real configurado e testado com clean/infected;
 - inventário HubSpot, token, scopes e write/readback em sandbox;
 - configuração oficial dos quatro arquétipos;
 - conteúdo oficial e mídias da Jornada OpenAI;
 - captura e tratamento aprovados de telefone e CNPJ opcional;
-- adapters AWS de identidade, RDS, S3 e SQS;
+- adapters AWS de identidade, RDS e S3;
 - conta, região, certificado, domínio e secrets AWS;
 - imagem OCI construída e escaneada;
 - Terraform validate/plan oficial e apply de staging;
-- E2E real em staging, rollback, backup, PITR e restore;
+- rollback, backup, PITR e restore em staging;
 - WCAG completa com auditoria assistiva;
 - workflows do GitHub Actions executando steps no head atual;
 - decisões jurídicas e operacionais descritas abaixo.
