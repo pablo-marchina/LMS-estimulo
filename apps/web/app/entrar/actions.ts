@@ -3,8 +3,20 @@
 import { redirect } from "next/navigation";
 import { createSessionClient } from "@/lib/supabase/server";
 import { getAuthContext } from "@/lib/auth/context";
+import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { testPublicSignupEnabled } from "@/lib/auth/test-public-signup";
 import { provisionTestSignupParticipant } from "@/lib/auth/test-public-signup-provisioning";
+
+function administrativeOrganization(auth: Extract<Awaited<ReturnType<typeof getAuthContext>>, { status: "authenticated" }>) {
+  return auth.identity.organizations.find((item) => item.permissions.some((permission) => [
+    "journey.execution.read",
+    "journey.execution.manage",
+    "participant.manage",
+    "engagement.manage",
+    "diagnostic.configuration.manage",
+    "iam.memberships.manage",
+  ].includes(permission)));
+}
 
 export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -16,6 +28,12 @@ export async function signInAction(formData: FormData) {
   if (error) redirect("/entrar?erro=credenciais_invalidas");
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar?erro=identidade_nao_vinculada");
+
+  if (isEstimuloAdministrativeEmail(auth.email)) {
+    const organization = administrativeOrganization(auth);
+    if (organization) redirect(`/admin?organization=${organization.organization_id}`);
+    redirect("/entrar?erro=permissao_administrativa_necessaria");
+  }
 
   if (!auth.identity.entrepreneur_id && testPublicSignupEnabled()) {
     const { data } = await client.auth.getUser();
@@ -36,8 +54,6 @@ export async function signInAction(formData: FormData) {
   }
 
   if (auth.identity.entrepreneur_id) redirect("/empreendedor");
-  const organization = auth.identity.organizations.find((item) => item.permissions.includes("journey.execution.read") || item.permissions.includes("journey.execution.manage"));
-  if (organization) redirect(`/admin?organization=${organization.organization_id}`);
   redirect("/cadastro/concluir");
 }
 
