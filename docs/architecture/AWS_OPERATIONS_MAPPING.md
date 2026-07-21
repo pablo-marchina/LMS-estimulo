@@ -2,7 +2,7 @@
 
 ## Princípio
 
-O domínio não deve depender de `pg_cron`, `pg_net`, PGMQ ou APIs específicas do Supabase. Esses componentes continuam ativos no ambiente de desenvolvimento; a migração AWS exige adapters com os mesmos contratos de idempotência, receipt, tentativa, DLQ e reconciliação.
+O domínio não deve depender de `pg_cron`, `pg_net`, PGMQ ou APIs específicas do Supabase. A migração AWS exige adapters equivalentes para identidade, PostgreSQL e armazenamento privado, preservando autorização, idempotência, auditoria e retenção.
 
 ## Estado do baseline
 
@@ -10,9 +10,7 @@ O domínio não deve depender de `pg_cron`, `pg_net`, PGMQ ou APIs específicas 
 |---|---|---|---|
 | Banco operacional | PostgreSQL/Supabase RPC | RDS PostgreSQL privado e criptografado | não |
 | Identidade | Supabase Auth | ainda não declarado | não |
-| Arquivos | Supabase Storage | S3 quarantine/protected | não |
-| Fila de scan | fila PostgreSQL | SQS Standard + DLQ | não |
-| Scanner | Edge Function + provider externo opcional | worker AWS ainda pendente | somente Supabase Edge |
+| Arquivos privados | Supabase Storage | S3 privado, versionado e criptografado | não |
 | Web | Next.js local/CI | ECS/Fargate + ALB | scaffolding |
 | Secrets | ambiente Supabase/local | Secrets Manager por ARN | scaffolding |
 | Observabilidade | tabelas/logs atuais | CloudWatch + SNS | scaffolding |
@@ -20,26 +18,23 @@ O domínio não deve depender de `pg_cron`, `pg_net`, PGMQ ou APIs específicas 
 ## Contratos preservados
 
 - IDs e chaves de deduplicação permanecem canônicos;
-- processamento é pelo menos uma vez;
-- efeitos precisam ser idempotentes;
-- arquivos só deixam quarantine após resultado `clean` válido;
-- ausência de scanner real produz `manual_review`, nunca liberação;
-- outbox PostgreSQL continua a origem confiável da integração;
-- DLQ precisa de alarme e fluxo de redrive controlado.
-
-## Decisão de consumo
-
-O baseline declara SQS/DLQ, mas não inventa o worker. A escolha entre Lambda event source mapping e ECS worker deve considerar tamanho do arquivo, duração do scan, concorrência, custo e limites do provider. EventBridge Scheduler fica reservado para reconciliação, métricas e limpeza, não polling rápido.
+- efeitos de escrita permanecem idempotentes;
+- arquivos pertencem a uma organização e a um usuário autorizado;
+- tipo MIME, extensão, tamanho e SHA-256 são validados;
+- bucket e objetos permanecem privados;
+- downloads usam autorização e descritor server-only;
+- histórico e outbox PostgreSQL continuam a origem confiável das integrações;
+- retenção e exclusão precisam ser explícitas e auditáveis.
 
 ## Gate de paridade
 
 Antes de ativar qualquer adapter AWS:
 
-1. teste de duplicata e idempotência;
-2. visibility timeout e extensão;
-3. crash após efeito e antes do ack;
-4. retry, DLQ e redrive;
-5. backlog e idade da mensagem;
-6. quarantine, clean, infected, unsupported e manual review;
-7. reconciliação entre banco, fila e storage;
+1. upload e confirmação idempotentes;
+2. acesso negativo entre participantes e organizações;
+3. MIME, extensão, tamanho e hash inválidos rejeitados;
+4. URL assinada curta e vinculada ao objeto autorizado;
+5. versionamento, retenção e exclusão exercitados;
+6. reconciliação entre banco e storage;
+7. restore de objeto e banco comprovado;
 8. rollback para o adapter anterior sem perda de estado.
