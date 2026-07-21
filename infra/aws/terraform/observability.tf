@@ -24,34 +24,6 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
   alarm_actions       = [aws_sns_topic.alarms.arn]
 }
 
-resource "aws_cloudwatch_metric_alarm" "file_scan_age" {
-  alarm_name          = "${local.name_prefix}-file-scan-age"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "ApproximateAgeOfOldestMessage"
-  namespace           = "AWS/SQS"
-  period              = 300
-  statistic           = "Maximum"
-  threshold           = 900
-  treat_missing_data  = "notBreaching"
-  dimensions          = { QueueName = aws_sqs_queue.file_scan.name }
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-}
-
-resource "aws_cloudwatch_metric_alarm" "file_scan_dlq" {
-  alarm_name          = "${local.name_prefix}-file-scan-dlq"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "ApproximateNumberOfMessagesVisible"
-  namespace           = "AWS/SQS"
-  period              = 300
-  statistic           = "Maximum"
-  threshold           = 0
-  treat_missing_data  = "notBreaching"
-  dimensions          = { QueueName = aws_sqs_queue.file_scan_dlq.name }
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-}
-
 resource "aws_cloudwatch_metric_alarm" "database_storage" {
   alarm_name          = "${local.name_prefix}-database-storage"
   comparison_operator = "LessThanThreshold"
