@@ -22,6 +22,7 @@ export default async function ParticipantProfilePage() {
   ]);
   const completed = journeyData.journeys.filter((journey) => journey.journey_status === "completed");
   const totalPoints = engagement.own_rank?.points ?? 0;
+  const archetype = engagement.archetype;
 
   return <>
     <header className="page-heading">
@@ -39,11 +40,11 @@ export default async function ParticipantProfilePage() {
 
     <section className="stack stack--large" aria-labelledby="diagnostico-perfil-titulo">
       <div><p className="eyebrow">Personalização</p><h2 id="diagnostico-perfil-titulo">Resultado do diagnóstico</h2></div>
-      {engagement.archetype?.name ? <article className="card profile-archetype">
-        <div className="card-meta"><span className="status-pill">{engagement.archetype.classification_status}</span><time dateTime={engagement.archetype.assigned_at}>{dateFormatter.format(new Date(engagement.archetype.assigned_at))}</time></div>
-        <h3>{engagement.archetype.name}</h3>
-        {engagement.archetype.description ? <p>{engagement.archetype.description}</p> : null}
-        {engagement.archetype.probability !== null ? <p className="metadata">Confiança registrada: {Math.round(engagement.archetype.probability * 100)}%</p> : null}
+      {archetype?.name ? <article className="card profile-archetype">
+        <div className="card-meta"><span className="status-pill">{archetype.classification_status}</span><time dateTime={archetype.assigned_at}>{dateFormatter.format(new Date(archetype.assigned_at))}</time></div>
+        <h3>{archetype.name}</h3>
+        {archetype.description ? <p>{archetype.description}</p> : null}
+        {archetype.probability !== null ? <p className="metadata">Confiança registrada: {Math.round(archetype.probability * 100)}%</p> : null}
         <p className="support-note">O diagnóstico orienta a experiência educacional e não determina elegibilidade ou risco de crédito.</p>
       </article> : <StatusPanel title="Diagnóstico ainda não concluído" tone="info"><p>Quando houver um resultado oficial atribuído, ele aparecerá aqui.</p></StatusPanel>}
     </section>
