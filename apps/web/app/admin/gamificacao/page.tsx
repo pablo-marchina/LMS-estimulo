@@ -1,0 +1,39 @@
+import { AppShell } from "@/components/app-shell";
+import { StatusPanel } from "@/components/status-panel";
+import { getAuthContext } from "@/lib/auth/context";
+import { getAdminProductWorkspace } from "@/lib/admin/product-management";
+import { saveGamificationResourceAction } from "./actions";
+
+export const dynamic = "force-dynamic";
+function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
+
+export default async function AdminGamificationPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const query = await searchParams;
+  const auth = await getAuthContext();
+  if (auth.status !== "authenticated") return <main className="page-container"><StatusPanel title="Acesso indisponível" tone="warning"><p>Entre com sua conta Estímulo.</p></StatusPanel></main>;
+  const requested = single(query.organization);
+  const organization = auth.identity.organizations.find((item) => item.organization_id === requested)
+    ?? auth.identity.organizations.find((item) => item.permissions.includes("engagement.manage"));
+  if (!organization?.permissions.includes("engagement.manage")) return <AppShell area="admin" email={auth.email}><StatusPanel title="Gamificação restrita" tone="warning"><p>Seu papel não permite configurar pontos e credenciais.</p></StatusPanel></AppShell>;
+
+  const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
+  const ruleVersions = workspace.rules.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
+  const journeyVersions = workspace.journeys.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
+
+  return <AppShell area="admin" email={auth.email}>
+    <header className="page-heading"><p className="eyebrow">Engajamento governado</p><h1>Pontos, selos e certificados</h1><p>Configure regras versionadas e credenciais sem alterar o ledger histórico. Publicação é explícita e auditada.</p></header>
+    <form className="inline-form" method="get"><label>Organização<select name="organization" defaultValue={organization.organization_id}>{auth.identity.organizations.filter((item) => item.permissions.includes("engagement.manage")).map((item) => <option key={item.organization_id} value={item.organization_id}>{item.display_name}</option>)}</select></label><button className="button button--secondary" type="submit">Selecionar</button></form>
+    {single(query.sucesso) ? <StatusPanel title="Configuração salva" tone="success"><p>A nova versão foi persistida.</p></StatusPanel> : null}
+    {single(query.erro) ? <StatusPanel title="Falha ao salvar" tone="warning"><p>Revise campos, regras vinculadas e JSON.</p></StatusPanel> : null}
+
+    <section className="admin-editor-grid">
+      <details className="card admin-editor" open><summary><strong>Regra de pontos</strong><span>Valor, elegibilidade e recorrência</span></summary><form className="stack" action={saveGamificationResourceAction}><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="resource_type" value="point_rule" /><div className="form-grid"><label>Definição existente<select name="definition_id"><option value="">Nova regra</option>{workspace.point_rules.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</select></label><label>Código<input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label><label>Nome<input name="name" required /></label><label>Pontos<input name="amount" type="number" required /></label><label>Regra de elegibilidade<select name="eligibility_rule_version_id" required>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="published">Publicada</option></select></label></div><label>Recorrência JSON<textarea className="code-input" name="recurrence_policy" rows={4} defaultValue={'{"mode":"once"}'} /></label><button className="button button--primary" type="submit">Salvar regra de pontos</button></form></details>
+
+      <details className="card admin-editor"><summary><strong>Selo</strong><span>Conquista e critério</span></summary><form className="stack" action={saveGamificationResourceAction}><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="resource_type" value="badge" /><div className="form-grid"><label>Definição existente<select name="definition_id"><option value="">Novo selo</option>{workspace.badges.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</select></label><label>Código<input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label><label>Nome interno<input name="name" required /></label><label>Título ao participante<input name="title" required /></label><label>Regra de critério<select name="criteria_rule_version_id" required>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="published">Publicado</option></select></label></div><label>Descrição<textarea name="description" rows={3} required /></label><button className="button button--primary" type="submit">Salvar selo</button></form></details>
+
+      <details className="card admin-editor"><summary><strong>Certificado</strong><span>Jornada, requisitos e validade</span></summary><form className="stack" action={saveGamificationResourceAction}><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="resource_type" value="certificate" /><div className="form-grid"><label>Definição existente<select name="definition_id"><option value="">Novo certificado</option>{workspace.certificates.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</select></label><label>Código<input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label><label>Nome<input name="name" required /></label><label>Jornada<select name="journey_version_id" required>{journeyVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)} · {String(item.status)}</option>)}</select></label><label>Regra de requisitos<select name="requirements_rule_version_id" required>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</select></label><label>Status<select name="status"><option value="draft">Draft</option><option value="published">Publicado</option></select></label></div><label>Política de validade JSON<textarea className="code-input" name="validity_policy" rows={4} defaultValue={'{"expires":false}'} /></label><button className="button button--primary" type="submit">Salvar certificado</button></form></details>
+    </section>
+
+    <section className="card stack"><h2>Inventário de engajamento</h2><div className="admin-inventory-grid"><div><h3>Regras de pontos</h3>{workspace.point_rules.map((item) => <p key={item.definition_id}><strong>{item.name}</strong><br /><small>{item.versions.length} versões</small></p>)}</div><div><h3>Selos</h3>{workspace.badges.map((item) => <p key={item.definition_id}><strong>{item.name}</strong><br /><small>{item.versions.length} versões</small></p>)}</div><div><h3>Certificados</h3>{workspace.certificates.map((item) => <p key={item.definition_id}><strong>{item.name}</strong><br /><small>{item.versions.length} versões</small></p>)}</div></div></section>
+  </AppShell>;
+}
