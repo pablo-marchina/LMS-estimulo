@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
-import { acknowledgeActivityAction, createActivityCommentAction, submitQuickCheckAction } from "@/app/actions/journey";
+import { acknowledgeActivityAction, createActivityCommentAction, rateActivityUtilityAction, submitQuickCheckAction } from "@/app/actions/journey";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
+import { utilityRatingRuntime } from "@/lib/utility-rating/runtime";
 
 function text(value: unknown): string | null { return typeof value === "string" && value.trim() ? value : null; }
 
@@ -18,14 +19,11 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
 
 const practiceStatus: Record<string, string> = {
   upload_pending: "Aguardando envio",
-  processing: "Verificação de segurança",
   awaiting_review: "Aguardando revisão",
   available: "Disponível",
   accepted: "Aceita",
   rejected: "Revisão solicitada",
-  failed: "Falha no envio",
-  blocked: "Arquivo bloqueado",
-  manual_review: "Revisão de segurança"
+  failed: "Falha no envio"
 };
 
 const practiceErrors: Record<string, string> = {
@@ -50,17 +48,18 @@ export default async function ActivityPage({
   searchParams
 }: {
   params: Promise<{ stepInstanceId: string }>;
-  searchParams: Promise<{ journey?: string; comentario?: string; pratica?: string; codigo?: string; avaliacao?: string }>;
+  searchParams: Promise<{ journey?: string; comentario?: string; pratica?: string; codigo?: string; avaliacao?: string; utilidade?: string }>;
 }) {
   const [{ stepInstanceId }, query] = await Promise.all([params, searchParams]);
   const journey = query.journey;
   if (!journey) notFound();
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const [experience, commentResult, practiceResult] = await Promise.all([
+  const [experience, commentResult, practiceResult, utilityRating] = await Promise.all([
     journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey),
     journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId),
-    practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId).catch(() => null)
+    practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId).catch(() => null),
+    utilityRatingRuntime.get(auth.identity.user_account_id, stepInstanceId)
   ]);
   if (experience.state.s?.step_instance_id !== stepInstanceId || !experience.activity) notFound();
 
@@ -102,9 +101,9 @@ export default async function ActivityPage({
         <div>
           <p className="eyebrow">Aplicação prática</p>
           <h2 id="pratica-titulo">Envie sua evidência</h2>
-          <p className="support-note">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo fica privado, passa por verificação de segurança e só pode ser baixado depois de liberado.</p>
+          <p className="support-note">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo permanece privado e é validado por formato, tamanho, hash e autorização de acesso.</p>
         </div>
-        {query.pratica === "enviada" ? <StatusPanel title="Arquivo recebido" tone="success"><p>A evidência foi registrada e entrou na verificação de segurança.</p></StatusPanel> : null}
+        {query.pratica === "enviada" ? <StatusPanel title="Arquivo recebido" tone="success"><p>A evidência foi registrada e já está disponível para a etapa de revisão aplicável.</p></StatusPanel> : null}
         {query.pratica === "erro" ? <StatusPanel title="Envio não concluído" tone="warning"><p>{practiceError}</p></StatusPanel> : null}
         {canUpload ? <form action="/api/practice-uploads" method="post" encType="multipart/form-data" className="card stack">
           <input type="hidden" name="journey_instance_id" value={journey} />
@@ -115,7 +114,6 @@ export default async function ActivityPage({
           {practice.terms_version ? <p className="metadata">Termos aplicáveis: {practice.terms_version}.</p> : null}
           <button className="button button--primary" type="submit">Enviar evidência</button>
         </form> : <StatusPanel title="Limite de envios atingido" tone="info"><p>Esta atividade não aceita novos arquivos no momento.</p></StatusPanel>}
-
         {submissions.length === 0 ? <StatusPanel title="Nenhuma evidência enviada" tone="info"><p>Seu histórico de envios aparecerá aqui.</p></StatusPanel> : <div className="practice-list">
           {submissions.map((submission) => <article className="practice-card" key={submission.id}>
             <div className="practice-header"><strong>Envio {submission.submission_number}</strong><span className="status-pill">{practiceStatus[submission.status] ?? submission.status}</span><time dateTime={submission.submitted_at}>{dateFormatter.format(new Date(submission.submitted_at))}</time></div>
@@ -125,6 +123,29 @@ export default async function ActivityPage({
             {submission.can_download ? <Link className="button button--secondary" href={`/api/practice-submissions/${submission.id}/download`}>Baixar arquivo</Link> : null}
           </article>)}
         </div>}
+      </section> : null}
+
+      {canAssess ? <section className="card stack" id="utilidade" aria-labelledby="utilidade-titulo">
+        <div>
+          <p className="eyebrow">Avaliação opcional</p>
+          <h2 id="utilidade-titulo">Esta atividade foi útil?</h2>
+          <p className="support-note">A nota de 1 a 5 melhora a capacitação. Ela não altera sua conclusão, seus pontos ou qualquer decisão de crédito.</p>
+        </div>
+        {query.utilidade === "registrada" ? <StatusPanel title="Avaliação registrada" tone="success"><p>Obrigado. A revisão anterior permanece no histórico e esta é a nota atual.</p></StatusPanel> : null}
+        <form action={rateActivityUtilityAction} className="stack">
+          <input type="hidden" name="journey_instance_id" value={journey} />
+          <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+          <input type="hidden" name="idempotency_key" value={randomUUID()} />
+          <fieldset className="option-list">
+            <legend>Escolha de 1 a 5 estrelas</legend>
+            {[1, 2, 3, 4, 5].map((rating) => <label className="option" key={rating}>
+              <input type="radio" name="rating" value={rating} defaultChecked={utilityRating.rating === rating} required />
+              <span>{rating} {rating === 1 ? "estrela" : "estrelas"}</span>
+            </label>)}
+          </fieldset>
+          <button className="button button--secondary" type="submit">{utilityRating.rating ? "Atualizar avaliação" : "Enviar avaliação"}</button>
+          {utilityRating.rating ? <p className="metadata">Nota atual: {utilityRating.rating}/5 · revisão {utilityRating.revision}.</p> : null}
+        </form>
       </section> : null}
 
       <section className="comments-section stack stack--large" id="comentarios" aria-labelledby="comentarios-titulo">

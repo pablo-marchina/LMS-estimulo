@@ -104,12 +104,16 @@ test('admin não exige UUIDs digitados manualmente', async () => {
   assert.ok(!source.includes('ID da versão da jornada'));
 });
 
-test('cadastro público existe somente sob gate explícito de teste', async () => {
+test('cadastro público real e cadastro sintético permanecem separados', async () => {
   const login = await read('apps/web/app/entrar/page.tsx');
   const signup = await read('apps/web/app/cadastro/page.tsx');
+  const testSignup = await read('apps/web/app/cadastro/teste/page.tsx');
   const gate = await read('apps/web/lib/auth/test-public-signup.ts');
-  assert.ok(login.includes('testPublicSignupEnabled'));
-  assert.ok(signup.includes('notFound()'));
+  assert.ok(login.includes('href="/cadastro"'));
+  assert.ok(login.includes('href="/cadastro/teste"'));
+  assert.ok(signup.includes('createPublicAccountAction'));
+  assert.ok(signup.includes('Acesso público'));
+  assert.ok(testSignup.includes('notFound()'));
   assert.ok(gate.includes('PUBLIC_SIGNUP_TEST_MODE'));
   assert.ok(gate.includes('process.env.NODE_ENV !== "production"'));
   assert.ok(gate.includes('ALLOWED_APP_ENVIRONMENTS.has'));

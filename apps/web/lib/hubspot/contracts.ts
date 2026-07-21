@@ -8,6 +8,35 @@ export type HubSpotBusinessRecordKind =
   | "configuration"
   | "activation_execution";
 
+export type HubSpotSyncClassification =
+  | "linking_identifier"
+  | "engagement_signal"
+  | "calculation_input_or_result"
+  | "not_synced";
+
+export type HubSpotAllowedSyncClassification = Exclude<HubSpotSyncClassification, "not_synced">;
+export type HubSpotSensitivity = "operational" | "personal" | "sensitive" | "restricted";
+export type HubSpotAssociationTarget = {
+  objectType: string;
+  objectId: string;
+  associationType?: string;
+};
+
+export type HubSpotCommandGovernance = {
+  syncClassification: HubSpotAllowedSyncClassification;
+  businessPurpose: string;
+  calculationOrEngagementUse: string;
+  sourceRecordId: string;
+  sourceRecordHash: string;
+  sensitivity: HubSpotSensitivity;
+  occurredAt: string;
+  requiresReadback: boolean;
+  associationTargets: HubSpotAssociationTarget[];
+  approvedDestinationId: string;
+  approvedObjectType: string;
+  approvedPropertyNames: string[];
+};
+
 export type HubSpotSource = {
   portalId: string;
   objectType: string;
@@ -30,7 +59,14 @@ export type HubSpotWriteCommand<T extends JsonObject = JsonObject> = {
   objectId?: string;
   expectedVersion?: string;
   payload: T;
+  governance?: HubSpotCommandGovernance;
 };
+
+export type GovernedHubSpotWriteCommand<T extends JsonObject = JsonObject> =
+  HubSpotWriteCommand<T> & {
+    objectId: string;
+    governance: HubSpotCommandGovernance;
+  };
 
 export type HubSpotWriteReceipt = {
   portalId: string;
@@ -41,11 +77,13 @@ export type HubSpotWriteReceipt = {
   expectedPayloadHash: string;
   expectedVersion: string;
   replayed: boolean;
+  propertyNames?: string[];
 };
 
 export type HubSpotSnapshotQuery = {
   objectType: string;
   objectId: string;
+  properties?: string[];
 };
 
 export type BusinessDecisionEvidence = {

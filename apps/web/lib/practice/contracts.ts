@@ -13,7 +13,6 @@ export type PracticeSubmission = {
   step_instance_id: string;
   submission_number: number;
   status: string;
-  security_status: string | null;
   file_object_id: string | null;
   original_filename: string | null;
   content_type: string | null;
@@ -66,8 +65,7 @@ export type PracticeUploadIntent = {
 export type PracticeUploadConfirmation = {
   submission_id: string;
   file_object_id: string;
-  status: "processing";
-  security_status: string;
+  status: "awaiting_review" | "available";
   original_filename: string;
   content_type: string;
   size_bytes: number;

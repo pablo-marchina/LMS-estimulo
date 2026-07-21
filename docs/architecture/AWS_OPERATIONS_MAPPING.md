@@ -2,37 +2,39 @@
 
 ## Princípio
 
-O domínio não depende de `pg_cron`, `pg_net` ou PGMQ. Esses componentes são adapters do ambiente de teste. Produção preserva `job_id`, deduplication key, receipt/attempt, idempotência, DLQ, métricas e reconciliação.
+O domínio não deve depender de `pg_cron`, `pg_net`, PGMQ ou APIs específicas do Supabase. A migração AWS exige adapters equivalentes para identidade, PostgreSQL e armazenamento privado, preservando autorização, idempotência, auditoria e retenção.
 
-## Mapeamento
+## Estado do baseline
 
-| Contrato | Supabase de testes | AWS staging/produção |
-|---|---|---|
-| Queue | PGMQ logged queue | SQS Standard |
-| DLQ | PGMQ queue separada | SQS DLQ + redrive policy |
-| Consumo contínuo | pg_cron + pg_net | Lambda event source mapping |
-| Limite de concorrência | configuração do dispatcher | maximum concurrency do event source mapping |
-| Visibility | `pgmq.read` / `set_vt` | SQS visibility timeout / ChangeMessageVisibility |
-| Métricas | snapshots PostgreSQL | CloudWatch + projeção governada |
-| Alarme | `operational_alerts` | CloudWatch Alarm + SNS/PagerDuty, mantendo registro interno |
-| Reconciliação | pg_cron | EventBridge Scheduler ou ECS/Lambda de manutenção |
-| Autorização | token único + service role | IAM execution role e resource policies |
-| Arquivos | Supabase Storage | S3 quarantine/protected |
-| Scan | scanner técnico | GuardDuty Malware Protection ou scanner aprovado |
+| Contrato | Desenvolvimento atual | Recurso declarado no baseline AWS | Adapter ativo no runtime |
+|---|---|---|---|
+| Banco operacional | PostgreSQL/Supabase RPC | RDS PostgreSQL privado e criptografado | não |
+| Identidade | Supabase Auth | ainda não declarado | não |
+| Arquivos privados | Supabase Storage | S3 privado, versionado e criptografado | não |
+| Web | Next.js local/CI | ECS/Fargate + ALB | scaffolding |
+| Secrets | ambiente Supabase/local | Secrets Manager por ARN | scaffolding |
+| Observabilidade | tabelas/logs atuais | CloudWatch + SNS | scaffolding |
 
-SQS Standard deve ser tratado como entrega pelo menos uma vez; o estado governado e os efeitos continuam idempotentes. Métricas operacionais equivalentes incluem backlog visível, mensagens não visíveis e idade da mensagem mais antiga. A DLQ precisa de alarme próprio.
+## Contratos preservados
 
-## Diferença importante
+- IDs e chaves de deduplicação permanecem canônicos;
+- efeitos de escrita permanecem idempotentes;
+- arquivos pertencem a uma organização e a um usuário autorizado;
+- tipo MIME, extensão, tamanho e SHA-256 são validados;
+- bucket e objetos permanecem privados;
+- downloads usam autorização e descritor server-only;
+- histórico e outbox PostgreSQL continuam a origem confiável das integrações;
+- retenção e exclusão precisam ser explícitas e auditáveis.
 
-EventBridge Scheduler possui precisão de minuto e não é o mecanismo ideal para polling frequente da fila. O consumo principal deve ser orientado pelo event source mapping SQS → Lambda. Scheduler fica para reconciliação, métricas complementares, redrive controlado e limpeza.
+## Gate de paridade
 
-## Gate AWS
+Antes de ativar qualquer adapter AWS:
 
-Antes da produção:
-
-1. provisionar RDS, SQS/DLQ, Lambda, S3, KMS e observabilidade por IaC;
-2. executar testes de paridade com duplicata, visibility, crash pós-efeito, DLQ e redrive;
-3. testar concorrência e partial batch response;
-4. definir reserved/maximum concurrency e orçamento;
-5. validar alarmes e runbooks em staging;
-6. substituir thresholds provisórios por SLOs aprovados.
+1. upload e confirmação idempotentes;
+2. acesso negativo entre participantes e organizações;
+3. MIME, extensão, tamanho e hash inválidos rejeitados;
+4. URL assinada curta e vinculada ao objeto autorizado;
+5. versionamento, retenção e exclusão exercitados;
+6. reconciliação entre banco e storage;
+7. restore de objeto e banco comprovado;
+8. rollback para o adapter anterior sem perda de estado.

@@ -30,11 +30,26 @@
     "test:test-public-signup": "node scripts/database/test-public-signup/run.mjs",
     "test:legacy-rpc-containment": "node scripts/database/legacy-rpc/run-tests.mjs",
     "test:browser-e2e": "node scripts/browser-e2e/run-synthetic-vertical.mjs",
+    "test:browser-e2e-real": "node scripts/browser-e2e/run-real-vertical.mjs",
+    "scan:secrets": "node scripts/security/run-gitleaks.mjs",
+    "test:secret-scanning": "node scripts/security/test-gitleaks.mjs",
+    "bootstrap:role-manager": "node scripts/operations/bootstrap-role-manager.mjs",
     "test:database-clean-replay": "npm run validate:migration-history && npm run replay:database-clean && npm run validate:schema-equivalence && npm run validate:public-rpc-contracts",
-    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence && npm run test:activity-comments && npm run test:practice-uploads && npm run test:learning-credentials && npm run test:content-library && npm run test:test-public-signup",
+    "test:database-gates": "npm run test:database-clean-replay && npm run test:backend-e2e && npm run test:configurable-product-persistence && npm run test:activity-comments && npm run test:practice-uploads && npm run test:learning-credentials && npm run test:content-library && npm run test:test-public-signup && npm run test:rbac-role-management && npm run test:public-signup && npm run test:business-maturity-draft && npm run test:business-maturity-preview && npm run test:activity-utility-ratings && npm run test:application-readiness && npm run test:fk-covering-indexes && npm run test:identity-experience && npm run test:scanner-removal && npm run test:admin-product-management",
+    "test:real-database-e2e": "npm run test:identity-experience && npm run test:admin-product-management && npm run test:scanner-removal",
     "test:application-foundation": "node --test scripts/application/*.test.mjs",
     "test:migration-history": "node --test scripts/database/migration-history/*.test.mjs",
-    "test:public-rpc-contracts": "node --test scripts/database/public-rpc-contracts/*.test.mjs"
+    "test:public-rpc-contracts": "node --test scripts/database/public-rpc-contracts/*.test.mjs",
+    "test:rbac-role-management": "node scripts/database/rbac-role-management/run.mjs",
+    "test:public-signup": "node scripts/database/public-signup/run.mjs",
+    "test:business-maturity-draft": "node scripts/database/business-maturity-draft/run.mjs",
+    "test:business-maturity-preview": "node scripts/database/business-maturity-preview/run.mjs",
+    "test:activity-utility-ratings": "node scripts/database/activity-utility-ratings/run.mjs",
+    "test:application-readiness": "node scripts/database/application-readiness/run.mjs",
+    "test:fk-covering-indexes": "node scripts/database/fk-covering-indexes/run.mjs",
+    "test:identity-experience": "node scripts/database/identity-experience/run.mjs",
+    "test:scanner-removal": "node scripts/database/scanner-removal/run.mjs",
+    "test:admin-product-management": "node scripts/database/admin-product-management/run.mjs"
   },
   "engines": {
     "node": ">=22.0.0"

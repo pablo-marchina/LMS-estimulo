@@ -19,7 +19,7 @@ export async function getAuthContext(): Promise<AuthContext> {
       return {
         status: "authenticated",
         identity: syntheticIdentity(),
-        email: "participante.e2e@estimulo.local"
+        email: "e2e@estimulo.org"
       };
     }
     return { status: "anonymous" };

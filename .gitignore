@@ -11,3 +11,9 @@ node_modules/
 .next/
 **/.next/
 **/*.tsbuildinfo
+
+# Local archives and generated packages do not belong in Git.
+*.zip
+*.tar
+*.tar.gz
+*.tgz
