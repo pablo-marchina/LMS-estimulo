@@ -2,11 +2,11 @@
 
 Plataforma web LMS para desenvolvimento de empreendedores, capacitação integrada à jornada do Estímulo e geração estruturada de dados educacionais e operacionais.
 
-Os requisitos ativos do produto estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md). Auditorias, cobertura e decisões de reaproveitamento de materiais externos não são documentadas neste repositório.
+Os requisitos ativos do produto estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md).
 
 ## Estado atual
 
-A fundação técnica e as principais capacidades genéricas estão implementadas e reproduzíveis. O produto oficial ainda não deve ser liberado para usuários reais enquanto os bloqueadores operacionais de [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md) permanecerem abertos.
+A fundação técnica e as principais capacidades do LMS estão implementadas e reproduzíveis. O produto oficial ainda não deve ser liberado para usuários reais enquanto os bloqueadores operacionais de [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md) permanecerem abertos.
 
 ```text
 Supabase = desenvolvimento e teste
@@ -18,22 +18,26 @@ HubSpot = somente classes aprovadas e destinos explicitamente autorizados
 
 ### Implementado no repositório e no ambiente de desenvolvimento
 
-- migrations executáveis, replay limpo, equivalência estrutural e contratos públicos de RPC;
+- 282 migrations executáveis, replay limpo, equivalência estrutural e contratos públicos de RPC;
 - aplicação Next.js com áreas de participante e administração;
 - cadastro público com confirmação de e-mail, first-touch UTM e CPF obrigatório protegido;
 - CPF validado, cifrado com AES-256-GCM e deduplicado por HMAC server-only;
 - entrada administrativa restrita a e-mail confirmado `@estimulo.org` e autorização RBAC;
 - RBAC revogável, temporal e auditável;
+- painel do participante com carrossel administrável, métricas, retomada, recompensas e ranking pseudonimizado;
+- perfil com diagnóstico, jornadas, histórico de pontos e credenciais;
+- trilha com blocos expansíveis e abertura de qualquer atividade liberada pelo backend;
 - comentários, uploads privados, moderação e revisão de práticas;
 - quarentena, estados de scan e adapter de scanner externo fail-closed;
 - avaliações multiquestão e nota de utilidade em cinco estrelas;
-- progresso, pontos, selos, certificados e biblioteca versionada;
+- progresso, ledger de pontos, selos, certificados e biblioteca versionada;
+- administração de anúncios e engajamento;
 - motor configurável de formulários, arquétipos e ativações;
 - diagnóstico de maturidade em draft, sem atribuição, crédito ou CRM;
 - adapter HubSpot HTTP server-only e fail-closed;
 - integração controlada com sistemas externos existentes;
 - identidade visual Estímulo com assets locais;
-- Browser E2E sintético;
+- Browser E2E sintético atualizado para a experiência de painel, perfil e blocos;
 - imagem standalone não-root, liveness e readiness;
 - Terraform de staging com ECS, ALB, RDS, S3, SQS/DLQ, KMS e CloudWatch.
 
@@ -41,10 +45,10 @@ Essas provas ainda não equivalem ao produto final. Permanecem necessários, ent
 
 - configuração oficial e homologada dos quatro arquétipos;
 - pacote editorial publicável da Jornada OpenAI;
-- experiência completa de participante e administração com dados oficiais;
-- integração oficial com site e identidade;
+- telefone, CNPJ opcional e integração oficial com site e identidade;
 - inventário, credenciais e prova HubSpot em sandbox;
 - scanner real configurado e testado;
+- gestão institucional e rotação das chaves de CPF;
 - adapters AWS ativos e staging aplicado;
 - E2E real, backup, restore e rollback;
 - aprovações de segurança, privacidade, jurídico, crédito, acessibilidade e conteúdo;
@@ -90,6 +94,7 @@ Nenhum sinal educacional ou comportamental pode influenciar crédito sem valida�
 apps/web/                              aplicação Next.js
 apps/web/lib/auth/                     identidade e gates
 apps/web/lib/identity/                 proteção de identificadores pessoais
+apps/web/lib/engagement/               anúncios, ranking, recompensas e histórico
 apps/web/lib/hubspot/                  política e adapter HubSpot
 apps/web/lib/configurable-product/     formulário, classificação e ativações
 apps/web/lib/journey-runtime/          runtime de jornadas
@@ -146,6 +151,7 @@ npm run test:browser-e2e
 - [Bloqueadores de entrega](docs/implementation/DELIVERY_BLOCKERS.md)
 - [Contrato HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Estratégia Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
+- [Arquitetura-alvo AWS](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
 - [Baseline AWS](infra/aws/terraform/README.md)
 
 ## Regras essenciais
