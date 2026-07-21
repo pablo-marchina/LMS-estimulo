@@ -53,9 +53,16 @@ export async function invokeServerRpc<T>(name: string, args: Record<string, unkn
     throw new ServerRpcError("RPC_GATEWAY_INVALID_RESPONSE", "The authenticated RPC gateway returned an invalid response.");
   }
 
-  if (!response.ok || !payload.ok) {
+  if (!response.ok) {
+    const failure = payload as GatewayFailure;
     throw new ServerRpcError(
-      payload.code ?? `RPC_GATEWAY_HTTP_${response.status}`,
+      failure.code ?? `RPC_GATEWAY_HTTP_${response.status}`,
+      failure.message ?? "The authenticated RPC gateway rejected the request.",
+    );
+  }
+  if (!payload.ok) {
+    throw new ServerRpcError(
+      payload.code ?? "RPC_GATEWAY_REJECTED",
       payload.message ?? "The authenticated RPC gateway rejected the request.",
     );
   }
