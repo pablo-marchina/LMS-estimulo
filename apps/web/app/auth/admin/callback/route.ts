@@ -18,9 +18,19 @@ export async function GET(request: NextRequest) {
   const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
   if (exchangeError) return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
 
-  const { data, error: userError } = await client.auth.getUser();
+  const [{ data, error: userError }, { data: claimsData, error: claimsError }] = await Promise.all([
+    client.auth.getUser(),
+    client.auth.getClaims(),
+  ]);
   const user = data.user;
-  if (userError || !user || !user.email_confirmed_at || !isGoogleAuthProvider(user)) {
+  if (
+    userError
+    || claimsError
+    || !user
+    || !claimsData?.claims
+    || !user.email_confirmed_at
+    || !isGoogleAuthProvider(user, claimsData.claims.amr)
+  ) {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=conta_google_necessaria");
   }
