@@ -6,6 +6,15 @@ import { completePublicSignupAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
+const errorMessages: Record<string, string> = {
+  dados_invalidos: "Revise os dados antes de continuar.",
+  cpf_invalido: "Informe um CPF válido.",
+  cpf_ja_vinculado: "Este CPF já está vinculado a outra conta. Procure o suporte para recuperar o acesso.",
+  cpf_revisao_necessaria: "A alteração do CPF exige revisão de identidade pelo suporte.",
+  protecao_cpf_indisponivel: "A proteção do CPF não está configurada neste ambiente.",
+  provisionamento_falhou: "Não foi possível concluir o perfil agora.",
+};
+
 export default async function CompleteSignupPage({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
   const { erro } = await searchParams;
   const auth = await getAuthContext();
@@ -24,11 +33,13 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
       <div className="auth-heading">
         <p className="eyebrow">E-mail confirmado</p>
         <h1>Concluir perfil</h1>
-        <p>Confirme os dados do perfil. Eles não concedem acesso administrativo.</p>
+        <p>O CPF é obrigatório para identificar a mesma pessoa sem duplicidade. Ele é validado, cifrado no servidor e não é gravado em metadata, URL ou logs.</p>
       </div>
-      {erro ? <p className="form-message form-message--error" role="alert">Revise os dados antes de continuar.</p> : null}
+      {erro ? <p className="form-message form-message--error" role="alert">{errorMessages[erro] ?? "Revise os dados antes de continuar."}</p> : null}
       <form action={completePublicSignupAction} className="stack">
         <label>Seu nome<input name="preferred_name" defaultValue={preferredName} minLength={2} maxLength={120} autoComplete="name" required /></label>
+        <label>CPF<input name="cpf" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" minLength={11} maxLength={14} pattern="[0-9.\-]{11,14}" required aria-describedby="cpf-protection" /></label>
+        <p id="cpf-protection" className="support-note">O sistema mantém uma versão cifrada e um token HMAC de busca. O CPF bruto não é enviado ao HubSpot por padrão.</p>
         <label>Nome do negócio <span className="metadata">(opcional)</span><input name="business_name" defaultValue={businessName} maxLength={160} autoComplete="organization" /></label>
         <button className="button button--primary button--large" type="submit">Entrar na plataforma</button>
       </form>
