@@ -10,7 +10,7 @@ const [dockerfile, nextConfig, live, ready, migration, versions, variables, terr
   readFile("supabase/migrations/20260720185000_application_readiness.sql", "utf8"),
   readFile("infra/aws/terraform/versions.tf", "utf8"),
   readFile("infra/aws/terraform/variables.tf", "utf8"),
-  Promise.all(["main.tf", "network.tf", "compute.tf", "storage.tf", "database.tf", "observability.tf"].map((file) => readFile(`infra/aws/terraform/${file}`, "utf8"))).then((parts) => parts.join("\n")),
+  Promise.all(["main.tf", "network.tf", "compute.tf", "storage.tf", "database.tf", "observability.tf", "identity-secrets.tf"].map((file) => readFile(`infra/aws/terraform/${file}`, "utf8"))).then((parts) => parts.join("\n")),
   readFile("infra/aws/terraform/terraform.tfvars.example", "utf8"),
   readFile("infra/aws/terraform/README.md", "utf8"),
 ]);
@@ -27,7 +27,7 @@ test("container build is pinned, standalone, non-root and rejects missing public
   assert.match(dockerfile, /USER nextjs/u);
   assert.match(dockerfile, /--uid 1001/u);
   assert.match(dockerfile, /api\/health\/live/u);
-  assert.doesNotMatch(dockerfile, /SUPABASE_SERVICE_ROLE_KEY|HUBSPOT_PRIVATE_APP_TOKEN|MALWARE_SCANNER_API_KEY/u);
+  assert.doesNotMatch(dockerfile, /SUPABASE_SERVICE_ROLE_KEY|CPF_ENCRYPTION_KEY|CPF_LOOKUP_HMAC_KEY|HUBSPOT_PRIVATE_APP_TOKEN|MALWARE_SCANNER_API_KEY/u);
   assert.doesNotMatch(dockerfile, /https:\/\/build\.invalid|build-placeholder/u);
   assert.match(nextConfig, /output: "standalone"/u);
 });
@@ -36,6 +36,8 @@ test("liveness is local while readiness checks configuration and database", () =
   assert.match(live, /status: "ok"/u);
   assert.doesNotMatch(live, /createPrivilegedClient|rpc\(/u);
   assert.match(ready, /SUPABASE_SERVICE_ROLE_KEY/u);
+  assert.match(ready, /CPF_ENCRYPTION_KEY/u);
+  assert.match(ready, /CPF_LOOKUP_HMAC_KEY/u);
   assert.match(ready, /get_application_readiness/u);
   assert.match(ready, /status: 503/u);
   assert.match(ready, /cache-control/u);
@@ -64,6 +66,9 @@ test("public browser configuration is separate from server-side secrets", () => 
   assert.match(terraformMain, /NEXT_PUBLIC_SUPABASE_URL/u);
   assert.match(terraformMain, /NEXT_PUBLIC_SUPABASE_ANON_KEY/u);
   assert.match(terraformMain, /SUPABASE_SERVICE_ROLE_KEY/u);
+  assert.match(terraformMain, /CPF_ENCRYPTION_KEY/u);
+  assert.match(terraformMain, /CPF_LOOKUP_HMAC_KEY/u);
+  assert.match(terraformMain, /independent secrets/u);
   assert.doesNotMatch(tfvars, /NEXT_PUBLIC_[A-Z_]+\s*=\s*"arn:aws:secretsmanager:/u);
   assert.match(terraformReadme, /freezes every `NEXT_PUBLIC_\*` value/u);
   assert.match(terraformReadme, /same values are repeated in `public_environment`/u);
