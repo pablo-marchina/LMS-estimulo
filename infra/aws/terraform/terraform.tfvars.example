@@ -18,7 +18,9 @@ public_environment = {
 
 # Only server-side credentials belong in Secrets Manager.
 secret_arns = {
-  SUPABASE_SERVICE_ROLE_KEY = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace"
+  SUPABASE_SERVICE_ROLE_KEY = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace-service-role"
+  CPF_ENCRYPTION_KEY        = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace-cpf-encryption"
+  CPF_LOOKUP_HMAC_KEY       = "arn:aws:secretsmanager:sa-east-1:000000000000:secret:replace-cpf-hmac"
   # Optional after external approvals:
   # HUBSPOT_PRIVATE_APP_TOKEN = "arn:aws:secretsmanager:..."
   # HUBSPOT_PORTAL_ID         = "arn:aws:secretsmanager:..."
