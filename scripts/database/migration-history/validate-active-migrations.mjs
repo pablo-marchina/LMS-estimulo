@@ -54,6 +54,7 @@ const expectedActiveMigrations = Object.freeze([
   '20260720191500_integral_admin_product_management.sql',
   '20260720191510_fix_admin_reporting_relations.sql',
   '20260720191520_complete_integral_admin_role.sql',
+  '20260721171000_remove_test_public_signup.sql',
 ]);
 
 export async function validateActiveMigrations() {

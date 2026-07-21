@@ -18,11 +18,11 @@ HubSpot = somente classes aprovadas e destinos explicitamente autorizados
 
 ### Implementado
 
-- 292 migrations executáveis, replay limpo, equivalência estrutural e contratos públicos de RPC;
+- 293 migrations executáveis, replay limpo, equivalência estrutural e contratos públicos de RPC;
 - aplicação Next.js com áreas distintas de participante e administração;
 - cadastro público com confirmação de e-mail, first-touch UTM e CPF obrigatório protegido;
 - CPF validado, cifrado com AES-256-GCM e deduplicado por HMAC server-only;
-- entrada administrativa restrita a e-mail confirmado `@estimulo.org` e autorização RBAC;
+- entrada administrativa separada, exclusivamente por Google OAuth, com e-mail verificado `@estimulo.org` e autorização RBAC;
 - RBAC revogável, temporal e auditável;
 - painel do participante com carrossel administrável, métricas, retomada, recompensas e ranking pseudonimizado;
 - perfil com diagnóstico, jornadas, histórico de pontos e credenciais;
@@ -44,6 +44,8 @@ HubSpot = somente classes aprovadas e destinos explicitamente autorizados
 - imagem standalone não-root, liveness e readiness;
 - Terraform de staging com ECS, ALB, RDS, S3, KMS e CloudWatch.
 
+O cadastro público de teste, sua variável de ambiente, a rota privilegiada e a função SQL associada foram removidos. O histórico de migrations permanece imutável e uma migration posterior elimina a função no estado final do banco.
+
 O subsistema de scanner de malware foi removido integralmente do produto, banco, workers, filas, cron, contratos e configuração. Não existe provider, fila ou estado de scan ativo.
 
 ### Gates externos ainda necessários
@@ -53,6 +55,7 @@ O subsistema de scanner de malware foi removido integralmente do produto, banco,
 - telefone, CNPJ opcional e integração oficial com site e identidade;
 - inventário, credenciais e prova HubSpot em sandbox;
 - gestão institucional e rotação das chaves de CPF;
+- configuração do Google OAuth no Supabase, consent screen, client credentials e URLs autorizadas do ambiente-alvo;
 - adapters AWS ativos e staging aplicado;
 - E2E real autenticado executado contra o ambiente implantado;
 - backup, restore e rollback;
@@ -61,15 +64,16 @@ O subsistema de scanner de malware foi removido integralmente do produto, banco,
 
 ## Identidade e acesso
 
-Participantes usam cadastro público e confirmação de e-mail. O CPF é solicitado na conclusão do cadastro e não é armazenado em metadata, URL, logs ou eventos brutos.
+Participantes usam cadastro público, senha e confirmação de e-mail. O CPF é solicitado na conclusão do cadastro e não é armazenado em metadata, URL, logs ou eventos brutos.
 
-A área `/admin` exige simultaneamente:
+A entrada administrativa fica em `/entrar/administracao` e exige simultaneamente:
 
-1. e-mail confirmado no domínio exato `@estimulo.org`;
-2. vínculo organizacional ativo;
-3. permissões RBAC correspondentes à operação.
+1. autenticação pelo provider Google configurado no Supabase;
+2. e-mail verificado no domínio exato `@estimulo.org`;
+3. vínculo organizacional ativo;
+4. permissões RBAC correspondentes à operação.
 
-O domínio habilita a entrada administrativa, mas não concede poderes automaticamente.
+O parâmetro Google `hd=estimulo.org` melhora a seleção da conta, mas não é tratado como controle de segurança. O callback no servidor valida novamente o provider, o domínio e o RBAC. O domínio não concede poderes automaticamente.
 
 ## Administração
 
@@ -137,7 +141,8 @@ Pré-requisitos:
 - Node.js 22;
 - npm 10.9.2;
 - PostgreSQL/Supabase autorizado para desenvolvimento e teste;
-- duas chaves server-only independentes de 32 bytes em base64 para proteção do CPF.
+- duas chaves server-only independentes de 32 bytes em base64 para proteção do CPF;
+- Google provider configurado no Supabase para testar a área administrativa.
 
 ```bash
 cp .env.example apps/web/.env.local
@@ -149,7 +154,7 @@ npm run build:web
 npm run dev:web
 ```
 
-Nunca registre credenciais ou dados pessoais reais no Git.
+Nunca registre credenciais, cookies de sessão ou dados pessoais reais no Git.
 
 ## Validações principais
 
@@ -166,18 +171,17 @@ npm run build:web
 npm run test:browser-e2e
 ```
 
-A prova real autenticada exige um ambiente implantado e contas próprias de teste:
+A prova real autenticada exige um ambiente implantado, uma conta própria de participante e um arquivo efêmero de cookies obtido depois de um login Google administrativo real:
 
 ```bash
 REAL_E2E_BASE_URL=https://staging.example.org \
 REAL_E2E_PARTICIPANT_EMAIL=participant-e2e@example.org \
 REAL_E2E_PARTICIPANT_PASSWORD=... \
-REAL_E2E_ADMIN_EMAIL=admin-e2e@estimulo.org \
-REAL_E2E_ADMIN_PASSWORD=... \
+REAL_E2E_ADMIN_SESSION_COOKIES_FILE=.secrets/admin-google-session-cookies.json \
 npm run test:browser-e2e-real
 ```
 
-O runner é read-only e verifica health/readiness, autenticação real, participante, administração integral, responsividade e identidade visual.
+O arquivo deve conter um array JSON de cookies aceitos pelo Chrome DevTools Protocol, pertencer somente ao domínio testado, permanecer fora do Git e ser destruído após o teste. O runner verifica a tela separada de Google e reutiliza a sessão real para validar a administração integral.
 
 ## Documentação principal
 
