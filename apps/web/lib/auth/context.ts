@@ -28,17 +28,21 @@ export async function getAuthContext(): Promise<AuthContext> {
   }
 
   const session = await createSessionClient();
-  const { data, error } = await session.auth.getUser();
+  const [{ data, error }, { data: claimsData, error: claimsError }] = await Promise.all([
+    session.auth.getUser(),
+    session.auth.getClaims(),
+  ]);
   if (error || !data.user) return { status: "anonymous" };
+  if (claimsError || !claimsData?.claims) return { status: "identity_error", reason: "VERIFIED_AUTH_CLAIMS_REQUIRED" };
 
   const user = data.user;
   const email = user.email?.trim().toLowerCase();
   if (!email || !user.email_confirmed_at) return { status: "identity_error", reason: "VERIFIED_EMAIL_REQUIRED" };
 
   const issuer = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/auth/v1`;
-  const provider = resolveAuthProvider(user);
+  const provider = resolveAuthProvider(user, claimsData.claims.amr);
   const fingerprint = createHash("sha256")
-    .update(JSON.stringify({ issuer, subject: user.id, email, provider, audience: user.aud }))
+    .update(JSON.stringify({ issuer, subject: user.id, email, provider, audience: user.aud, amr: claimsData.claims.amr }))
     .digest("hex");
 
   try {
