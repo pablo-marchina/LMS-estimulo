@@ -14,7 +14,7 @@ Entregar uma plataforma LMS interna e operada pela Estímulo, publicada na AWS, 
 - identidade, site e HubSpot integrados;
 - segurança, acessibilidade e operação comprovadas.
 
-Os requisitos ativos estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md). Materiais de análise de fontes externas e cobertura não fazem parte da documentação do repositório.
+Os requisitos ativos estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md).
 
 ## Decisões vigentes
 
@@ -48,6 +48,7 @@ O PostgreSQL é o banco operacional. Só candidatos das três primeiras classes 
 apps/web/                       aplicação Next.js
 apps/web/lib/auth/              autenticação e acesso
 apps/web/lib/identity/          proteção de CPF e identificadores
+apps/web/lib/engagement/        anúncios, ranking, recompensas e histórico
 apps/web/lib/hubspot/           política seletiva e adapter
 apps/web/lib/journey-runtime/   jornadas e execução
 apps/web/lib/configurable-product/ formulários e personalização
