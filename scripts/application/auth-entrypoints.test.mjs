@@ -47,12 +47,21 @@ test("test signup runtime, route and privileged provisioning are absent", async 
   assert.match(removalMigration, /drop function if exists public\.provision_test_signup_participant/u);
 });
 
-test("participant confirmation requires an explicit post and never consumes tokens on get", async () => {
-  const [page, action, confirmationPage, confirmationAction, completionPage, completionAction] = await Promise.all([
+test("participant confirmation requires an explicit post and recovers from preprocessed links", async () => {
+  const [
+    page,
+    action,
+    confirmationPage,
+    confirmationAction,
+    signInPage,
+    completionPage,
+    completionAction,
+  ] = await Promise.all([
     read("apps/web/app/cadastro/page.tsx"),
     read("apps/web/app/cadastro/actions.ts"),
     read("apps/web/app/auth/confirm/page.tsx"),
     read("apps/web/app/auth/confirm/actions.ts"),
+    read("apps/web/app/entrar/page.tsx"),
     read("apps/web/app/cadastro/concluir/page.tsx"),
     read("apps/web/app/cadastro/concluir/actions.ts"),
   ]);
@@ -64,7 +73,10 @@ test("participant confirmation requires an explicit post and never consumes toke
   assert.doesNotMatch(action, /auth\.admin\.createUser|email_confirm:\s*true/);
 
   assert.match(confirmationPage, /confirmEmailAction/);
+  assert.match(confirmationPage, /resendConfirmationAction/);
   assert.match(confirmationPage, /Confirmar e continuar/);
+  assert.match(confirmationPage, /Entrar com minha senha/);
+  assert.match(confirmationPage, /Reenviar confirmação/);
   assert.match(confirmationPage, /type="hidden" name="token_hash"/);
   assert.doesNotMatch(confirmationPage, /verifyOtp|exchangeCodeForSession|createSessionClient/);
 
@@ -73,7 +85,12 @@ test("participant confirmation requires an explicit post and never consumes toke
   assert.match(confirmationAction, /exchangeCodeForSession/);
   assert.match(confirmationAction, /auth\.getUser\(\)/);
   assert.match(confirmationAction, /email_confirmed_at/);
+  assert.match(confirmationAction, /auth\.resend/);
+  assert.match(confirmationAction, /emailRedirectTo/);
   assert.match(confirmationAction, /redirect\("\/cadastro\/concluir"\)/);
+  assert.match(confirmationAction, /reenviado=1/);
+  assert.match(signInPage, /cadastro === "confirmado"/);
+  assert.match(signInPage, /link de confirmação já foi processado/);
   assert.match(completionPage, /name="cpf"/u);
   assert.match(completionAction, /getAuthContext/);
 });
