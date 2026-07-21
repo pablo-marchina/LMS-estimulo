@@ -13,19 +13,9 @@ output "ecr_repository_url" {
   description = "Immutable web image repository."
 }
 
-output "quarantine_bucket_name" {
-  value       = aws_s3_bucket.quarantine.id
-  description = "Private quarantine bucket."
-}
-
-output "protected_bucket_name" {
-  value       = aws_s3_bucket.protected.id
-  description = "Private released-file bucket."
-}
-
-output "file_scan_queue_url" {
-  value       = aws_sqs_queue.file_scan.url
-  description = "File scan queue URL."
+output "evidence_bucket_name" {
+  value       = aws_s3_bucket.evidence.id
+  description = "Private encrypted participant-evidence bucket."
 }
 
 output "database_endpoint" {
