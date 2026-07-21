@@ -7,7 +7,7 @@ const errorMessages: Record<string, string> = {
   credenciais_invalidas: "E-mail ou senha inválidos.",
   identidade_nao_vinculada: "Não foi possível resolver a identidade interna.",
   acesso_nao_autorizado: "A identidade não possui acesso ativo à plataforma.",
-  confirmacao_invalida: "O link de confirmação é inválido ou expirou.",
+  confirmacao_invalida: "Não foi possível concluir a confirmação. Solicite uma nova mensagem e tente novamente.",
   confirmacao_necessaria: "Confirme seu e-mail antes de concluir o cadastro.",
 };
 
@@ -23,6 +23,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
           <p>Use o e-mail e a senha da sua conta de participante.</p>
         </div>
         {cadastro === "confirmacao" ? <p className="form-message form-message--success" role="status">Conta criada. Abra o e-mail de confirmação para continuar.</p> : null}
+        {cadastro === "confirmado" ? <p className="form-message form-message--success" role="status">O link de confirmação já foi processado. Entre com a senha cadastrada.</p> : null}
         {erro ? <p className="form-message form-message--error" role="alert">{errorMessages[erro] ?? "Não foi possível entrar."}</p> : null}
         <form action={signInAction} className="stack">
           <label>E-mail<input name="email" type="email" autoComplete="email" required /></label>

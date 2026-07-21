@@ -1,9 +1,8 @@
-import { createHash } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
+import { CurrentIdentityError, resolveCurrentIdentity } from "@/lib/auth/current-identity";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { isGoogleAuthProvider } from "@/lib/auth/provider";
-import { journeyRuntime, JourneyRpcError } from "@/lib/journey-runtime/rpc";
 import { createSessionClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
@@ -42,27 +41,8 @@ export async function GET(request: NextRequest) {
     return redirectTo(request, "/entrar/administracao?erro=dominio_invalido");
   }
 
-  const issuer = `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")}/auth/v1`;
-  const claimsFingerprint = createHash("sha256")
-    .update(JSON.stringify({
-      issuer,
-      subject: user.id,
-      email,
-      provider: "google",
-      audience: user.aud,
-      amr: claimsData.claims.amr,
-    }))
-    .digest("hex");
-
   try {
-    const identity = await journeyRuntime.resolveIdentity({
-      provider: "google",
-      issuer,
-      subject: user.id,
-      email,
-      emailVerified: true,
-      claimsFingerprint,
-    });
+    const identity = await resolveCurrentIdentity(client);
     const organization = administrativeOrganization(identity);
     if (!organization) {
       await client.auth.signOut();
@@ -71,7 +51,7 @@ export async function GET(request: NextRequest) {
     return redirectTo(request, `/admin?organization=${encodeURIComponent(organization.organization_id)}`);
   } catch (error) {
     await client.auth.signOut();
-    if (error instanceof JourneyRpcError && error.message.includes("identity_link_required")) {
+    if (error instanceof CurrentIdentityError && error.message.includes("identity_link_required")) {
       return redirectTo(request, "/entrar/administracao?erro=identidade_desvinculada");
     }
     return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");

@@ -3,7 +3,10 @@ import { browserE2EEnabled } from "@/lib/browser-e2e/config";
 import { invokeSyntheticRpc } from "@/lib/browser-e2e/synthetic-runtime";
 import { syntheticSupplementalRpc } from "@/lib/browser-e2e/synthetic-supplemental-rpc";
 import { normalizeLegacyRpcArgumentsForSynthetic } from "@/lib/journey-runtime/legacy-rpc-arguments";
-import { createPrivilegedClient } from "@/lib/supabase/admin";
+import {
+  AuthenticatedGatewayError,
+  invokeAuthenticatedGateway,
+} from "@/lib/rpc/authenticated-gateway";
 
 export class ServerRpcError extends Error {
   constructor(public readonly code: string, message: string) {
@@ -24,8 +27,12 @@ export async function invokeServerRpc<T>(name: string, args: Record<string, unkn
     }
   }
 
-  const client = createPrivilegedClient();
-  const { data, error } = await client.rpc(name, args);
-  if (error) throw new ServerRpcError(error.code ?? "SERVER_RPC_ERROR", error.message);
-  return data as T;
+  try {
+    return await invokeAuthenticatedGateway<T>(name, args);
+  } catch (error) {
+    if (error instanceof AuthenticatedGatewayError) {
+      throw new ServerRpcError(error.code, error.message);
+    }
+    throw error;
+  }
 }

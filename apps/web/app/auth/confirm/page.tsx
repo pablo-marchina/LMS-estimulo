@@ -1,0 +1,86 @@
+import Link from "next/link";
+import { EstimuloBrand } from "@/components/estimulo-brand";
+import { confirmEmailAction, resendConfirmationAction } from "./actions";
+
+type ConfirmationSearchParams = {
+  token_hash?: string;
+  type?: string;
+  code?: string;
+  error?: string;
+  error_code?: string;
+  reenviado?: string;
+  erro?: string;
+};
+
+export default async function EmailConfirmationPage({
+  searchParams,
+}: {
+  searchParams: Promise<ConfirmationSearchParams>;
+}) {
+  const params = await searchParams;
+  const tokenHash = params.token_hash?.trim() ?? "";
+  const type = params.type?.trim() ?? "";
+  const code = params.code?.trim() ?? "";
+  const hasConfirmationData = Boolean((tokenHash && type) || code);
+  const linkAlreadyProcessed = params.error_code === "otp_expired" || params.error === "access_denied";
+
+  return (
+    <main className="auth-page">
+      <section className="auth-card">
+        <EstimuloBrand centered />
+        <div className="auth-heading">
+          <p className="eyebrow">Confirmação de cadastro</p>
+          <h1>{hasConfirmationData ? "Confirme seu e-mail" : "Verifique sua conta"}</h1>
+          <p>
+            {hasConfirmationData
+              ? "Por segurança, a confirmação só será concluída depois que você pressionar o botão abaixo."
+              : "O link já foi processado ou não pode mais ser utilizado."}
+          </p>
+        </div>
+
+        {params.reenviado === "1" ? (
+          <p className="form-message form-message--success" role="status">
+            Se houver uma conta pendente para esse e-mail, uma nova mensagem de confirmação foi enviada.
+          </p>
+        ) : null}
+
+        {params.erro === "email_invalido" ? (
+          <p className="form-message form-message--error" role="alert">Informe um e-mail válido.</p>
+        ) : null}
+
+        {hasConfirmationData ? (
+          <form action={confirmEmailAction} className="stack">
+            <input type="hidden" name="token_hash" value={tokenHash} />
+            <input type="hidden" name="type" value={type} />
+            <input type="hidden" name="code" value={code} />
+            <button className="button button--primary button--large" type="submit">
+              Confirmar e continuar
+            </button>
+          </form>
+        ) : (
+          <div className="stack">
+            <p className="form-message" role="status">
+              {linkAlreadyProcessed
+                ? "Verificações automáticas de e-mail podem ter confirmado a conta antes do seu clique. Tente entrar com a senha cadastrada."
+                : "Tente entrar com a senha cadastrada. Se a conta ainda estiver pendente, solicite outra mensagem abaixo."}
+            </p>
+            <Link className="button button--primary button--large" href="/entrar?cadastro=confirmado">
+              Entrar com minha senha
+            </Link>
+            <form action={resendConfirmationAction} className="stack">
+              <label>
+                E-mail
+                <input name="email" type="email" autoComplete="email" required />
+              </label>
+              <button className="button button--secondary" type="submit">Reenviar confirmação</button>
+            </form>
+          </div>
+        )}
+
+        <p className="auth-footer">
+          <Link href="/entrar">Voltar para a entrada</Link>
+        </p>
+      </section>
+    </main>
+  );
+}
