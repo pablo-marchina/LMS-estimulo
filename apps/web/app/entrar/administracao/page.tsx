@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { EstimuloBrand } from "@/components/estimulo-brand";
+import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
+import { Button } from "@/components/ui/button";
 import { signInWithGoogleAction } from "./actions";
 
 const errorMessages: Record<string, string> = {
@@ -19,23 +20,27 @@ export default async function AdministrativeSignInPage({
   const { erro } = await searchParams;
 
   return (
-    <main className="auth-page">
-      <section className="auth-card" aria-labelledby="admin-sign-in-title">
-        <EstimuloBrand centered />
-        <div className="auth-heading">
-          <p className="eyebrow">Administração Estímulo</p>
-          <h1 id="admin-sign-in-title">Entrar com Google</h1>
-          <p>Esta entrada é exclusiva para contas Google Workspace com e-mail <strong>@estimulo.org</strong> e papel administrativo ativo.</p>
-        </div>
-        {erro ? <p className="form-message form-message--error" role="alert">{errorMessages[erro] ?? "Não foi possível entrar na administração."}</p> : null}
-        <form action={signInWithGoogleAction} className="stack">
-          <button className="button button--primary button--large" type="submit">Continuar com Google</button>
-        </form>
-        <div className="stack auth-footer">
-          <Link href="/entrar">Voltar para a entrada de participantes</Link>
-          <p>O domínio identifica a equipe, mas as permissões continuam sendo controladas por RBAC.</p>
-        </div>
-      </section>
-    </main>
+    <AuthLayout
+      eyebrow="Administração Estímulo"
+      title="Entrar com Google"
+      description={
+        <>
+          Esta entrada é exclusiva para contas Google Workspace com e-mail <strong>@estimulo.org</strong> e papel administrativo ativo.
+        </>
+      }
+    >
+      {erro ? <FormMessage tone="error">{errorMessages[erro] ?? "Não foi possível entrar na administração."}</FormMessage> : null}
+      <form action={signInWithGoogleAction}>
+        <Button size="lg" type="submit" className="w-full">
+          Continuar com Google
+        </Button>
+      </form>
+      <AuthFooter>
+        <Link href="/entrar" className="font-semibold text-primary hover:underline">
+          Voltar para a entrada de participantes
+        </Link>
+        <p className="text-muted">O domínio identifica a equipe, mas as permissões continuam sendo controladas por RBAC.</p>
+      </AuthFooter>
+    </AuthLayout>
   );
 }

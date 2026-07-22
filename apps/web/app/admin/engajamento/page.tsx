@@ -1,5 +1,12 @@
 import { AppShell } from "@/components/app-shell";
 import { StatusPanel } from "@/components/status-panel";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusPill } from "@/components/ui/status-pill";
 import { getAuthContext } from "@/lib/auth/context";
 import { engagementRuntime } from "@/lib/engagement/runtime";
 import { saveAnnouncementAction } from "./actions";
@@ -22,6 +29,12 @@ function localDate(value: string | null): string {
   return new Date(date.getTime() - offset).toISOString().slice(0, 16);
 }
 
+function announcementTone(status: string): "success" | "warning" | "neutral" {
+  if (status === "published") return "success";
+  if (status === "retired") return "warning";
+  return "neutral";
+}
+
 export default async function EngagementAdminPage({
   searchParams,
 }: {
@@ -33,63 +46,114 @@ export default async function EngagementAdminPage({
   const manageable = auth.identity.organizations.filter((item) => item.permissions.includes("engagement.manage"));
   const organization = manageable.find((item) => item.organization_id === query.organization) ?? manageable[0];
 
-  return <AppShell area="admin" email={auth.email}>
-    <header className="page-heading">
-      <p className="eyebrow">Experiência do participante</p>
-      <h1>Engajamento e anúncios</h1>
-      <p>Publique comunicações reais no carrossel do painel. Toda alteração usa versão otimista, idempotência e evento administrativo.</p>
-    </header>
+  return (
+    <AppShell area="admin" email={auth.email}>
+      <div className="grid gap-8">
+        <PageHeader
+          eyebrow="Experiência do participante"
+          title="Engajamento e anúncios"
+          description="Publique comunicações reais no carrossel do painel. Toda alteração usa versão otimista, idempotência e evento administrativo."
+          actions={
+            organization ? (
+              <form className="flex flex-wrap items-end gap-3" method="get">
+                <Label>
+                  Organização
+                  <Select name="organization" defaultValue={organization.organization_id}>
+                    {manageable.map((item) => (
+                      <option key={item.organization_id} value={item.organization_id}>
+                        {item.display_name}
+                      </option>
+                    ))}
+                  </Select>
+                </Label>
+                <Button variant="secondary" type="submit">
+                  Selecionar
+                </Button>
+              </form>
+            ) : undefined
+          }
+        />
 
-    {!organization ? <StatusPanel title="Permissão necessária" tone="warning"><p>Nenhuma organização permite administrar engajamento.</p></StatusPanel> : <>
-      {query.sucesso === "salvo" ? <StatusPanel title="Anúncio salvo" tone="success"><p>O estado publicado já pode aparecer para participantes elegíveis.</p></StatusPanel> : null}
-      {query.erro ? <StatusPanel title="Alteração não concluída" tone="warning"><p>{errorMessages[query.erro] ?? errorMessages.falha}</p></StatusPanel> : null}
+        {!organization ? (
+          <StatusPanel title="Permissão necessária" tone="warning">
+            Nenhuma organização permite administrar engajamento.
+          </StatusPanel>
+        ) : (
+          <>
+            {query.sucesso === "salvo" ? (
+              <StatusPanel title="Anúncio salvo" tone="success">
+                O estado publicado já pode aparecer para participantes elegíveis.
+              </StatusPanel>
+            ) : null}
+            {query.erro ? (
+              <StatusPanel title="Alteração não concluída" tone="warning">
+                {errorMessages[query.erro] ?? errorMessages.falha}
+              </StatusPanel>
+            ) : null}
 
-      <form className="inline-form" method="get">
-        <label>Organização<select name="organization" defaultValue={organization.organization_id}>{manageable.map((item) => <option key={item.organization_id} value={item.organization_id}>{item.display_name}</option>)}</select></label>
-        <button className="button button--secondary" type="submit">Selecionar</button>
-      </form>
+            <Card aria-labelledby="novo-anuncio-titulo">
+              <CardHeader>
+                <CardTitle id="novo-anuncio-titulo">Criar anúncio</CardTitle>
+              </CardHeader>
+              <AnnouncementForm organizationId={organization.organization_id} />
+            </Card>
 
-      <section className="card stack" aria-labelledby="novo-anuncio-titulo">
-        <h2 id="novo-anuncio-titulo">Criar anúncio</h2>
-        <AnnouncementForm organizationId={organization.organization_id} />
-      </section>
-
-      <AnnouncementList actor={auth.identity.user_account_id} organizationId={organization.organization_id} />
-    </>}
-  </AppShell>;
+            <AnnouncementList actor={auth.identity.user_account_id} organizationId={organization.organization_id} />
+          </>
+        )}
+      </div>
+    </AppShell>
+  );
 }
 
 async function AnnouncementList({ actor, organizationId }: { actor: string; organizationId: string }) {
   const data = await engagementRuntime.listOperatorAnnouncements(actor, organizationId);
   if (!data.announcements.length) {
-    return <StatusPanel title="Nenhum anúncio" tone="info"><p>Crie o primeiro item do carrossel do participante.</p></StatusPanel>;
+    return (
+      <EmptyState title="Nenhum anúncio" tone="info">
+        Crie o primeiro item do carrossel do participante.
+      </EmptyState>
+    );
   }
-  return <section className="stack stack--large" aria-labelledby="anuncios-existentes-titulo">
-    <h2 id="anuncios-existentes-titulo">Anúncios cadastrados</h2>
-    <div className="card-grid">
-      {data.announcements.map((announcement) => <article className="card stack" key={announcement.id}>
-        <div className="card-meta"><span className="status-pill">{announcement.status}</span><span>Prioridade {announcement.priority}</span></div>
-        <h3>{announcement.title}</h3>
-        <p>{announcement.body}</p>
-        <details>
-          <summary>Editar anúncio</summary>
-          <AnnouncementForm
-            organizationId={organizationId}
-            announcementId={announcement.id}
-            expectedVersion={announcement.aggregate_version}
-            title={announcement.title}
-            body={announcement.body}
-            ctaLabel={announcement.cta_label}
-            ctaUrl={announcement.cta_url}
-            status={announcement.status}
-            priority={announcement.priority}
-            startsAt={announcement.starts_at}
-            endsAt={announcement.ends_at}
-          />
-        </details>
-      </article>)}
-    </div>
-  </section>;
+  return (
+    <section className="grid gap-4" aria-labelledby="anuncios-existentes-titulo">
+      <h2 id="anuncios-existentes-titulo" className="text-xl font-semibold text-ink">
+        Anúncios cadastrados
+      </h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {data.announcements.map((announcement) => (
+          <Card key={announcement.id}>
+            <CardHeader>
+              <CardTitle>{announcement.title}</CardTitle>
+              <div className="flex shrink-0 items-center gap-2">
+                <StatusPill tone={announcementTone(announcement.status)}>{announcement.status}</StatusPill>
+                <Badge>Prioridade {announcement.priority}</Badge>
+              </div>
+            </CardHeader>
+            <p className="text-sm text-ink">{announcement.body}</p>
+            <details className="mt-4 border-t border-border pt-4">
+              <summary className="cursor-pointer text-sm font-semibold text-primary">Editar anúncio</summary>
+              <div className="mt-4">
+                <AnnouncementForm
+                  organizationId={organizationId}
+                  announcementId={announcement.id}
+                  expectedVersion={announcement.aggregate_version}
+                  title={announcement.title}
+                  body={announcement.body}
+                  ctaLabel={announcement.cta_label}
+                  ctaUrl={announcement.cta_url}
+                  status={announcement.status}
+                  priority={announcement.priority}
+                  startsAt={announcement.starts_at}
+                  endsAt={announcement.ends_at}
+                />
+              </div>
+            </details>
+          </Card>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 function AnnouncementForm({
@@ -117,20 +181,52 @@ function AnnouncementForm({
   startsAt?: string | null;
   endsAt?: string | null;
 }) {
-  return <form action={saveAnnouncementAction} className="stack announcement-form">
-    <input type="hidden" name="organization_id" value={organizationId} />
-    <input type="hidden" name="announcement_id" value={announcementId ?? ""} />
-    <input type="hidden" name="expected_version" value={expectedVersion ?? ""} />
-    <label>Título<input name="title" defaultValue={title} minLength={2} maxLength={120} required /></label>
-    <label>Mensagem<textarea name="body" defaultValue={body} minLength={2} maxLength={1200} rows={4} required /></label>
-    <div className="form-grid">
-      <label>Texto do botão <span className="metadata">(opcional)</span><input name="cta_label" defaultValue={ctaLabel ?? ""} maxLength={60} /></label>
-      <label>Link do botão <span className="metadata">(opcional)</span><input name="cta_url" defaultValue={ctaUrl ?? ""} placeholder="/empreendedor ou https://..." maxLength={500} /></label>
-      <label>Início <span className="metadata">(opcional)</span><input name="starts_at" type="datetime-local" defaultValue={localDate(startsAt)} /></label>
-      <label>Término <span className="metadata">(opcional)</span><input name="ends_at" type="datetime-local" defaultValue={localDate(endsAt)} /></label>
-      <label>Prioridade<input name="priority" type="number" min={-1000} max={1000} defaultValue={priority} required /></label>
-      <label>Estado<select name="status" defaultValue={status}><option value="draft">Rascunho</option><option value="published">Publicado</option><option value="retired">Retirado</option></select></label>
-    </div>
-    <button className="button button--primary" type="submit">{announcementId ? "Salvar alterações" : "Criar anúncio"}</button>
-  </form>;
+  return (
+    <form action={saveAnnouncementAction} className="grid gap-4">
+      <input type="hidden" name="organization_id" value={organizationId} />
+      <input type="hidden" name="announcement_id" value={announcementId ?? ""} />
+      <input type="hidden" name="expected_version" value={expectedVersion ?? ""} />
+      <Label>
+        Título
+        <Input name="title" defaultValue={title} minLength={2} maxLength={120} required />
+      </Label>
+      <Label>
+        Mensagem
+        <Textarea name="body" defaultValue={body} minLength={2} maxLength={1200} rows={4} required />
+      </Label>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Label>
+          Texto do botão <span className="font-normal text-muted">(opcional)</span>
+          <Input name="cta_label" defaultValue={ctaLabel ?? ""} maxLength={60} />
+        </Label>
+        <Label>
+          Link do botão <span className="font-normal text-muted">(opcional)</span>
+          <Input name="cta_url" defaultValue={ctaUrl ?? ""} placeholder="/empreendedor ou https://..." maxLength={500} />
+        </Label>
+        <Label>
+          Início <span className="font-normal text-muted">(opcional)</span>
+          <Input name="starts_at" type="datetime-local" defaultValue={localDate(startsAt)} />
+        </Label>
+        <Label>
+          Término <span className="font-normal text-muted">(opcional)</span>
+          <Input name="ends_at" type="datetime-local" defaultValue={localDate(endsAt)} />
+        </Label>
+        <Label>
+          Prioridade
+          <Input name="priority" type="number" min={-1000} max={1000} defaultValue={priority} required />
+        </Label>
+        <Label>
+          Estado
+          <Select name="status" defaultValue={status}>
+            <option value="draft">Rascunho</option>
+            <option value="published">Publicado</option>
+            <option value="retired">Retirado</option>
+          </Select>
+        </Label>
+      </div>
+      <Button type="submit" className="w-fit">
+        {announcementId ? "Salvar alterações" : "Criar anúncio"}
+      </Button>
+    </form>
+  );
 }

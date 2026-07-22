@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ProgressMeter, StatusPanel } from "@/components/status-panel";
+import { Check, ChevronRight, Circle, Lock } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { Progress } from "@/components/ui/progress";
+import { StatusPill } from "@/components/ui/status-pill";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { getAuthContext } from "@/lib/auth/context";
 import type { ParticipantJourneyOutline } from "@/lib/journey-runtime/outline-contracts";
 import { getParticipantJourneyOutline } from "@/lib/journey-runtime/outline-runtime";
@@ -34,65 +39,111 @@ export default async function JourneyOutlinePage({
     notFound();
   }
 
-  return <>
-    <header className="page-heading">
-      <p className="eyebrow">Sua trilha</p>
-      <h1>{outline.journey_title}</h1>
-      <p>{outline.journey_description ?? "Acompanhe os blocos e escolha qualquer atividade liberada para o seu caminho."}</p>
-    </header>
+  return (
+    <div className="grid gap-8">
+      <PageHeader
+        eyebrow="Sua trilha"
+        title={outline.journey_title}
+        description={outline.journey_description ?? "Acompanhe os blocos e escolha qualquer atividade liberada para o seu caminho."}
+      />
 
-    <section className="journey-outline-summary card stack" aria-label="Resumo da jornada">
-      <div className="card-meta">
-        <span className="status-pill">{statusLabel(outline.journey_status)}</span>
-        <span>Versão {outline.journey_version_number}</span>
-      </div>
-      <ProgressMeter value={outline.progress} label="Progresso da jornada" />
-      <p className="metadata">{outline.completed_required_steps} de {outline.total_required_steps} atividades obrigatórias concluídas.</p>
-    </section>
+      <section className="grid gap-4 rounded-xl border border-border bg-surface p-6" aria-label="Resumo da jornada">
+        <div className="flex items-center justify-between text-sm">
+          <StatusPill tone={outline.journey_status === "completed" ? "success" : "info"}>{statusLabel(outline.journey_status)}</StatusPill>
+          <span className="text-muted">Versão {outline.journey_version_number}</span>
+        </div>
+        <Progress value={outline.progress * 100} label="Progresso da jornada" />
+        <p className="text-sm text-muted">{outline.completed_required_steps} de {outline.total_required_steps} atividades obrigatórias concluídas.</p>
+      </section>
 
-    {outline.modules.length ? <section className="journey-outline stack stack--large" aria-labelledby="blocos-titulo">
-      <div>
-        <h2 id="blocos-titulo">Blocos e atividades</h2>
-        <p className="support-note">Atividades marcadas como disponíveis podem ser iniciadas em qualquer ordem. Itens bloqueados dependem das regras publicadas da jornada.</p>
-      </div>
-
-      {outline.modules.map((module, moduleIndex) => {
-        const hasOpenActivity = module.activities.some((activity) => activity.can_open);
-        return <details className="journey-module" key={module.module_key} open={hasOpenActivity || moduleIndex === 0}>
-          <summary>
-            <span className="journey-module-index">{String(moduleIndex + 1).padStart(2, "0")}</span>
-            <span className="journey-module-title"><strong>{module.module_title}</strong><small>{module.completed_count}/{module.activity_count} concluídas{module.estimated_minutes ? ` · ${module.estimated_minutes} min` : ""}</small></span>
-            <span className="journey-module-progress" aria-label={`${module.completed_count} de ${module.activity_count} atividades concluídas`}><span style={{ width: `${module.activity_count ? Math.round(module.completed_count / module.activity_count * 100) : 0}%` }} /></span>
-          </summary>
-          <div className="journey-module-body">
-            <p>{module.module_description}</p>
-            {module.path_name ? <p className="metadata">Caminho: {module.path_name}</p> : null}
-            <ol className="journey-activity-list">
-              {module.activities.map((activity) => <li className={`journey-activity journey-activity--${activity.step_status}`} key={activity.step_instance_id}>
-                <span className="journey-activity-state" aria-hidden="true">{activity.step_status === "completed" ? "✓" : activity.can_open ? "→" : "•"}</span>
-                <div className="journey-activity-copy">
-                  <div className="card-meta"><span>{activityTypeLabels[activity.activity_type] ?? activity.activity_type.replaceAll("_", " ")}</span>{activity.is_required ? <span>Obrigatória</span> : <span>Opcional</span>}</div>
-                  <h3>{activity.activity_title}</h3>
-                  {activity.activity_description ? <p>{activity.activity_description}</p> : null}
-                  <p className="metadata">{statusLabel(activity.step_status)}{activity.estimated_minutes ? ` · ${activity.estimated_minutes} min` : ""}</p>
-                </div>
-                <div className="journey-activity-action">
-                  {activity.can_open ? <form action={openJourneyActivityAction}>
-                    <input type="hidden" name="journey_instance_id" value={outline.journey_instance_id} />
-                    <input type="hidden" name="step_instance_id" value={activity.step_instance_id} />
-                    <input type="hidden" name="step_aggregate_version" value={activity.step_aggregate_version} />
-                    <input type="hidden" name="step_status" value={activity.step_status} />
-                    <input type="hidden" name="idempotency_key" value={randomUUID()} />
-                    <button className="button button--secondary" type="submit">{activity.can_start ? "Começar" : "Continuar"}</button>
-                  </form> : activity.step_status === "completed" ? <span className="status-pill">Concluída</span> : <span className="metadata">Bloqueada</span>}
-                </div>
-              </li>)}
-            </ol>
+      {outline.modules.length ? (
+        <section className="grid gap-4" aria-labelledby="blocos-titulo">
+          <div>
+            <h2 id="blocos-titulo" className="text-xl font-semibold text-ink">Blocos e atividades</h2>
+            <p className="text-sm text-muted">Atividades marcadas como disponíveis podem ser iniciadas em qualquer ordem. Itens bloqueados dependem das regras publicadas da jornada.</p>
           </div>
-        </details>;
-      })}
-    </section> : <StatusPanel title="Atividades em preparação" tone="info"><p>O caminho da jornada ainda não possui atividades atribuídas.</p></StatusPanel>}
 
-    <div className="page-actions"><Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link></div>
-  </>;
+          {outline.modules.map((module, moduleIndex) => {
+            const hasOpenActivity = module.activities.some((activity) => activity.can_open);
+            const modulePercent = module.activity_count ? Math.round((module.completed_count / module.activity_count) * 100) : 0;
+            return (
+              <details className="group rounded-xl border border-border bg-surface" key={module.module_key} open={hasOpenActivity || moduleIndex === 0}>
+                <summary className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-4 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
+                  <span className="grid size-11 place-items-center rounded-lg bg-primary text-sm font-bold text-white">
+                    {String(moduleIndex + 1).padStart(2, "0")}
+                  </span>
+                  <span className="grid gap-1">
+                    <strong className="text-ink">{module.module_title}</strong>
+                    <small className="text-muted">
+                      {module.completed_count}/{module.activity_count} concluídas{module.estimated_minutes ? ` · ${module.estimated_minutes} min` : ""}
+                    </small>
+                  </span>
+                  <span className="hidden w-32 sm:block">
+                    <Progress value={modulePercent} tone="success" />
+                  </span>
+                </summary>
+                <div className="border-t border-border p-5">
+                  <p className="text-sm text-muted">{module.module_description}</p>
+                  {module.path_name ? <p className="mt-1 text-sm text-muted">Caminho: {module.path_name}</p> : null}
+                  <ol className="mt-4 grid gap-3">
+                    {module.activities.map((activity) => (
+                      <li
+                        key={activity.step_instance_id}
+                        className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-lg border border-border bg-surface-muted/60 p-4"
+                      >
+                        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-surface text-primary" aria-hidden="true">
+                          {activity.step_status === "completed" ? <Check size={16} /> : activity.can_open ? <ChevronRight size={16} /> : <Lock size={14} />}
+                        </span>
+                        <div>
+                          <div className="flex flex-wrap gap-2 text-xs font-medium text-muted">
+                            <span>{activityTypeLabels[activity.activity_type] ?? activity.activity_type.replaceAll("_", " ")}</span>
+                            <span>{activity.is_required ? "Obrigatória" : "Opcional"}</span>
+                          </div>
+                          <h3 className="mt-1 font-semibold text-ink">{activity.activity_title}</h3>
+                          {activity.activity_description ? <p className="mt-1 text-sm text-muted">{activity.activity_description}</p> : null}
+                          <p className="mt-1 text-xs text-muted">
+                            {statusLabel(activity.step_status)}{activity.estimated_minutes ? ` · ${activity.estimated_minutes} min` : ""}
+                          </p>
+                        </div>
+                        <div>
+                          {activity.can_open ? (
+                            <form action={openJourneyActivityAction}>
+                              <input type="hidden" name="journey_instance_id" value={outline.journey_instance_id} />
+                              <input type="hidden" name="step_instance_id" value={activity.step_instance_id} />
+                              <input type="hidden" name="step_aggregate_version" value={activity.step_aggregate_version} />
+                              <input type="hidden" name="step_status" value={activity.step_status} />
+                              <input type="hidden" name="idempotency_key" value={randomUUID()} />
+                              <Button variant="secondary" size="sm" type="submit">
+                                {activity.can_start ? "Começar atividade" : "Continuar atividade"}
+                              </Button>
+                            </form>
+                          ) : activity.step_status === "completed" ? (
+                            <StatusPill tone="success">Concluída</StatusPill>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs text-muted">
+                              <Circle size={4} className="fill-current" /> Bloqueada
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </details>
+            );
+          })}
+        </section>
+      ) : (
+        <EmptyState title="Atividades em preparação" tone="info">
+          O caminho da jornada ainda não possui atividades atribuídas.
+        </EmptyState>
+      )}
+
+      <div>
+        <ButtonLink href="/empreendedor" variant="secondary">
+          Voltar ao painel
+        </ButtonLink>
+      </div>
+    </div>
+  );
 }

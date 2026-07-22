@@ -1,22 +1,36 @@
 import type { ReactNode } from "react";
+import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
-export function StatusPanel({ title, children, tone = "neutral" }: { title: string; children: ReactNode; tone?: "neutral" | "info" | "warning" | "success" }) {
+const toneStyles = {
+  neutral: { wrap: "border-border bg-surface-muted text-ink", icon: null },
+  info: { wrap: "border-info/25 bg-info-soft text-info", icon: Info },
+  warning: { wrap: "border-warning/25 bg-warning-soft text-warning", icon: AlertTriangle },
+  success: { wrap: "border-success/25 bg-success-soft text-success", icon: CheckCircle2 }
+} as const;
+
+export function StatusPanel({
+  title,
+  children,
+  tone = "neutral"
+}: {
+  title: string;
+  children: ReactNode;
+  tone?: keyof typeof toneStyles;
+}) {
+  const { wrap, icon: Icon } = toneStyles[tone];
   return (
-    <section className={`status-panel status-panel--${tone}`} aria-live="polite">
-      <h2>{title}</h2>
-      <div>{children}</div>
+    <section className={cn("my-5 flex gap-3 rounded-xl border p-5", wrap)} aria-live="polite">
+      {Icon ? <Icon className="mt-0.5 size-5 shrink-0" aria-hidden="true" /> : null}
+      <div>
+        <h2 className="text-base font-semibold text-ink">{title}</h2>
+        <div className="mt-1 text-sm text-ink/90 [&_p]:m-0">{children}</div>
+      </div>
     </section>
   );
 }
 
 export function ProgressMeter({ value, label }: { value: number; label: string }) {
-  const percent = Math.max(0, Math.min(100, Math.round(value * 100)));
-  return (
-    <div className="progress-block">
-      <div className="progress-label"><span>{label}</span><strong>{percent}%</strong></div>
-      <div className="progress-track" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
-        <span style={{ width: `${percent}%` }} />
-      </div>
-    </div>
-  );
+  return <Progress value={value * 100} label={label} />;
 }

@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { ProgressMeter, StatusPanel } from "@/components/status-panel";
+import { ProgressMeter } from "@/components/status-panel";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MetricTile } from "@/components/ui/metric-tile";
+import { PageHeader } from "@/components/ui/page-header";
+import { ButtonLink } from "@/components/ui/button";
+import { StatusPill } from "@/components/ui/status-pill";
 import { getAuthContext } from "@/lib/auth/context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { engagementRuntime } from "@/lib/engagement/runtime";
@@ -24,49 +30,132 @@ export default async function ParticipantProfilePage() {
   const totalPoints = engagement.own_rank?.points ?? 0;
   const archetype = engagement.archetype;
 
-  return <>
-    <header className="page-heading">
-      <p className="eyebrow">Seu perfil</p>
-      <h1>{engagement.preferred_name ?? "Empreendedor"}</h1>
-      <p>Consulte seu diagnóstico, histórico de aprendizagem, pontuação e credenciais em um único lugar.</p>
-    </header>
+  return (
+    <div className="grid gap-8">
+      <PageHeader
+        eyebrow="Seu perfil"
+        title={engagement.preferred_name ?? "Empreendedor"}
+        description="Consulte seu diagnóstico, histórico de aprendizagem, pontuação e credenciais em um único lugar."
+      />
 
-    <section className="profile-summary-grid" aria-label="Resumo do perfil">
-      <article className="card"><h2>Identidade confirmada</h2><p>{engagement.email}</p><p className="support-note">O CPF permanece protegido e não é exibido na interface.</p></article>
-      <article className="metric"><span>Pontos acumulados</span><strong>{totalPoints}</strong>{engagement.own_rank ? <span>Posição {engagement.own_rank.position}</span> : null}</article>
-      <article className="metric"><span>Jornadas concluídas</span><strong>{completed.length}</strong></article>
-      <article className="metric"><span>Credenciais</span><strong>{credentials.badges.length + credentials.certificates.length}</strong><Link href="/empreendedor/credenciais">Abrir carteira</Link></article>
-    </section>
+      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Resumo do perfil">
+        <Card>
+          <h2 className="text-lg font-semibold text-ink">Identidade confirmada</h2>
+          <p className="mt-2 text-sm text-ink">{engagement.email}</p>
+          <p className="mt-2 text-xs text-muted">O CPF permanece protegido e não é exibido na interface.</p>
+        </Card>
+        <MetricTile
+          index={0}
+          label="Pontos acumulados"
+          value={totalPoints}
+          meta={engagement.own_rank ? `Posição ${engagement.own_rank.position}` : undefined}
+        />
+        <MetricTile index={1} label="Jornadas concluídas" value={completed.length} />
+        <MetricTile
+          index={2}
+          label="Credenciais"
+          value={credentials.badges.length + credentials.certificates.length}
+          meta={<Link href="/empreendedor/credenciais" className="hover:underline">Abrir carteira</Link>}
+        />
+      </section>
 
-    <section className="stack stack--large" aria-labelledby="diagnostico-perfil-titulo">
-      <h2 id="diagnostico-perfil-titulo">Resultado do diagnóstico</h2>
-      {archetype?.name ? <article className="card profile-archetype">
-        <div className="card-meta"><span className="status-pill">{archetype.classification_status}</span><time dateTime={archetype.assigned_at}>{dateFormatter.format(new Date(archetype.assigned_at))}</time></div>
-        <h3>{archetype.name}</h3>
-        {archetype.description ? <p>{archetype.description}</p> : null}
-        {archetype.probability !== null ? <p className="metadata">Confiança registrada: {Math.round(archetype.probability * 100)}%</p> : null}
-        <p className="support-note">O diagnóstico orienta a experiência educacional e não determina elegibilidade ou risco de crédito.</p>
-      </article> : <StatusPanel title="Diagnóstico ainda não concluído" tone="info"><p>Quando houver um resultado oficial atribuído, ele aparecerá aqui.</p></StatusPanel>}
-    </section>
+      <section className="grid gap-4" aria-labelledby="diagnostico-perfil-titulo">
+        <h2 id="diagnostico-perfil-titulo" className="text-xl font-semibold text-ink">
+          Resultado do diagnóstico
+        </h2>
+        {archetype?.name ? (
+          <Card>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <StatusPill tone="info">{archetype.classification_status}</StatusPill>
+              <time dateTime={archetype.assigned_at} className="text-xs text-muted">
+                {dateFormatter.format(new Date(archetype.assigned_at))}
+              </time>
+            </div>
+            <h3 className="text-lg font-semibold text-ink">{archetype.name}</h3>
+            {archetype.description ? <p className="mt-2 text-sm text-muted">{archetype.description}</p> : null}
+            {archetype.probability !== null ? (
+              <p className="mt-2 text-xs text-muted">Confiança registrada: {Math.round(archetype.probability * 100)}%</p>
+            ) : null}
+            <p className="mt-3 text-xs text-muted">
+              O diagnóstico orienta a experiência educacional e não determina elegibilidade ou risco de crédito.
+            </p>
+          </Card>
+        ) : (
+          <EmptyState title="Diagnóstico ainda não concluído" tone="info">
+            Quando houver um resultado oficial atribuído, ele aparecerá aqui.
+          </EmptyState>
+        )}
+      </section>
 
-    <section className="stack stack--large" aria-labelledby="historico-jornadas-titulo">
-      <h2 id="historico-jornadas-titulo">Jornadas e progresso</h2>
-      {journeyData.journeys.length ? <div className="card-grid">{journeyData.journeys.map((journey) => <article className="card" key={journey.journey_instance_id}>
-        <div className="card-meta"><span className="status-pill">{statusLabel(journey.journey_status)}</span><span>Versão {journey.journey_version_number}</span></div>
-        <h3>{journey.journey_title ?? journey.journey_code}</h3>
-        <p>{participantCurrentStageLabel(journey)}</p>
-        <ProgressMeter value={journey.progress} label="Progresso" />
-        <p className="metadata">{journey.completed_required_steps}/{journey.total_required_steps} etapas obrigatórias</p>
-        <Link className="button button--secondary" href={participantNextHref(journey)}>{journey.journey_status === "completed" ? "Rever resultado" : "Abrir jornada"}</Link>
-      </article>)}</div> : <StatusPanel title="Sem jornadas" tone="info"><p>Seu histórico aparecerá quando uma jornada for atribuída.</p></StatusPanel>}
-    </section>
+      <section className="grid gap-4" aria-labelledby="historico-jornadas-titulo">
+        <h2 id="historico-jornadas-titulo" className="text-xl font-semibold text-ink">
+          Jornadas e progresso
+        </h2>
+        {journeyData.journeys.length ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {journeyData.journeys.map((journey) => (
+              <Card key={journey.journey_instance_id} className="flex flex-col">
+                <div className="mb-4 flex items-center justify-between text-sm text-muted">
+                  <StatusPill tone={journey.journey_status === "completed" ? "success" : "info"}>
+                    {statusLabel(journey.journey_status)}
+                  </StatusPill>
+                  <span>Versão {journey.journey_version_number}</span>
+                </div>
+                <h3 className="font-semibold text-ink">{journey.journey_title ?? journey.journey_code}</h3>
+                <p className="mt-2 text-sm text-muted">{participantCurrentStageLabel(journey)}</p>
+                <ProgressMeter value={journey.progress} label="Progresso" />
+                <p className="mt-2 text-xs text-muted">
+                  {journey.completed_required_steps}/{journey.total_required_steps} etapas obrigatórias
+                </p>
+                <div className="mt-auto pt-4">
+                  <ButtonLink href={participantNextHref(journey)} variant="secondary" size="sm">
+                    {journey.journey_status === "completed" ? "Rever resultado" : "Abrir jornada"}
+                  </ButtonLink>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="Sem jornadas" tone="info">
+            Seu histórico aparecerá quando uma jornada for atribuída.
+          </EmptyState>
+        )}
+      </section>
 
-    <section className="stack stack--large" aria-labelledby="historico-pontos-titulo">
-      <h2 id="historico-pontos-titulo">Histórico de pontuação</h2>
-      {engagement.point_history.length ? <ol className="point-history">{engagement.point_history.map((entry) => <li key={entry.id}>
-        <span className={entry.amount >= 0 ? "point-amount point-amount--positive" : "point-amount point-amount--negative"}>{entry.amount >= 0 ? "+" : ""}{entry.amount}</span>
-        <div><strong>{entry.reason}</strong><time dateTime={entry.occurred_at}>{dateFormatter.format(new Date(entry.occurred_at))}</time></div>
-      </li>)}</ol> : <StatusPanel title="Nenhum ponto registrado" tone="info"><p>As ações elegíveis aparecerão neste histórico.</p></StatusPanel>}
-    </section>
-  </>;
+      <section className="grid gap-4" aria-labelledby="historico-pontos-titulo">
+        <h2 id="historico-pontos-titulo" className="text-xl font-semibold text-ink">
+          Histórico de pontuação
+        </h2>
+        {engagement.point_history.length ? (
+          <ol className="grid gap-2">
+            {engagement.point_history.map((entry) => (
+              <li
+                key={entry.id}
+                className="flex items-center gap-4 rounded-lg border border-border bg-surface px-4 py-3"
+              >
+                <span
+                  className={`w-16 shrink-0 text-right text-sm font-bold tabular-nums ${
+                    entry.amount >= 0 ? "text-success" : "text-danger"
+                  }`}
+                >
+                  {entry.amount >= 0 ? "+" : ""}
+                  {entry.amount}
+                </span>
+                <div>
+                  <strong className="font-semibold text-ink">{entry.reason}</strong>
+                  <time dateTime={entry.occurred_at} className="block text-xs text-muted">
+                    {dateFormatter.format(new Date(entry.occurred_at))}
+                  </time>
+                </div>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <EmptyState title="Nenhum ponto registrado" tone="info">
+            As ações elegíveis aparecerão neste histórico.
+          </EmptyState>
+        )}
+      </section>
+    </div>
+  );
 }

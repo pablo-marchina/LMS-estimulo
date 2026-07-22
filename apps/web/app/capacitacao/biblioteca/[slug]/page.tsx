@@ -3,6 +3,10 @@ import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { openLibraryContentAction } from "@/app/actions/library";
 import { LibraryAccessTracker } from "@/components/library-access-tracker";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { getAuthContext } from "@/lib/auth/context";
 import { libraryRuntime } from "@/lib/library/runtime";
 
@@ -32,33 +36,74 @@ export default async function LibraryContentPage({ params }: { params: Promise<{
   const content = await libraryRuntime.get(auth.identity.user_account_id, slug).catch(() => null);
   if (!content) notFound();
 
-  return <>
-    <LibraryAccessTracker libraryItemVersionId={content.library_item_version_id} />
-    <Link className="back-link" href="/capacitacao/biblioteca">← Voltar à biblioteca</Link>
-    <article className="stack stack--large" aria-labelledby="library-content-title">
-      <header className="page-heading">
-        <p className="eyebrow">{formatLabels[content.content_format] ?? content.content_format}</p>
-        <h1 id="library-content-title">{content.title}</h1>
-        <p>{content.summary}</p>
-        <div className="card-meta"><span>{levelLabels[content.level] ?? content.level}</span><span>{content.estimated_minutes} min</span><span>{content.source_name}</span></div>
-        <div className="tag-list" aria-label="Temas">{content.topics.map((topic) => <span className="status-pill" key={topic}>{topic}</span>)}</div>
-      </header>
+  return (
+    <div className="grid gap-8">
+      <LibraryAccessTracker libraryItemVersionId={content.library_item_version_id} />
 
-      {content.journeys.length ? <section className="card"><h2>Relacionado às jornadas</h2><ul>{content.journeys.map((journey) => <li key={journey.journey_version_id}>{journey.journey_title}</li>)}</ul></section> : null}
+      <Link href="/capacitacao/biblioteca" className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary hover:underline">
+        ← Voltar à biblioteca
+      </Link>
 
-      {content.content_kind === "article" ? <section className="card stack" id="conteudo" aria-labelledby="conteudo-titulo">
-        <h2 id="conteudo-titulo">Conteúdo</h2>
-        {content.body?.split(/\n{2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>)}
-      </section> : <section className="card stack" id="conteudo">
-        <h2>Conteúdo externo</h2>
-        <p>O material será aberto no site da fonte. O acesso é registrado para medir uso da biblioteca, sem enviar o conteúdo da sua navegação ao parceiro.</p>
-        <form action={openLibraryContentAction}>
-          <input type="hidden" name="library_item_version_id" value={content.library_item_version_id} />
-          <input type="hidden" name="slug" value={content.slug} />
-          <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <button className="button button--primary" type="submit">Abrir material de {content.source_name}</button>
-        </form>
-      </section>}
-    </article>
-  </>;
+      <article className="grid gap-8" aria-labelledby="library-content-title">
+        <PageHeader
+          eyebrow={formatLabels[content.content_format] ?? content.content_format}
+          title={<span id="library-content-title">{content.title}</span>}
+          description={content.summary}
+        />
+
+        <div className="grid gap-4">
+          <p className="text-sm text-muted">
+            {levelLabels[content.level] ?? content.level} · {content.estimated_minutes} min · {content.source_name}
+          </p>
+          {content.topics.length ? (
+            <div className="flex flex-wrap gap-1.5" aria-label="Temas">
+              {content.topics.map((topic) => (
+                <Badge key={topic}>{topic}</Badge>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {content.journeys.length ? (
+          <Card>
+            <h2 className="text-lg font-semibold text-ink">Relacionado às jornadas</h2>
+            <ul className="mt-2 grid gap-1 text-sm text-muted">
+              {content.journeys.map((journey) => (
+                <li key={journey.journey_version_id}>{journey.journey_title}</li>
+              ))}
+            </ul>
+          </Card>
+        ) : null}
+
+        {content.content_kind === "article" ? (
+          <Card className="grid gap-3" id="conteudo" aria-labelledby="conteudo-titulo">
+            <h2 id="conteudo-titulo" className="text-lg font-semibold text-ink">
+              Conteúdo
+            </h2>
+            <div className="grid gap-3 text-sm text-ink/90">
+              {content.body?.split(/\n{2,}/).map((paragraph, index) => (
+                <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
+              ))}
+            </div>
+          </Card>
+        ) : (
+          <Card className="grid gap-4" id="conteudo">
+            <h2 className="text-lg font-semibold text-ink">Conteúdo externo</h2>
+            <p className="text-sm text-muted">
+              O material será aberto no site da fonte. O acesso é registrado para medir uso da biblioteca, sem enviar o
+              conteúdo da sua navegação ao parceiro.
+            </p>
+            <form action={openLibraryContentAction}>
+              <input type="hidden" name="library_item_version_id" value={content.library_item_version_id} />
+              <input type="hidden" name="slug" value={content.slug} />
+              <input type="hidden" name="idempotency_key" value={randomUUID()} />
+              <Button type="submit" className="w-fit">
+                Abrir material de {content.source_name}
+              </Button>
+            </form>
+          </Card>
+        )}
+      </article>
+    </div>
+  );
 }

@@ -1,5 +1,11 @@
 import { AppShell } from "@/components/app-shell";
 import { StatusPanel } from "@/components/status-panel";
+import { PageHeader } from "@/components/ui/page-header";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/ui/status-pill";
+import { Button } from "@/components/ui/button";
+import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { getAuthContext } from "@/lib/auth/context";
 import { getAdminProductWorkspace } from "@/lib/admin/product-management";
 import { saveDiagnosticAction } from "./actions";
@@ -21,44 +27,158 @@ const archetypeExample = JSON.stringify([
   { code: "estrategista", name: "Estrategista", description: "Perfil que estrutura decisões e prioridades." },
 ], null, 2);
 
+function versionTone(status: string): "success" | "info" | "neutral" {
+  if (status === "published" || status === "active") return "success";
+  if (status === "draft") return "info";
+  return "neutral";
+}
+
 export default async function AdminDiagnosticPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated") return <main className="page-container"><StatusPanel title="Acesso indisponível" tone="warning"><p>Entre com sua conta Estímulo.</p></StatusPanel></main>;
+  if (auth.status !== "authenticated") {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16">
+        <StatusPanel title="Acesso indisponível" tone="warning"><p>Entre com sua conta Estímulo.</p></StatusPanel>
+      </main>
+    );
+  }
   const requested = single(query.organization);
   const organization = auth.identity.organizations.find((item) => item.organization_id === requested)
     ?? auth.identity.organizations.find((item) => item.permissions.includes("diagnostic.configuration.manage"));
-  if (!organization?.permissions.includes("diagnostic.configuration.manage")) return <AppShell area="admin" email={auth.email}><StatusPanel title="Diagnóstico restrito" tone="warning"><p>Seu papel não permite editar configurações de diagnóstico.</p></StatusPanel></AppShell>;
+  if (!organization?.permissions.includes("diagnostic.configuration.manage")) {
+    return (
+      <AppShell area="admin" email={auth.email}>
+        <StatusPanel title="Diagnóstico restrito" tone="warning"><p>Seu papel não permite editar configurações de diagnóstico.</p></StatusPanel>
+      </AppShell>
+    );
+  }
 
   const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
   const versions = workspace.diagnostics.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
 
-  return <AppShell area="admin" email={auth.email}>
-    <header className="page-heading"><p className="eyebrow">Personalização</p><h1>Diagnóstico e arquétipos</h1><p>Configure dimensões, perguntas, opções e perfis em versões draft. A publicação e a ativação permanecem separadas para preservar revisão metodológica.</p></header>
-    <form className="inline-form" method="get"><label>Organização<select name="organization" defaultValue={organization.organization_id}>{auth.identity.organizations.filter((item) => item.permissions.includes("diagnostic.configuration.manage")).map((item) => <option key={item.organization_id} value={item.organization_id}>{item.display_name}</option>)}</select></label><button className="button button--secondary" type="submit">Selecionar</button></form>
-    {single(query.sucesso) ? <StatusPanel title="Diagnóstico salvo" tone="success"><p>O draft foi persistido, versionado e auditado.</p></StatusPanel> : null}
-    {single(query.erro) ? <StatusPanel title="Falha ao salvar" tone="warning"><p>Revise permissões e estruturas JSON.</p></StatusPanel> : null}
+  return (
+    <AppShell area="admin" email={auth.email}>
+      <div className="grid gap-8">
+        <PageHeader
+          eyebrow="Personalização"
+          title="Diagnóstico e arquétipos"
+          description="Configure dimensões, perguntas, opções e perfis em versões draft. A publicação e a ativação permanecem separadas para preservar revisão metodológica."
+        />
 
-    <section className="admin-columns">
-      <article className="card stack">
-        <h2>Editor completo</h2>
-        <form className="stack" action={saveDiagnosticAction}>
-          <input type="hidden" name="organization_id" value={organization.organization_id} />
-          <div className="form-grid"><label>Definição existente<select name="definition_id"><option value="">Novo diagnóstico</option>{workspace.diagnostics.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</select></label><label>Versão draft existente<select name="version_id"><option value="">Nova versão</option>{versions.filter((item) => item.status === "draft").map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</select></label><label>Código<input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label><label>Nome<input name="name" required /></label></div>
-          <label>Propósito<textarea name="purpose" rows={3} required /></label>
-          <label>Configuração geral JSON<textarea className="code-input" name="configuration" rows={5} defaultValue={'{"optional":true,"minimum_answer_ratio":1}'} /></label>
-          <label>Dimensões JSON<textarea className="code-input" name="dimensions" rows={10} defaultValue={dimensionExample} /></label>
-          <label>Perguntas e opções JSON<textarea className="code-input" name="items" rows={18} defaultValue={itemExample} /></label>
-          <label>Arquétipos JSON<textarea className="code-input" name="archetypes" rows={10} defaultValue={archetypeExample} /></label>
-          <button className="button button--primary" type="submit">Salvar configuração</button>
+        <form method="get" className="flex flex-wrap items-end gap-3">
+          <Label>
+            Organização
+            <Select name="organization" defaultValue={organization.organization_id} className="w-64">
+              {auth.identity.organizations
+                .filter((item) => item.permissions.includes("diagnostic.configuration.manage"))
+                .map((item) => <option key={item.organization_id} value={item.organization_id}>{item.display_name}</option>)}
+            </Select>
+          </Label>
+          <Button variant="secondary" type="submit">Selecionar</Button>
         </form>
-      </article>
 
-      <aside className="stack">
-        <StatusPanel title="Separação de responsabilidades" tone="info"><p>Este editor cria drafts. Resultados não são usados em crédito nem enviados ao HubSpot sem aprovação e destino explícitos.</p></StatusPanel>
-        <article className="card stack"><h2>Versões existentes</h2>{workspace.diagnostics.length === 0 ? <p>Nenhum diagnóstico configurado.</p> : workspace.diagnostics.map((item) => <div className="inventory-item" key={item.definition_id}><strong>{item.name}</strong><span>{item.code}</span>{item.versions.map((version) => <small key={String(version.id)}>v{String(version.version_number)} · {String(version.status)}</small>)}</div>)}</article>
-        <article className="card stack"><h2>Checklist metodológico</h2><ul><li>Wording revisado</li><li>Pesos e normalização aprovados</li><li>Desempate e respostas ausentes definidos</li><li>Textos dos resultados aprovados</li><li>Casos de teste homologados</li></ul></article>
-      </aside>
-    </section>
-  </AppShell>;
+        {single(query.sucesso) ? <StatusPanel title="Diagnóstico salvo" tone="success"><p>O draft foi persistido, versionado e auditado.</p></StatusPanel> : null}
+        {single(query.erro) ? <StatusPanel title="Falha ao salvar" tone="warning"><p>Revise permissões e estruturas JSON.</p></StatusPanel> : null}
+
+        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+          <Card>
+            <CardHeader><CardTitle>Editor completo</CardTitle></CardHeader>
+            <form action={saveDiagnosticAction} className="grid gap-4">
+              <input type="hidden" name="organization_id" value={organization.organization_id} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Label>
+                  Definição existente
+                  <Select name="definition_id">
+                    <option value="">Novo diagnóstico</option>
+                    {workspace.diagnostics.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}
+                  </Select>
+                </Label>
+                <Label>
+                  Versão draft existente
+                  <Select name="version_id">
+                    <option value="">Nova versão</option>
+                    {versions.filter((item) => item.status === "draft").map((item) => (
+                      <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>
+                    ))}
+                  </Select>
+                </Label>
+                <Label>
+                  Código
+                  <Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required />
+                </Label>
+                <Label>
+                  Nome
+                  <Input name="name" required />
+                </Label>
+              </div>
+              <Label>
+                Propósito
+                <Textarea name="purpose" rows={3} required />
+              </Label>
+              <Label>
+                Configuração geral JSON
+                <Textarea className="font-mono text-xs" name="configuration" rows={5} defaultValue={'{"optional":true,"minimum_answer_ratio":1}'} />
+              </Label>
+              <Label>
+                Dimensões JSON
+                <Textarea className="font-mono text-xs" name="dimensions" rows={10} defaultValue={dimensionExample} />
+              </Label>
+              <Label>
+                Perguntas e opções JSON
+                <Textarea className="font-mono text-xs" name="items" rows={18} defaultValue={itemExample} />
+              </Label>
+              <Label>
+                Arquétipos JSON
+                <Textarea className="font-mono text-xs" name="archetypes" rows={10} defaultValue={archetypeExample} />
+              </Label>
+              <Button type="submit" className="w-fit">Salvar configuração</Button>
+            </form>
+          </Card>
+
+          <div className="grid gap-6 self-start">
+            <StatusPanel title="Separação de responsabilidades" tone="info">
+              <p>Este editor cria drafts. Resultados não são usados em crédito nem enviados ao HubSpot sem aprovação e destino explícitos.</p>
+            </StatusPanel>
+
+            <Card>
+              <CardHeader><CardTitle>Versões existentes</CardTitle></CardHeader>
+              {workspace.diagnostics.length === 0 ? (
+                <p className="text-sm text-muted">Nenhum diagnóstico configurado.</p>
+              ) : (
+                <div className="grid gap-3">
+                  {workspace.diagnostics.map((item) => (
+                    <div key={item.definition_id} className="rounded-lg border border-border p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <strong className="text-ink">{item.name}</strong>
+                        <Badge>{item.code}</Badge>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {item.versions.map((version) => (
+                          <StatusPill key={String(version.id)} tone={versionTone(String(version.status))}>
+                            v{String(version.version_number)} · {String(version.status)}
+                          </StatusPill>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle>Checklist metodológico</CardTitle></CardHeader>
+              <ul className="grid gap-2 text-sm text-ink">
+                <li>Wording revisado</li>
+                <li>Pesos e normalização aprovados</li>
+                <li>Desempate e respostas ausentes definidos</li>
+                <li>Textos dos resultados aprovados</li>
+                <li>Casos de teste homologados</li>
+              </ul>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </AppShell>
+  );
 }

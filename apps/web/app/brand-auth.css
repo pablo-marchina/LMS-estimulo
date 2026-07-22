@@ -1,4 +1,0 @@
-.auth-alternative { display: grid; gap: 12px; margin-top: 24px; padding-top: 22px; border-top: 1px solid var(--border); text-align: center; }
-.auth-alternative > span { color: var(--muted); font-size: .82rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.form-message--success { border-radius: 12px; background: var(--green-light); padding: 12px; color: #176b3a; }
-.status-panel p:last-child { margin-bottom: 0; }

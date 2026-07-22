@@ -1,9 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import "./brand-auth.css";
-import "./brand-system.css";
-import "./experience.css";
-import "./admin-system.css";
 
 export const metadata: Metadata = {
   title: { default: "Plataforma Estímulo", template: "%s | Estímulo" },
@@ -15,10 +11,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4E79FF",
+  themeColor: "#000078",
   colorScheme: "light"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body>{children}</body></html>;
+  return (
+    <html lang="pt-BR">
+      <body className="antialiased">{children}</body>
+    </html>
+  );
 }

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Check } from "lucide-react";
 import type { JourneyState } from "@/lib/journey-runtime/contracts";
+import { cn } from "@/lib/utils";
 
 export type JourneyStage = "diagnostic" | "activity" | "result";
 type JourneyStageState = "complete" | "current" | "locked";
@@ -33,24 +35,53 @@ const labels: Record<JourneyStage, string> = {
   result: "Resultado"
 };
 
-const stateClassNames: Record<JourneyStageState, string> = {
-  complete: "journey-progress-step--complete",
-  current: "journey-progress-step--current",
-  locked: "journey-progress-step--locked"
-};
-
 export function JourneyProgressNav({ state, current }: { state: JourneyState; current: JourneyStage }) {
   const stages: JourneyStage[] = ["diagnostic", "activity", "result"];
   return (
-    <nav className="journey-progress-nav no-print" aria-label={`Etapas de ${state.journey_title ?? state.journey_code}`}>
-      <Link className="journey-progress-home" href="/empreendedor">Painel</Link>
-      <ol>
+    <nav
+      className="no-print mb-6 flex items-center gap-4 overflow-x-auto rounded-xl border border-border bg-surface p-3 shadow-xs"
+      aria-label={`Etapas de ${state.journey_title ?? state.journey_code}`}
+    >
+      <Link href="/empreendedor" className="shrink-0 text-sm font-semibold text-primary hover:underline">
+        Painel
+      </Link>
+      <ol className="flex flex-1 items-stretch gap-2">
         {stages.map((stage, index) => {
           const status = stageState(state, stage);
           const href = stageHref(state, stage);
-          const className = `journey-progress-step ${stateClassNames[status]}${current === stage ? " journey-progress-step--active" : ""}`;
-          const content = <><span aria-hidden="true">{status === "complete" ? "✓" : index + 1}</span><strong>{labels[stage]}</strong></>;
-          return <li key={stage}>{href ? <Link className={className} href={href} aria-current={current === stage ? "step" : undefined}>{content}</Link> : <span className={className} aria-disabled="true">{content}</span>}</li>;
+          const isActive = current === stage;
+          const content = (
+            <>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold",
+                  status === "complete" ? "bg-success-soft text-success" : status === "current" ? "bg-primary text-white" : "bg-surface-muted text-muted"
+                )}
+              >
+                {status === "complete" ? <Check size={14} /> : index + 1}
+              </span>
+              <span className="text-sm font-semibold">{labels[stage]}</span>
+            </>
+          );
+          const shared = cn(
+            "flex flex-1 items-center gap-2 rounded-lg border border-transparent px-3 py-2 whitespace-nowrap",
+            status === "locked" && "opacity-50",
+            isActive && "border-border-strong bg-surface-muted"
+          );
+          return (
+            <li key={stage} className="flex-1">
+              {href ? (
+                <Link className={shared} href={href} aria-current={isActive ? "step" : undefined}>
+                  {content}
+                </Link>
+              ) : (
+                <span className={shared} aria-disabled="true">
+                  {content}
+                </span>
+              )}
+            </li>
+          );
         })}
       </ol>
     </nav>

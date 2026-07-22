@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { EstimuloBrand } from "@/components/estimulo-brand";
+import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Input, Label } from "@/components/ui/input";
 import { confirmEmailAction, resendConfirmationAction } from "./actions";
 
 type ConfirmationSearchParams = {
@@ -31,62 +33,59 @@ export default async function EmailConfirmationPage({
   const linkAlreadyProcessed = params.error_code === "otp_expired" || params.error === "access_denied";
 
   return (
-    <main className="auth-page">
-      <section className="auth-card">
-        <EstimuloBrand centered />
-        <div className="auth-heading">
-          <p className="eyebrow">Confirmação de cadastro</p>
-          <h1>{hasConfirmationData ? "Conclua a confirmação" : "Verifique sua conta"}</h1>
-          <p>
-            {hasConfirmationData
-              ? "Pressione o botão para concluir a sessão. Se o e-mail já tiver sido confirmado em outro navegador, você será encaminhado para entrar com sua senha."
-              : "O link já foi processado ou não pode mais ser utilizado."}
-          </p>
-        </div>
+    <AuthLayout
+      eyebrow="Confirmação de cadastro"
+      title={hasConfirmationData ? "Conclua a confirmação" : "Verifique sua conta"}
+      description={
+        hasConfirmationData
+          ? "Pressione o botão para concluir a sessão. Se o e-mail já tiver sido confirmado em outro navegador, você será encaminhado para entrar com sua senha."
+          : "O link já foi processado ou não pode mais ser utilizado."
+      }
+    >
+      {params.reenviado === "1" ? (
+        <FormMessage tone="success">
+          A solicitação foi aceita. Se a conta existir e ainda estiver pendente, uma nova mensagem será enviada. Contas já confirmadas não recebem outro e-mail de cadastro.
+        </FormMessage>
+      ) : null}
 
-        {params.reenviado === "1" ? (
-          <p className="form-message form-message--success" role="status">
-            A solicitação foi aceita. Se a conta existir e ainda estiver pendente, uma nova mensagem será enviada. Contas já confirmadas não recebem outro e-mail de cadastro.
-          </p>
-        ) : null}
+      {params.erro && resendErrors[params.erro] ? <FormMessage tone="error">{resendErrors[params.erro]}</FormMessage> : null}
 
-        {params.erro && resendErrors[params.erro] ? (
-          <p className="form-message form-message--error" role="alert">{resendErrors[params.erro]}</p>
-        ) : null}
-
-        {hasConfirmationData ? (
-          <form action={confirmEmailAction} className="stack">
-            <input type="hidden" name="token_hash" value={tokenHash} />
-            <input type="hidden" name="type" value={type} />
-            <input type="hidden" name="code" value={code} />
-            <button className="button button--primary button--large" type="submit">
-              Concluir confirmação
-            </button>
+      {hasConfirmationData ? (
+        <form action={confirmEmailAction}>
+          <input type="hidden" name="token_hash" value={tokenHash} />
+          <input type="hidden" name="type" value={type} />
+          <input type="hidden" name="code" value={code} />
+          <Button size="lg" type="submit" className="w-full">
+            Concluir confirmação
+          </Button>
+        </form>
+      ) : (
+        <div className="grid gap-4">
+          <FormMessage tone="info">
+            {linkAlreadyProcessed
+              ? "A conta pode já estar confirmada. Entre com a senha cadastrada; somente contas ainda pendentes recebem um novo e-mail."
+              : "Tente entrar com a senha cadastrada. Se o Supabase informar que a confirmação ainda é necessária, solicite outra mensagem abaixo."}
+          </FormMessage>
+          <ButtonLink href="/entrar?cadastro=confirmado" size="lg">
+            Entrar com minha senha
+          </ButtonLink>
+          <form action={resendConfirmationAction} className="grid gap-3">
+            <Label>
+              E-mail
+              <Input name="email" type="email" autoComplete="email" required />
+            </Label>
+            <Button variant="secondary" type="submit">
+              Reenviar confirmação
+            </Button>
           </form>
-        ) : (
-          <div className="stack">
-            <p className="form-message" role="status">
-              {linkAlreadyProcessed
-                ? "A conta pode já estar confirmada. Entre com a senha cadastrada; somente contas ainda pendentes recebem um novo e-mail."
-                : "Tente entrar com a senha cadastrada. Se o Supabase informar que a confirmação ainda é necessária, solicite outra mensagem abaixo."}
-            </p>
-            <Link className="button button--primary button--large" href="/entrar?cadastro=confirmado">
-              Entrar com minha senha
-            </Link>
-            <form action={resendConfirmationAction} className="stack">
-              <label>
-                E-mail
-                <input name="email" type="email" autoComplete="email" required />
-              </label>
-              <button className="button button--secondary" type="submit">Reenviar confirmação</button>
-            </form>
-          </div>
-        )}
+        </div>
+      )}
 
-        <p className="auth-footer">
-          <Link href="/entrar">Voltar para a entrada</Link>
-        </p>
-      </section>
-    </main>
+      <AuthFooter>
+        <Link href="/entrar" className="font-semibold text-primary hover:underline">
+          Voltar para a entrada
+        </Link>
+      </AuthFooter>
+    </AuthLayout>
   );
 }

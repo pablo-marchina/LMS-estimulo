@@ -1,9 +1,17 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
+import { Download, Star } from "lucide-react";
 import { acknowledgeActivityAction, createActivityCommentAction, rateActivityUtilityAction, submitQuickCheckAction } from "@/app/actions/journey";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
-import { ProgressMeter, StatusPanel } from "@/components/status-panel";
+import { StatusPanel } from "@/components/status-panel";
+import { PageHeader } from "@/components/ui/page-header";
+import { Progress } from "@/components/ui/progress";
+import { StatusPill } from "@/components/ui/status-pill";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Card } from "@/components/ui/card";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/input";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
@@ -78,132 +86,257 @@ export default async function ActivityPage({
   const practiceError = query.codigo ? practiceErrors[query.codigo] ?? practiceErrors.PRACTICE_UPLOAD_FAILED : null;
 
   return (
-    <>
-      <header className="page-heading"><p className="eyebrow">Atividade</p><h1>{experience.activity.title}</h1><p>{experience.activity.description}</p><p className="metadata">Tempo estimado: {experience.activity.estimated_minutes} minutos</p></header>
+    <div className="grid gap-8">
+      <PageHeader
+        eyebrow="Atividade"
+        title={experience.activity.title}
+        description={
+          <>
+            {experience.activity.description}
+            <br />
+            <span className="text-sm">Tempo estimado: {experience.activity.estimated_minutes} minutos</span>
+          </>
+        }
+      />
       <JourneyProgressNav state={experience.state} current="activity" />
-      <ProgressMeter value={sectionTotal ? accepted / sectionTotal : 0} label="Conteúdo confirmado" />
-      <form action={acknowledgeActivityAction} className="stack stack--large" id="conteudo">
+      <Progress value={sectionTotal ? (accepted / sectionTotal) * 100 : 0} label="Conteúdo confirmado" />
+
+      <form action={acknowledgeActivityAction} className="grid gap-4" id="conteudo">
         <input type="hidden" name="journey_instance_id" value={journey} />
         <input type="hidden" name="step_instance_id" value={stepInstanceId} />
         <input type="hidden" name="idempotency_key" value={randomUUID()} />
         {experience.activity.sections.map((section, index) => (
-          <article className="content-section" key={section.code}>
-            <p className="eyebrow">Parte {index + 1}</p>
-            <h2>{text(section.heading) ?? text(section.title) ?? section.code}</h2>
-            {text(section.body) ? <p>{text(section.body)}</p> : null}
-            <label className="confirm-row"><input type="checkbox" name={`section_${section.code}`} /><span>Li e compreendi esta parte</span></label>
-          </article>
+          <Card key={section.code}>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">Parte {index + 1}</p>
+            <h2 className="text-lg font-semibold text-ink">{text(section.heading) ?? text(section.title) ?? section.code}</h2>
+            {text(section.body) ? <p className="mt-2 text-sm text-ink/90">{text(section.body)}</p> : null}
+            <label className="mt-4 flex items-start gap-2.5 text-sm text-ink">
+              <input type="checkbox" name={`section_${section.code}`} className="mt-0.5 size-4 accent-primary" />
+              <span>Li e compreendi esta parte</span>
+            </label>
+          </Card>
         ))}
-        {accepted < sectionTotal ? <button className="button button--primary" type="submit">Registrar leitura</button> : null}
+        {accepted < sectionTotal ? <Button type="submit" className="w-fit">Registrar leitura</Button> : null}
       </form>
 
-      {practice ? <section className="practice-section stack stack--large" id="pratica" aria-labelledby="pratica-titulo">
-        <div>
-          <h2 id="pratica-titulo">Envie sua evidência</h2>
-          <p className="support-note">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo permanece privado e é validado por formato, tamanho, hash e autorização de acesso.</p>
-        </div>
-        {query.pratica === "enviada" ? <StatusPanel title="Arquivo recebido" tone="success"><p>A evidência foi registrada e já está disponível para a etapa de revisão aplicável.</p></StatusPanel> : null}
-        {query.pratica === "erro" ? <StatusPanel title="Envio não concluído" tone="warning"><p>{practiceError}</p></StatusPanel> : null}
-        {canUpload ? <form action="/api/practice-uploads" method="post" encType="multipart/form-data" className="card stack">
-          <input type="hidden" name="journey_instance_id" value={journey} />
-          <input type="hidden" name="step_instance_id" value={stepInstanceId} />
-          <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <label htmlFor="practice-file">Arquivo da prática<input id="practice-file" name="file" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.docx" required /></label>
-          <label className="consent-row"><input type="checkbox" name="allow_public_use" /><span>Autorizo o Estímulo a avaliar este material para possíveis estudos de caso e evidências de impacto. A autorização é opcional e não altera a conclusão da atividade.</span></label>
-          {practice.terms_version ? <p className="metadata">Termos aplicáveis: {practice.terms_version}.</p> : null}
-          <button className="button button--primary" type="submit">Enviar evidência</button>
-        </form> : <StatusPanel title="Limite de envios atingido" tone="info"><p>Esta atividade não aceita novos arquivos no momento.</p></StatusPanel>}
-        {submissions.length === 0 ? <StatusPanel title="Nenhuma evidência enviada" tone="info"><p>Seu histórico de envios aparecerá aqui.</p></StatusPanel> : <div className="practice-list">
-          {submissions.map((submission) => <article className="practice-card" key={submission.id}>
-            <div className="practice-header"><strong>Envio {submission.submission_number}</strong><span className="status-pill">{practiceStatus[submission.status] ?? submission.status}</span><time dateTime={submission.submitted_at}>{dateFormatter.format(new Date(submission.submitted_at))}</time></div>
-            <p>{submission.original_filename ?? "Arquivo em preparação"}</p>
-            <div className="practice-meta"><span>{submission.content_type ?? "Formato em validação"}</span>{fileSize(submission.size_bytes) ? <span>{fileSize(submission.size_bytes)}</span> : null}<span>{submission.allow_public_use ? "Uso autorizado" : "Uso público não autorizado"}</span></div>
-            {submission.review_feedback ? <p className="moderation-reason"><strong>Retorno da revisão:</strong> {submission.review_feedback}</p> : null}
-            {submission.can_download ? <Link className="button button--secondary" href={`/api/practice-submissions/${submission.id}/download`}>Baixar arquivo</Link> : null}
-          </article>)}
-        </div>}
-      </section> : null}
+      {practice ? (
+        <section className="grid gap-4" id="pratica" aria-labelledby="pratica-titulo">
+          <div>
+            <h2 id="pratica-titulo" className="text-xl font-semibold text-ink">Envie sua evidência</h2>
+            <p className="text-sm text-muted">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo permanece privado e é validado por formato, tamanho, hash e autorização de acesso.</p>
+          </div>
+          {query.pratica === "enviada" ? <StatusPanel title="Arquivo recebido" tone="success">A evidência foi registrada e já está disponível para a etapa de revisão aplicável.</StatusPanel> : null}
+          {query.pratica === "erro" ? <StatusPanel title="Envio não concluído" tone="warning">{practiceError}</StatusPanel> : null}
+          {canUpload ? (
+            <Card className="grid gap-4">
+              <form action="/api/practice-uploads" method="post" encType="multipart/form-data" className="grid gap-4">
+                <input type="hidden" name="journey_instance_id" value={journey} />
+                <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+                <input type="hidden" name="idempotency_key" value={randomUUID()} />
+                <label htmlFor="practice-file" className="grid gap-1.5 text-sm font-medium text-ink">
+                  Arquivo da prática
+                  <input
+                    id="practice-file"
+                    name="file"
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.docx"
+                    required
+                    className="text-sm file:mr-3 file:rounded-full file:border-0 file:bg-primary-soft file:px-3.5 file:py-2 file:text-sm file:font-semibold file:text-primary"
+                  />
+                </label>
+                <label className="flex items-start gap-2.5 text-sm text-ink">
+                  <input type="checkbox" name="allow_public_use" className="mt-0.5 size-4 accent-primary" />
+                  <span>Autorizo o Estímulo a avaliar este material para possíveis estudos de caso e evidências de impacto. A autorização é opcional e não altera a conclusão da atividade.</span>
+                </label>
+                {practice.terms_version ? <p className="text-xs text-muted">Termos aplicáveis: {practice.terms_version}.</p> : null}
+                <Button type="submit" className="w-fit">Enviar evidência</Button>
+              </form>
+            </Card>
+          ) : (
+            <StatusPanel title="Limite de envios atingido" tone="info">Esta atividade não aceita novos arquivos no momento.</StatusPanel>
+          )}
+          {submissions.length === 0 ? (
+            <EmptyState title="Nenhuma evidência enviada" tone="info">Seu histórico de envios aparecerá aqui.</EmptyState>
+          ) : (
+            <div className="grid gap-3">
+              {submissions.map((submission) => (
+                <Card key={submission.id}>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <strong className="text-ink">Envio {submission.submission_number}</strong>
+                    <StatusPill tone={submission.status === "accepted" ? "success" : submission.status === "rejected" ? "danger" : "neutral"}>
+                      {practiceStatus[submission.status] ?? submission.status}
+                    </StatusPill>
+                    <time dateTime={submission.submitted_at} className="ml-auto text-xs text-muted">
+                      {dateFormatter.format(new Date(submission.submitted_at))}
+                    </time>
+                  </div>
+                  <p className="text-sm text-ink">{submission.original_filename ?? "Arquivo em preparação"}</p>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+                    <span>{submission.content_type ?? "Formato em validação"}</span>
+                    {fileSize(submission.size_bytes) ? <span>{fileSize(submission.size_bytes)}</span> : null}
+                    <span>{submission.allow_public_use ? "Uso autorizado" : "Uso público não autorizado"}</span>
+                  </div>
+                  {submission.review_feedback ? (
+                    <p className="mt-3 rounded-lg bg-warning-soft p-3 text-sm text-warning">
+                      <strong>Retorno da revisão:</strong> {submission.review_feedback}
+                    </p>
+                  ) : null}
+                  {submission.can_download ? (
+                    <Link href={`/api/practice-submissions/${submission.id}/download`} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+                      <Download size={14} /> Baixar arquivo
+                    </Link>
+                  ) : null}
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
 
-      {canAssess ? <section className="card stack" id="utilidade" aria-labelledby="utilidade-titulo">
-        <div>
-          <h2 id="utilidade-titulo">Esta atividade foi útil?</h2>
-          <p className="support-note">A nota de 1 a 5 melhora a capacitação. Ela não altera sua conclusão, seus pontos ou qualquer decisão de crédito.</p>
-        </div>
-        {query.utilidade === "registrada" ? <StatusPanel title="Avaliação registrada" tone="success"><p>Obrigado. A revisão anterior permanece no histórico e esta é a nota atual.</p></StatusPanel> : null}
-        <form action={rateActivityUtilityAction} className="stack">
-          <input type="hidden" name="journey_instance_id" value={journey} />
-          <input type="hidden" name="step_instance_id" value={stepInstanceId} />
-          <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <fieldset className="option-list">
-            <legend>Escolha de 1 a 5 estrelas</legend>
-            {[1, 2, 3, 4, 5].map((rating) => <label className="option" key={rating}>
-              <input type="radio" name="rating" value={rating} defaultChecked={utilityRating.rating === rating} required />
-              <span>{rating} {rating === 1 ? "estrela" : "estrelas"}</span>
-            </label>)}
-          </fieldset>
-          <button className="button button--secondary" type="submit">{utilityRating.rating ? "Atualizar avaliação" : "Enviar avaliação"}</button>
-          {utilityRating.rating ? <p className="metadata">Nota atual: {utilityRating.rating}/5 · revisão {utilityRating.revision}.</p> : null}
-        </form>
-      </section> : null}
+      {canAssess ? (
+        <Card id="utilidade" aria-labelledby="utilidade-titulo" className="grid gap-4">
+          <div>
+            <h2 id="utilidade-titulo" className="text-lg font-semibold text-ink">Esta atividade foi útil?</h2>
+            <p className="text-sm text-muted">A nota de 1 a 5 melhora a capacitação. Ela não altera sua conclusão, seus pontos ou qualquer decisão de crédito.</p>
+          </div>
+          {query.utilidade === "registrada" ? <StatusPanel title="Avaliação registrada" tone="success">Obrigado. A revisão anterior permanece no histórico e esta é a nota atual.</StatusPanel> : null}
+          <form action={rateActivityUtilityAction} className="grid gap-3">
+            <input type="hidden" name="journey_instance_id" value={journey} />
+            <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+            <input type="hidden" name="idempotency_key" value={randomUUID()} />
+            <fieldset>
+              <legend className="mb-2 text-sm font-medium text-ink">Escolha de 1 a 5 estrelas</legend>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <label
+                    key={rating}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-3.5 py-2 text-sm font-medium has-checked:border-primary has-checked:bg-primary-soft has-checked:text-primary"
+                  >
+                    <input type="radio" name="rating" value={rating} defaultChecked={utilityRating.rating === rating} required className="sr-only" />
+                    <Star size={14} aria-hidden="true" />
+                    {rating}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <Button variant="secondary" type="submit" className="w-fit">
+              {utilityRating.rating ? "Atualizar avaliação" : "Enviar avaliação"}
+            </Button>
+            {utilityRating.rating ? <p className="text-xs text-muted">Nota atual: {utilityRating.rating}/5 · revisão {utilityRating.revision}.</p> : null}
+          </form>
+        </Card>
+      ) : null}
 
-      <section className="comments-section stack stack--large" id="comentarios" aria-labelledby="comentarios-titulo">
+      <section className="grid gap-4" id="comentarios" aria-labelledby="comentarios-titulo">
         <div>
-          <h2 id="comentarios-titulo">Comentários da aula</h2>
-          <p className="support-note">Compartilhe sua experiência com a atividade. Não publique dados pessoais, senhas ou informações financeiras.</p>
+          <h2 id="comentarios-titulo" className="text-xl font-semibold text-ink">Comentários da aula</h2>
+          <p className="text-sm text-muted">Compartilhe sua experiência com a atividade. Não publique dados pessoais, senhas ou informações financeiras.</p>
         </div>
-        {query.comentario === "criado" ? <StatusPanel title="Comentário publicado" tone="success"><p>Sua participação já está visível nesta aula.</p></StatusPanel> : null}
-        <form action={createActivityCommentAction} className="card stack">
-          <input type="hidden" name="journey_instance_id" value={journey} />
-          <input type="hidden" name="step_instance_id" value={stepInstanceId} />
-          <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <label htmlFor="activity-comment">Escreva seu comentário</label>
-          <textarea id="activity-comment" name="body" minLength={1} maxLength={2000} rows={4} required placeholder="Conte como você usa o ChatGPT no dia a dia ou responda à pergunta proposta na aula." />
-          <div className="form-footer"><span className="metadata">Máximo de 2.000 caracteres.</span><button className="button button--primary" type="submit">Publicar comentário</button></div>
-        </form>
+        {query.comentario === "criado" ? <StatusPanel title="Comentário publicado" tone="success">Sua participação já está visível nesta aula.</StatusPanel> : null}
+        <Card className="grid gap-3">
+          <form action={createActivityCommentAction} className="grid gap-3">
+            <input type="hidden" name="journey_instance_id" value={journey} />
+            <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+            <input type="hidden" name="idempotency_key" value={randomUUID()} />
+            <label htmlFor="activity-comment" className="text-sm font-medium text-ink">Escreva seu comentário</label>
+            <Textarea
+              id="activity-comment"
+              name="body"
+              minLength={1}
+              maxLength={2000}
+              rows={4}
+              required
+              placeholder="Conte como você usa o ChatGPT no dia a dia ou responda à pergunta proposta na aula."
+            />
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-xs text-muted">Máximo de 2.000 caracteres.</span>
+              <Button type="submit" size="sm">Publicar comentário</Button>
+            </div>
+          </form>
+        </Card>
         {commentResult.comments.length === 0 ? (
-          <StatusPanel title="Nenhum comentário ainda" tone="info"><p>Seja a primeira pessoa a participar desta aula.</p></StatusPanel>
+          <EmptyState title="Nenhum comentário ainda" tone="info">Seja a primeira pessoa a participar desta aula.</EmptyState>
         ) : (
-          <div className="comment-list" aria-live="polite">
+          <div className="grid gap-3" aria-live="polite">
             {commentResult.comments.map((comment) => (
-              <article className="comment-card" key={comment.id}>
-                <div className="comment-header"><strong>{comment.author_name}</strong>{comment.is_own ? <span className="status-pill">Você</span> : null}<time dateTime={comment.created_at}>{dateFormatter.format(new Date(comment.created_at))}</time></div>
-                <p>{comment.body}</p>
-              </article>
+              <Card key={comment.id}>
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <strong className="text-ink">{comment.author_name}</strong>
+                  {comment.is_own ? <StatusPill tone="info">Você</StatusPill> : null}
+                  <time dateTime={comment.created_at} className="ml-auto text-xs text-muted">
+                    {dateFormatter.format(new Date(comment.created_at))}
+                  </time>
+                </div>
+                <p className="text-sm text-ink">{comment.body}</p>
+              </Card>
             ))}
           </div>
         )}
       </section>
 
-      {query.avaliacao === "reprovada" || experience.state.q?.status === "failed" ? <StatusPanel title="Revise e tente novamente" tone="warning"><p>A tentativa anterior não atingiu o critério da atividade. O resultado é pedagógico e não representa risco ou elegibilidade de crédito.</p></StatusPanel> : null}
-      {experience.state.q?.passed ? <StatusPanel title="Atividade concluída" tone="success"><p>O resultado, os pontos e as credenciais elegíveis foram processados.</p></StatusPanel> : null}
-      {canAssess && assessment && !experience.state.q?.passed && !attemptAvailable ? <StatusPanel title="Limite de tentativas atingido" tone="warning"><p>Não há uma nova tentativa disponível para esta versão da avaliação.</p></StatusPanel> : null}
+      {query.avaliacao === "reprovada" || experience.state.q?.status === "failed" ? (
+        <StatusPanel title="Revise e tente novamente" tone="warning">A tentativa anterior não atingiu o critério da atividade. O resultado é pedagógico e não representa risco ou elegibilidade de crédito.</StatusPanel>
+      ) : null}
+      {experience.state.q?.passed ? (
+        <StatusPanel title="Atividade concluída" tone="success">O resultado, os pontos e as credenciais elegíveis foram processados.</StatusPanel>
+      ) : null}
+      {canAssess && assessment && !experience.state.q?.passed && !attemptAvailable ? (
+        <StatusPanel title="Limite de tentativas atingido" tone="warning">Não há uma nova tentativa disponível para esta versão da avaliação.</StatusPanel>
+      ) : null}
 
       {canAssess && assessment?.questions.length && !experience.state.q?.passed && attemptAvailable ? (
-        <form action={submitQuickCheckAction} className="assessment-form stack stack--large" id="avaliacao">
+        <form action={submitQuickCheckAction} className="grid gap-4" id="avaliacao">
           <input type="hidden" name="journey_instance_id" value={journey} />
           <input type="hidden" name="step_instance_id" value={stepInstanceId} />
           <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <div className="card">
-            <h2>Verifique o que aprendeu</h2>
-            <p className="support-note">{assessment.questions.length} {assessment.questions.length === 1 ? "questão" : "questões"}{assessment.passing_score !== null ? ` · aprovação a partir de ${assessment.passing_score}%` : ""}{maxAttempts !== null ? ` · até ${maxAttempts} tentativas` : ""}.</p>
-          </div>
-          {assessment.questions.map((question, index) => <fieldset className="question-card" key={question.id}>
-            <legend><span>Questão {index + 1}</span>{question.prompt}</legend>
-            {question.response ? <>
-              <input type="hidden" name={`answer_${question.id}`} value={question.response.option_code} />
-              <p className="form-message">Resposta registrada nesta tentativa.</p>
-            </> : <div className="option-list">
-              {question.options.map((option) => <label className="option" key={option.id}><input type="radio" name={`answer_${question.id}`} value={option.code} required /><span>{option.label}</span></label>)}
-            </div>}
-          </fieldset>)}
-          <button className="button button--primary" type="submit">Enviar avaliação</button>
+          <Card>
+            <h2 className="text-lg font-semibold text-ink">Verifique o que aprendeu</h2>
+            <p className="mt-1 text-sm text-muted">
+              {assessment.questions.length} {assessment.questions.length === 1 ? "questão" : "questões"}
+              {assessment.passing_score !== null ? ` · aprovação a partir de ${assessment.passing_score}%` : ""}
+              {maxAttempts !== null ? ` · até ${maxAttempts} tentativas` : ""}.
+            </p>
+          </Card>
+          {assessment.questions.map((question, index) => (
+            <Card key={question.id} className="grid gap-3">
+              <legend className="text-sm font-semibold text-ink">
+                <span className="mr-2 text-primary">Questão {index + 1}</span>
+                {question.prompt}
+              </legend>
+              {question.response ? (
+                <>
+                  <input type="hidden" name={`answer_${question.id}`} value={question.response.option_code} />
+                  <p className="text-sm text-muted">Resposta registrada nesta tentativa.</p>
+                </>
+              ) : (
+                <div className="grid gap-2">
+                  {question.options.map((option) => (
+                    <label
+                      key={option.id}
+                      className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm font-medium has-checked:border-primary has-checked:bg-primary-soft"
+                    >
+                      <input type="radio" name={`answer_${question.id}`} value={option.code} required className="size-4 accent-primary" />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </Card>
+          ))}
+          <Button type="submit" className="w-fit">Enviar avaliação</Button>
         </form>
       ) : null}
 
-      <div className="form-footer journey-page-footer no-print">
-        <Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link>
-        {experience.state.q?.passed ? <Link className="button button--primary" href={`/empreendedor/resultado?journey=${journey}`}>Ver resultado</Link> : canAssess && assessment?.questions.length ? <Link className="button button--primary" href="#avaliacao">Ir para avaliação</Link> : <Link className="button button--secondary" href="#conteudo">Voltar ao conteúdo</Link>}
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
+        <ButtonLink href="/empreendedor" variant="secondary">Voltar ao painel</ButtonLink>
+        {experience.state.q?.passed ? (
+          <ButtonLink href={`/empreendedor/resultado?journey=${journey}`}>Ver resultado</ButtonLink>
+        ) : canAssess && assessment?.questions.length ? (
+          <ButtonLink href="#avaliacao">Ir para avaliação</ButtonLink>
+        ) : (
+          <ButtonLink href="#conteudo" variant="secondary">Voltar ao conteúdo</ButtonLink>
+        )}
       </div>
-    </>
+    </div>
   );
 }

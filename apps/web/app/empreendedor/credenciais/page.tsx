@@ -1,5 +1,9 @@
-import Link from "next/link";
-import { StatusPanel } from "@/components/status-panel";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { MetricTile } from "@/components/ui/metric-tile";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusPill } from "@/components/ui/status-pill";
 import { getAuthContext } from "@/lib/auth/context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 
@@ -15,35 +19,97 @@ export default async function ParticipantCredentialsPage() {
   const activeBadges = credentials.badges.filter((badge) => badge.status === "active").length;
   const validCertificates = credentials.certificates.filter((certificate) => certificate.valid).length;
 
-  return <>
-    <header className="page-heading"><p className="eyebrow">Conquistas</p><h1>Minhas credenciais</h1><p>Selos e certificados são emitidos a partir de resultados e regras versionadas.</p></header>
-    <div className="metrics-grid">
-      <article className="metric"><span>Selos ativos</span><strong>{activeBadges}</strong></article>
-      <article className="metric"><span>Certificados válidos</span><strong>{validCertificates}</strong></article>
+  return (
+    <div className="grid gap-8">
+      <PageHeader
+        eyebrow="Conquistas"
+        title="Minhas credenciais"
+        description="Selos e certificados são emitidos a partir de resultados e regras versionadas."
+      />
+
+      <div className="grid grid-cols-2 gap-4">
+        <MetricTile index={0} label="Selos ativos" value={activeBadges} />
+        <MetricTile index={1} label="Certificados válidos" value={validCertificates} />
+      </div>
+
+      <section className="grid gap-4" aria-labelledby="selos-titulo">
+        <div>
+          <h2 id="selos-titulo" className="text-xl font-semibold text-ink">Selos</h2>
+          <p className="mt-1 text-sm text-muted">Marcos intermediários ou conclusões de jornada.</p>
+        </div>
+        {credentials.badges.length === 0 ? (
+          <EmptyState title="Nenhum selo emitido" tone="info">
+            Seus selos aparecerão aqui após uma regra publicada ser atendida.
+          </EmptyState>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {credentials.badges.map((badge) => (
+              <Card key={badge.award_id}>
+                <div className="flex items-start gap-4">
+                  <span
+                    className="grid size-11 shrink-0 place-items-center rounded-lg bg-primary-soft text-lg font-bold text-primary"
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                  <div>
+                    <StatusPill tone="neutral">Selo</StatusPill>
+                    <h3 className="mt-2 font-semibold text-ink">{badge.title}</h3>
+                    <p className="mt-1 text-sm text-muted">{badge.description}</p>
+                    <p className="mt-2 text-xs text-muted">
+                      {badge.journey_title} · {dateFormatter.format(new Date(badge.awarded_at))}
+                    </p>
+                  </div>
+                </div>
+                {badge.status !== "active" ? (
+                  <p className="mt-3 rounded-lg bg-warning-soft p-3 text-sm text-warning">
+                    Esta credencial não está ativa.
+                  </p>
+                ) : null}
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="grid gap-4" aria-labelledby="certificados-titulo">
+        <div>
+          <h2 id="certificados-titulo" className="text-xl font-semibold text-ink">Certificados</h2>
+          <p className="mt-1 text-sm text-muted">Cada certificado possui um código público de validação.</p>
+        </div>
+        {credentials.certificates.length === 0 ? (
+          <EmptyState title="Nenhum certificado emitido" tone="info">
+            Certificados aparecem quando a jornada e as avaliações exigidas são concluídas.
+          </EmptyState>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {credentials.certificates.map((certificate) => (
+              <Card key={certificate.issuance_id} className="flex flex-col">
+                <StatusPill tone="info">Certificado</StatusPill>
+                <h3 className="mt-2 font-semibold text-ink">{certificate.certificate_name}</h3>
+                <p className="mt-1 text-sm text-muted">{certificate.journey_title}</p>
+                <p className="mt-2 text-xs text-muted">
+                  Emitido em {dateFormatter.format(new Date(certificate.issued_at))} · código {certificate.verification_code}
+                </p>
+                {!certificate.valid ? (
+                  <p className="mt-3 rounded-lg bg-warning-soft p-3 text-sm text-warning">
+                    Este certificado não está válido.
+                  </p>
+                ) : null}
+                <div className="mt-auto pt-4">
+                  <ButtonLink href={`/credenciais/${certificate.verification_code}`} size="sm">
+                    Abrir certificado
+                  </ButtonLink>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="no-print flex items-center justify-between gap-3 border-t border-border pt-6">
+        <ButtonLink href="/empreendedor" variant="secondary">Voltar ao painel</ButtonLink>
+      </div>
     </div>
-
-    <section className="stack stack--large" aria-labelledby="selos-titulo">
-      <div><h2 id="selos-titulo">Selos</h2><p className="support-note">Marcos intermediários ou conclusões de jornada.</p></div>
-      {credentials.badges.length === 0 ? <StatusPanel title="Nenhum selo emitido" tone="info"><p>Seus selos aparecerão aqui após uma regra publicada ser atendida.</p></StatusPanel> : <div className="credential-grid">
-        {credentials.badges.map((badge) => <article className="credential-card" key={badge.award_id}>
-          <span className="credential-mark" aria-hidden="true">✓</span>
-          <span className="status-pill">Selo</span><h3>{badge.title}</h3><p>{badge.description}</p><p className="metadata">{badge.journey_title} · {dateFormatter.format(new Date(badge.awarded_at))}</p>
-          {badge.status !== "active" ? <p className="moderation-reason">Esta credencial não está ativa.</p> : null}
-        </article>)}
-      </div>}
-    </section>
-
-    <section className="stack stack--large" aria-labelledby="certificados-titulo">
-      <div><h2 id="certificados-titulo">Certificados</h2><p className="support-note">Cada certificado possui um código público de validação.</p></div>
-      {credentials.certificates.length === 0 ? <StatusPanel title="Nenhum certificado emitido" tone="info"><p>Certificados aparecem quando a jornada e as avaliações exigidas são concluídas.</p></StatusPanel> : <div className="credential-grid">
-        {credentials.certificates.map((certificate) => <article className="credential-card credential-card--certificate" key={certificate.issuance_id}>
-          <span className="status-pill">Certificado</span><h3>{certificate.certificate_name}</h3><p>{certificate.journey_title}</p><p className="metadata">Emitido em {dateFormatter.format(new Date(certificate.issued_at))} · código {certificate.verification_code}</p>
-          {!certificate.valid ? <p className="moderation-reason">Este certificado não está válido.</p> : null}
-          <Link className="button button--primary" href={`/credenciais/${certificate.verification_code}`}>Abrir certificado</Link>
-        </article>)}
-      </div>}
-    </section>
-
-    <div className="form-footer journey-page-footer no-print"><Link className="button button--secondary" href="/empreendedor">Voltar ao painel</Link></div>
-  </>;
+  );
 }

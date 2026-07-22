@@ -1,5 +1,10 @@
-import Link from "next/link";
-import { StatusPanel } from "@/components/status-panel";
+import { Badge } from "@/components/ui/badge";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input, Label, Select } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusPill } from "@/components/ui/status-pill";
 import { getAuthContext } from "@/lib/auth/context";
 import { libraryRuntime } from "@/lib/library/runtime";
 
@@ -48,41 +53,125 @@ export default async function LibraryPage({
     offset
   });
 
-  return <>
-    <header className="page-heading">
-      <p className="eyebrow">Capacitação</p>
-      <h1>Biblioteca de conteúdos</h1>
-      <p>Encontre materiais próprios do Estímulo e referências externas selecionadas. A busca usa os textos e metadados editoriais publicados.</p>
-    </header>
+  return (
+    <div className="grid gap-8">
+      <PageHeader
+        eyebrow="Capacitação"
+        title="Biblioteca de conteúdos"
+        description="Encontre materiais próprios do Estímulo e referências externas selecionadas. A busca usa os textos e metadados editoriais publicados."
+      />
 
-    <form className="card stack" method="get" aria-label="Filtros da biblioteca">
-      <label>Buscar<input type="search" name="q" defaultValue={query.q} placeholder="Ex.: fluxo de caixa, planejamento" /></label>
-      <div className="admin-columns">
-        <label>Tema<select name="topic" defaultValue={query.topic ?? ""}><option value="">Todos</option>{data.facets.topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</select></label>
-        <label>Formato<select name="format" defaultValue={query.format ?? ""}><option value="">Todos</option>{data.facets.formats.map((format) => <option value={format} key={format}>{formatLabels[format] ?? format}</option>)}</select></label>
-        <label>Nível<select name="level" defaultValue={query.level ?? ""}><option value="">Todos</option>{data.facets.levels.map((level) => <option value={level} key={level}>{levelLabels[level] ?? level}</option>)}</select></label>
-      </div>
-      <div className="inline-actions"><button className="button button--primary" type="submit">Aplicar filtros</button><Link className="button button--ghost" href="/capacitacao/biblioteca">Limpar</Link></div>
-    </form>
+      <Card>
+        <form method="get" aria-label="Filtros da biblioteca" className="grid gap-4">
+          <Label>
+            Buscar
+            <Input type="search" name="q" defaultValue={query.q} placeholder="Ex.: fluxo de caixa, planejamento" />
+          </Label>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Label>
+              Tema
+              <Select name="topic" defaultValue={query.topic ?? ""}>
+                <option value="">Todos</option>
+                {data.facets.topics.map((topic) => (
+                  <option value={topic} key={topic}>
+                    {topic}
+                  </option>
+                ))}
+              </Select>
+            </Label>
+            <Label>
+              Formato
+              <Select name="format" defaultValue={query.format ?? ""}>
+                <option value="">Todos</option>
+                {data.facets.formats.map((format) => (
+                  <option value={format} key={format}>
+                    {formatLabels[format] ?? format}
+                  </option>
+                ))}
+              </Select>
+            </Label>
+            <Label>
+              Nível
+              <Select name="level" defaultValue={query.level ?? ""}>
+                <option value="">Todos</option>
+                {data.facets.levels.map((level) => (
+                  <option value={level} key={level}>
+                    {levelLabels[level] ?? level}
+                  </option>
+                ))}
+              </Select>
+            </Label>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit">Aplicar filtros</Button>
+            <ButtonLink href="/capacitacao/biblioteca" variant="ghost">
+              Limpar
+            </ButtonLink>
+          </div>
+        </form>
+      </Card>
 
-    <section className="stack stack--large" aria-labelledby="resultados-biblioteca">
-      <h2 id="resultados-biblioteca">{data.total} {data.total === 1 ? "conteúdo encontrado" : "conteúdos encontrados"}</h2>
-      {data.items.length === 0 ? <StatusPanel title="Nenhum conteúdo encontrado" tone="info"><p>Revise a busca ou remova um dos filtros.</p></StatusPanel> : <div className="card-grid">
-        {data.items.map((item) => <article className="card" key={item.library_item_version_id}>
-          <div className="card-meta"><span className="status-pill">{formatLabels[item.content_format] ?? item.content_format}</span><span>{levelLabels[item.level] ?? item.level}</span></div>
-          <h3>{item.title}</h3>
-          <p>{item.summary}</p>
-          <p className="metadata">{item.estimated_minutes} min · {item.source_name}</p>
-          <div className="tag-list" aria-label="Temas">{item.topics.map((topic) => <span className="status-pill" key={topic}>{topic}</span>)}</div>
-          {item.journeys.length ? <p className="support-note">Relacionado a {item.journeys.map((journey) => journey.journey_title).join(", ")}.</p> : null}
-          <Link className="button button--secondary" href={`/capacitacao/biblioteca/${item.slug}`}>Ver conteúdo</Link>
-        </article>)}
-      </div>}
-    </section>
+      <section className="grid gap-4" aria-labelledby="resultados-biblioteca">
+        <h2 id="resultados-biblioteca" className="text-xl font-semibold text-ink">
+          {data.total} {data.total === 1 ? "conteúdo encontrado" : "conteúdos encontrados"}
+        </h2>
 
-    {data.total > data.limit ? <nav className="inline-actions" aria-label="Paginação da biblioteca">
-      {offset > 0 ? <Link className="button button--secondary" href={pageHref(query, offset - data.limit)}>Página anterior</Link> : <span />}
-      {offset + data.limit < data.total ? <Link className="button button--secondary" href={pageHref(query, offset + data.limit)}>Próxima página</Link> : null}
-    </nav> : null}
-  </>;
+        {data.items.length === 0 ? (
+          <EmptyState title="Nenhum conteúdo encontrado" tone="info">
+            Revise a busca ou remova um dos filtros.
+          </EmptyState>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {data.items.map((item) => (
+              <Card key={item.library_item_version_id} className="flex flex-col">
+                <div className="mb-3 flex items-center justify-between text-sm text-muted">
+                  <StatusPill tone="info">{formatLabels[item.content_format] ?? item.content_format}</StatusPill>
+                  <span>{levelLabels[item.level] ?? item.level}</span>
+                </div>
+                <h3 className="font-semibold text-ink">{item.title}</h3>
+                <p className="mt-1 text-sm text-muted">{item.summary}</p>
+                <p className="mt-3 text-xs text-muted">
+                  {item.estimated_minutes} min · {item.source_name}
+                </p>
+                {item.topics.length ? (
+                  <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Temas">
+                    {item.topics.map((topic) => (
+                      <Badge key={topic}>{topic}</Badge>
+                    ))}
+                  </div>
+                ) : null}
+                {item.journeys.length ? (
+                  <p className="mt-3 text-xs text-muted">
+                    Relacionado a {item.journeys.map((journey) => journey.journey_title).join(", ")}.
+                  </p>
+                ) : null}
+                <div className="mt-auto pt-4">
+                  <ButtonLink href={`/capacitacao/biblioteca/${item.slug}`} variant="secondary" size="sm">
+                    Ver conteúdo
+                  </ButtonLink>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {data.total > data.limit ? (
+        <nav className="flex items-center justify-between gap-3" aria-label="Paginação da biblioteca">
+          {offset > 0 ? (
+            <ButtonLink href={pageHref(query, offset - data.limit)} variant="secondary" size="sm">
+              Página anterior
+            </ButtonLink>
+          ) : (
+            <span />
+          )}
+          {offset + data.limit < data.total ? (
+            <ButtonLink href={pageHref(query, offset + data.limit)} variant="secondary" size="sm">
+              Próxima página
+            </ButtonLink>
+          ) : null}
+        </nav>
+      ) : null}
+    </div>
+  );
 }

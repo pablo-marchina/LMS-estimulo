@@ -1,39 +1,41 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const OFFICIAL_ESTIMULO_LOGO_PATH = "/brand/estimulo-logo-horizontal-color.svg";
 
 export function EstimuloBrand({
   href,
   centered = false,
-  compact = false
+  compact = false,
+  invert = false,
+  className
 }: {
   href?: string;
   centered?: boolean;
   compact?: boolean;
+  invert?: boolean;
+  className?: string;
 }) {
-  const className = [
-    "brand",
-    "brand--official",
-    centered ? "brand--center" : null,
-    compact ? "brand--compact" : null
-  ].filter(Boolean).join(" ");
-
   const content = (
-    <span className="brand-logo-clearspace">
-      <img
-        className="brand-logo"
-        src={OFFICIAL_ESTIMULO_LOGO_PATH}
-        width={480}
-        height={208}
-        alt="Estímulo"
-        loading="eager"
-        decoding="async"
-        fetchPriority="high"
-      />
-    </span>
+    <img
+      className={cn(compact ? "h-9 w-auto" : "h-14 w-auto", invert ? "brightness-0 invert" : undefined)}
+      src={OFFICIAL_ESTIMULO_LOGO_PATH}
+      width={480}
+      height={208}
+      alt="Estímulo"
+      loading="eager"
+      decoding="async"
+      fetchPriority="high"
+    />
   );
 
-  return href
-    ? <Link className={className} href={href} aria-label="Plataforma Estímulo — início">{content}</Link>
-    : <div className={className}>{content}</div>;
+  const wrapperClassName = cn("inline-flex items-center", centered && "w-full justify-center", className);
+
+  return href ? (
+    <Link className={wrapperClassName} href={href} aria-label="Plataforma Estímulo — início">
+      {content}
+    </Link>
+  ) : (
+    <div className={wrapperClassName}>{content}</div>
+  );
 }
