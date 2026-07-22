@@ -75,7 +75,7 @@ export default async function AdminPage({
     </div> : <StatusPanel title="Consulta disponível" tone="info"><p>As ações de publicação e matrícula não estão disponíveis para este vínculo.</p></StatusPanel>}
 
     {canReviewPractice ? <section className="stack stack--large" id="praticas" aria-labelledby="revisao-praticas-titulo">
-      <div><p className="eyebrow">Evidências</p><h2 id="revisao-praticas-titulo">Revisão de práticas</h2><p className="support-note">Arquivos privados validados por autorização, formato, tamanho e hash podem ser baixados e avaliados.</p></div>
+      <div><h2 id="revisao-praticas-titulo">Revisão de práticas</h2><p className="support-note">Arquivos privados validados por autorização, formato, tamanho e hash podem ser baixados e avaliados.</p></div>
       {practices.length === 0 ? <StatusPanel title="Nenhuma prática" tone="info"><p>Ainda não há evidências enviadas nesta organização.</p></StatusPanel> : <div className="practice-list">{practices.map((practice) => <article className="practice-card" key={practice.id}>
         <div className="practice-header"><strong>{practice.participant_name}</strong><span className="status-pill">{practiceStatus[practice.status] ?? practice.status}</span><time dateTime={practice.submitted_at}>{dateFormatter.format(new Date(practice.submitted_at))}</time></div>
         <p className="metadata">{practice.activity_title} · envio {practice.submission_number}</p>
@@ -91,7 +91,7 @@ export default async function AdminPage({
     </section> : null}
 
     {canManageComments ? <section className="stack stack--large" id="comentarios" aria-labelledby="moderacao-comentarios-titulo">
-      <div><p className="eyebrow">Participação</p><h2 id="moderacao-comentarios-titulo">Moderação de comentários</h2><p className="support-note">Comentários visíveis podem ser ocultados com justificativa. Comentários ocultos podem ser restaurados sem apagar o histórico.</p></div>
+      <div><h2 id="moderacao-comentarios-titulo">Moderação de comentários</h2><p className="support-note">Comentários visíveis podem ser ocultados com justificativa. Comentários ocultos podem ser restaurados sem apagar o histórico.</p></div>
       {comments.length === 0 ? <StatusPanel title="Nenhum comentário" tone="info"><p>Ainda não há comentários para moderar nesta organização.</p></StatusPanel> : <div className="comment-list">{comments.map((comment) => <article className="comment-card" key={comment.id}>
         <div className="comment-header"><strong>{comment.author_name}</strong><span className="status-pill">{comment.status === "visible" ? "Visível" : "Oculto"}</span><time dateTime={comment.created_at}>{dateFormatter.format(new Date(comment.created_at))}</time></div>
         <p className="metadata">{comment.activity_title}</p><p>{comment.body}</p>{comment.moderation_reason ? <p className="moderation-reason"><strong>Motivo atual:</strong> {comment.moderation_reason}</p> : null}

@@ -100,7 +100,6 @@ export default async function MaturityConfigurationPage({
 
     <section className="stack stack--large" aria-labelledby="simulador-maturidade">
       <div>
-        <p className="eyebrow">Somente pré-visualização</p>
         <h2 id="simulador-maturidade">Simular cálculo sem persistência</h2>
         <p className="support-note">Os valores permanecem apenas na URL desta página. Nenhum resultado é gravado ou usado para personalização.</p>
       </div>
@@ -132,7 +131,7 @@ export default async function MaturityConfigurationPage({
     {calculation?.status === "abstained" ? <StatusPanel title="Cálculo não realizado" tone="warning"><p>As respostas não atendem ao contrato do draft: {calculation.reason}.</p></StatusPanel> : null}
 
     <section className="stack" aria-labelledby="questoes-configuradas">
-      <div><p className="eyebrow">Conteúdo para revisão</p><h2 id="questoes-configuradas">Perguntas e opções versionadas</h2></div>
+      <h2 id="questoes-configuradas">Perguntas e opções versionadas</h2>
       {workspace.dimensions.map((dimension) => <article className="card stack" key={`review:${dimension.id}`}>
         <h3>{dimension.name}</h3>
         <p>{dimension.description}</p>
@@ -142,7 +141,7 @@ export default async function MaturityConfigurationPage({
     </section>
 
     <section className="stack" aria-labelledby="segmentos-configurados">
-      <div><p className="eyebrow">Níveis propostos</p><h2 id="segmentos-configurados">Segmentos ainda não publicados</h2></div>
+      <h2 id="segmentos-configurados">Segmentos ainda não publicados</h2>
       {workspace.segments.map((segment) => <article className="card" key={segment.version_id}><h3>{segment.name}</h3><p>{segment.description}</p><p className="metadata">Estado: {segment.status} · publicado: não</p></article>)}
     </section>
   </AppShell>;

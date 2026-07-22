@@ -47,10 +47,14 @@ h2 { font-size: 1.35rem; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
 .card-meta { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: var(--muted); font-size: .82rem; margin-bottom: 18px; }
 .status-pill { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; border-radius: 999px; background: var(--green-light); color: var(--text); font-weight: 800; }
-.status-panel { margin: 20px 0; }
-.status-panel--info { border-left: 7px solid var(--cyan); }
-.status-panel--warning { border-left: 7px solid #e8b330; background: var(--warning); }
-.status-panel--success { border-left: 7px solid var(--green); background: var(--green-light); }
+.status-panel { position: relative; margin: 20px 0; padding-left: 68px; }
+.status-panel::before { content: ""; position: absolute; top: 24px; left: 24px; width: 32px; height: 32px; border-radius: 50%; background: var(--border); }
+.status-panel h2 { padding-top: 2px; }
+.status-panel--info::before { background: var(--cyan); }
+.status-panel--warning { background: var(--warning); }
+.status-panel--warning::before { background: #e8b330; }
+.status-panel--success { background: var(--green-light); }
+.status-panel--success::before { background: var(--green); }
 .stack { display: grid; gap: 16px; }
 .stack--large { gap: 24px; }
 label { display: grid; gap: 8px; font-weight: 700; }
@@ -128,7 +132,7 @@ input[type="file"] { padding: 10px; }
 .credential-refresh { margin: 24px 0; }
 .credential-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
 .credential-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow); overflow: hidden; }
-.credential-card--certificate { border-top: 7px solid var(--primary); }
+.credential-card--certificate { box-shadow: 0 2px 0 var(--primary) inset, var(--shadow); }
 .credential-mark { float: right; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: var(--green-light); font-size: 28px; font-weight: 900; }
 .certificate-page { min-height: 100vh; display: grid; align-content: center; justify-items: center; gap: 24px; padding: 32px; }
 .certificate-document { width: min(920px, 100%); min-height: 620px; display: grid; align-content: center; text-align: center; padding: clamp(36px, 8vw, 88px); background: white; border: 14px double var(--primary); box-shadow: var(--shadow); }
@@ -155,6 +159,8 @@ input[type="file"] { padding: 10px; }
   .form-footer .button, .practice-card .button, .review-form .button, .journey-card .button, .journey-card form { width: 100%; }
   .certificate-page { padding: 12px; }
   .certificate-document { border-width: 8px; }
+  .status-panel { padding-left: 56px; }
+  .status-panel::before { top: 20px; left: 18px; width: 26px; height: 26px; }
 }
 @media print {
   @page { size: A4 landscape; margin: 0; }

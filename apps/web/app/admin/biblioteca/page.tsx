@@ -40,7 +40,7 @@ export default async function AdminLibraryPage({
     <form className="inline-form" method="get"><label>Organização<select name="organization" defaultValue={organization.organization_id}>{auth.identity.organizations.map((item) => <option value={item.organization_id} key={item.organization_id}>{item.display_name}</option>)}</select></label><button className="button button--secondary" type="submit">Selecionar</button></form>
 
     <section className="card stack stack--large" aria-labelledby="editor-biblioteca">
-      <div><p className="eyebrow">Editor</p><h2 id="editor-biblioteca">{editing ? `Editar ${editing.title}` : "Novo conteúdo"}</h2><p className="support-note">Artigos ficam no domínio do Estímulo. Links externos precisam usar HTTPS.</p></div>
+      <div><h2 id="editor-biblioteca">{editing ? `Editar ${editing.title}` : "Novo conteúdo"}</h2><p className="support-note">Artigos ficam no domínio do Estímulo. Links externos precisam usar HTTPS.</p></div>
       <form action={saveLibraryContentAction} className="stack">
         <input type="hidden" name="organization_id" value={organization.organization_id} />
         <input type="hidden" name="library_item_id" value={editing?.library_item_id ?? ""} />
@@ -70,11 +70,11 @@ export default async function AdminLibraryPage({
       </form>
     </section>
 
-    <section className="stack stack--large" aria-labelledby="rascunhos-biblioteca"><div><p className="eyebrow">Revisão</p><h2 id="rascunhos-biblioteca">Rascunhos</h2></div>
+    <section className="stack stack--large" aria-labelledby="rascunhos-biblioteca"><h2 id="rascunhos-biblioteca">Rascunhos</h2>
       {drafts.length === 0 ? <StatusPanel title="Nenhum rascunho" tone="info"><p>Use o editor para criar a primeira versão.</p></StatusPanel> : <div className="card-grid">{drafts.map((item) => <article className="card" key={item.library_item_version_id}><div className="card-meta"><span className="status-pill">Rascunho</span><span>Versão {item.version_number}</span></div><h3>{item.title}</h3><p>{item.summary}</p><div className="inline-actions"><Link className="button button--secondary" href={`/admin/biblioteca?organization=${organization.organization_id}&edit=${item.library_item_version_id}`}>Editar</Link><form action={publishLibraryContentAction}><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="library_item_version_id" value={item.library_item_version_id} /><input type="hidden" name="content_hash" value={item.content_hash} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><button className="button button--primary" type="submit">Publicar versão</button></form></div></article>)}</div>}
     </section>
 
-    <section className="stack stack--large" aria-labelledby="publicados-biblioteca"><div><p className="eyebrow">Catálogo ativo</p><h2 id="publicados-biblioteca">Publicados</h2></div>
+    <section className="stack stack--large" aria-labelledby="publicados-biblioteca"><h2 id="publicados-biblioteca">Publicados</h2>
       {published.length === 0 ? <StatusPanel title="Nenhum conteúdo publicado" tone="info"><p>Os conteúdos aparecerão aqui após a publicação.</p></StatusPanel> : <div className="card-grid">{published.map((item) => <article className="card" key={item.library_item_version_id}><div className="card-meta"><span className="status-pill">Publicado</span><span>Versão {item.version_number}</span></div><h3>{item.title}</h3><p>{item.summary}</p><Link className="button button--secondary" href={`/capacitacao/biblioteca/${item.slug}`}>Visualizar</Link></article>)}</div>}
     </section>
   </AppShell>;

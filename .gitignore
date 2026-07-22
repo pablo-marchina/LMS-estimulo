@@ -17,3 +17,6 @@ node_modules/
 *.tar
 *.tar.gz
 *.tgz
+
+# Local reference material (design/product research, third-party repo clones).
+/ref/

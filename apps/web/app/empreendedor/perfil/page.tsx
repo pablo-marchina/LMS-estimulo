@@ -32,14 +32,14 @@ export default async function ParticipantProfilePage() {
     </header>
 
     <section className="profile-summary-grid" aria-label="Resumo do perfil">
-      <article className="card"><p className="eyebrow">Conta</p><h2>Identidade confirmada</h2><p>{engagement.email}</p><p className="support-note">O CPF permanece protegido e não é exibido na interface.</p></article>
+      <article className="card"><h2>Identidade confirmada</h2><p>{engagement.email}</p><p className="support-note">O CPF permanece protegido e não é exibido na interface.</p></article>
       <article className="metric"><span>Pontos acumulados</span><strong>{totalPoints}</strong>{engagement.own_rank ? <span>Posição {engagement.own_rank.position}</span> : null}</article>
       <article className="metric"><span>Jornadas concluídas</span><strong>{completed.length}</strong></article>
       <article className="metric"><span>Credenciais</span><strong>{credentials.badges.length + credentials.certificates.length}</strong><Link href="/empreendedor/credenciais">Abrir carteira</Link></article>
     </section>
 
     <section className="stack stack--large" aria-labelledby="diagnostico-perfil-titulo">
-      <div><p className="eyebrow">Personalização</p><h2 id="diagnostico-perfil-titulo">Resultado do diagnóstico</h2></div>
+      <h2 id="diagnostico-perfil-titulo">Resultado do diagnóstico</h2>
       {archetype?.name ? <article className="card profile-archetype">
         <div className="card-meta"><span className="status-pill">{archetype.classification_status}</span><time dateTime={archetype.assigned_at}>{dateFormatter.format(new Date(archetype.assigned_at))}</time></div>
         <h3>{archetype.name}</h3>
@@ -50,7 +50,7 @@ export default async function ParticipantProfilePage() {
     </section>
 
     <section className="stack stack--large" aria-labelledby="historico-jornadas-titulo">
-      <div><p className="eyebrow">Histórico</p><h2 id="historico-jornadas-titulo">Jornadas e progresso</h2></div>
+      <h2 id="historico-jornadas-titulo">Jornadas e progresso</h2>
       {journeyData.journeys.length ? <div className="card-grid">{journeyData.journeys.map((journey) => <article className="card" key={journey.journey_instance_id}>
         <div className="card-meta"><span className="status-pill">{statusLabel(journey.journey_status)}</span><span>Versão {journey.journey_version_number}</span></div>
         <h3>{journey.journey_title ?? journey.journey_code}</h3>
@@ -62,7 +62,7 @@ export default async function ParticipantProfilePage() {
     </section>
 
     <section className="stack stack--large" aria-labelledby="historico-pontos-titulo">
-      <div><p className="eyebrow">Engajamento</p><h2 id="historico-pontos-titulo">Histórico de pontuação</h2></div>
+      <h2 id="historico-pontos-titulo">Histórico de pontuação</h2>
       {engagement.point_history.length ? <ol className="point-history">{engagement.point_history.map((entry) => <li key={entry.id}>
         <span className={entry.amount >= 0 ? "point-amount point-amount--positive" : "point-amount point-amount--negative"}>{entry.amount >= 0 ? "+" : ""}{entry.amount}</span>
         <div><strong>{entry.reason}</strong><time dateTime={entry.occurred_at}>{dateFormatter.format(new Date(entry.occurred_at))}</time></div>

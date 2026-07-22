@@ -56,7 +56,6 @@ export default async function UserAdministrationPage({
 
     <section className="stack stack--large" aria-labelledby="membros-titulo">
       <div>
-        <p className="eyebrow">Menor privilégio</p>
         <h2 id="membros-titulo">Membros da organização</h2>
         <p className="support-note">O primeiro gestor é criado somente por bootstrap operacional auditado. Depois disso, gestores autorizados administram os papéis abaixo.</p>
       </div>

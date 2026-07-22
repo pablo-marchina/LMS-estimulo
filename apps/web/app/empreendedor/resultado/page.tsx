@@ -46,14 +46,14 @@ export default async function ResultPage({
       </form> : <StatusPanel title="Jornada ainda em andamento" tone="info"><p>Conclua as etapas obrigatórias para liberar o resultado final.</p><Link className="button button--primary" href={participantNextHref(state)}>Continuar jornada</Link></StatusPanel>}
 
       <section className="stack stack--large" aria-labelledby="credenciais-jornada">
-        <div><p className="eyebrow">Conquistas</p><h2 id="credenciais-jornada">Credenciais desta jornada</h2></div>
+        <h2 id="credenciais-jornada">Credenciais desta jornada</h2>
         {badges.length === 0 && certificates.length === 0 ? <StatusPanel title="Nenhuma credencial emitida" tone="info"><p>A emissão depende de versões publicadas e regras homologadas para esta jornada.</p></StatusPanel> : null}
         {badges.length ? <div className="credential-grid">{badges.map((badge) => <article className="credential-card" key={badge.award_id}>
           <span className="credential-mark" aria-hidden="true">✓</span>
-          <p className="eyebrow">Selo</p><h3>{badge.title}</h3><p>{badge.description}</p><p className="metadata">Emitido em {new Intl.DateTimeFormat("pt-BR").format(new Date(badge.awarded_at))}</p>
+          <span className="status-pill">Selo</span><h3>{badge.title}</h3><p>{badge.description}</p><p className="metadata">Emitido em {new Intl.DateTimeFormat("pt-BR").format(new Date(badge.awarded_at))}</p>
         </article>)}</div> : null}
         {certificates.length ? <div className="credential-grid">{certificates.map((certificate) => <article className="credential-card credential-card--certificate" key={certificate.issuance_id}>
-          <p className="eyebrow">Certificado</p><h3>{certificate.certificate_name}</h3><p>Emitido para {certificate.display_name}.</p><p className="metadata">Código {certificate.verification_code}</p>
+          <span className="status-pill">Certificado</span><h3>{certificate.certificate_name}</h3><p>Emitido para {certificate.display_name}.</p><p className="metadata">Código {certificate.verification_code}</p>
           <Link className="button button--primary" href={`/credenciais/${certificate.verification_code}`}>Abrir certificado</Link>
         </article>)}</div> : null}
       </section>

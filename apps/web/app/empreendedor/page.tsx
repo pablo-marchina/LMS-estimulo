@@ -66,18 +66,18 @@ export default async function ParticipantHome() {
       </section> : null}
 
       {engagement?.rewards.length ? <section className="stack stack--large" aria-labelledby="recompensas-titulo">
-        <div className="section-heading-row"><div><p className="eyebrow">O que você pode conquistar</p><h2 id="recompensas-titulo">Recompensas da sua jornada</h2></div><Link href="/empreendedor/credenciais">Abrir carteira</Link></div>
+        <div className="section-heading-row"><h2 id="recompensas-titulo">Recompensas da sua jornada</h2><Link href="/empreendedor/credenciais">Abrir carteira</Link></div>
         <div className="reward-grid">
           {engagement.rewards.slice(0, 6).map((reward) => <article className={`reward-card${reward.earned ? " reward-card--earned" : ""}`} key={`${reward.type}:${reward.version_id}`}>
             <span className="reward-icon" aria-hidden="true">{reward.type === "badge" ? "★" : "✓"}</span>
-            <div><p className="eyebrow">{reward.earned ? "Conquistado" : "Disponível"}</p><h3>{reward.title}</h3><p>{reward.description}</p></div>
+            <div><span className="status-pill">{reward.earned ? "Conquistado" : "Disponível"}</span><h3>{reward.title}</h3><p>{reward.description}</p></div>
           </article>)}
         </div>
         {pendingRewards.length ? <p className="support-note">Você ainda pode conquistar {pendingRewards.length} {pendingRewards.length === 1 ? "recompensa" : "recompensas"} nas jornadas atribuídas.</p> : <p className="support-note">Todas as recompensas disponíveis foram conquistadas.</p>}
       </section> : null}
 
       {journeys.length ? <section className="dashboard-journeys stack stack--large" aria-labelledby="jornadas-titulo">
-        <div><p className="eyebrow">Jornadas</p><h2 id="jornadas-titulo">Todas as suas jornadas</h2><p className="support-note">O progresso exibido vem do estado persistido da plataforma.</p></div>
+        <div><h2 id="jornadas-titulo">Todas as suas jornadas</h2><p className="support-note">O progresso exibido vem do estado persistido da plataforma.</p></div>
         <div className="card-grid">
           {journeys.map((journey) => (
             <article className={`card journey-card journey-card--${journey.journey_status}`} key={journey.journey_instance_id}>
@@ -101,7 +101,7 @@ export default async function ParticipantHome() {
       </section> : null}
 
       {engagement?.ranking.length ? <section className="stack stack--large" aria-labelledby="ranking-titulo">
-        <div className="section-heading-row"><div><p className="eyebrow">Engajamento</p><h2 id="ranking-titulo">Ranking de pontos</h2></div><Link href="/empreendedor/perfil">Ver histórico completo</Link></div>
+        <div className="section-heading-row"><h2 id="ranking-titulo">Ranking de pontos</h2><Link href="/empreendedor/perfil">Ver histórico completo</Link></div>
         <ol className="ranking-list">
           {engagement.ranking.map((entry) => <li className={entry.is_current ? "ranking-row ranking-row--current" : "ranking-row"} key={`${entry.position}:${entry.participant}`}>
             <span className="ranking-position">{entry.position}</span><strong>{entry.participant}</strong><span>{entry.points} pontos</span>

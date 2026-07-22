@@ -66,7 +66,7 @@ export default async function LibraryPage({
     </form>
 
     <section className="stack stack--large" aria-labelledby="resultados-biblioteca">
-      <div><p className="eyebrow">Catálogo</p><h2 id="resultados-biblioteca">{data.total} {data.total === 1 ? "conteúdo encontrado" : "conteúdos encontrados"}</h2></div>
+      <h2 id="resultados-biblioteca">{data.total} {data.total === 1 ? "conteúdo encontrado" : "conteúdos encontrados"}</h2>
       {data.items.length === 0 ? <StatusPanel title="Nenhum conteúdo encontrado" tone="info"><p>Revise a busca ou remova um dos filtros.</p></StatusPanel> : <div className="card-grid">
         {data.items.map((item) => <article className="card" key={item.library_item_version_id}>
           <div className="card-meta"><span className="status-pill">{formatLabels[item.content_format] ?? item.content_format}</span><span>{levelLabels[item.level] ?? item.level}</span></div>

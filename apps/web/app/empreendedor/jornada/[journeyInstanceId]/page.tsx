@@ -52,7 +52,6 @@ export default async function JourneyOutlinePage({
 
     {outline.modules.length ? <section className="journey-outline stack stack--large" aria-labelledby="blocos-titulo">
       <div>
-        <p className="eyebrow">Conteúdo da jornada</p>
         <h2 id="blocos-titulo">Blocos e atividades</h2>
         <p className="support-note">Atividades marcadas como disponíveis podem ser iniciadas em qualquer ordem. Itens bloqueados dependem das regras publicadas da jornada.</p>
       </div>

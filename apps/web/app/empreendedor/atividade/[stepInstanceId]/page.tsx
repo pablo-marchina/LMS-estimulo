@@ -99,7 +99,6 @@ export default async function ActivityPage({
 
       {practice ? <section className="practice-section stack stack--large" id="pratica" aria-labelledby="pratica-titulo">
         <div>
-          <p className="eyebrow">Aplicação prática</p>
           <h2 id="pratica-titulo">Envie sua evidência</h2>
           <p className="support-note">Formatos aceitos: PDF, imagem, TXT ou DOCX. Limite de 6 MB. O arquivo permanece privado e é validado por formato, tamanho, hash e autorização de acesso.</p>
         </div>
@@ -127,7 +126,6 @@ export default async function ActivityPage({
 
       {canAssess ? <section className="card stack" id="utilidade" aria-labelledby="utilidade-titulo">
         <div>
-          <p className="eyebrow">Avaliação opcional</p>
           <h2 id="utilidade-titulo">Esta atividade foi útil?</h2>
           <p className="support-note">A nota de 1 a 5 melhora a capacitação. Ela não altera sua conclusão, seus pontos ou qualquer decisão de crédito.</p>
         </div>
@@ -150,7 +148,6 @@ export default async function ActivityPage({
 
       <section className="comments-section stack stack--large" id="comentarios" aria-labelledby="comentarios-titulo">
         <div>
-          <p className="eyebrow">Participação</p>
           <h2 id="comentarios-titulo">Comentários da aula</h2>
           <p className="support-note">Compartilhe sua experiência com a atividade. Não publique dados pessoais, senhas ou informações financeiras.</p>
         </div>
@@ -187,7 +184,6 @@ export default async function ActivityPage({
           <input type="hidden" name="step_instance_id" value={stepInstanceId} />
           <input type="hidden" name="idempotency_key" value={randomUUID()} />
           <div className="card">
-            <p className="eyebrow">Avaliação de conhecimento</p>
             <h2>Verifique o que aprendeu</h2>
             <p className="support-note">{assessment.questions.length} {assessment.questions.length === 1 ? "questão" : "questões"}{assessment.passing_score !== null ? ` · aprovação a partir de ${assessment.passing_score}%` : ""}{maxAttempts !== null ? ` · até ${maxAttempts} tentativas` : ""}.</p>
           </div>

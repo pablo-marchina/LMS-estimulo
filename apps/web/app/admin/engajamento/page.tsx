@@ -50,7 +50,7 @@ export default async function EngagementAdminPage({
       </form>
 
       <section className="card stack" aria-labelledby="novo-anuncio-titulo">
-        <div><p className="eyebrow">Novo item</p><h2 id="novo-anuncio-titulo">Criar anúncio</h2></div>
+        <h2 id="novo-anuncio-titulo">Criar anúncio</h2>
         <AnnouncementForm organizationId={organization.organization_id} />
       </section>
 
@@ -65,7 +65,7 @@ async function AnnouncementList({ actor, organizationId }: { actor: string; orga
     return <StatusPanel title="Nenhum anúncio" tone="info"><p>Crie o primeiro item do carrossel do participante.</p></StatusPanel>;
   }
   return <section className="stack stack--large" aria-labelledby="anuncios-existentes-titulo">
-    <div><p className="eyebrow">Conteúdo atual</p><h2 id="anuncios-existentes-titulo">Anúncios cadastrados</h2></div>
+    <h2 id="anuncios-existentes-titulo">Anúncios cadastrados</h2>
     <div className="card-grid">
       {data.announcements.map((announcement) => <article className="card stack" key={announcement.id}>
         <div className="card-meta"><span className="status-pill">{announcement.status}</span><span>Prioridade {announcement.priority}</span></div>
