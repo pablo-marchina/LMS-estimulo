@@ -115,6 +115,11 @@ test("participant confirmation recovers from PKCE mismatch and reports resend fa
   assert.match(completionAction, /CNPJ_REQUIRES_BUSINESS_NAME/u);
   assert.match(completionAction, /"cnpj_requer_nome_negocio"/u);
   assert.match(completionPage, /Para informar um CNPJ, preencha também o nome do negócio\./u);
+  assert.match(
+    completionPage,
+    /Este CNPJ já está vinculado a outro negócio cadastrado\. Você pode continuar sem informar o CNPJ agora e cadastrá-lo depois, ou entrar em contato com o suporte\./u,
+  );
+  assert.match(completionPage, /Para informar o CNPJ, preencha também o nome do negócio acima\./u);
 });
 
 test("recreated Auth users relink only when the previous subject is orphaned", async () => {

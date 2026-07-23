@@ -15,7 +15,8 @@ const errorMessages: Record<string, string> = {
   cpf_revisao_necessaria: "A alteração do CPF exige revisão de identidade pelo suporte.",
   telefone_invalido: "Informe um telefone válido, com DDD.",
   cnpj_invalido: "Informe um CNPJ válido ou deixe o campo em branco.",
-  cnpj_ja_vinculado: "Este CNPJ já está vinculado a outro negócio cadastrado.",
+  cnpj_ja_vinculado:
+    "Este CNPJ já está vinculado a outro negócio cadastrado. Você pode continuar sem informar o CNPJ agora e cadastrá-lo depois, ou entrar em contato com o suporte.",
   cnpj_requer_nome_negocio: "Para informar um CNPJ, preencha também o nome do negócio.",
   protecao_cpf_indisponivel: "A proteção do CPF não está configurada neste ambiente.",
   provisionamento_falhou: "Não foi possível concluir o perfil agora.",
@@ -80,8 +81,18 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
         </Label>
         <Label>
           CNPJ <span className="font-normal text-muted">(opcional)</span>
-          <Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} />
+          <Input
+            name="cnpj"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="00.000.000/0000-00"
+            maxLength={18}
+            aria-describedby="cnpj-requires-business-name"
+          />
         </Label>
+        <p id="cnpj-requires-business-name" className="-mt-2 text-sm text-muted">
+          Para informar o CNPJ, preencha também o nome do negócio acima.
+        </p>
         <Button size="lg" type="submit">
           Entrar na plataforma
         </Button>
