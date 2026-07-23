@@ -26,6 +26,8 @@
 - Nenhuma restrição de participante sintético em nenhum caminho novo. O caminho antigo (`e14_cmd_enroll`) perde essa restrição também — deixa de existir por completo no código.
 - Diagnostic/archetype versions só entram em vigor (lidas pelo runtime de classificação, elegíveis para matrícula) quando `status='published'` — nunca a partir de `'draft'`.
 - Banner "Rascunho — pendente de aprovação institucional" permanece visível no editor de diagnóstico enquanto a versão selecionada estiver em `draft`.
+- **Any task that does `create or replace function` on an existing multi-branch function (`get_admin_product_workspace`, `save_admin_product_resource`) must reconstruct the "unchanged" branches from the LIVE database, not from a migration file.** Run `select pg_get_functiondef('public.save_admin_product_resource'::regproc);` (or the relevant function name) via `mcp__supabase__execute_sql` first, and edit that text — migration files in `supabase/migrations/` can lag behind what was actually last applied to this project (this repo's migration history shows the same logical migration recorded under more than one timestamp/filename), so trusting a file instead of the live function body risks silently reverting whatever diverged.
+- Throwaway rows inserted purely for live verification (test sessions, responses, enrollments, status flips on shared rows) must be deleted again in the same task before marking it done — this is a shared dev/test project, not a disposable sandbox.
 
 ---
 
@@ -344,11 +346,11 @@ declare
   v_name text;
   v_assignment_id uuid;
 begin
-  v_scores := app_private.e14_dimension_scores_c(p_session_id);
   select dv.configuration->'classification_rules'->'rules', dv.configuration->'classification_rules'->>'default_archetype_code'
     into v_rules, v_default
     from diagnostics.diagnostic_versions dv where dv.id = p_diagnostic_version_id;
-  if v_default is null then raise exception 'CLASSIFICATION_RULES_NOT_CONFIGURED' using errcode = 'P0001'; end if;
+  if v_default is null then return null; end if;
+  v_scores := app_private.e14_dimension_scores_c(p_session_id);
 
   v_code := null;
   for v_rule in select value from jsonb_array_elements(coalesce(v_rules,'[]'::jsonb)) order by (value->>'priority')::integer asc loop
@@ -379,11 +381,15 @@ revoke all on function app_private.e14_archetype_c(uuid,uuid,uuid,uuid,uuid) fro
 
 Note the inner `for` loop: once `v_ok` is set `false` it is not reset until the next rule, but the loop does not `exit` early on failure (removed the early-exit compared to a first draft) — this is intentional and harmless (it just checks remaining dimensions needlessly) but confirm behavior with the test cases below; a rule with a threshold on a dimension key that has **no score at all** for this participant must fail that rule (via `coalesce(...,0)`), not error.
 
+**Critical correctness note — returning `null` vs raising:** this function returns `null` (not an exception) when `default_archetype_code` is absent, i.e. when this diagnostic version was never configured for archetype classification at all. This is deliberate and required: `e14_exec_c` (Step 3) is the shared completion path for **every** diagnostic in this database, not just archetype ones — this live project already has a second, unrelated published diagnostic (`e14_runtime_readiness_diagnostic`, a technical test fixture) with no `classification_rules`. If this function raised instead of returning `null` for that case, wiring it into `e14_exec_c` would break completion of every non-archetype diagnostic the moment Step 3's migration is applied — a real regression, not a hypothetical one. The exception path (`ARCHETYPE_VERSION_NOT_PUBLISHED`) stays a hard failure only for diagnostics that **did** opt into classification (non-null `default_archetype_code`) but have a genuine publishing gap — that scope is intentionally narrow.
+
 Apply via `mcp__supabase__apply_migration` with `name: "e14_archetype_classification"`.
 
-- [ ] **Step 2: Verify live — at least 4 cases**
+- [ ] **Step 2: Verify live — at least 5 cases**
 
-Seed (via `execute_sql`) one `diagnostic_versions.configuration->'classification_rules'` with 2 competing rules + a default, publish all 4 archetype definitions/versions for the test org (`update diagnostics.archetype_versions set status='published', published_at=now() where ...`), insert a throwaway session with responses producing scores that (a) match rule priority 1, (b) match rule priority 2 only, (c) match neither (falls to default), and (d) a case where the matching archetype's version is NOT published — confirm it raises `ARCHETYPE_VERSION_NOT_PUBLISHED`. Confirm each expected `archetype_code` in the returned jsonb and confirm exactly one row lands in `diagnostics.archetype_assignments` per case (call twice with the same session_id to confirm the `on conflict (id) do nothing` makes it idempotent — row count must stay at 1). Clean up all throwaway rows afterward.
+First, confirm the guard: call `e14_archetype_c` directly against the existing `e14_runtime_readiness_diagnostic` published version (or any diagnostic version whose `configuration` has no `classification_rules` key) — it must return plain SQL `null`, not raise. This is the case that protects the existing unrelated diagnostic once Step 3 wires this into `e14_exec_c`.
+
+Then seed (via `execute_sql`) one `diagnostic_versions.configuration->'classification_rules'` with 2 competing rules + a default, publish all 4 archetype definitions/versions for the test org (`update diagnostics.archetype_versions set status='published', published_at=now() where ...`), insert a throwaway session with responses producing scores that (a) match rule priority 1, (b) match rule priority 2 only, (c) match neither (falls to default), and (d) a case where the matching archetype's version is NOT published — confirm it raises `ARCHETYPE_VERSION_NOT_PUBLISHED`. Confirm each expected `archetype_code` in the returned jsonb and confirm exactly one row lands in `diagnostics.archetype_assignments` per case (call twice with the same session_id to confirm the `on conflict (id) do nothing` makes it idempotent — row count must stay at 1). Clean up all throwaway rows afterward, including any archetype_versions status changes made purely for this test that shouldn't persist.
 
 - [ ] **Step 3: Wire into `e14_exec_c`**
 
@@ -400,13 +406,13 @@ begin
  perform app_private.e14_first_c((p->>'e')::uuid,a,ctx,b,c+1,p->>'h',p->>'k');
  data:=app_private.e14_apply_c(b,ctx,s,path,(p->>'e')::uuid);
  arch:=app_private.e14_archetype_c(b,(ctx->>'version_id')::uuid,(ctx->>'organization_id')::uuid,(ctx->>'entrepreneur_id')::uuid,(ctx->>'instance_id')::uuid);
- data:=data||jsonb_build_object('archetype',arch);
+ if arch is not null then data:=data||jsonb_build_object('archetype',arch); end if;
  children:=app_private.e14_children_c((p->>'e')::uuid,a,ctx,s,data);
  return jsonb_build_object('request_id',(p->>'e')::uuid,'idempotency_key',p->>'k','replayed',false,'data',data||jsonb_build_object('event_ids',jsonb_build_array((p->>'e')::uuid)||children));
 end;$$;
 ```
 
-Note this makes `e14_complete_diagnostic` fail (transaction rollback, participant sees an error) whenever the org's diagnostic version has no `classification_rules` configured, or the resolved archetype has no published version — **this is deliberate**: a participant must never silently get no archetype. This means Task 2/Task 5 (admin configures + publishes the rule) must ship and the admin must actually configure the diagnostic used by the live journey before real participants take it, or diagnostic completion breaks for them. Flag this operational dependency clearly in your task report.
+Completing a diagnostic version with no `classification_rules` configured (e.g. `e14_runtime_readiness_diagnostic`, or any future non-archetype diagnostic) now succeeds exactly as before, with no `archetype` key in the result — confirmed safe by the null-return fix above. `e14_complete_diagnostic` only fails when a diagnostic **has** opted into classification (non-null `default_archetype_code`) but resolves to an archetype whose published version is missing — **this remains deliberate**: once a diagnostic is configured for classification, a participant must never silently get no archetype. This means Task 2/Task 5 (admin configures + publishes the rule, and publishes all 4 archetype versions) must be complete before real participants take the archetype diagnostic, or its completion breaks for them. Flag this operational dependency clearly in your task report.
 
 Apply via `mcp__supabase__apply_migration` with `name: "e14_exec_c_archetype_wiring"`.
 
@@ -902,8 +908,8 @@ end;$$;
 create or replace function public.e14_self_enroll(p_actor_user_account_id uuid,p_journey_version_id uuid,p_idempotency_key text)
 returns jsonb language sql security definer set search_path=pg_catalog as $$select app_private.e14_cmd_self_enroll($1,$2,$3)$$;
 revoke all on function app_private.e14_cmd_self_enroll(uuid,uuid,text) from public,anon,authenticated;
-revoke all on function public.e14_self_enroll(uuid,uuid,text) from public,anon;
-grant execute on function public.e14_self_enroll(uuid,uuid,text) to authenticated,service_role,app_worker;
+revoke all on function public.e14_self_enroll(uuid,uuid,text) from public,anon,authenticated;
+grant execute on function public.e14_self_enroll(uuid,uuid,text) to service_role,app_worker;
 
 create or replace function public.e14_list_eligible_journeys(p_actor_user_account_id uuid)
 returns jsonb language sql stable security definer set search_path=pg_catalog as $$
@@ -924,9 +930,11 @@ returns jsonb language sql stable security definer set search_path=pg_catalog as
    and jv.id not in (select journey_version_id from already_enrolled)
    and (jv.eligible_archetype_codes is null or array_length(jv.eligible_archetype_codes,1) is null or (select code from archetype) = any(jv.eligible_archetype_codes))
 $$;
-revoke all on function public.e14_list_eligible_journeys(uuid) from public,anon;
-grant execute on function public.e14_list_eligible_journeys(uuid) to authenticated,service_role,app_worker;
+revoke all on function public.e14_list_eligible_journeys(uuid) from public,anon,authenticated;
+grant execute on function public.e14_list_eligible_journeys(uuid) to service_role,app_worker;
 ```
+
+**Security-critical note:** these two functions are `security definer` and trust `p_actor_user_account_id` as a plain parameter — that is only safe because they are callable *exclusively* by `service_role`/`app_worker` (the Next.js server, via `invokeServerRpc`, which itself derives the actor from the authenticated session server-side before calling). They must **not** be granted to `authenticated` — every other participant-facing RPC in this codebase (`e14_complete_diagnostic`, `e14_create_enrollment`, etc.) follows this same server-role-only pattern for exactly this reason: granting to `authenticated` would let any logged-in browser session call `e14_self_enroll` with an arbitrary `p_actor_user_account_id` belonging to someone else and enroll on their behalf. Confirm this by reading the grants on `e14_complete_diagnostic` (`select grantee, privilege_type from information_schema.role_routine_grants where routine_name = 'e14_complete_diagnostic';`) before applying — they must match this shape exactly.
 
 Apply via `mcp__supabase__apply_migration` with `name: "self_service_enrollment"`.
 
