@@ -38,8 +38,8 @@
 - `apps/web/app/cadastro/concluir/actions.ts` (modify) — add `telefone`/`cnpj` to the Zod schema, validate via the new modules, pass through.
 - `apps/web/app/cadastro/concluir/page.tsx` (modify) — add the two form fields and their error messages.
 - `package.json` (modify, repo root) — add `test:participant-contact-details` script and wire it into `test:database-gates`.
-- `apps/web/lib/identity/hubspot-match.ts` (new) — the pure identity-matching decision engine (Task 4).
-- `scripts/application/hubspot-match.test.mjs` (new) — full unit test suite for the engine.
+- `apps/web/lib/identity/hubspot-match.ts` (new) — the pure identity-matching decision engine (Task 5).
+- `scripts/integrations/hubspot-match/{hubspot-match.test.mts,run-tests.mjs,tsconfig.json}` (new) — compiled test harness for the engine, mirroring `scripts/integrations/hubspot-contracts/`.
 
 ---
 
@@ -256,7 +256,7 @@ begin
 
   v_result := public.provision_public_signup_participant_v3(
     v_user_account_id, 'Maria Teste', 'Negócio Teste', '{}'::jsonb,
-    encode(sha256('lookup-1'::bytea), 'hex'), 'ciphertext-1234', 'iv-1234567890ab', 'tag-12345678901234',
+    encode(sha256('lookup-1'::bytea), 'hex'), repeat('a', 20), repeat('b', 20), repeat('c', 24),
     1, '+5511912345678', '11222333000181', 'test-contact-details-1'
   );
 
@@ -275,7 +275,7 @@ begin
   -- idempotent replay with the same key must not error and must return the same result
   perform public.provision_public_signup_participant_v3(
     v_user_account_id, 'Maria Teste', 'Negócio Teste', '{}'::jsonb,
-    encode(sha256('lookup-1'::bytea), 'hex'), 'ciphertext-1234', 'iv-1234567890ab', 'tag-12345678901234',
+    encode(sha256('lookup-1'::bytea), 'hex'), repeat('a', 20), repeat('b', 20), repeat('c', 24),
     1, '+5511912345678', '11222333000181', 'test-contact-details-1'
   );
 
@@ -293,7 +293,7 @@ begin
   begin
     perform public.provision_public_signup_participant_v3(
       v_user_account_id, 'Joao Teste', null, '{}'::jsonb,
-      encode(sha256('lookup-2'::bytea), 'hex'), 'ciphertext-1234', 'iv-1234567890ab', 'tag-12345678901234',
+      encode(sha256('lookup-2'::bytea), 'hex'), repeat('a', 20), repeat('b', 20), repeat('c', 24),
       1, '123', null, 'test-contact-details-2'
     );
   exception when others then
@@ -738,7 +738,16 @@ git commit -m "feat(signup): collect telefone and CNPJ at /cadastro/concluir"
 
 **Files:**
 - Create: `apps/web/lib/identity/hubspot-match.ts`
-- Test: `scripts/application/hubspot-match.test.mjs`
+- Create: `scripts/integrations/hubspot-match/hubspot-match.test.mts`
+- Create: `scripts/integrations/hubspot-match/run-tests.mjs`
+- Create: `scripts/integrations/hubspot-match/tsconfig.json`
+- Modify: `package.json` (repo root)
+
+This module must be **executed** (assertions check return values, not source
+text), so it follows the same compile-then-run pattern already used by
+`scripts/integrations/hubspot-contracts/` (see that directory's
+`tsconfig.json` + `run-tests.mjs`) rather than the text-regex pattern used by
+`scripts/application/*.test.mjs`.
 
 **Interfaces:**
 - Produces:
@@ -757,12 +766,90 @@ This function implements the rule from `docs/architecture/IDENTITY_BRIDGE.md`: m
 
 - [ ] **Step 1: Write the failing test**
 
-Create `scripts/application/hubspot-match.test.mjs`:
+Create `scripts/integrations/hubspot-match/tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "types": ["node"],
+    "rootDir": "../../..",
+    "outDir": "../../../.tmp/hubspot-match",
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": false
+  },
+  "include": [
+    "../../../apps/web/lib/identity/hubspot-match.ts",
+    "./*.test.mts"
+  ]
+}
+```
+
+Create `scripts/integrations/hubspot-match/run-tests.mjs` (identical structure to `scripts/integrations/hubspot-contracts/run-tests.mjs`, pointed at this directory):
 
 ```js
+import { existsSync, readdirSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const repositoryRoot = resolve(currentDir, "../../..");
+const outputDir = resolve(repositoryRoot, ".tmp/hubspot-match");
+const compiledTestDir = resolve(outputDir, "scripts/integrations/hubspot-match");
+const tsconfigPath = resolve(currentDir, "tsconfig.json");
+
+const compilerCandidates = [
+  resolve(repositoryRoot, "node_modules/typescript/bin/tsc"),
+  resolve(repositoryRoot, "apps/web/node_modules/typescript/bin/tsc")
+];
+const compilerPath = compilerCandidates.find((candidate) => existsSync(candidate));
+
+if (!compilerPath) {
+  throw new Error("TypeScript compiler was not found. Run npm ci before this test.");
+}
+
+rmSync(outputDir, { recursive: true, force: true });
+
+try {
+  const compile = spawnSync(process.execPath, [compilerPath, "-p", tsconfigPath], {
+    cwd: repositoryRoot,
+    stdio: "inherit"
+  });
+  if (compile.status !== 0) {
+    throw new Error(`hubspot-match compilation failed with status ${compile.status ?? "unknown"}.`);
+  }
+
+  const testPaths = readdirSync(compiledTestDir)
+    .filter((name) => name.endsWith(".test.mjs"))
+    .sort()
+    .map((name) => resolve(compiledTestDir, name));
+  if (testPaths.length < 1) throw new Error("No compiled hubspot-match tests were found.");
+
+  const test = spawnSync(process.execPath, ["--test", ...testPaths], {
+    cwd: repositoryRoot,
+    stdio: "inherit"
+  });
+  if (test.status !== 0) {
+    throw new Error(`hubspot-match tests failed with status ${test.status ?? "unknown"}.`);
+  }
+} finally {
+  rmSync(outputDir, { recursive: true, force: true });
+}
+```
+
+Create `scripts/integrations/hubspot-match/hubspot-match.test.mts`:
+
+```ts
 import assert from "node:assert/strict";
 import test from "node:test";
-import { resolveIdentityMatch } from "../../apps/web/lib/identity/hubspot-match.js";
+import { resolveIdentityMatch } from "../../../apps/web/lib/identity/hubspot-match.js";
 
 const subject = { cpfLookupHmac: "hmac-a", emailNormalized: "maria@example.com", phoneE164: "+5511912345678" };
 
@@ -822,8 +909,8 @@ test("no candidates at all -> no_match_create", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `node --test scripts/application/hubspot-match.test.mjs`
-Expected: FAIL — module `apps/web/lib/identity/hubspot-match.js` (compiled output) not found / `apps/web/lib/identity/hubspot-match.ts` does not exist.
+Run: `node scripts/integrations/hubspot-match/run-tests.mjs`
+Expected: FAIL — TypeScript compilation error, `apps/web/lib/identity/hubspot-match.ts` does not exist yet.
 
 - [ ] **Step 3: Write minimal implementation**
 
@@ -921,19 +1008,11 @@ export function resolveIdentityMatch(
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx tsc -p apps/web/tsconfig.json --noEmit` (typecheck first)
-Expected: no errors.
+Run: `node scripts/integrations/hubspot-match/run-tests.mjs`
+Expected: PASS (7 tests)
 
 Run: `npm run typecheck:web`
-Expected: no errors — the file is plain TypeScript checked by the existing project config.
-
-Since the test file imports `.js` (the runtime extension used across this repo's `.mjs` tests for TS-compiled sources) but Task 5's module is authored as `.ts` with no build step wired into `node --test` directly, align the test import with how this repo already handles this (see `scripts/integrations/hubspot-contracts/run-tests.mjs`, which compiles TypeScript via `tsc` before running `node --test` against the compiled output): add `apps/web/lib/identity/hubspot-match.ts` under the same compiled-test pattern used by `scripts/integrations/hubspot-contracts` — copy that directory's `tsconfig.json` approach rather than inventing a new one. Concretely:
-
-- Change the test import in `scripts/application/hubspot-match.test.mjs` to import directly from the TypeScript source using this repo's existing `scripts/application/*.test.mjs` convention instead (those files import `.ts` sources directly, e.g. `identity-policy.test.mjs` reads `.ts` files as **text** via `readFile`+regex, it does not execute them). Since `hubspot-match.ts` must be **executed** (we assert on return values, not on source text), it cannot use the text-regex style. Use the same compiled-execution approach as `scripts/integrations/hubspot-contracts/run-tests.mjs`:
-  - Move the test to `scripts/integrations/hubspot-match/hubspot-match.test.mts` (adjacent `.test.mts` so `tsc` compiles it together with the source), and add a `run-tests.mjs` wrapper identical in structure to `scripts/integrations/hubspot-contracts/run-tests.mjs` but pointing at this new directory and a local `tsconfig.json` that includes `apps/web/lib/identity/hubspot-match.ts` and the new test file.
-
-Re-run: `node scripts/integrations/hubspot-match/run-tests.mjs`
-Expected: PASS (7 tests)
+Expected: no errors (this file is not under `apps/web/tsconfig.json`'s build but must still satisfy the standalone strict compile from Step 3's `tsconfig.json`, already verified by the passing run above).
 
 - [ ] **Step 5: Register the test gate**
 
