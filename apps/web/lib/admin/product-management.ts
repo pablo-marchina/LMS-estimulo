@@ -10,6 +10,12 @@ export type VersionSummary = {
   configuration?: Record<string, unknown>;
   content_hash?: string;
   published_at?: string | null;
+  dimensions?: Array<{ id: string; code: string; name: string; description: string | null; minimum_answer_ratio: number; position: number }>;
+  items?: Array<{
+    id: string; code: string; item_type: string; prompt: string; position: number; is_required: boolean; dimension_code: string | null;
+    options: Array<{ id: string; code: string; label: string; value: { score?: number }; position: number }>;
+  }>;
+  eligible_archetype_codes?: string[] | null;
   [key: string]: unknown;
 };
 
