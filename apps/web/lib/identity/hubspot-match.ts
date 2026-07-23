@@ -9,11 +9,13 @@ export type IdentityCandidate = {
   signals: IdentitySignal;
 };
 
+export type ConflictReason = "email_matches_but_cpf_differs" | "phone_matches_but_cpf_differs";
+
 export type IdentityMatchState =
   | { state: "no_match_create" }
   | { state: "single_match"; candidateId: string; matchedOn: Array<"cpf" | "email" | "phone"> }
   | { state: "multiple_matches_manual_resolution"; candidateIds: string[] }
-  | { state: "conflict_blocked"; candidateId: string; reason: "email_matches_but_cpf_differs" };
+  | { state: "conflict_blocked"; candidateId: string; reason: ConflictReason };
 
 function matchedSignals(subject: IdentitySignal, candidate: IdentitySignal): Array<"cpf" | "email" | "phone"> {
   const matched: Array<"cpf" | "email" | "phone"> = [];
@@ -29,6 +31,17 @@ function matchedSignals(subject: IdentitySignal, candidate: IdentitySignal): Arr
   return matched;
 }
 
+// CPF is the strongest identity signal available: when both sides have it and it
+// actively disagrees, that is the strongest possible evidence the two records
+// belong to different real people. This must never be silently overridden by
+// agreement on any other signal (phone, email), no matter how many other
+// signals happen to match.
+function hasCpfConflict(subject: IdentitySignal, candidate: IdentitySignal): boolean {
+  return Boolean(
+    subject.cpfLookupHmac && candidate.cpfLookupHmac && subject.cpfLookupHmac !== candidate.cpfLookupHmac,
+  );
+}
+
 function isStrongMatch(matched: Array<"cpf" | "email" | "phone">): boolean {
   return matched.includes("cpf") || matched.includes("phone");
 }
@@ -40,14 +53,14 @@ export function resolveIdentityMatch(
   const withSignals = candidates.map((candidate) => ({
     candidate,
     matched: matchedSignals(subject, candidate.signals),
+    cpfConflict: hasCpfConflict(subject, candidate.signals),
   }));
 
-  const strongMatches = withSignals.filter(({ matched }) => isStrongMatch(matched));
-
-  if (strongMatches.length === 1) {
-    const [{ candidate, matched }] = strongMatches;
-    return { state: "single_match", candidateId: candidate.candidateId, matchedOn: matched };
-  }
+  // A candidate is only eligible to be a genuine "strong match" if it does NOT
+  // actively conflict on CPF. An active CPF disagreement disqualifies a
+  // candidate from single_match no matter how many other signals (phone,
+  // email) happen to agree on that same candidate.
+  const strongMatches = withSignals.filter(({ matched, cpfConflict }) => !cpfConflict && isStrongMatch(matched));
 
   if (strongMatches.length > 1) {
     return {
@@ -56,20 +69,27 @@ export function resolveIdentityMatch(
     };
   }
 
-  // No strong (CPF/phone) match. Check for an email-only conflict: email matches
-  // but CPF disagrees on both sides -- this must never auto-link.
-  const emailOnlyConflict = withSignals.find(
-    ({ candidate, matched }) =>
-      matched.includes("email")
-      && subject.cpfLookupHmac
-      && candidate.signals.cpfLookupHmac
-      && subject.cpfLookupHmac !== candidate.signals.cpfLookupHmac,
-  );
-  if (emailOnlyConflict) {
+  if (strongMatches.length === 1) {
+    // A conflict-free strong match is decisive on its own merits (CPF is a
+    // unique-per-person key), even if some other, unrelated candidate
+    // elsewhere in the list separately has an active CPF conflict -- that is a
+    // data-quality problem about a different record, not evidence against
+    // this one. See hasCpfConflict / conflictCandidates below for that case.
+    const [{ candidate, matched }] = strongMatches;
+    return { state: "single_match", candidateId: candidate.candidateId, matchedOn: matched };
+  }
+
+  // No conflict-free strong match. Check for candidates whose CPF actively
+  // disagrees with the subject's while also sharing some other signal (phone
+  // and/or email) -- these must never be auto-linked, regardless of which
+  // other signal(s) agree.
+  const conflictCandidates = withSignals.filter(({ matched, cpfConflict }) => cpfConflict && matched.length > 0);
+  if (conflictCandidates.length > 0) {
+    const [{ candidate, matched }] = conflictCandidates;
     return {
       state: "conflict_blocked",
-      candidateId: emailOnlyConflict.candidate.candidateId,
-      reason: "email_matches_but_cpf_differs",
+      candidateId: candidate.candidateId,
+      reason: matched.includes("email") ? "email_matches_but_cpf_differs" : "phone_matches_but_cpf_differs",
     };
   }
 
