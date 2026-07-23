@@ -72,43 +72,56 @@ código atual de `apps/web/app/**`, `apps/web/lib/hubspot/**`, `apps/web/compone
 
 ## Frente 1 — Login & Identidade (HubSpot)
 
-Estado atual: `/entrar` (email+senha) e `/cadastro` (nome/empresa/email/senha) são dois
-formulários genéricos, sem nenhuma lógica de HubSpot, CPF ou UTM implementada — apenas
-contratos/políticas (`apps/web/lib/hubspot/{contracts,sync-policy,gateway}.ts`) existem.
+> **Correção pós-verificação profunda (2026-07-23):** a primeira pesquisa (agentes
+> Explore, leitura por amostragem) errou o estado atual desta frente. Releitura completa
+> dos arquivos e dos testes (`scripts/application/auth-entrypoints.test.mjs`,
+> `identity-policy.test.mjs`) mostrou que boa parte já existe e é testada. A seção abaixo
+> reflete o estado real.
 
-**Novo fluxo, ponto único de acesso (`/entrar`):**
+**Já implementado e testado — reaproveitar, não recriar:**
+- `/cadastro` (nome, empresa opcional, email, senha) → `client.auth.signUp` com
+  `emailRedirectTo` → `/auth/confirm` (confirmação por PKCE, com recuperação de
+  `bad_code_verifier`, reenvio com rate-limit tratado, tudo testado).
+- `/cadastro/concluir` (pós-confirmação): já coleta **nome** e **CPF** (obrigatório,
+  validado por dígito verificador, protegido via `apps/web/lib/identity/cpf.ts` —
+  `protectCpf`/`isValidCpf`, AES-GCM + HMAC independentes, nunca grava o CPF bruto em
+  metadata/URL/log) e **nome do negócio** (opcional). Já trata `CPF_ALREADY_LINKED_TO_
+  ANOTHER_ACCOUNT` e `CPF_CHANGE_REQUIRES_IDENTITY_REVIEW` como erros de dedup interno.
+- **UTM** já é capturado: `apps/web/lib/auth/first-touch.ts` lê `utm_source/medium/
+  campaign/term/content` da URL quando a pessoa chega em `/cadastro`, guarda em cookie
+  HttpOnly (`estimulo_first_touch`), e `/cadastro/concluir` já lê esse cookie e passa a
+  atribuição para `provisionPublicSignupParticipant`.
+- Login admin (`/entrar/administracao`) já é Google-OAuth-only, domínio
+  `@estimulo.org` verificado via claims + RBAC ativo — nada a mudar aqui.
+- `sync-policy.ts` já classifica CPF como `linking_identifier` e já tem UTM/engagement
+  tratados — conferir na implementação se falta algum campo específico antes de mexer.
 
-1. Campo único: **email** → botão "Continuar". O sistema decide o próximo passo, a
-   pessoa nunca escolhe entre "entrar" ou "cadastrar".
-2. Email já vinculado a conta Supabase → campo de senha, autentica, vai para Home (ou
-   Diagnóstico se primeiro login).
-3. Email sem conta → formulário de identificação: **nome, CPF, telefone, CNPJ
-   (opcional)**. Ao enviar, roda resolução de identidade contra HubSpot, seguindo os
-   match states de `IDENTITY_BRIDGE.md`:
-   - `single_match` (cliente de crédito já existente no HubSpot) → vincula conta interna
-     ao HubSpot ID existente.
-   - `no_match_create` → cria contato novo no HubSpot com os dados coletados, vincula
-     conta interna ao ID novo. Progresso/arquétipo futuro cai no mesmo contato.
-   - `multiple_matches_manual_resolution` / `conflict_blocked` → **nunca** faz link
-     automático (regra do doc — nunca mesclar por coincidência de email). Cai numa fila
-     de "identidades a resolver", visível na tela admin de Usuários. A pessoa vê uma
-     tela neutra ("estamos confirmando seus dados"), sem linguagem técnica.
-   - Casos `existing_contact_new_company` / `existing_contact_existing_credit` tratados
-     conforme a mesma lógica documentada, sem tela nova dedicada nesta rodada.
-4. Matching nunca usa email isolado — sempre CPF+email+telefone combinados.
-5. **UTM**: capturado silenciosamente da querystring em `/entrar` (sem campo visível),
-   persistido junto ao evento de resolução de identidade.
+**Genuinamente ausente (confirmado por grep no repo inteiro — zero ocorrências de
+`single_match`/`no_match_create`/`multiple_matches`/`conflict_blocked` fora dos docs):**
+- **Nenhuma lógica de busca/match de contato no HubSpot existe.** `apps/web/lib/hubspot/
+  {contracts,sync-policy,gateway}.ts` são contrato/política, não implementação — não há
+  código que busque um contato existente por CPF/email/telefone e decida vincular vs.
+  criar. Isso é trabalho novo, a construir contra a interface já existente
+  (`gateway.ts`), testável via `in-memory-adapter.ts` (ligar `http-adapter.ts` no
+  HubSpot real é troca de configuração, não código novo).
+- **Telefone e CNPJ não são coletados em nenhum lugar hoje.**
 
-**Implementação técnica:**
-- Lógica de matching implementada contra a interface já existente
-  (`gateway.ts`/`contracts.ts`), testável via `in-memory-adapter.ts`. Ligar no HubSpot
-  real via `http-adapter.ts` é troca de configuração, não código novo — destrava sozinho
-  quando o sandbox for liberado (ver gates).
-- `sync-policy.ts`: adicionar UTM (`utm_source/medium/campaign/term/content`) como
-  `engagement_signal` no allowlist. Campos hoje bloqueados (arquétipo, maturidade)
-  continuam bloqueados — nenhuma mudança de classificação além de UTM.
-- CPF precisa de HMAC + criptografia (`DATA_CLASSIFICATION_AND_HANDLING.md`) — verificar
-  se já existe utilitário no repo antes de implementar; se não, é peça nova.
+**Decisão de escopo revisada:** dado que o fluxo atual (`/cadastro` → confirmação →
+`/cadastro/concluir`) já é testado e cobre PKCE/reenvio/rate-limit, **não vamos
+substituí-lo por um campo único de email** como eu tinha desenhado antes — isso jogaria
+fora cobertura de teste real por uma "mágica" de roteamento que pode inclusive confundir
+mais um usuário leigo (ela não vê o que está acontecendo). Mantemos os dois pontos de
+entrada visíveis, claros ("Entrar" / "Criar conta"), e:
+1. Adicionamos **telefone** e **CNPJ (opcional)** em `/cadastro/concluir`, junto ao CPF
+   já coletado ali.
+2. Nesse mesmo passo (depois que a conta já está confirmada e os dados coletados),
+   chamamos a nova lógica de matching contra o HubSpot:
+   - contato existente (cliente de crédito) → vincula ao HubSpot ID existente.
+   - nenhum contato → cria contato novo, vincula ao ID novo.
+   - ambíguo/conflito → nunca vincula automaticamente; cai numa fila de "identidades a
+     resolver" visível na tela admin de Usuários; a pessoa vê uma mensagem neutra
+     ("estamos confirmando seus dados"), sem linguagem técnica.
+   - matching nunca usa email isolado — sempre CPF+email+telefone combinados.
 
 ---
 
@@ -154,8 +167,28 @@ Hoje é um redirect de uma linha para `/entrar`. Vira página de marketing real:
     participante.
 
 ### Lado admin (`admin/diagnostico`)
+
+> **Correção:** confirmado por leitura integral do arquivo — os 4 campos JSON são reais
+> (`configuration`, `dimensions`, `items`, `archetypes`, salvos via `saveAdminProductResource`
+> → RPC `save_admin_product_resource` → tabelas `diagnostics.diagnostic_definitions/
+> diagnostic_versions/dimensions/items/item_options/archetype_definitions/
+> archetype_versions`). **Este editor NÃO usa o motor `lib/configurable-product/*`**
+> (`FormDefinition/FormVersion/...`) descrito em `CONFIGURABLE_PRODUCT_ENGINE.md` — esse
+> motor é uma peça lógica separada e não integrada às rotas (`application_routes_
+> integrated = false`, conforme o próprio doc). Também existe um artefato estático
+> independente, `config/official-diagnostic/v3/manifest.json`, validado por
+> `scripts/product/official-diagnostic/validate-configuration.mjs` (gate de CI
+> `test:official-diagnostic`) — esse manifesto **não tem nenhuma ligação de código com
+> o editor admin**; é uma checagem de compliance separada sobre um arquivo estático.
+> **Decisão:** construir a nova UI em cima do RPC `save_admin_product_resource` que o
+> editor já usa (é o sistema vivo/editável), sem tentar integrar o motor
+> configurable-product nem o manifesto estático — isso fica fora de escopo, é uma
+> divergência arquitetural pré-existente para o time decidir separadamente, não algo
+> que esta revisão de UX precisa resolver.
+
 Hoje: 4 campos `<Textarea className="font-mono text-xs">` de JSON cru
-(`configuration`, `dimensions`, `items`, `archetypes`). Substituído por fluxo em etapas:
+(`configuration`, `dimensions`, `items`, `archetypes`). Substituído por fluxo em etapas,
+mantendo a mesma RPC de leitura/escrita já existente:
 
 1. **Arquétipos** — nome/ícone/tom, os 4 já seedados (Fazedor, Batalhador, Construtor,
    Navegador).
@@ -175,25 +208,102 @@ deliberada.
 
 ## Frente 4 — Trilha com acesso por arquétipo (admin Produto)
 
+> **Correção — esta é a maior mudança de escopo da revisão.** Eu tinha assumido, com
+> base na documentação (`DOMAIN_MODEL.md`'s `AssignmentPolicy`), que o gating por
+> arquétipo já existia no domain model e só faltava UI. **Isso está errado.** Grep
+> completo do repositório (código + migrações) confirma: `orchestration.path_templates`
+> e `orchestration.path_steps` não têm nenhuma coluna de arquétipo/segmento;
+> `orchestration.assignment_policies` existe como tabela mas não tem nenhuma UI em
+> `admin/produto` nem é lido por nenhum RPC de leitura de jornada; `diagnostics.
+> archetype_assignments` registra o arquétipo do participante mas nada hoje o consome
+> para filtrar acesso a trilha. **Hoje o acesso a trilha não é restrito por arquétipo de
+> forma nenhuma** — só existe `is_default` (um único caminho padrão por versão de
+> jornada) e regras json-logic genéricas não usadas para isso.
+>
+> Isso significa que a Frente 4 é **trabalho novo de schema + RPC**, não só uma troca de
+> JSON por UI. Dado o princípio de simplicidade (leigos dos dois lados), a recomendação é
+> **não** tentar reaproveitar o motor de regra genérica json-logic (`rule_definitions`/
+> `rule_versions`) para isso — é overkill e reintroduz complexidade técnica. Em vez
+> disso: adicionar uma coluna/tabela de associação direta e simples (ex.:
+> `path_templates.eligible_archetype_codes text[]`, `null`/vazio = todos), expor como
+> chips na UI, e filtrar por ela no read-path que hoje decide qual caminho/jornada o
+> participante vê (esse read-path ainda precisa ser localizado durante o planejamento —
+> não foi confirmado nesta rodada de pesquisa).
+
 Hoje: `admin/produto/page.tsx` usa textareas JSON para `configuration`,
-`asset_accessibility`, `allowed_evidence_types`, `metadata`, e um motor de regra genérico
-(`expression`/`input_schema`/`output_schema`). Substituído por:
+`asset_accessibility`, `allowed_evidence_types`, `metadata` (blocos `journey`/`activity`/
+`path_step`), e um motor de regra genérico (`expression`/`input_schema`/`output_schema`
+no recurso `rule`). Substituído por:
 
 1. **Dados da trilha** — nome, descrição, capa.
-2. **Acesso** — chips de arquétipo(s) ou "Todos" (mapeia para o `AssignmentPolicy` já
-   existente no domain model, sem expressão livre).
+2. **Acesso** — chips de arquétipo(s) ou "Todos", gravados na nova coluna/tabela simples
+   descrita acima (sem expressão livre, sem passar pelo motor de regra genérico).
 3. **Blocos** — lista expansível/reordenável, cada bloco com título + descrição/label.
 4. **Atividades por bloco** — nome, tipo de conteúdo, seleção de item da Biblioteca de
    Conteúdo por busca (não colar configuração), obrigatória sim/não, pontos. Atividades
    de um bloco não precisam ordem entre si.
 
-Regra de desbloqueio de selo/certificado: 100% de progresso na trilha — já modelada via
-critérios de badge/certificado, só a UI precisa deixar isso óbvio (barra de progresso +
-mensagem persistente).
+Regra de desbloqueio de selo/certificado: 100% de progresso na trilha — a emissão em si
+(`issue_learning_credentials`) já existe e funciona; o que falta é só sinalizar isso de
+forma óbvia dentro da própria tela de trilha (ver correção na Frente 5 — hoje esse aviso
+só aparece na tela separada de Credenciais).
 
 ---
 
 ## Frente 5 — Telas do participante
+
+> **Correção — a maior parte já existe e funciona; o trabalho real aqui é menor do que
+> eu tinha desenhado.** Leitura completa dos testes de banco + das páginas confirma:
+> - **Comentários** na atividade: já implementado ponta a ponta (thread real, moderação,
+>   RPCs `create_activity_comment`/`list_activity_comments`).
+> - **Avaliação 5 estrelas**: já implementada (`rate_activity_utility`, UI de rádio
+>   1–5 já renderizada).
+> - **Pergunta curta de verificação de aprendizagem**: **já existe, e já é mais robusta
+>   do que eu tinha pedido** — é um quiz de múltipla escolha (`submitQuickCheckAction`),
+>   com nota mínima, limite de tentativas e trava por seção lida (`canAssess`). Não é
+>   trabalho novo, é reaproveitar o que já está na página de atividade.
+> - **Entregas**: página já construída ponta a ponta (upload, scan, revisão, status).
+> - **Certificados**: emissão e verificação pública já funcionam
+>   (`issue_learning_credentials`, `verify_certificate`). Só a **revogação** tem schema
+>   pronto (`revoked_at`/`revocation_reason`) mas nenhuma RPC de escrita — gap pequeno,
+>   incluir só se o usuário quiser revogação nesta rodada.
+> - **Trilha em blocos expansíveis**: já implementada (`<details>/<summary>` por módulo,
+>   com barra de progresso por módulo e abertura automática do módulo atual). O que
+>   falta aqui é só o aviso de "100% libera selo/certificado" **dentro** dessa página —
+>   hoje essa informação só aparece na tela separada `/empreendedor/credenciais`.
+> - **Biblioteca (participante)**: já totalmente construída (busca/filtro/paginação +
+>   página de detalhe).
+>
+> O trabalho real da Frente 5, portanto, é: (a) o hub único de Engajamento (item novo de
+> IA, ver abaixo), (b) o aviso de desbloqueio dentro da tela de trilha, (c) confirmar o
+> estado da Home (não verificado nesta rodada — ver nota), e (d) o passe visual/IA de
+> simplificação sobre telas que já funcionam mas não foram desenhadas pensando em
+> usuário leigo.
+>
+> **Sobre a Biblioteca (participante) e o mecanismo de dois eixos que você confirmou:**
+> hoje não existe um toggle "liberado para navegação livre" separado — o que existe é o
+> status de versão do item (`draft`/`published`/`retired`, em `catalog.
+> library_item_versions`) mais uma `visibility` (`authenticated`/`organization`, que
+> define QUEM pode ver, não SE aparece). A listagem do participante filtra estritamente
+> por `status = 'published'`. Não confirmei nesta rodada se uma atividade de trilha
+> consegue referenciar um item ainda em `draft` (não publicado) — se conseguir, o
+> mecanismo de dois eixos que você pediu já existe naturalmente (draft = só usável em
+> trilha, published = também aparece na Biblioteca livre); se não conseguir, é preciso
+> um campo novo. Vou verificar isso como primeira tarefa da Frente 4/6 no plano, não
+> preciso de decisão sua agora — é um detalhe técnico a confirmar, não um ponto de
+> produto em aberto.
+>
+> **Home — verificada, leitura completa do arquivo.** Já tem: carrossel de anúncios,
+> card "Continue de onde parou" com progresso e CTA, resumo da rota (próximas 3
+> atividades), grid de "outras jornadas" já atribuídas, prévia de recompensas com "ver
+> todas", prévia de ranking com "ver histórico", resumo de credenciais. Está bem mais
+> pronta do que eu tinha assumido. O que falta: (a) hoje "outras jornadas" mostra só
+> jornadas já instanciadas/atribuídas ao participante — não existe uma listagem
+> "Trilhas" navegável e independente da Home (catálogo de trilhas disponíveis para
+> começar, filtrado por arquétipo); isso nasce naturalmente junto da Frente 4, quando o
+> read-path de elegibilidade por arquétipo for criado. (b) reordenar/simplificar a
+> densidade visual desta home pensando em usuário leigo (ela já tem muita informação
+> por tela — candidata a reorganização, não a reconstrução).
 
 ### Home
 Ordem por prioridade de ação: menu superior → "Continue de onde parou" (card único com
