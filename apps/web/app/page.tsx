@@ -78,7 +78,7 @@ export default function LandingPage() {
 
         <section className="mx-auto max-w-[1400px] px-5 pb-14 lg:px-9">
           <p className="text-center text-sm text-muted">
-            Fomos laboratório de estudo sobre Blended Finance pela Universidade de Harvard.
+            Nosso modelo de crédito com impacto foi estudado pela Universidade de Harvard.
           </p>
         </section>
       </main>
