@@ -19,6 +19,19 @@ porque tocam subsistemas distintos (identidade/HubSpot, conteúdo, gamificação
 mas compartilham um único design system e devem ser entregues como uma revisão
 coerente da plataforma.
 
+**Público-alvo — leigo em tecnologia, dos dois lados.** Tanto o participante quanto o
+administrador da Estímulo são pessoas leigas em tecnologia. Isso vale para toda
+decisão de interface nas 6 frentes, não só para a remoção de JSON do admin:
+- Nenhuma tela exige que a pessoa entenda um conceito técnico (IDs, status internos,
+  nomenclatura de sistema, sigla de área) para completar sua tarefa.
+- Nenhuma ação exige mais de uma interpretação — o rótulo do botão/link já diz o que
+  vai acontecer, sem a pessoa precisar inferir.
+- Mensagens de erro/estado (ex.: identidade pendente de resolução, conteúdo bloqueado)
+  são escritas em linguagem cotidiana, nunca com termos como "match", "payload",
+  "sync", "webhook" etc., mesmo quando o código internamente usa esses termos.
+- Onde uma tela precisar de uma ação avançada/pouco frequente, ela fica secundária
+  (menos destaque visual), nunca no mesmo nível de prioridade que a ação principal.
+
 ## Autoridade e fontes
 
 Por ordem de precedência (`CONTRIBUTING.md`): `premissas-desenvolvimento.md` (raiz do
