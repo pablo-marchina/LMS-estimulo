@@ -16,6 +16,7 @@ const errorMessages: Record<string, string> = {
   telefone_invalido: "Informe um telefone válido, com DDD.",
   cnpj_invalido: "Informe um CNPJ válido ou deixe o campo em branco.",
   cnpj_ja_vinculado: "Este CNPJ já está vinculado a outro negócio cadastrado.",
+  cnpj_requer_nome_negocio: "Para informar um CNPJ, preencha também o nome do negócio.",
   protecao_cpf_indisponivel: "A proteção do CPF não está configurada neste ambiente.",
   provisionamento_falhou: "Não foi possível concluir o perfil agora.",
 };

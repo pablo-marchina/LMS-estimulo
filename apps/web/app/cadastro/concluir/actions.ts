@@ -17,6 +17,9 @@ const schema = z.object({
   cpf: z.string().trim().refine(isValidCpf, "CPF_INVALID"),
   telefone: z.string().trim().refine(isValidPhoneBr, "TELEFONE_INVALID"),
   cnpj: z.string().trim().refine((value) => value === "" || isValidCnpj(value), "CNPJ_INVALID"),
+}).refine((value) => value.cnpj === "" || Boolean(value.businessName), {
+  path: ["businessName"],
+  message: "CNPJ_REQUIRES_BUSINESS_NAME",
 });
 
 export async function completePublicSignupAction(formData: FormData) {
@@ -36,6 +39,7 @@ export async function completePublicSignupAction(formData: FormData) {
     const code = issue === "CPF_INVALID" ? "cpf_invalido"
       : issue === "TELEFONE_INVALID" ? "telefone_invalido"
       : issue === "CNPJ_INVALID" ? "cnpj_invalido"
+      : issue === "CNPJ_REQUIRES_BUSINESS_NAME" ? "cnpj_requer_nome_negocio"
       : "dados_invalidos";
     redirect(`/cadastro/concluir?erro=${code}`);
   }

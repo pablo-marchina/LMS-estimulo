@@ -112,6 +112,9 @@ test("participant confirmation recovers from PKCE mismatch and reports resend fa
   assert.match(completionAction, /isValidCnpj\(value\)/u);
   assert.match(completionAction, /normalizeCnpj\(parsed\.data\.cnpj\)/u);
   assert.match(completionAction, /phoneE164/u);
+  assert.match(completionAction, /CNPJ_REQUIRES_BUSINESS_NAME/u);
+  assert.match(completionAction, /"cnpj_requer_nome_negocio"/u);
+  assert.match(completionPage, /Para informar um CNPJ, preencha também o nome do negócio\./u);
 });
 
 test("recreated Auth users relink only when the previous subject is orphaned", async () => {
