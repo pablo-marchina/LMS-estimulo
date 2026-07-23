@@ -456,14 +456,15 @@ git commit -m "feat(db): add phone/cnpj columns and provision_public_signup_part
 
 - [ ] **Step 1: Write the failing test**
 
-Add this block inside the existing `test("verified signup requires CPF and sends only a protected payload to the RPC", ...)` in `scripts/application/auth-entrypoints.test.mjs` (append these assertions after the existing ones in that test body, using the already-loaded `completionPage`/`completionAction` variables):
+Add this block inside the existing `test("participant confirmation recovers from PKCE mismatch and reports resend failures", ...)` in `scripts/application/auth-entrypoints.test.mjs` (append these assertions at the end of that test body, right after its existing `assert.match(completionPage, /name="cpf"/u);` / `assert.match(completionAction, /getAuthContext/);` lines, using the same already-loaded `completionPage`/`completionAction` variables):
 
 ```js
   assert.match(completionPage, /name="telefone"/u);
-  assert.match(completionPage, /Telefone é obrigatório/u);
+  assert.match(completionPage, /Informe um telefone válido, com DDD\./u);
   assert.match(completionPage, /name="cnpj"/u);
   assert.match(completionAction, /toE164Br\(parsed\.data\.telefone/u);
-  assert.match(completionAction, /isValidCnpj\(parsed\.data\.cnpj/u);
+  assert.match(completionAction, /isValidCnpj\(value\)/u);
+  assert.match(completionAction, /normalizeCnpj\(parsed\.data\.cnpj\)/u);
   assert.match(completionAction, /phoneE164/u);
 ```
 
