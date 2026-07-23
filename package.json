@@ -21,6 +21,7 @@
     "replay:database-clean": "node scripts/database/equivalence/replay-clean.mjs",
     "test:backend-e2e": "node scripts/database/backend-e2e/run-backend-e2e.mjs",
     "test:hubspot-contracts": "node scripts/integrations/hubspot-contracts/run-tests.mjs",
+    "test:hubspot-match": "node scripts/integrations/hubspot-match/run-tests.mjs",
     "test:configurable-product": "node scripts/product/configurable-product/run-tests.mjs",
     "test:official-diagnostic": "node --test scripts/product/official-diagnostic/*.test.mjs",
     "test:configurable-product-persistence": "node scripts/database/configurable-product-persistence/run.mjs",
