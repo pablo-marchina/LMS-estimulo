@@ -8,11 +8,15 @@ import { getAuthContext } from "@/lib/auth/context";
 import { decodeFirstTouch, FIRST_TOUCH_COOKIE } from "@/lib/auth/first-touch";
 import { provisionPublicSignupParticipant } from "@/lib/auth/public-signup-provisioning";
 import { isValidCpf, protectCpf, type ProtectedCpf } from "@/lib/identity/cpf";
+import { isValidCnpj, normalizeCnpj } from "@/lib/identity/cnpj-core.mjs";
+import { isValidPhoneBr, toE164Br } from "@/lib/identity/phone-br.mjs";
 
 const schema = z.object({
   preferredName: z.string().trim().min(2).max(120),
   businessName: z.string().trim().max(160).optional(),
   cpf: z.string().trim().refine(isValidCpf, "CPF_INVALID"),
+  telefone: z.string().trim().refine(isValidPhoneBr, "TELEFONE_INVALID"),
+  cnpj: z.string().trim().refine((value) => value === "" || isValidCnpj(value), "CNPJ_INVALID"),
 });
 
 export async function completePublicSignupAction(formData: FormData) {
@@ -24,10 +28,16 @@ export async function completePublicSignupAction(formData: FormData) {
     preferredName: formData.get("preferred_name"),
     businessName: formData.get("business_name") || undefined,
     cpf: formData.get("cpf"),
+    telefone: formData.get("telefone"),
+    cnpj: formData.get("cnpj") || "",
   });
   if (!parsed.success) {
-    const cpfIssue = parsed.error.issues.some((issue) => issue.message === "CPF_INVALID");
-    redirect(`/cadastro/concluir?erro=${cpfIssue ? "cpf_invalido" : "dados_invalidos"}`);
+    const issue = parsed.error.issues[0]?.message;
+    const code = issue === "CPF_INVALID" ? "cpf_invalido"
+      : issue === "TELEFONE_INVALID" ? "telefone_invalido"
+      : issue === "CNPJ_INVALID" ? "cnpj_invalido"
+      : "dados_invalidos";
+    redirect(`/cadastro/concluir?erro=${code}`);
   }
 
   let protectedCpf: ProtectedCpf;
@@ -39,6 +49,9 @@ export async function completePublicSignupAction(formData: FormData) {
     }
     redirect("/cadastro/concluir?erro=protecao_cpf_indisponivel");
   }
+
+  const phoneE164 = toE164Br(parsed.data.telefone);
+  const cnpj = parsed.data.cnpj ? normalizeCnpj(parsed.data.cnpj) : null;
 
   const cookieStore = await cookies();
   const attribution = decodeFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value) ?? {
@@ -57,6 +70,8 @@ export async function completePublicSignupAction(formData: FormData) {
       businessName: parsed.data.businessName || null,
       attribution,
       protectedCpf,
+      phoneE164,
+      cnpj,
       idempotencyKey: randomUUID(),
     });
   } catch (error) {
@@ -66,6 +81,9 @@ export async function completePublicSignupAction(formData: FormData) {
     }
     if (code.includes("CPF_CHANGE_REQUIRES_IDENTITY_REVIEW")) {
       redirect("/cadastro/concluir?erro=cpf_revisao_necessaria");
+    }
+    if (code.includes("CNPJ_ALREADY_LINKED_TO_ANOTHER_BUSINESS")) {
+      redirect("/cadastro/concluir?erro=cnpj_ja_vinculado");
     }
     redirect("/cadastro/concluir?erro=provisionamento_falhou");
   }

@@ -105,6 +105,13 @@ test("participant confirmation recovers from PKCE mismatch and reports resend fa
   assert.match(signInPage, /link de confirmação já foi processado/);
   assert.match(completionPage, /name="cpf"/u);
   assert.match(completionAction, /getAuthContext/);
+  assert.match(completionPage, /name="telefone"/u);
+  assert.match(completionPage, /Informe um telefone válido, com DDD\./u);
+  assert.match(completionPage, /name="cnpj"/u);
+  assert.match(completionAction, /toE164Br\(parsed\.data\.telefone/u);
+  assert.match(completionAction, /isValidCnpj\(value\)/u);
+  assert.match(completionAction, /normalizeCnpj\(parsed\.data\.cnpj\)/u);
+  assert.match(completionAction, /phoneE164/u);
 });
 
 test("recreated Auth users relink only when the previous subject is orphaned", async () => {

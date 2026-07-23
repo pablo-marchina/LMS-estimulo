@@ -13,6 +13,9 @@ const errorMessages: Record<string, string> = {
   cpf_invalido: "Informe um CPF válido.",
   cpf_ja_vinculado: "Este CPF já está vinculado a outra conta. Procure o suporte para recuperar o acesso.",
   cpf_revisao_necessaria: "A alteração do CPF exige revisão de identidade pelo suporte.",
+  telefone_invalido: "Informe um telefone válido, com DDD.",
+  cnpj_invalido: "Informe um CNPJ válido ou deixe o campo em branco.",
+  cnpj_ja_vinculado: "Este CNPJ já está vinculado a outro negócio cadastrado.",
   protecao_cpf_indisponivel: "A proteção do CPF não está configurada neste ambiente.",
   provisionamento_falhou: "Não foi possível concluir o perfil agora.",
 };
@@ -60,8 +63,23 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
           O sistema mantém uma versão cifrada e um token HMAC de busca. O CPF bruto não é enviado ao HubSpot por padrão.
         </p>
         <Label>
+          Telefone
+          <Input
+            name="telefone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            placeholder="(11) 91234-5678"
+            required
+          />
+        </Label>
+        <Label>
           Nome do negócio <span className="font-normal text-muted">(opcional)</span>
           <Input name="business_name" defaultValue={businessName} maxLength={160} autoComplete="organization" />
+        </Label>
+        <Label>
+          CNPJ <span className="font-normal text-muted">(opcional)</span>
+          <Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} />
         </Label>
         <Button size="lg" type="submit">
           Entrar na plataforma
