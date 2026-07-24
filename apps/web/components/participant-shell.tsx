@@ -20,7 +20,10 @@ export function ParticipantShell({ email, children }: { email: string; children:
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="participant-stage min-h-screen bg-background">
+      <span className="participant-stage-orb participant-stage-orb-cyan" aria-hidden="true" />
+      <span className="participant-stage-orb participant-stage-orb-magenta" aria-hidden="true" />
+      <span className="participant-stage-orb participant-stage-orb-green" aria-hidden="true" />
       <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
       <header className="no-print brand-app-header sticky top-0 z-40 overflow-hidden text-white shadow-md">
         <div className="brand-app-header-glow" aria-hidden="true" />
@@ -46,9 +49,9 @@ export function ParticipantShell({ email, children }: { email: string; children:
             })}
           </nav>
           <div className="ml-auto hidden items-center gap-3 xl:flex">
-            <span className="max-w-40 truncate text-sm text-white/70" title={email}>{email}</span>
+            <span className="max-w-40 truncate text-sm text-white/75" title={email}>{email}</span>
             <form action={signOutAction}>
-              <Button variant="ghost" size="sm" type="submit" className="!text-white/80 hover:!bg-white/10 hover:!text-white">Sair</Button>
+              <Button variant="ghost" size="sm" type="submit" className="!text-white/85 hover:!bg-white/10 hover:!text-white">Sair</Button>
             </form>
           </div>
           <button
@@ -77,7 +80,7 @@ export function ParticipantShell({ email, children }: { email: string; children:
           </nav>
         ) : null}
       </header>
-      <main id="conteudo-principal" className="mx-auto w-full max-w-[1400px]" tabIndex={-1}>{children}</main>
+      <main id="conteudo-principal" className="relative z-10 mx-auto w-full max-w-[1400px]" tabIndex={-1}>{children}</main>
     </div>
   );
 }
