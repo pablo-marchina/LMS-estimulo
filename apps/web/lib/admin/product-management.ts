@@ -142,6 +142,22 @@ export async function saveAdminProductResource(input: {
   });
 }
 
+export async function publishAdminJourneyVersion(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  journeyVersionId: string;
+  expectedContentHash: string;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<Record<string, unknown>>("publish_admin_journey_version", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_journey_version_id: input.journeyVersionId,
+    p_expected_content_hash: input.expectedContentHash,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
 export async function getAdminReportingDashboard(actorUserAccountId: string, organizationId: string) {
   return invokeServerRpc<AdminReportingDashboard>("get_admin_reporting_dashboard", {
     p_actor_user_account_id: actorUserAccountId,
