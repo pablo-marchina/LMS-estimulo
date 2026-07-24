@@ -7,16 +7,36 @@ import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 const uuid = z.string().uuid();
+const destination = z.enum(["journey", "diagnostic"]).catch("journey");
 
 export async function selfEnrollAction(formData: FormData) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar");
   const journeyVersionId = uuid.parse(formData.get("journey_version_id"));
+  const next = destination.parse(String(formData.get("next") ?? "journey"));
   const key = String(formData.get("idempotency_key") || randomUUID());
+
+  let journeyInstanceId: string;
   try {
-    await journeyRuntime.selfEnroll(auth.identity.user_account_id, journeyVersionId, key);
+    const enrollment = await journeyRuntime.selfEnroll(auth.identity.user_account_id, journeyVersionId, key);
+    journeyInstanceId = enrollment.data.journey_instance_id;
+
+    if (next === "diagnostic") {
+      const state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
+      if (state.journey_status === "available") {
+        await journeyRuntime.startJourney(
+          auth.identity.user_account_id,
+          journeyInstanceId,
+          state.journey_aggregate_version,
+          `${key}:start`,
+        );
+      }
+    }
   } catch {
     redirect("/empreendedor/jornadas?erro=matricula");
   }
-  redirect("/empreendedor?matricula=criada");
+
+  redirect(next === "diagnostic"
+    ? `/empreendedor/diagnostico?journey=${journeyInstanceId}`
+    : `/empreendedor/jornada/${journeyInstanceId}?matricula=criada`);
 }
