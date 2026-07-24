@@ -34,7 +34,9 @@ function errorCode(error: unknown): string {
 function adminRedirect(request: NextRequest, organizationId: string, params: Record<string, string>) {
   const target = new URL("/admin/biblioteca", request.url);
   target.searchParams.set("organization", organizationId);
-  for (const [key, value] of Object.entries(params)) target.searchParams.set(key, value);
+  for (const [key, value] of Object.entries(params)) {
+    if (value) target.searchParams.set(key, value);
+  }
   return NextResponse.redirect(target, 303);
 }
 
@@ -44,6 +46,7 @@ export async function POST(request: NextRequest) {
   if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
 
   let organizationId = "";
+  let edit = "";
   let uploadIntentId: string | null = null;
   let bucket: string | null = null;
   let objectKey: string | null = null;
@@ -53,6 +56,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     organizationId = uuid.parse(formData.get("organization_id"));
+    edit = String(formData.get("edit") ?? "").trim();
     const organization = auth.identity.organizations.find((item) => item.organization_id === organizationId);
     if (!organization?.permissions.includes("library.manage")) throw new Error("FORBIDDEN");
     const file = formData.get("file");
@@ -88,6 +92,7 @@ export async function POST(request: NextRequest) {
     });
 
     return adminRedirect(request, organizationId, {
+      edit,
       arquivo: confirmed.data.file_object_id,
       nomeArquivo: confirmed.data.original_filename,
       upload: "concluido",
@@ -106,7 +111,7 @@ export async function POST(request: NextRequest) {
     if (objectCreated && bucket && objectKey) {
       await removeLibraryContent(bucket, objectKey).catch(() => undefined);
     }
-    if (organizationId) return adminRedirect(request, organizationId, { upload: "erro", codigo: code });
+    if (organizationId) return adminRedirect(request, organizationId, { edit, upload: "erro", codigo: code });
     return NextResponse.json({ error: code }, { status: 400 });
   }
 }
