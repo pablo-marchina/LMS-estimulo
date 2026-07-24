@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-/* Self-hosted Poppins — the browser E2E harness asserts document.body's
-   computed font-family includes "poppins", so this stays the body font. */
 @font-face {
   font-family: "Poppins";
   src: url("/fonts/Poppins-Regular.ttf") format("truetype");
@@ -33,15 +31,11 @@
 
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, Arial, sans-serif;
-
-  /* Institutional base — corrected against Brandbook Estímulo.pdf (2021),
-     WCAG AA against white/lavender. */
   --color-primary: #00008d;
   --color-primary-hover: #1a1aa4;
   --color-primary-active: #000071;
   --color-primary-foreground: #ffffff;
   --color-primary-soft: #e9eaff;
-
   --color-ink: #17145f;
   --color-muted: #55527a;
   --color-background: #f2f3ff;
@@ -49,11 +43,7 @@
   --color-surface-muted: #f7f8fc;
   --color-border: #d9dcf5;
   --color-border-strong: #b9beed;
-
-  /* Single interaction accent (focus/selection), not decoration. */
   --color-ring: #0020d8;
-
-  /* Semantic state colors. */
   --color-success: #1d9479;
   --color-success-soft: #eafbf1;
   --color-warning: #92650a;
@@ -62,23 +52,10 @@
   --color-danger-soft: #fdeced;
   --color-info: #0a5a92;
   --color-info-soft: #e8f6ff;
-
-  /* Logo accents — reserved for gamification, badges, achievements only. */
   --color-accent-cyan: #48d0f0;
   --color-accent-magenta: #ff66ff;
   --color-accent-green: #55d78c;
   --color-accent-gold: #f4c542;
-
-  /*
-   * Token bridge — ref/impulso-empreendedor's component/page vocabulary
-   * (primary-dark/-light/-bright, secondary, accent, brand.*, foreground,
-   * text) aliased onto the SAME Estímulo values above, so its screens can
-   * be ported with their original class names and read as Estímulo brand
-   * automatically instead of Impulso's blue/lime/coral. Prototype's own
-   * "surface" (a cream neutral block) intentionally maps to white here —
-   * Estímulo's palette has no off-white tier and design.md prefers plain
-   * white/lavender surfaces.
-   */
   --color-primary-dark: var(--color-primary-active);
   --color-primary-light: var(--color-primary-soft);
   --color-primary-bright: #0023da;
@@ -90,88 +67,49 @@
   --color-brand-cyan: var(--color-accent-cyan);
   --color-brand-blue: #0023da;
   --color-brand-magenta: var(--color-accent-magenta);
-
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1.125rem;
   --radius-xl: 1.5rem;
   --radius-card: 1.25rem;
-
   --shadow-xs: 0 1px 2px rgba(23, 20, 95, 0.06);
   --shadow-sm: 0 2px 8px rgba(23, 20, 95, 0.06);
   --shadow-md: 0 8px 24px rgba(23, 20, 95, 0.08);
   --shadow-lg: 0 16px 40px rgba(23, 20, 95, 0.12);
   --shadow-card: 0 8px 24px rgba(23, 20, 95, 0.06);
   --shadow-focus: 0 0 0 4px rgba(0, 32, 216, 0.14);
-
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-
   --animate-fade-in: fade-in 200ms var(--ease-out-expo);
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
   --animate-float-in: float-in 550ms var(--ease-out-expo) both;
-  @keyframes float-in {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  --animate-brand-drift: brand-drift 9s ease-in-out infinite alternate;
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes float-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes brand-drift { from { transform: translate3d(-3%, -2%, 0) rotate(-2deg); } to { transform: translate3d(4%, 3%, 0) rotate(3deg); } }
 }
 
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
+  * { border-color: var(--color-border); }
+  html { scroll-behavior: smooth; }
   body {
-    background: var(--color-background);
+    background:
+      radial-gradient(circle at 8% 0%, rgba(72, 208, 240, 0.08), transparent 24rem),
+      radial-gradient(circle at 96% 15%, rgba(255, 102, 255, 0.06), transparent 22rem),
+      var(--color-background);
     color: var(--color-ink);
     font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
-
-  ::selection {
-    background: var(--color-accent-cyan);
-    color: var(--color-primary);
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
-
-  h1, h2, h3 {
-    /* No explicit color here: it must inherit (ink by default from body,
-       white when nested in a text-white dark panel) rather than force ink
-       everywhere and make headings on dark backgrounds unreadable. */
-    line-height: 1.15;
-    text-wrap: balance;
-  }
+  ::selection { background: var(--color-accent-cyan); color: var(--color-primary); }
+  :focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; border-radius: 2px; }
+  h1, h2, h3 { line-height: 1.15; text-wrap: balance; }
 }
 
 @layer components {
-  .display-font {
-    font-weight: 700;
-    letter-spacing: -0.055em;
-  }
-
-  .animate-in {
-    animation: var(--animate-float-in);
-  }
-
-  .focus-ring {
-    outline: none;
-  }
-  .focus-ring:focus-visible {
-    box-shadow: var(--shadow-focus);
-  }
+  .display-font { font-weight: 700; letter-spacing: -0.055em; }
+  .animate-in { animation: var(--animate-float-in); }
+  .focus-ring { outline: none; }
+  .focus-ring:focus-visible { box-shadow: var(--shadow-focus); }
 
   .surface-grid {
     background-image:
@@ -179,25 +117,129 @@
       linear-gradient(90deg, rgba(23, 20, 95, 0.06) 1px, transparent 1px);
     background-size: 32px 32px;
   }
-
-  .dot-pattern {
-    background-image: radial-gradient(rgba(23, 20, 95, 0.18) 1px, transparent 1px);
-    background-size: 14px 14px;
-  }
-
+  .dot-pattern { background-image: radial-gradient(rgba(23, 20, 95, 0.18) 1px, transparent 1px); background-size: 14px 14px; }
   .brand-dots-bg {
     background-image: url("/brand/estimulo-dots-cyan.svg");
     background-repeat: no-repeat;
     background-position: right -40px top -40px;
     background-size: 320px auto;
   }
-
   .brand-chevrons-bg {
     background-image: url("/brand/estimulo-chevrons-magenta.svg");
     background-repeat: no-repeat;
     background-position: left -60px bottom -60px;
     background-size: 280px auto;
   }
+
+  .brand-app-header {
+    background:
+      radial-gradient(circle at 14% 20%, rgba(72, 208, 240, 0.28), transparent 24rem),
+      radial-gradient(circle at 86% 120%, rgba(255, 102, 255, 0.24), transparent 25rem),
+      linear-gradient(108deg, #000071 0%, #00008d 54%, #1515b7 100%);
+  }
+  .brand-app-header-glow {
+    position: absolute;
+    inset: -100% -20% auto auto;
+    width: 32rem;
+    height: 32rem;
+    border-radius: 999px;
+    border: 5rem solid rgba(85, 215, 140, 0.12);
+    animation: var(--animate-brand-drift);
+    pointer-events: none;
+  }
+  .brand-admin-sidebar {
+    background:
+      url("/brand/estimulo-chevrons-magenta.svg") left -7rem bottom -5rem / 19rem auto no-repeat,
+      radial-gradient(circle at 95% 5%, rgba(72, 208, 240, 0.28), transparent 18rem),
+      linear-gradient(165deg, #000071, #17145f 72%);
+  }
+  .brand-admin-orb {
+    position: absolute;
+    right: -8rem;
+    top: 22%;
+    width: 16rem;
+    height: 16rem;
+    border-radius: 999px;
+    border: 2.75rem solid rgba(85, 215, 140, 0.18);
+    animation: var(--animate-brand-drift);
+  }
+  .brand-logo-capsule {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    border: 1px solid rgba(255,255,255,.6);
+    border-radius: 1rem;
+    background: rgba(255,255,255,.96);
+    padding: .55rem .75rem;
+    box-shadow: 0 12px 30px rgba(0,0,60,.18);
+  }
+  .brand-auth-stage {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 15% 12%, rgba(72,208,240,.38), transparent 24rem),
+      radial-gradient(circle at 88% 78%, rgba(255,102,255,.30), transparent 25rem),
+      linear-gradient(132deg, #000071 0%, #00008d 48%, #2822a5 100%);
+  }
+  .brand-auth-stage::before,
+  .brand-auth-stage::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .brand-auth-stage::before {
+    width: 32rem;
+    height: 32rem;
+    right: -12rem;
+    top: -12rem;
+    border: 5rem solid rgba(85,215,140,.22);
+    animation: var(--animate-brand-drift);
+  }
+  .brand-auth-stage::after {
+    width: 23rem;
+    height: 23rem;
+    left: -10rem;
+    bottom: -10rem;
+    border: 3.5rem solid rgba(244,197,66,.16);
+  }
+  .brand-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: white;
+    background:
+      radial-gradient(circle at 16% 18%, rgba(72,208,240,.36), transparent 26rem),
+      radial-gradient(circle at 87% 70%, rgba(255,102,255,.26), transparent 27rem),
+      linear-gradient(118deg, #000071 0%, #00008d 50%, #1f1fb8 100%);
+  }
+  .brand-hero::after {
+    content: "";
+    position: absolute;
+    width: 25rem;
+    height: 25rem;
+    right: -7rem;
+    bottom: -12rem;
+    border-radius: 999px;
+    border: 4.5rem solid rgba(85,215,140,.3);
+    z-index: -1;
+  }
+  .brand-accent-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .brand-accent-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: .38rem;
+    background: linear-gradient(180deg, var(--color-accent-cyan), var(--color-accent-magenta), var(--color-accent-green));
+  }
+  .brand-float-card { transition: transform 220ms var(--ease-out-expo), box-shadow 220ms var(--ease-out-expo), border-color 220ms var(--ease-out-expo); }
+  .brand-float-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--color-border-strong); }
+  .brand-kicker { color: var(--color-accent-cyan); text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; font-weight: 700; }
 
   .skip-link {
     position: fixed;
@@ -213,22 +255,13 @@
     box-shadow: var(--shadow-md);
     transition: transform 150ms var(--ease-out-expo);
   }
-  .skip-link:focus {
-    transform: translateY(0);
-  }
+  .skip-link:focus { transform: translateY(0); }
 }
 
 @media print {
-  @page {
-    size: A4 landscape;
-    margin: 0;
-  }
-  body {
-    background: white;
-  }
-  .no-print {
-    display: none !important;
-  }
+  @page { size: A4 landscape; margin: 0; }
+  body { background: white; }
+  .no-print { display: none !important; }
 }
 
 @media (prefers-reduced-motion: reduce) {
