@@ -1,7 +1,6 @@
 -- Generic publication path for real admin-authored journeys.
 --
--- e14_publish_vertical is intentionally specialized for the synthetic E14 fixture
--- (exactly two paths named guided/standard and one configured activity/diagnostic).
+-- e14_publish_vertical is intentionally specialized for the synthetic E14 fixture.
 -- This RPC publishes an arbitrary jornada -> trilhas -> aulas graph created through
 -- save_admin_product_resource while retaining permission checks, idempotency,
 -- content-hash concurrency protection, structural validation, and an audit event.
@@ -77,14 +76,20 @@ begin
     raise exception 'FORBIDDEN' using errcode = '42501';
   end if;
 
-  select jv.*, jd.owner_organization_id
-    into v_journey, v_owner_organization_id
-  from catalog.journey_versions jv
-  join catalog.journey_definitions jd on jd.id = jv.journey_definition_id
-  where jv.id = p_journey_version_id
-  for update of jv;
+  select * into v_journey
+  from catalog.journey_versions
+  where id = p_journey_version_id
+  for update;
 
-  if not found or v_owner_organization_id is distinct from p_organization_id then
+  if not found then
+    raise exception 'JOURNEY_NOT_FOUND' using errcode = 'P0002';
+  end if;
+
+  select owner_organization_id into v_owner_organization_id
+  from catalog.journey_definitions
+  where id = v_journey.journey_definition_id;
+
+  if v_owner_organization_id is distinct from p_organization_id then
     raise exception 'JOURNEY_NOT_FOUND' using errcode = 'P0002';
   end if;
   if v_journey.status = 'published' then
@@ -107,7 +112,7 @@ begin
   join orchestration.path_templates pt on pt.id = ps.path_template_id
   where pt.journey_version_id = p_journey_version_id;
 
-  select count(distinct av.id) into v_activity_count
+  select count(*) into v_activity_count
   from orchestration.path_steps ps
   join orchestration.path_templates pt on pt.id = ps.path_template_id
   join catalog.activity_versions av on av.id = ps.activity_version_id
@@ -196,20 +201,19 @@ begin
      set status = 'published',
          published_at = coalesce(rv.published_at, now())
    where rv.status = 'draft'
-     and rv.id in (
-       select bv.criteria_rule_version_id
+     and rv.language = 'credential-v1'
+     and rv.expression ->> 'scope' = 'path'
+     and rv.expression ->> 'path_template_id' in (
+       select pt.id::text
+       from orchestration.path_templates pt
+       where pt.journey_version_id = p_journey_version_id
+     )
+     and exists (
+       select 1
        from engagement.badge_versions bv
        join engagement.badge_definitions bd on bd.id = bv.badge_definition_id
-       where bd.owner_organization_id = p_organization_id
-         and bv.criteria_rule_version_id is not null
-         and exists (
-           select 1
-           from orchestration.path_templates pt
-           where pt.journey_version_id = p_journey_version_id
-             and rv.language = 'credential-v1'
-             and rv.expression ->> 'scope' = 'path'
-             and rv.expression ->> 'path_template_id' = pt.id::text
-         )
+       where bv.criteria_rule_version_id = rv.id
+         and bd.owner_organization_id = p_organization_id
      );
   get diagnostics v_rule_count = row_count;
 
@@ -222,11 +226,10 @@ begin
        from orchestration.rule_versions rv
        where rv.language = 'credential-v1'
          and rv.expression ->> 'scope' = 'path'
-         and exists (
-           select 1
+         and rv.expression ->> 'path_template_id' in (
+           select pt.id::text
            from orchestration.path_templates pt
            where pt.journey_version_id = p_journey_version_id
-             and rv.expression ->> 'path_template_id' = pt.id::text
          )
      );
   get diagnostics v_badge_count = row_count;
