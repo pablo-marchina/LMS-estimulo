@@ -16,7 +16,7 @@ export async function selfEnrollAction(formData: FormData) {
   try {
     await journeyRuntime.selfEnroll(auth.identity.user_account_id, journeyVersionId, key);
   } catch {
-    redirect("/empreendedor/trilhas?erro=matricula");
+    redirect("/empreendedor/jornadas?erro=matricula");
   }
   redirect("/empreendedor?matricula=criada");
 }
