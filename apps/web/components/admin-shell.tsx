@@ -41,22 +41,19 @@ export function AdminShell({ email, children }: { email: string; children: React
     <nav className="grid gap-1" aria-label="Navegação administrativa">
       {links.map((link) => {
         const Icon = link.icon;
-        return (
-          <NavItem key={link.href} href={link.href} variant="dark" exact={link.exact} icon={<Icon size={18} aria-hidden="true" />}>
-            {link.label}
-          </NavItem>
-        );
+        return <NavItem key={link.href} href={link.href} variant="dark" exact={link.exact} icon={<Icon size={18} aria-hidden="true" />}>{link.label}</NavItem>;
       })}
     </nav>
   );
 
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[272px_1fr]">
+    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[282px_1fr]">
       <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
-      <aside className="hidden bg-primary text-white lg:block">
-        <div className="sticky top-0 flex h-screen flex-col gap-6 p-5">
-          <EstimuloBrand href="/admin" compact invert />
-          <p className="rounded-md bg-white/10 px-3 py-2 text-xs font-semibold text-white/75">Área administrativa</p>
+      <aside className="brand-admin-sidebar relative hidden overflow-hidden text-white lg:block">
+        <div className="brand-admin-orb" aria-hidden="true" />
+        <div className="relative sticky top-0 flex h-screen flex-col gap-6 p-5">
+          <div className="brand-logo-capsule"><EstimuloBrand href="/admin" compact /></div>
+          <p className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-white/85 backdrop-blur">Área administrativa</p>
           {nav}
           <div className="mt-auto grid gap-2 border-t border-white/15 pt-4">
             <span className="truncate text-xs text-white/70" title={email}>{email}</span>
@@ -66,13 +63,13 @@ export function AdminShell({ email, children }: { email: string; children: React
       </aside>
 
       <div className="min-w-0">
-        <header className="no-print sticky top-0 z-40 flex items-center gap-3 border-b border-border bg-surface px-4 py-3 lg:hidden">
-          <EstimuloBrand href="/admin" compact />
-          <button type="button" className="ml-auto grid size-10 place-items-center rounded-lg text-ink hover:bg-primary-soft" aria-expanded={mobileOpen} aria-controls="admin-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>
+        <header className="brand-app-header no-print sticky top-0 z-40 flex items-center gap-3 px-4 py-3 text-white shadow-sm lg:hidden">
+          <div className="brand-logo-capsule"><EstimuloBrand href="/admin" compact /></div>
+          <button type="button" className="ml-auto grid size-10 place-items-center rounded-lg text-white hover:bg-white/10" aria-expanded={mobileOpen} aria-controls="admin-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </header>
-        {mobileOpen ? <div id="admin-mobile-nav" className="border-b border-border bg-primary p-4 text-white lg:hidden">{nav}</div> : null}
+        {mobileOpen ? <div id="admin-mobile-nav" className="brand-app-header border-t border-white/10 p-4 text-white lg:hidden">{nav}</div> : null}
         <main id="conteudo-principal" className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10" tabIndex={-1}>{children}</main>
       </div>
     </div>
