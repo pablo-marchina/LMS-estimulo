@@ -51,11 +51,22 @@ export async function saveDiagnosticAction(formData: FormData) {
   }).filter((item) => item.prompt && item.dimension_code);
 
   const archetypeNames: Record<string, string> = { fazedor: "Fazedor(a)", batalhador: "Batalhador(a)", construtor: "Construtor(a)", navegador: "Navegador(a)" };
+  // NOTE: getAdminProductWorkspace does not return archetypes per diagnostic
+  // version (archetype_definitions/archetype_versions are org-scoped, not
+  // joined into that read), so the "1. Arquétipos" textareas in the page
+  // cannot be pre-filled with existing descriptions when editing a draft --
+  // they render blank. Submitting a blank description here would upsert
+  // archetype_definitions on (owner_organization_id, code) with description
+  // = NULL (nullif(btrim(''), '')), silently wiping the org-wide archetype
+  // narrative on every save of any diagnostic that happens to share these
+  // archetype codes. Filtering out blank descriptions means an edit save
+  // with unfilled archetype fields simply skips those codes instead of
+  // upserting them, leaving previously-saved descriptions untouched.
   const archetypes = ARCHETYPE_CODES.map((code) => ({
     code,
     name: archetypeNames[code],
     description: text(formData, `archetype_description_${code}`),
-  }));
+  })).filter((archetype) => archetype.description);
 
   const rules = ARCHETYPE_CODES.map((code, index) => {
     const thresholds: Record<string, number> = {};
