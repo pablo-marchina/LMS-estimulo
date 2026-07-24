@@ -52,6 +52,7 @@ export async function saveJourneyAction(formData: FormData) {
   const existingCode = text(formData, "definition_code");
   const code = existingCode || deriveCode(name, `jornada_${randomUUID().slice(0, 8)}`);
   const versionId = nullable(formData, "version_id");
+  let savedVersionId = versionId ?? "";
 
   try {
     const result = await saveAdminProductResource({
@@ -73,11 +74,11 @@ export async function saveJourneyAction(formData: FormData) {
       },
       idempotencyKey: randomUUID(),
     });
-
-    const savedVersionId = String(result.version_id ?? versionId ?? "");
-    redirect(`/admin/produto?organization=${organizationId}&versao=${savedVersionId}&sucesso=jornada_salva`);
+    savedVersionId = String(result.version_id ?? savedVersionId);
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
     redirect(`/admin/produto?organization=${organizationId}&versao=${versionId ?? ""}&erro=${reason}`);
   }
+
+  redirect(`/admin/produto?organization=${organizationId}&versao=${savedVersionId}&sucesso=jornada_salva`);
 }
