@@ -1,89 +1,40 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Compass, FileUp, Flag } from "lucide-react";
 import type { JourneyState } from "@/lib/journey-runtime/contracts";
-import { cn } from "@/lib/utils";
 
 export type JourneyStage = "diagnostic" | "activity" | "result";
-type JourneyStageState = "complete" | "current" | "locked";
-
-function stageState(state: JourneyState, stage: JourneyStage): JourneyStageState {
-  if (stage === "diagnostic") {
-    if (state.d?.status === "completed") return "complete";
-    return "current";
-  }
-  if (stage === "activity") {
-    if (!state.d || state.d.status !== "completed") return "locked";
-    if (state.q?.passed || state.journey_status === "completed") return "complete";
-    return "current";
-  }
-  if (state.journey_status === "completed") return "complete";
-  if (state.q?.passed) return "current";
-  return "locked";
-}
-
-function stageHref(state: JourneyState, stage: JourneyStage): string | null {
-  const query = `?journey=${encodeURIComponent(state.journey_instance_id)}`;
-  if (stage === "diagnostic") return `/empreendedor/diagnostico${query}`;
-  if (stage === "activity" && state.s) return `/empreendedor/atividade/${state.s.step_instance_id}${query}`;
-  if (stage === "result" && (state.q?.passed || state.journey_status === "completed")) return `/empreendedor/resultado${query}`;
-  return null;
-}
 
 const labels: Record<JourneyStage, string> = {
   diagnostic: "Diagnóstico",
   activity: "Aprendizagem",
-  result: "Resultado"
+  result: "Resultado",
+};
+
+const icons = {
+  diagnostic: Compass,
+  activity: FileUp,
+  result: Flag,
 };
 
 export function JourneyProgressNav({ state, current }: { state: JourneyState; current: JourneyStage }) {
-  const stages: JourneyStage[] = ["diagnostic", "activity", "result"];
+  const Icon = icons[current];
+  const diagnosticComplete = state.d?.status === "completed";
   return (
-    <nav
-      className="no-print mb-6 flex items-center gap-4 overflow-x-auto rounded-xl border border-border bg-surface p-3 shadow-xs"
-      aria-label={`Etapas de ${state.journey_title ?? state.journey_code}`}
-    >
-      <Link href="/empreendedor" className="shrink-0 text-sm font-semibold text-primary hover:underline">
-        Painel
-      </Link>
-      <ol className="flex flex-1 items-stretch gap-2">
-        {stages.map((stage, index) => {
-          const status = stageState(state, stage);
-          const href = stageHref(state, stage);
-          const isActive = current === stage;
-          const content = (
-            <>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold",
-                  status === "complete" ? "bg-success-soft text-success" : status === "current" ? "bg-primary text-white" : "bg-surface-muted text-muted"
-                )}
-              >
-                {status === "complete" ? <Check size={14} /> : index + 1}
-              </span>
-              <span className="text-sm font-semibold">{labels[stage]}</span>
-            </>
-          );
-          const shared = cn(
-            "flex flex-1 items-center gap-2 rounded-lg border border-transparent px-3 py-2 whitespace-nowrap",
-            status === "locked" && "opacity-50",
-            isActive && "border-border-strong bg-surface-muted"
-          );
-          return (
-            <li key={stage} className="flex-1">
-              {href ? (
-                <Link className={shared} href={href} aria-current={isActive ? "step" : undefined}>
-                  {content}
-                </Link>
-              ) : (
-                <span className={shared} aria-disabled="true">
-                  {content}
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+    <aside className="no-print brand-accent-card mb-6 overflow-hidden rounded-card border border-border bg-white p-5 shadow-card" aria-label={`Contexto de ${state.journey_title ?? state.journey_code}`}>
+      <div className="flex flex-wrap items-center gap-4">
+        <Link href={`/empreendedor/jornada/${state.journey_instance_id}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+          <ArrowLeft size={16} aria-hidden="true" /> Voltar à jornada
+        </Link>
+        <span className="hidden h-6 w-px bg-border sm:block" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold uppercase tracking-[.12em] text-muted">{state.journey_title ?? state.journey_code}</p>
+          <p className="mt-1 flex items-center gap-2 font-semibold text-secondary"><Icon size={17} className="text-primary" aria-hidden="true" /> {labels[current]}</p>
+        </div>
+        <span className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${diagnosticComplete ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>
+          {diagnosticComplete ? <CheckCircle2 size={14} /> : <Compass size={14} />}
+          {diagnosticComplete ? "Diagnóstico concluído" : current === "diagnostic" ? "Em andamento" : "Diagnóstico pendente"}
+        </span>
+      </div>
+    </aside>
   );
 }
