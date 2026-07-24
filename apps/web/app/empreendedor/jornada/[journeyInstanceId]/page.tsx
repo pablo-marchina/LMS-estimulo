@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, ChevronRight, Circle, Lock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { StatusPill } from "@/components/ui/status-pill";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button, ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { getAuthContext } from "@/lib/auth/context";
 import type { ParticipantJourneyOutline } from "@/lib/journey-runtime/outline-contracts";
 import { getParticipantJourneyOutline } from "@/lib/journey-runtime/outline-runtime";
@@ -21,6 +21,9 @@ const activityTypeLabels: Record<string, string> = {
   external_content: "Conteúdo externo",
   assessment_activity: "Avaliação",
   practice_activity: "Prática",
+  content: "Conteúdo",
+  assessment: "Avaliação",
+  practice: "Prática"
 };
 
 export default async function JourneyOutlinePage({
@@ -39,12 +42,14 @@ export default async function JourneyOutlinePage({
     notFound();
   }
 
+  const overallPercent = Math.round(outline.progress * 100);
+
   return (
     <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
-        eyebrow="Sua trilha"
+        eyebrow="Sua jornada"
         title={outline.journey_title}
-        description={outline.journey_description ?? "Acompanhe os blocos e escolha qualquer atividade liberada para o seu caminho."}
+        description={outline.journey_description ?? "Acompanhe as trilhas e escolha qualquer atividade liberada para o seu caminho."}
       />
 
       <section className="grid gap-4 rounded-xl border border-border bg-surface p-6" aria-label="Resumo da jornada">
@@ -52,15 +57,28 @@ export default async function JourneyOutlinePage({
           <StatusPill tone={outline.journey_status === "completed" ? "success" : "info"}>{statusLabel(outline.journey_status)}</StatusPill>
           <span className="text-muted">Versão {outline.journey_version_number}</span>
         </div>
-        <Progress value={outline.progress * 100} label="Progresso da jornada" />
+        <Progress value={overallPercent} label="Progresso da jornada" />
         <p className="text-sm text-muted">{outline.completed_required_steps} de {outline.total_required_steps} atividades obrigatórias concluídas.</p>
       </section>
+
+      <Card className="border-primary/30 bg-primary-soft/40" aria-label="Progresso para desbloquear credenciais">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-ink">Concluir 100% da jornada libera selo e certificado</p>
+            <p className="mt-1 text-xs text-muted">Seu progresso fica salvo a cada atividade concluída.</p>
+          </div>
+          <strong className="text-lg text-primary">{overallPercent}%</strong>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-muted" aria-hidden="true">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(100, Math.max(0, overallPercent))}%` }} />
+        </div>
+      </Card>
 
       {outline.modules.length ? (
         <section className="grid gap-4" aria-labelledby="blocos-titulo">
           <div>
-            <h2 id="blocos-titulo" className="text-xl font-semibold text-ink">Blocos e atividades</h2>
-            <p className="text-sm text-muted">Atividades marcadas como disponíveis podem ser iniciadas em qualquer ordem. Itens bloqueados dependem das regras publicadas da jornada.</p>
+            <h2 id="blocos-titulo" className="text-xl font-semibold text-ink">Trilhas e atividades</h2>
+            <p className="text-sm text-muted">Atividades marcadas como disponíveis podem ser iniciadas. Itens bloqueados dependem das regras publicadas da jornada.</p>
           </div>
 
           {outline.modules.map((module, moduleIndex) => {
@@ -84,7 +102,7 @@ export default async function JourneyOutlinePage({
                 </summary>
                 <div className="border-t border-border p-5">
                   <p className="text-sm text-muted">{module.module_description}</p>
-                  {module.path_name ? <p className="mt-1 text-sm text-muted">Caminho: {module.path_name}</p> : null}
+                  {module.path_name ? <p className="mt-1 text-sm text-muted">Trilha: {module.path_name}</p> : null}
                   <ol className="mt-4 grid gap-3">
                     {module.activities.map((activity) => (
                       <li
