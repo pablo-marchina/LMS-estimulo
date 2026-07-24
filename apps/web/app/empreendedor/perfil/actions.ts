@@ -27,7 +27,7 @@ export async function startProfileDiagnosticAction() {
         ?? eligible.find((journey) => /openai/i.test(journey.title))
         ?? eligible[0]
         ?? null;
-      if (!preferred) redirect("/empreendedor/perfil?erro=diagnostico_indisponivel");
+      if (!preferred) throw new Error("DIAGNOSTIC_JOURNEY_NOT_AVAILABLE");
 
       const enrollment = await journeyRuntime.selfEnroll(
         auth.identity.user_account_id,
@@ -37,6 +37,7 @@ export async function startProfileDiagnosticAction() {
       journeyInstanceId = enrollment.data.journey_instance_id;
     }
 
+    if (!journeyInstanceId) throw new Error("DIAGNOSTIC_JOURNEY_INSTANCE_NOT_AVAILABLE");
     const state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     if (state.journey_status === "available") {
       await journeyRuntime.startJourney(
@@ -50,5 +51,6 @@ export async function startProfileDiagnosticAction() {
     redirect("/empreendedor/perfil?erro=diagnostico_indisponivel");
   }
 
+  if (!journeyInstanceId) redirect("/empreendedor/perfil?erro=diagnostico_indisponivel");
   redirect(`/empreendedor/diagnostico?journey=${journeyInstanceId}`);
 }
