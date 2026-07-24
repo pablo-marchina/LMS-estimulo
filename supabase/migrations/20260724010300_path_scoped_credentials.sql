@@ -49,6 +49,14 @@ as $function$
   );
 $function$;
 
+-- The prior 7-arg function had an explicit revoke locking it down from
+-- public/anon/authenticated (see 20260715155144_learning_credentials_schema.sql).
+-- Because the drop+create above produces a brand-new pg_proc row, that ACL is
+-- NOT inherited (unlike a plain `create or replace`, which preserves ACLs) --
+-- the new 8-arg function defaults to PUBLIC execute. Re-apply the same
+-- privilege model explicitly so this doesn't silently regress.
+revoke all on function app_private.credential_rule_matches(uuid,text,uuid,uuid,boolean,boolean,boolean,uuid) from public,anon,authenticated;
+
 -- Extend learning_credential_context with path-scoped fields, computed only
 -- when a p_step_instance_id is supplied (unchanged precondition from before).
 create or replace function app_private.learning_credential_context(p_actor_user_account_id uuid, p_journey_instance_id uuid, p_step_instance_id uuid)
