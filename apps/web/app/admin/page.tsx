@@ -1,4 +1,5 @@
 import { AlertCircle, BookOpen, ClipboardCheck, FileQuestion, GraduationCap, MessageSquare, Users } from "lucide-react";
+import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { StatusPanel } from "@/components/status-panel";
 import { PageHeader } from "@/components/ui/page-header";
@@ -13,8 +14,22 @@ import { practiceRuntime } from "@/lib/practice/runtime";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminOverviewPage({ searchParams }: { searchParams: Promise<{ organization?: string }> }) {
+export default async function AdminOverviewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ organization?: string; sucesso?: string; comentario?: string; pratica?: string; instance?: string }>;
+}) {
   const query = await searchParams;
+  if (query.sucesso || query.comentario || query.pratica || query.instance) {
+    const params = new URLSearchParams();
+    if (query.organization) params.set("organization", query.organization);
+    if (query.sucesso) params.set("sucesso", query.sucesso);
+    if (query.comentario) params.set("comentario", query.comentario);
+    if (query.pratica) params.set("pratica", query.pratica);
+    if (query.instance) params.set("instance", query.instance);
+    redirect(`/admin/operacao?${params.toString()}`);
+  }
+
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") {
     return <main className="mx-auto max-w-3xl px-4 py-10"><StatusPanel title="Acesso indisponível" tone="warning"><p>Entre e vincule uma identidade interna.</p></StatusPanel></main>;
@@ -87,10 +102,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
         </section>
 
         <Card className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
-          <div>
-            <h2 className="text-lg font-semibold text-ink">Operações de jornada</h2>
-            <p className="mt-1 text-sm text-muted">Publicação, matrícula, evidências, práticas e comentários continuam no espaço operacional dedicado.</p>
-          </div>
+          <div><h2 className="text-lg font-semibold text-ink">Operações de jornada</h2><p className="mt-1 text-sm text-muted">Publicação, matrícula, evidências, práticas e comentários continuam no espaço operacional dedicado.</p></div>
           <ButtonLink href={`/admin/operacao?organization=${organization.organization_id}`} className="w-fit">Abrir operação</ButtonLink>
         </Card>
 
@@ -103,22 +115,8 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
   );
 }
 
-function OverviewCard({
-  icon: Icon,
-  label,
-  value,
-  description,
-  href,
-  cta,
-  attention = false,
-}: {
-  icon: typeof Users;
-  label: string;
-  value: number | null;
-  description: string;
-  href: string;
-  cta: string;
-  attention?: boolean;
+function OverviewCard({ icon: Icon, label, value, description, href, cta, attention = false }: {
+  icon: typeof Users; label: string; value: number | null; description: string; href: string; cta: string; attention?: boolean;
 }) {
   return (
     <Card className={attention ? "border-warning/40 bg-warning-soft/40" : undefined}>
