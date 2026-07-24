@@ -1,6 +1,42 @@
 import "server-only";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
+export type TrilhaAula = {
+  step_id: string;
+  code: string;
+  position: number;
+  is_required: boolean;
+  activity_version_id: string;
+  title: string;
+  description: string | null;
+  activity_type: string;
+  configuration: Record<string, unknown>;
+  assessment: {
+    spec_id: string;
+    passing_score: number | null;
+    max_attempts: number | null;
+    questions: Array<{
+      id: string;
+      code: string;
+      prompt: string;
+      position: number;
+      options: Array<{ id: string; code: string; label: string; is_correct: boolean; position: number }>;
+    }>;
+  } | null;
+  practice: { submission_mode: string; allowed_evidence_types: string[]; review_required: boolean } | null;
+};
+
+export type Trilha = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  position: number;
+  status: string;
+  badge: { badge_version_id: string; title: string; description: string | null } | null;
+  aulas: TrilhaAula[];
+};
+
 export type VersionSummary = {
   id: string;
   version_number: number;
@@ -16,6 +52,7 @@ export type VersionSummary = {
     options: Array<{ id: string; code: string; label: string; value: { score?: number }; position: number }>;
   }>;
   eligible_archetype_codes?: string[] | null;
+  trilhas?: Trilha[];
   [key: string]: unknown;
 };
 
