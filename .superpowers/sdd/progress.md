@@ -42,18 +42,20 @@
 
 | Task | Status | Result |
 |---|---|---|
-| 1 — Full Estímulo brand system | DONE | Vivid reusable headers, auth stage, heroes, patterns, logo capsules, multi-color accents, card motion and reduced-motion support shipped. |
+| 1 — Full Estímulo brand system | DONE | Vivid reusable headers, animated authenticated stages, heroes, patterns, logo capsules, palette accents, tactile cards/buttons and reduced-motion support shipped across participant and admin surfaces. |
 | 2 — High-impact landing and login | DONE | Landing tells the journey story and highlights OpenAI; login restores an expressive Estímulo composition while preserving accessible forms. |
-| 3 — Participant navigation and activity context | DONE | Jornadas and Entregas are first-class destinations; Conquistas is the wallet; activity stage tabs became a compact journey context. |
-| 4 — Diagnostic profile CTA | DONE | Profile detects an unfinished diagnostic and links directly to its form, otherwise links to the journey catalog. |
-| 5 — OpenAI journey visibility | DONE | Technical draft/internal-test enrollments no longer crash Home; OpenAI is ordered and visually highlighted in Home/catalog with direct enrollment CTA. |
-| 6 — Unified credential wallet | DONE | Conquistas combines badges, platform certificates, external certificates and upcoming rewards; legacy Credenciais redirects into it. |
-| 7 — External certificates | DONE_WITH_BINARY_ACCEPTANCE_GATE | Private governed PDF/image upload, metadata, signed download and service-only RPCs shipped. Intent verified live; real personal binary not uploaded through connected tooling. |
-| 8 — Certificate templates and PDF | DONE_WITH_BINARY_ACCEPTANCE_GATE | Admin JPG template, guided overlay positions/color, built-in Estímulo fallback PDF and participant download shipped. Real JPG acceptance remains manual. |
-| 9 — OpenAI completion certificate | DONE | Immutable rule/certificate version 2 uses `credential-v1`; completed synthetic context returns exactly one non-expiring certificate candidate. |
-| 10 — Vercel login hardening | DONE_WITH_PRODUCTION_ACCEPTANCE_GATE | Preview/production-aware callback origin shipped; password success confirmed in Auth logs. Final Google OAuth acceptance requires production promotion and callback allowlisting confirmation. |
-| 11 — Security gateway | DONE | Edge Function `authenticated-rpc` v3 is ACTIVE; new credential RPCs are service-role only and actor mismatch is rejected at the gateway. |
-| 12 — Regression gates | DONE | Four new experience tests are executed by `prebuild` before every Vercel Next.js build. |
+| 3 — Participant navigation and activity context | DONE | Jornadas and Entregas are first-class destinations; Conquistas is the wallet; activity stage tabs became an expressive compact journey context. |
+| 4 — Diagnostic profile CTA | DONE | One server action reuses or creates a journey enrollment, starts the journey when needed and opens the diagnostic form directly. |
+| 5 — OpenAI journey visibility | DONE | OpenAI remains visible before and after enrollment, is pinned in the catalog and Home, exposes all three trilhas and offers direct diagnostic enrollment. |
+| 6 — Home announcement carousel | DONE | Image carousel is the first Home element, auto-plays with controls, uses live announcements when available and has three Estímulo fallback campaigns when the database is empty. |
+| 7 — Unified credential wallet | DONE | Conquistas combines badges, platform certificates, external certificates and upcoming rewards; legacy Credenciais redirects into it. |
+| 8 — External certificates | DONE_WITH_BINARY_ACCEPTANCE_GATE | Private governed PDF/image upload, metadata, signed download and service-only RPCs shipped. Intent verified live; real personal binary not uploaded through connected tooling. |
+| 9 — Certificate templates and PDF | DONE_WITH_BINARY_ACCEPTANCE_GATE | Admin JPG template, guided overlay positions/color, built-in Estímulo fallback PDF and participant download shipped. Real JPG acceptance remains manual. |
+| 10 — OpenAI completion certificate | DONE | Immutable rule/certificate version 2 uses `credential-v1`; completed synthetic context returns exactly one non-expiring certificate candidate. |
+| 11 — Redirect and Vercel login hardening | CODE_DONE_WITH_HOSTED_CONFIG_GATE | Localhost, active previews, Vercel production and custom HTTPS domains resolve consistently. Hosted Supabase URL Configuration and custom-domain DNS still require dashboard access. |
+| 12 — Official OpenAI diagnostic | DONE | A service-only experience read supplies the published 12-question archetype diagnostic when the immutable OpenAI journey has no explicit diagnostic reference. |
+| 13 — Security gateway | DONE | Edge Function `authenticated-rpc` v4 is ACTIVE; credential and diagnostic helper RPCs are service-role only and actor mismatch is rejected at the gateway. |
+| 14 — Regression gates | CODE_DONE_WITH_RUNNER_GATE | Regression files and one consolidated workflow cover branding, carousel order, journeys, diagnostic CTA, credentials and redirect origins. GitHub jobs failed before checkout with no steps/logs; Vercel is temporarily rejecting new builds because of account build-rate limits. |
 
 ## Live OpenAI journey
 
@@ -64,6 +66,7 @@
 - Open to all archetypes: yes
 - Structure: 3 trilhas, 15 aulas, 25 questions, 3 practice specs, 3 path-scoped credential rules, 3 badges
 - Journey completion certificate: published version 2 with `credential-v1` rule
+- Official diagnostic fallback: published version `0396acf7-40bb-4f6f-a433-510d32e5c9c3`, 12 items
 
 ## Latest live verification
 
@@ -73,25 +76,33 @@
   - `20260724011200_credential_wallet_templates_and_openai_certificate.sql`
   - `20260724011300_fix_certificate_rule_and_validity.sql`
   - `20260724011400_lock_down_credential_rpcs.sql`
+  - `20260724011500_openai_default_diagnostic.sql`
 - Confirmed live:
-  - OpenAI remains eligible for the participant account;
+  - OpenAI remains published and eligible for the participant account;
   - draft/internal-test enrollments are excluded from participant listing;
+  - official diagnostic has 12 items;
+  - diagnostic helper execute privileges are `anon=false`, `authenticated=false`, `service_role=true`;
+  - `authenticated-rpc` version 4 is active with JWT verification;
   - external-certificate upload intent creates a private object key and 8 MB limit;
   - synthetic upload intent was cleaned up;
-  - new credential RPC execute privileges are `anon=false`, `authenticated=false`, `service_role=true`;
-  - `authenticated-rpc` version 3 is active with JWT verification;
+  - credential RPC execute privileges are `anon=false`, `authenticated=false`, `service_role=true`;
   - a completed OpenAI context returns one certificate candidate;
-  - Vercel compiled the complete feature set, TypeScript and new routes before regression tests were wired into `prebuild`.
-- New regression files:
+  - Supabase Auth logs show successful production signup/confirmation/login traffic from `lms-estimulo-web.vercel.app`;
+  - Vercel reports no recent runtime-error clusters for the currently deployed version.
+- Regression files:
   - `scripts/application/brand-experience-regression.test.mjs`
   - `scripts/application/participant-journey-navigation-regression.test.mjs`
   - `scripts/application/credential-wallet-regression.test.mjs`
   - `scripts/application/vercel-login-origin-regression.test.mjs`
+- Draft handoff PR: `#94`.
 
-## Documented concerns, not incomplete implementation
+## Documented external gates and concerns
 
-1. **Production OAuth acceptance.** The branch is a protected preview. Google OAuth must be manually accepted after promotion to production and confirmation that the exact callback URL is allowlisted in Supabase/Google.
-2. **Real binary acceptance.** External certificate and JPG template upload contracts were verified without transmitting a real personal document through connected tooling.
-3. **HubSpot institutional gate.** There is no active HubSpot connection or published contact mapping in dev; identity decisions remain durable as `awaiting_integration`.
-4. **Original OpenAI facilitator scripts.** The three source `.docx.md` files remained unavailable; published instructional copy stays explicitly marked for editorial review.
-5. **Two-RPC aula write.** The journey builder still creates activity and path step in separate commands; this remains a future hardening opportunity.
+1. **Hosted Supabase Auth configuration.** Code and `supabase/config.toml` contain localhost, Vercel and `plataforma.estimulo.org` redirects, but this connector cannot mutate hosted Auth > URL Configuration. The exact Site URL/Redirect URL values are documented in `docs/deployment/estimulo-domain-and-auth.md`.
+2. **Custom domain and DNS.** `plataforma.estimulo.org` is the recommended branded URL. Attaching it to Vercel requires access to the Estímulo DNS zone and Vercel Domains settings, neither exposed by the connected actions.
+3. **Latest deployment build.** The last functional preview before this follow-up was `READY`; later source changes are not yet deployed because Vercel returned `build-rate-limit`. GitHub Actions jobs also terminated before checkout with no executable steps/logs.
+4. **Participant enrollment mutation.** The connected database tool blocked invoking the user-enrollment command directly. The UI action is implemented, but this session did not silently enroll the user account.
+5. **Real binary acceptance.** External certificate and JPG template upload contracts were verified without transmitting a real personal document through connected tooling.
+6. **HubSpot institutional gate.** There is no active HubSpot connection or published contact mapping in dev; identity decisions remain durable as `awaiting_integration`.
+7. **Original OpenAI facilitator scripts.** The three source `.docx.md` files remained unavailable; published instructional copy stays explicitly marked for editorial review.
+8. **Two-RPC aula write.** The journey builder still creates activity and path step in separate commands; this remains a future hardening opportunity.
