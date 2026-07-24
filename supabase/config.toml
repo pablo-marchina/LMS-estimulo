@@ -1,0 +1,12 @@
+project_id = "lms-estimulo"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000/**",
+  "http://127.0.0.1:3000/**",
+  "https://lms-estimulo-web.vercel.app/**",
+  "https://*-pablo-marchinas-projects.vercel.app/**",
+  "https://plataforma.estimulo.org/**"
+]
