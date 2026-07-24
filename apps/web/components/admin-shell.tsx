@@ -47,9 +47,11 @@ export function AdminShell({ email, children }: { email: string; children: React
   );
 
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[282px_1fr]">
+    <div className="participant-stage min-h-screen bg-background lg:grid lg:grid-cols-[282px_1fr]">
+      <span className="participant-stage-orb participant-stage-orb-cyan" aria-hidden="true" />
+      <span className="participant-stage-orb participant-stage-orb-magenta" aria-hidden="true" />
       <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
-      <aside className="brand-admin-sidebar relative hidden overflow-hidden text-white lg:block">
+      <aside className="brand-admin-sidebar relative z-20 hidden overflow-hidden text-white lg:block">
         <div className="brand-admin-orb" aria-hidden="true" />
         <div className="relative sticky top-0 flex h-screen flex-col gap-6 p-5">
           <div className="brand-logo-capsule"><EstimuloBrand href="/admin" compact /></div>
@@ -62,7 +64,7 @@ export function AdminShell({ email, children }: { email: string; children: React
         </div>
       </aside>
 
-      <div className="min-w-0">
+      <div className="relative z-10 min-w-0">
         <header className="brand-app-header no-print sticky top-0 z-40 flex items-center gap-3 px-4 py-3 text-white shadow-sm lg:hidden">
           <div className="brand-logo-capsule"><EstimuloBrand href="/admin" compact /></div>
           <button type="button" className="ml-auto grid size-10 place-items-center rounded-lg text-white hover:bg-white/10" aria-expanded={mobileOpen} aria-controls="admin-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>
