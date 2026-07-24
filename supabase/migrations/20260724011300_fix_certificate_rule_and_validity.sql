@@ -1,29 +1,61 @@
--- Align the OpenAI certificate rule with the existing credential-v1 evaluator
--- and support the guided month-based validity configured by administrators.
+-- Preserve immutable published history by creating version 2 of the OpenAI
+-- completion rule and certificate. Version 1 remains as an audit record but
+-- does not match the credential-v1 evaluator.
 
-update orchestration.rule_versions rv
-set language='credential-v1',
-    expression=jsonb_build_object(
-      'scope','journey',
-      'journey_version_id',jv.id,
-      'requires_completed_status',true,
-      'requires_required_steps_completed',true,
-      'requires_passed_assessment',true
-    ),
-    content_hash=app_private.e14_request_hash(jsonb_build_object(
-      'scope','journey',
-      'journey_version_id',jv.id,
-      'requires_completed_status',true,
-      'requires_required_steps_completed',true,
-      'requires_passed_assessment',true
-    ))
-from orchestration.rule_definitions rd,
-     catalog.journey_versions jv
-join catalog.journey_definitions jd on jd.id=jv.journey_definition_id
-where rv.rule_definition_id=rd.id
-  and rd.code='cred_openai_journey_complete'
-  and jd.code='capacitacao_ia_mei_openai'
-  and jv.status='published';
+do $versioning$
+declare
+  v_journey_version_id uuid;
+  v_rule_definition_id uuid;
+  v_rule_version_id uuid:=app_private.e14_deterministic_uuid('rule-version:openai-journey-completion:2');
+  v_certificate_definition_id uuid;
+  v_certificate_version_id uuid:=app_private.e14_deterministic_uuid('certificate-version:openai-journey:2');
+  v_expression jsonb;
+begin
+  select jv.id into v_journey_version_id
+  from catalog.journey_versions jv
+  join catalog.journey_definitions jd on jd.id=jv.journey_definition_id
+  where jd.code='capacitacao_ia_mei_openai' and jv.status='published'
+  order by jv.version_number desc limit 1;
+
+  select id into v_rule_definition_id
+  from orchestration.rule_definitions
+  where code='cred_openai_journey_complete';
+
+  select id into v_certificate_definition_id
+  from engagement.certificate_definitions
+  where code='certificado_capacitacao_openai';
+
+  if v_journey_version_id is null or v_rule_definition_id is null or v_certificate_definition_id is null then
+    return;
+  end if;
+
+  v_expression:=jsonb_build_object(
+    'scope','journey',
+    'journey_version_id',v_journey_version_id,
+    'requires_completed_status',true,
+    'requires_required_steps_completed',true,
+    'requires_passed_assessment',true
+  );
+
+  insert into orchestration.rule_versions(
+    id,rule_definition_id,version_number,status,language,expression,
+    input_schema,output_schema,published_at,content_hash
+  ) values (
+    v_rule_version_id,v_rule_definition_id,2,'published','credential-v1',v_expression,
+    '{}'::jsonb,'{}'::jsonb,now(),app_private.e14_request_hash(v_expression)
+  ) on conflict (id) do nothing;
+
+  insert into engagement.certificate_versions(
+    id,certificate_definition_id,version_number,status,journey_version_id,
+    requirements_rule_version_id,template_file_object_id,validity_policy,
+    template_layout,published_at
+  ) values (
+    v_certificate_version_id,v_certificate_definition_id,2,'published',v_journey_version_id,
+    v_rule_version_id,null,'{"expires":false}'::jsonb,
+    '{"name_y":0.53,"journey_y":0.40,"text_color":"primary"}'::jsonb,now()
+  ) on conflict (id) do nothing;
+end;
+$versioning$;
 
 create or replace function app_private.learning_certificate_candidates(p_context jsonb)
 returns jsonb
@@ -54,7 +86,7 @@ begin
         (p_context->>'required_steps_completed')::boolean,
         (p_context->>'required_assessments_passed')::boolean
       )
-    order by cv.id
+    order by cv.version_number desc,cv.id
   loop
     v_issuance_id:=app_private.e14_deterministic_uuid(
       'certificate-issuance:'||v_journey_instance_id::text||':'||v_record.id::text
