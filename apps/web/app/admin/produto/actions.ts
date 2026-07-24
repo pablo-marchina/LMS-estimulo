@@ -55,6 +55,7 @@ export async function saveProductResourceAction(formData: FormData) {
         title: text(formData, "title"),
         description: text(formData, "description"),
         configuration: json(formData, "configuration", {}),
+        eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
       };
     } else if (resourceType === "activity") {
       const assetTitle = nullable(formData, "asset_title");

@@ -97,6 +97,22 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
               <label className="grid gap-1.5 text-sm font-medium text-ink">Propósito<Textarea name="purpose" rows={2} /></label>
               <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição<Textarea name="description" rows={3} /></label>
               <label className="grid gap-1.5 text-sm font-medium text-ink">Configuração JSON<Textarea className="font-mono text-xs" name="configuration" rows={5} defaultValue="{}" /></label>
+              <fieldset className="grid gap-2">
+                <legend className="text-sm font-medium text-ink">Arquétipos elegíveis (vazio = aberta para todos)</legend>
+                <div className="flex flex-wrap gap-4">
+                  {[
+                    { code: "fazedor", icon: "🔨", name: "Fazedor(a)" },
+                    { code: "batalhador", icon: "💪", name: "Batalhador(a)" },
+                    { code: "construtor", icon: "🧱", name: "Construtor(a)" },
+                    { code: "navegador", icon: "🧭", name: "Navegador(a)" },
+                  ].map((archetype) => (
+                    <label key={archetype.code} className="flex items-center gap-2 text-sm text-ink">
+                      <input type="checkbox" name="eligible_archetype_codes" value={archetype.code} className="size-4 accent-primary" />
+                      {archetype.icon} {archetype.name}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
               <Button type="submit" className="w-fit">Salvar jornada</Button>
             </form>
           </div>
