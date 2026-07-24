@@ -1,0 +1,77 @@
+import { randomUUID } from "node:crypto";
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthContext } from "@/lib/auth/context";
+import { extendedCredentialRuntime } from "@/lib/credentials/extended-runtime";
+import { externalCredentialBucket, removeCredentialFile, uploadCredentialFile, validateExternalCredentialFile } from "@/lib/storage/credential-files";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function sameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+  try { return new URL(origin).origin === request.nextUrl.origin; } catch { return false; }
+}
+
+function errorCode(error: unknown) {
+  const raw = error instanceof Error ? error.message : "EXTERNAL_CREDENTIAL_UPLOAD_FAILED";
+  const code = raw.split(":", 1)[0]?.trim() || "EXTERNAL_CREDENTIAL_UPLOAD_FAILED";
+  return /^[A-Z0-9_]+$/.test(code) ? code : "EXTERNAL_CREDENTIAL_UPLOAD_FAILED";
+}
+
+function redirectTo(request: NextRequest, params: Record<string, string>) {
+  const target = new URL("/empreendedor/conquistas", request.url);
+  target.hash = "certificados-externos";
+  for (const [key, value] of Object.entries(params)) target.searchParams.set(key, value);
+  return NextResponse.redirect(target, 303);
+}
+
+export async function POST(request: NextRequest) {
+  if (!sameOrigin(request)) return new NextResponse("Forbidden", { status: 403 });
+  const auth = await getAuthContext();
+  if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
+
+  const key = randomUUID();
+  let intentId: string | null = null;
+  let bucket: string | null = null;
+  let objectKey: string | null = null;
+  let objectCreated = false;
+  try {
+    const formData = await request.formData();
+    const title = String(formData.get("title") ?? "").trim();
+    const issuer = String(formData.get("issuer") ?? "").trim();
+    const issuedOn = String(formData.get("issued_on") ?? "").trim() || null;
+    const expiresOn = String(formData.get("expires_on") ?? "").trim() || null;
+    const verificationUrl = String(formData.get("verification_url") ?? "").trim() || null;
+    const file = formData.get("file");
+    if (!(file instanceof File)) throw new Error("EXTERNAL_CREDENTIAL_FILE_REQUIRED");
+    validateExternalCredentialFile(file);
+    bucket = externalCredentialBucket();
+    const intent = await extendedCredentialRuntime.createExternalIntent({ actorUserAccountId: auth.identity.user_account_id, originalFilename: file.name, expectedContentType: file.type, storageProvider: "supabase_storage", bucket, idempotencyKey: key });
+    intentId = intent.data.upload_intent_id;
+    objectKey = intent.data.object_key;
+    const uploaded = await uploadCredentialFile({ bucket, objectKey, file, kind: "external" });
+    objectCreated = uploaded.created;
+    await extendedCredentialRuntime.confirmExternal({
+      actorUserAccountId: auth.identity.user_account_id,
+      uploadIntentId: intentId,
+      title,
+      issuer,
+      issuedOn,
+      expiresOn,
+      verificationUrl,
+      actualContentType: file.type,
+      actualSizeBytes: file.size,
+      sha256: uploaded.sha256,
+      providerObjectVersion: uploaded.providerObjectVersion,
+      etag: uploaded.etag,
+      idempotencyKey: `${key}:confirm`,
+    });
+    return redirectTo(request, { certificadoExterno: "enviado" });
+  } catch (error) {
+    const code = errorCode(error);
+    if (intentId) await extendedCredentialRuntime.abortExternal(auth.identity.user_account_id, intentId, code, `${key}:abort`).catch(() => undefined);
+    if (objectCreated && bucket && objectKey) await removeCredentialFile(bucket, objectKey).catch(() => undefined);
+    return redirectTo(request, { certificadoExterno: "erro", codigo: code });
+  }
+}
