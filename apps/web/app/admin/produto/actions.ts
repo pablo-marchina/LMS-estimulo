@@ -24,6 +24,15 @@ function json(formData: FormData, name: string, fallback: unknown = {}) {
   return JSON.parse(value) as unknown;
 }
 
+// Derives a code matching save_admin_product_resource's shared v_code validation
+// (`^[a-z][a-z0-9_-]{1,79}$`) from free text, so the admin never types or sees a raw
+// code. Guards the leading-letter requirement (a name/step label starting with a
+// digit, e.g. "5 passos", would otherwise produce an invalid code).
+function deriveCode(source: string, fallback: string) {
+  const slug = source.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60);
+  return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback;
+}
+
 async function authorize(formData: FormData) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
@@ -35,6 +44,30 @@ async function authorize(formData: FormData) {
     redirect(`/admin/produto?organization=${organizationId}&erro=sem_permissao`);
   }
   return { auth, organizationId };
+}
+
+export async function saveTrilhaAction(formData: FormData) {
+  const { auth, organizationId } = await authorize(formData);
+  const payload = {
+    journey_version_id: text(formData, "journey_version_id"),
+    name: text(formData, "name"),
+    description: nullable(formData, "description"),
+    position: Number(text(formData, "position") || 1),
+    code: deriveCode(text(formData, "name"), "trilha"),
+  };
+  try {
+    await saveAdminProductResource({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId,
+      resourceType: "path_template",
+      payload,
+      idempotencyKey: randomUUID(),
+    });
+  } catch (error) {
+    const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
+    redirect(`/admin/produto?organization=${organizationId}&erro=${reason}`);
+  }
+  redirect(`/admin/produto?organization=${organizationId}&sucesso=trilha_salva`);
 }
 
 export async function saveProductResourceAction(formData: FormData) {
@@ -91,14 +124,16 @@ export async function saveProductResourceAction(formData: FormData) {
         } : {}),
       };
     } else if (resourceType === "path_step") {
+      // `path_template_id` is always an existing trilha now (trilha creation moved to
+      // saveTrilhaAction), so the create-new-path_template branch of
+      // save_admin_product_resource never runs here and `code` is otherwise unused.
+      // The shared `v_code` validation still runs unconditionally for every resource
+      // type, though, so a syntactically valid code must still be supplied -- derived
+      // from step_code rather than asking the admin to type a redundant one.
       payload = {
         path_template_id: nullable(formData, "path_template_id"),
         step_id: nullable(formData, "step_id"),
-        journey_version_id: nullable(formData, "journey_version_id"),
-        code: text(formData, "code"),
-        path_name: text(formData, "path_name"),
-        path_description: text(formData, "path_description"),
-        is_default: checked(formData, "is_default"),
+        code: deriveCode(text(formData, "step_code"), "bloco"),
         step_code: text(formData, "step_code"),
         activity_version_id: text(formData, "activity_version_id"),
         position: Number(text(formData, "position") || 1),

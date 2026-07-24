@@ -6,8 +6,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import { getAuthContext } from "@/lib/auth/context";
-import { getAdminProductWorkspace } from "@/lib/admin/product-management";
-import { saveProductResourceAction } from "./actions";
+import { getAdminProductWorkspace, type Trilha } from "@/lib/admin/product-management";
+import { saveProductResourceAction, saveTrilhaAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,11 +31,14 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
   }
 
   const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
-  const journeyVersions = workspace.journeys.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
+  const journeyVersions = workspace.journeys.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name, definitionId: item.definition_id })));
   const activityVersions = workspace.activities.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
   const ruleVersions = workspace.rules.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
   const success = single(query.sucesso);
   const error = single(query.erro);
+  const draftJourneyVersions = journeyVersions.filter((item) => item.status === "draft");
+  const selectedVersionId = single(query.versao);
+  const selectedJourneyVersion = draftJourneyVersions.find((item) => String(item.id) === selectedVersionId) ?? null;
 
   return <AppShell area="admin" email={auth.email}>
     <div className="grid gap-8">
@@ -76,6 +79,17 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
             <ChevronDown size={18} className="shrink-0 text-muted transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
           </summary>
           <div className="grid gap-4 border-t border-border p-5">
+            <form method="get" className="flex flex-wrap items-end gap-3">
+              <input type="hidden" name="organization" value={organization.organization_id} />
+              <label className="grid gap-1.5 text-sm font-medium text-ink">
+                Jornada draft para editar
+                <Select name="versao" defaultValue={selectedVersionId}>
+                  <option value="">Nova jornada (ou nova versão)</option>
+                  {draftJourneyVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}
+                </Select>
+              </label>
+              <Button variant="secondary" type="submit">Selecionar</Button>
+            </form>
             <form className="grid gap-4" action={saveProductResourceAction}>
               <input type="hidden" name="organization_id" value={organization.organization_id} />
               <input type="hidden" name="resource_type" value="journey" />
@@ -84,10 +98,10 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
                   <Select name="program_id" required><option value="">Selecione</option>{workspace.programs.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</Select>
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Definição existente
-                  <Select name="definition_id"><option value="">Nova jornada</option>{workspace.journeys.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select>
+                  <Select name="definition_id" defaultValue={selectedJourneyVersion?.definitionId ?? ""}><option value="">Nova jornada</option>{workspace.journeys.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select>
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Versão draft existente
-                  <Select name="version_id"><option value="">Nova versão</option>{journeyVersions.filter((item) => item.status === "draft").map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
+                  <Select name="version_id" defaultValue={selectedVersionId}><option value="">Nova versão</option>{draftJourneyVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Código<Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Slug<Input name="slug" pattern="[a-z0-9-]+" required /></label>
@@ -113,8 +127,34 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
                   ))}
                 </div>
               </fieldset>
+              <fieldset className="grid gap-3">
+                <legend className="text-sm font-medium text-ink">Trilhas desta jornada</legend>
+                {selectedJourneyVersion?.trilhas?.length ? selectedJourneyVersion.trilhas
+                  .slice()
+                  .sort((a: Trilha, b: Trilha) => a.position - b.position)
+                  .map((trilha: Trilha) => (
+                    <div key={trilha.id} className="rounded-lg border border-border p-3">
+                      <p className="text-sm font-semibold text-ink">{trilha.position}. {trilha.name}</p>
+                      {trilha.description ? <p className="text-xs text-muted">{trilha.description}</p> : null}
+                      <p className="text-xs text-muted">{trilha.aulas.length} aula(s){trilha.badge ? ` · Selo: ${trilha.badge.title}` : ""}</p>
+                    </div>
+                  )) : <p className="text-sm text-muted">Nenhuma trilha ainda.</p>}
+              </fieldset>
               <Button type="submit" className="w-fit">Salvar jornada</Button>
             </form>
+            <fieldset className="grid gap-3 rounded-lg border border-border p-4">
+              <legend className="px-1 text-sm font-semibold text-ink">Adicionar trilha</legend>
+              {selectedJourneyVersion ? (
+                <form action={saveTrilhaAction} className="grid gap-3 sm:grid-cols-2">
+                  <input type="hidden" name="organization_id" value={organization.organization_id} />
+                  <input type="hidden" name="journey_version_id" value={String(selectedJourneyVersion.id)} />
+                  <label className="grid gap-1.5 text-sm font-medium text-ink">Nome da trilha<Input name="name" required /></label>
+                  <label className="grid gap-1.5 text-sm font-medium text-ink">Posição<Input name="position" type="number" min="1" defaultValue={String((selectedJourneyVersion.trilhas?.length ?? 0) + 1)} required /></label>
+                  <label className="col-span-full grid gap-1.5 text-sm font-medium text-ink">Descrição<Textarea name="description" rows={2} /></label>
+                  <Button type="submit" size="sm" className="w-fit">Adicionar trilha</Button>
+                </form>
+              ) : <p className="text-sm text-muted">Selecione uma jornada draft acima para adicionar trilhas.</p>}
+            </fieldset>
           </div>
         </details>
 
@@ -193,7 +233,7 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
           <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
             <span className="grid gap-1">
               <strong className="text-ink">Trilha e bloco</strong>
-              <small className="text-muted">Organizar atividades e regras de disponibilidade</small>
+              <small className="text-muted">Adicionar ou editar uma aula em uma trilha já criada</small>
             </span>
             <ChevronDown size={18} className="shrink-0 text-muted transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
           </summary>
@@ -202,13 +242,8 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
               <input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="resource_type" value="path_step" />
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Trilha existente
-                  <Select name="path_template_id"><option value="">Nova trilha</option>{workspace.paths.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</Select>
+                  <Select name="path_template_id" required>{workspace.paths.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</Select>
                 </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Jornada draft
-                  <Select name="journey_version_id"><option value="">Selecione para nova trilha</option>{journeyVersions.filter((item) => item.status === "draft").map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Código da trilha<Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Nome da trilha<Input name="path_name" required /></label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">ID do passo existente<Input name="step_id" /></label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Código da atividade no bloco<Input name="step_code" required /></label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Atividade
@@ -223,13 +258,9 @@ export default async function AdminProductPage({ searchParams }: { searchParams:
                 </label>
                 <label className="grid gap-1.5 text-sm font-medium text-ink">Prazo relativo<Input name="due_offset" placeholder="7 days" /></label>
               </div>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição da trilha<Textarea name="path_description" rows={2} /></label>
-              <div className="flex flex-wrap gap-5">
-                <label className="flex items-center gap-2.5 text-sm text-ink"><input name="is_default" type="checkbox" className="size-4 accent-primary" /> Trilha padrão</label>
-                <label className="flex items-center gap-2.5 text-sm text-ink"><input name="is_required" type="checkbox" defaultChecked className="size-4 accent-primary" /> Atividade obrigatória</label>
-              </div>
+              <label className="flex items-center gap-2.5 text-sm text-ink"><input name="is_required" type="checkbox" defaultChecked className="size-4 accent-primary" /> Atividade obrigatória</label>
               <label className="grid gap-1.5 text-sm font-medium text-ink">Metadados do bloco JSON<Textarea className="font-mono text-xs" name="metadata" rows={3} defaultValue={'{"block":"Módulo 1"}'} /></label>
-              <Button type="submit" className="w-fit">Salvar trilha e atividade</Button>
+              <Button type="submit" className="w-fit">Salvar atividade na trilha</Button>
             </form>
           </div>
         </details>
