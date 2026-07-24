@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, BookOpen, ClipboardList, Home, Menu, Trophy, User, X } from "lucide-react";
+import { BookOpen, Home, Menu, Trophy, User, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { NavItem } from "@/components/ui/nav-item";
@@ -13,9 +13,7 @@ import { Button } from "@/components/ui/button";
 const links = [
   { href: "/empreendedor", label: "Painel", icon: Home, exact: true },
   { href: "/capacitacao/biblioteca", label: "Biblioteca", icon: BookOpen },
-  { href: "/empreendedor/pontuacao", label: "Pontuação", icon: Trophy },
-  { href: "/empreendedor/conquistas", label: "Conquistas", icon: Award },
-  { href: "/empreendedor/entregas", label: "Entregas", icon: ClipboardList },
+  { href: "/empreendedor/engajamento", label: "Engajamento", icon: Trophy },
   { href: "/empreendedor/perfil", label: "Perfil", icon: User }
 ];
 
