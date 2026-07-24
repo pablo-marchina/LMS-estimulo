@@ -68,6 +68,8 @@ export const configurableProductRuntime = {
     })
 };
 
+export type EligibleJourney = { journey_version_id: string; title: string; description: string | null; open_to_all: boolean };
+
 export const journeyRuntime = {
   listActivityComments: (actor: string, stepInstanceId: string) => invoke<ActivityComments>("list_activity_comments", {
     p_actor_user_account_id: actor,
@@ -158,6 +160,17 @@ export const journeyRuntime = {
       p_source: source,
       p_idempotency_key: key
     }),
+
+  selfEnroll: (actor: string, journeyVersionId: string, key: string) =>
+    invoke<RpcEnvelope<{ enrollment_id: string; journey_instance_id: string }>>("e14_self_enroll", {
+      p_actor_user_account_id: actor,
+      p_journey_version_id: journeyVersionId,
+      p_idempotency_key: key
+    }),
+
+  listEligibleJourneys: (actor: string) => invoke<EligibleJourney[]>("e14_list_eligible_journeys", {
+    p_actor_user_account_id: actor
+  }),
 
   startJourney: (actor: string, instanceId: string, version: number, key: string) => invoke<RpcEnvelope<JourneyState>>("e14_start_journey", {
     p_actor_user_account_id: actor,
