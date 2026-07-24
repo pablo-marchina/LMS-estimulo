@@ -15,17 +15,21 @@ export async function startProfileDiagnosticAction() {
 
   try {
     const participantJourneys = await journeyRuntime.listParticipantJourneys(auth.identity.user_account_id);
-    const pending = participantJourneys.journeys.find((journey) => journey.d?.status !== "completed")
-      ?? participantJourneys.journeys.find((journey) => journey.journey_status !== "completed")
-      ?? null;
+    const explicitPendingDiagnostic = participantJourneys.journeys.find(
+      (journey) => journey.d !== null && journey.d.status !== "completed",
+    ) ?? null;
+    const enrolledOpenAI = participantJourneys.journeys.find(
+      (journey) => journey.journey_version_id === OPENAI_JOURNEY_VERSION_ID || /openai/i.test(journey.journey_title ?? ""),
+    ) ?? null;
 
-    if (pending) {
-      journeyInstanceId = pending.journey_instance_id;
+    if (explicitPendingDiagnostic) {
+      journeyInstanceId = explicitPendingDiagnostic.journey_instance_id;
+    } else if (enrolledOpenAI) {
+      journeyInstanceId = enrolledOpenAI.journey_instance_id;
     } else {
       const eligible = await journeyRuntime.listEligibleJourneys(auth.identity.user_account_id);
       const preferred = eligible.find((journey) => journey.journey_version_id === OPENAI_JOURNEY_VERSION_ID)
         ?? eligible.find((journey) => /openai/i.test(journey.title))
-        ?? eligible[0]
         ?? null;
       if (!preferred) throw new Error("DIAGNOSTIC_JOURNEY_NOT_AVAILABLE");
 
