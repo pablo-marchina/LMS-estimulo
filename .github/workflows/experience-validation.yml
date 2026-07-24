@@ -1,0 +1,44 @@
+name: Experience validation
+
+on:
+  push:
+    branches:
+      - refactor/web-frontend-rebuild
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: experience-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
+      SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+      AUTHENTICATED_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/authenticated-rpc
+      NEXT_PUBLIC_APP_URL: https://lms-estimulo-web.vercel.app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run experience regression gates
+        run: npm --workspace @estimulo/web run prebuild
+
+      - name: Build Next.js application
+        run: npm --workspace @estimulo/web run build
