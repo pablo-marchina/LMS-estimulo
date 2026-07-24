@@ -38,6 +38,7 @@ const allowedRpcs = new Set([
   "get_external_credential_download",
   "get_library_content",
   "get_participant_engagement_hub",
+  "get_participant_experience_with_default_diagnostic",
   "get_participant_journey_outline",
   "get_practice_download_descriptor",
   "grant_organization_role",
