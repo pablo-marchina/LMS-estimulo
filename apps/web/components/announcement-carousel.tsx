@@ -58,7 +58,7 @@ export function AnnouncementCarousel({ announcements }: { announcements: Partici
     if (!viewport) return;
     const normalized = (index + slides.length) % slides.length;
     const target = viewport.children.item(normalized) as HTMLElement | null;
-    target?.scrollIntoView({ behavior, block: "nearest", inline: "start" });
+    if (target) viewport.scrollTo({ left: target.offsetLeft, behavior });
     setActive(normalized);
   }, [slides.length]);
 
