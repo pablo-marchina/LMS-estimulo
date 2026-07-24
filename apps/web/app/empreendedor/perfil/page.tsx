@@ -1,4 +1,4 @@
-import { Compass, Mail, Phone, Star, Trophy, UserRound } from "lucide-react";
+import { Compass, Mail, Star, Trophy, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -10,13 +10,6 @@ import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 export const dynamic = "force-dynamic";
 
-const archetypeLabels: Record<string, string> = {
-  fazedor: "Fazedor(a)",
-  batalhador: "Batalhador(a)",
-  construtor: "Construtor(a)",
-  navegador: "Navegador(a)",
-};
-
 export default async function ParticipantProfilePage() {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
@@ -26,9 +19,8 @@ export default async function ParticipantProfilePage() {
     credentialRuntime.listParticipant(auth.identity.user_account_id).catch(() => ({ entrepreneur_id: null, badges: [], certificates: [] })),
     journeyRuntime.listParticipantJourneys(auth.identity.user_account_id).catch(() => ({ actor_user_account_id: auth.identity.user_account_id, entrepreneur_id: null, journeys: [] })),
   ]);
-  const profile = engagement?.profile ?? {};
   const preferredName = engagement?.preferred_name ?? auth.email.split("@")[0];
-  const diagnostic = engagement?.diagnostic;
+  const archetype = engagement?.archetype ?? null;
   const pendingDiagnostic = journeys.journeys.find((journey) => journey.d?.status !== "completed") ?? null;
   const completedJourneyCount = journeys.journeys.filter((journey) => journey.journey_status === "completed").length;
   const credentialCount = credentials.badges.length + credentials.certificates.length;
@@ -46,7 +38,6 @@ export default async function ParticipantProfilePage() {
           </div>
           <dl className="mt-6 grid gap-4 text-sm">
             <div className="flex gap-3"><Mail size={17} className="mt-0.5 shrink-0 text-primary" /><div><dt className="font-medium text-muted">E-mail</dt><dd className="text-ink">{auth.email}</dd></div></div>
-            {typeof profile.phone_e164 === "string" && profile.phone_e164 ? <div className="flex gap-3"><Phone size={17} className="mt-0.5 shrink-0 text-primary" /><div><dt className="font-medium text-muted">Telefone</dt><dd className="text-ink">{profile.phone_e164}</dd></div></div> : null}
           </dl>
         </Card>
 
@@ -59,13 +50,14 @@ export default async function ParticipantProfilePage() {
 
       <section aria-labelledby="diagnostico-perfil-titulo">
         <div className="mb-4"><p className="text-sm font-semibold text-muted">Seu momento</p><h2 id="diagnostico-perfil-titulo" className="display-font mt-1 text-2xl text-secondary">Diagnóstico empreendedor</h2></div>
-        {diagnostic?.archetype_code ? (
+        {archetype ? (
           <Card className="brand-accent-card">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div><p className="text-sm font-semibold text-muted">Seu arquétipo atual</p><p className="display-font mt-1 text-3xl text-primary">{archetypeLabels[diagnostic.archetype_code] ?? diagnostic.archetype_code}</p></div>
+              <div><p className="text-sm font-semibold text-muted">Seu arquétipo atual</p><p className="display-font mt-1 text-3xl text-primary">{archetype.name ?? "Perfil identificado"}</p></div>
               <Compass size={32} className="text-brand-magenta" aria-hidden="true" />
             </div>
-            <p className="mt-5 text-sm leading-6 text-muted">O diagnóstico orienta recomendações e pode ser atualizado quando uma nova avaliação estiver disponível.</p>
+            {archetype.description ? <p className="mt-5 text-sm leading-6 text-muted">{archetype.description}</p> : null}
+            <p className="mt-3 text-xs text-muted">O diagnóstico orienta recomendações e pode ser atualizado quando uma nova avaliação estiver disponível.</p>
           </Card>
         ) : (
           <EmptyState icon={<Compass size={24} />} title="Faça seu diagnóstico" tone="info">
