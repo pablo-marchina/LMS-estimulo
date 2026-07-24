@@ -1,10 +1,11 @@
-# SDD Progress — Frontend redesign through Frente 6
+# SDD Progress — Frontend redesign, Frente 6 and experience hardening
 
 **Branch:** `refactor/web-frontend-rebuild`
 
 **Plans:**
 - `docs/superpowers/plans/2026-07-24-openai-journey-admin-builder-frente5.md`
 - `docs/superpowers/plans/2026-07-24-frente-6-admin-restante.md`
+- `docs/superpowers/plans/2026-07-24-brand-journeys-credentials-login.md`
 
 **Designs:**
 - `docs/superpowers/specs/2026-07-23-frontend-redesign-design.md`
@@ -31,11 +32,28 @@
 
 | Task | Status | Result |
 |---|---|---|
-| 1 — Identity resolution queue | DONE_WITH_EXTERNAL_GATE | Durable queue, authorized list/decision RPCs and plain-language Users UI shipped. Enqueue was verified live. No active HubSpot connection exists in dev, so link/create decisions deliberately remain `awaiting_integration`; the tool also blocked invoking the sensitive resolution action during validation. |
-| 2 — Library dual visibility + files | DONE | Admin supports article/link/file, private managed upload up to 6 MB, authorized download, filters, derived slug and independent `discoverable_in_library` vs journey links. Upload intent was verified live and the synthetic intent cleaned up. |
-| 3 — Gamification guided forms | DONE | Code fields and recurrence/validity JSON were removed. Frequency, limits, points and certificate validity now assemble the existing policies server-side. |
+| 1 — Identity resolution queue | DONE_WITH_EXTERNAL_GATE | Durable queue, authorized list/decision RPCs and plain-language Users UI shipped. Enqueue was verified live. No active HubSpot connection exists in dev, so link/create decisions deliberately remain `awaiting_integration`. |
+| 2 — Library dual visibility + files | DONE | Admin supports article/link/file, private managed upload up to 6 MB, authorized download, filters, derived slug and independent `discoverable_in_library` vs journey links. |
+| 3 — Gamification guided forms | DONE | Code fields and recurrence/validity JSON were removed. Frequency, limits, points and certificate validity assemble policies server-side. |
 | 4 — Admin overview + operation route | DONE | `/admin` is a task-oriented dashboard; the previous operational workspace lives at `/admin/operacao`; raw result JSON was replaced by readable evidence summaries. |
-| 5 — Verification and handoff | DONE | Supabase migrations applied, event schemas registered, operator permissions verified, Vercel production builds reached `READY`, and four structural regression tests were added. |
+| 5 — Verification and handoff | DONE | Supabase migrations applied, event schemas registered, operator permissions verified and Vercel builds reached `READY`. |
+
+## Brand, journeys, credentials and Vercel login
+
+| Task | Status | Result |
+|---|---|---|
+| 1 — Full Estímulo brand system | DONE | Vivid reusable headers, auth stage, heroes, patterns, logo capsules, multi-color accents, card motion and reduced-motion support shipped. |
+| 2 — High-impact landing and login | DONE | Landing tells the journey story and highlights OpenAI; login restores an expressive Estímulo composition while preserving accessible forms. |
+| 3 — Participant navigation and activity context | DONE | Jornadas and Entregas are first-class destinations; Conquistas is the wallet; activity stage tabs became a compact journey context. |
+| 4 — Diagnostic profile CTA | DONE | Profile detects an unfinished diagnostic and links directly to its form, otherwise links to the journey catalog. |
+| 5 — OpenAI journey visibility | DONE | Technical draft/internal-test enrollments no longer crash Home; OpenAI is ordered and visually highlighted in Home/catalog with direct enrollment CTA. |
+| 6 — Unified credential wallet | DONE | Conquistas combines badges, platform certificates, external certificates and upcoming rewards; legacy Credenciais redirects into it. |
+| 7 — External certificates | DONE_WITH_BINARY_ACCEPTANCE_GATE | Private governed PDF/image upload, metadata, signed download and service-only RPCs shipped. Intent verified live; real personal binary not uploaded through connected tooling. |
+| 8 — Certificate templates and PDF | DONE_WITH_BINARY_ACCEPTANCE_GATE | Admin JPG template, guided overlay positions/color, built-in Estímulo fallback PDF and participant download shipped. Real JPG acceptance remains manual. |
+| 9 — OpenAI completion certificate | DONE | Immutable rule/certificate version 2 uses `credential-v1`; completed synthetic context returns exactly one non-expiring certificate candidate. |
+| 10 — Vercel login hardening | DONE_WITH_PRODUCTION_ACCEPTANCE_GATE | Preview/production-aware callback origin shipped; password success confirmed in Auth logs. Final Google OAuth acceptance requires production promotion and callback allowlisting confirmation. |
+| 11 — Security gateway | DONE | Edge Function `authenticated-rpc` v3 is ACTIVE; new credential RPCs are service-role only and actor mismatch is rejected at the gateway. |
+| 12 — Regression gates | DONE | Four new experience tests are executed by `prebuild` before every Vercel Next.js build. |
 
 ## Live OpenAI journey
 
@@ -45,34 +63,35 @@
 - Published at: `2026-07-24T18:55:49.521046Z`
 - Open to all archetypes: yes
 - Structure: 3 trilhas, 15 aulas, 25 questions, 3 practice specs, 3 path-scoped credential rules, 3 badges
+- Journey completion certificate: published version 2 with `credential-v1` rule
 
-## Frente 6 live verification
+## Latest live verification
 
 - Supabase project: `cfpfeavjlgheqqiaqtzv`.
-- Applied migrations:
-  - `20260724010500_admin_identity_resolution_queue.sql`
-  - `20260724010600_library_dual_visibility_and_files.sql`
-  - `20260724010700_operator_identity_permissions.sql`
-  - `20260724010800_frente6_event_schemas.sql`
-  - `20260724010900_fix_library_upload_extension.sql`
-  - `20260724011000_fix_library_upload_event_versions.sql`
+- Applied new migrations:
+  - `20260724011100_participant_journey_listing_resilience.sql`
+  - `20260724011200_credential_wallet_templates_and_openai_certificate.sql`
+  - `20260724011300_fix_certificate_rule_and_validity.sql`
+  - `20260724011400_lock_down_credential_rpcs.sql`
 - Confirmed live:
-  - `e14_operator` has `iam.accounts.manage`, `integration.manage`, `library.manage`;
-  - identity queue/table and audit schemas exist;
-  - library discovery/file columns and authorized download RPC exist;
-  - upload profile accepts PDF/images/TXT/DOCX up to `6291456` bytes;
-  - a valid `.txt` upload intent was created with private object key and then cleaned up;
-  - Vercel compiled Next.js, completed TypeScript and deployed the full route set.
-- Regression files:
-  - `scripts/application/admin-frente6-identities.test.mjs`
-  - `scripts/application/admin-frente6-library.test.mjs`
-  - `scripts/application/admin-frente6-gamification.test.mjs`
-  - `scripts/application/admin-frente6-dashboard.test.mjs`
+  - OpenAI remains eligible for the participant account;
+  - draft/internal-test enrollments are excluded from participant listing;
+  - external-certificate upload intent creates a private object key and 8 MB limit;
+  - synthetic upload intent was cleaned up;
+  - new credential RPC execute privileges are `anon=false`, `authenticated=false`, `service_role=true`;
+  - `authenticated-rpc` version 3 is active with JWT verification;
+  - a completed OpenAI context returns one certificate candidate;
+  - Vercel compiled the complete feature set, TypeScript and new routes before regression tests were wired into `prebuild`.
+- New regression files:
+  - `scripts/application/brand-experience-regression.test.mjs`
+  - `scripts/application/participant-journey-navigation-regression.test.mjs`
+  - `scripts/application/credential-wallet-regression.test.mjs`
+  - `scripts/application/vercel-login-origin-regression.test.mjs`
 
 ## Documented concerns, not incomplete implementation
 
-1. **HubSpot institutional gate.** There is no active HubSpot connection or published contact mapping in dev. Decisions are intentionally durable as `awaiting_integration`; no fake remote contact is created.
-2. **Sensitive-action validation limit.** The connected database tool allowed queue creation but blocked invoking the manual identity-resolution and upload-abort actions. Their permission/idempotency/audit contracts were inspected and production-built; the synthetic database records created for validation were removed or marked aborted directly.
-3. **Actual binary upload.** The private storage route, MIME/extension/size validation, confirmation RPC and authorized download build successfully. Live validation exercised the upload-intent contract, not a real user document.
-4. **Original OpenAI facilitator scripts.** The three source `.docx.md` files remained unavailable; the published instructional copy stays explicitly marked for editorial review.
+1. **Production OAuth acceptance.** The branch is a protected preview. Google OAuth must be manually accepted after promotion to production and confirmation that the exact callback URL is allowlisted in Supabase/Google.
+2. **Real binary acceptance.** External certificate and JPG template upload contracts were verified without transmitting a real personal document through connected tooling.
+3. **HubSpot institutional gate.** There is no active HubSpot connection or published contact mapping in dev; identity decisions remain durable as `awaiting_integration`.
+4. **Original OpenAI facilitator scripts.** The three source `.docx.md` files remained unavailable; published instructional copy stays explicitly marked for editorial review.
 5. **Two-RPC aula write.** The journey builder still creates activity and path step in separate commands; this remains a future hardening opportunity.
