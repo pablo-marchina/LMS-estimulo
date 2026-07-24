@@ -20,10 +20,16 @@ function normalizeOrigin(value: string | undefined): string | null {
 export function publicApplicationOrigin(): string {
   const configured = normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL);
   if (configured) return configured;
+
+  if (process.env.VERCEL_ENV === "preview") {
+    const branch = normalizeOrigin(process.env.VERCEL_BRANCH_URL);
+    if (branch) return branch;
+    const deployment = normalizeOrigin(process.env.VERCEL_URL);
+    if (deployment) return deployment;
+  }
+
   const production = normalizeOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL);
   if (production) return production;
-  const branch = normalizeOrigin(process.env.VERCEL_BRANCH_URL);
-  if (branch) return branch;
   const deployment = normalizeOrigin(process.env.VERCEL_URL);
   if (deployment) return deployment;
   if (process.env.NODE_ENV === "production") return CANONICAL_VERCEL_ORIGIN;
