@@ -9,29 +9,46 @@ function normalizeOrigin(value: string | undefined): string | null {
   try {
     const url = new URL(withScheme);
     const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-    if (url.protocol !== "https:" && !local) return null;
-    if (!local && !url.hostname.endsWith(".vercel.app") && process.env.NODE_ENV === "production") return null;
+    if (local && url.protocol !== "http:" && url.protocol !== "https:") return null;
+    if (!local && url.protocol !== "https:") return null;
     return url.origin;
   } catch {
     return null;
   }
 }
 
+function firstOrigin(...values: Array<string | undefined>): string | null {
+  for (const value of values) {
+    const origin = normalizeOrigin(value);
+    if (origin) return origin;
+  }
+  return null;
+}
+
 export function publicApplicationOrigin(): string {
-  const configured = normalizeOrigin(process.env.NEXT_PUBLIC_APP_URL);
-  if (configured) return configured;
+  const configured = firstOrigin(
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_SITE_URL,
+  );
 
   if (process.env.VERCEL_ENV === "preview") {
-    const branch = normalizeOrigin(process.env.VERCEL_BRANCH_URL);
-    if (branch) return branch;
-    const deployment = normalizeOrigin(process.env.VERCEL_URL);
-    if (deployment) return deployment;
+    return firstOrigin(
+      process.env.VERCEL_BRANCH_URL,
+      process.env.VERCEL_URL,
+      process.env.NEXT_PUBLIC_VERCEL_URL,
+      configured ?? undefined,
+    ) ?? CANONICAL_VERCEL_ORIGIN;
   }
 
-  const production = normalizeOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL);
-  if (production) return production;
-  const deployment = normalizeOrigin(process.env.VERCEL_URL);
-  if (deployment) return deployment;
-  if (process.env.NODE_ENV === "production") return CANONICAL_VERCEL_ORIGIN;
-  return "http://localhost:3000";
+  if (process.env.VERCEL_ENV === "production") {
+    return firstOrigin(
+      configured ?? undefined,
+      process.env.VERCEL_PROJECT_PRODUCTION_URL,
+      process.env.VERCEL_URL,
+      process.env.NEXT_PUBLIC_VERCEL_URL,
+    ) ?? CANONICAL_VERCEL_ORIGIN;
+  }
+
+  if (configured) return configured;
+  return `http://localhost:${process.env.PORT?.trim() || "3000"}`;
 }
