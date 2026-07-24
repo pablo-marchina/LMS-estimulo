@@ -28,14 +28,14 @@ export function NavItem({
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)",
+        "focus-ring flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-150",
         variant === "dark"
           ? isActive
-            ? "bg-white text-primary"
-            : "text-white/85 hover:bg-white/10 hover:text-white"
+            ? "bg-brand-green !text-secondary"
+            : "!text-white/65 hover:bg-white/10 hover:!text-white"
           : isActive
             ? "bg-primary text-white"
-            : "text-ink hover:bg-primary-soft",
+            : "text-ink hover:bg-primary-light",
         className
       )}
     >

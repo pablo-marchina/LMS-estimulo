@@ -17,12 +17,12 @@ export function MetricTile({
   className?: string;
 }) {
   return (
-    <article className={cn("rounded-xl border border-border bg-surface p-5", className)}>
+    <article className={cn("rounded-lg border border-border bg-surface p-5 shadow-md", className)}>
       <div className="flex items-center gap-2 text-sm font-medium text-muted">
         <span className={cn("size-2 shrink-0 rounded-full", accents[index % accents.length])} aria-hidden="true" />
         {label}
       </div>
-      <p className="mt-3 text-3xl font-bold tabular-nums text-ink">{value}</p>
+      <p className="display-font mt-3 text-3xl tabular-nums text-ink">{value}</p>
       {meta ? <div className="mt-1 text-sm text-primary">{meta}</div> : null}
     </article>
   );

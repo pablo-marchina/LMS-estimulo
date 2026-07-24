@@ -21,7 +21,7 @@ export function AuthLayout({
         <EstimuloBrand centered className="mb-6" />
         <div className="mb-6 text-center">
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary">{eyebrow}</p>
-          <h1 className="text-2xl font-bold text-ink">{title}</h1>
+          <h1 className="display-font text-2xl text-ink">{title}</h1>
           {description ? <p className="mt-2 text-sm text-muted">{description}</p> : null}
         </div>
         {children}

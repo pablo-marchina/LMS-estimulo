@@ -20,7 +20,7 @@ export default async function ParticipantCredentialsPage() {
   const validCertificates = credentials.certificates.filter((certificate) => certificate.valid).length;
 
   return (
-    <div className="grid gap-8">
+    <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
         eyebrow="Conquistas"
         title="Minhas credenciais"

@@ -2,25 +2,26 @@ import Link from "next/link";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "dark" | "danger";
 type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const base =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring) disabled:pointer-events-none disabled:opacity-50";
+  "focus-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50";
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active",
+  primary: "bg-primary !text-white hover:bg-primary-bright active:bg-primary-active",
   secondary:
-    "border border-border-strong bg-surface text-primary hover:border-primary hover:bg-primary-soft active:bg-primary-soft",
-  ghost: "text-ink hover:bg-primary-soft active:bg-primary-soft",
+    "border border-primary-bright bg-white !text-primary-bright hover:border-primary hover:bg-primary-light",
+  ghost: "!text-secondary hover:bg-primary-light",
+  dark: "bg-secondary !text-white hover:bg-primary-bright",
   danger: "bg-danger text-white hover:bg-danger/90 active:bg-danger/80"
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "h-8 px-3.5 text-sm",
-  md: "h-10 px-4.5 text-sm",
+  sm: "h-9 px-4 text-sm",
+  md: "h-11 px-5 text-sm",
   lg: "h-12 px-6 text-base",
-  icon: "h-10 w-10 p-0"
+  icon: "h-11 w-11 p-0"
 };
 
 interface BaseButtonProps {

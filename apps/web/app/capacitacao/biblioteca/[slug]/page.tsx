@@ -37,7 +37,7 @@ export default async function LibraryContentPage({ params }: { params: Promise<{
   if (!content) notFound();
 
   return (
-    <div className="grid gap-8">
+    <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <LibraryAccessTracker libraryItemVersionId={content.library_item_version_id} />
 
       <Link href="/capacitacao/biblioteca" className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-primary hover:underline">

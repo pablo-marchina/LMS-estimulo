@@ -34,10 +34,11 @@
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, Arial, sans-serif;
 
-  /* Institutional base — design.md, WCAG AA against white/lavender. */
-  --color-primary: #000078;
-  --color-primary-hover: #1a1a8f;
-  --color-primary-active: #00005c;
+  /* Institutional base — corrected against Brandbook Estímulo.pdf (2021),
+     WCAG AA against white/lavender. */
+  --color-primary: #00008d;
+  --color-primary-hover: #1a1aa4;
+  --color-primary-active: #000071;
   --color-primary-foreground: #ffffff;
   --color-primary-soft: #e9eaff;
 
@@ -64,19 +65,44 @@
 
   /* Logo accents — reserved for gamification, badges, achievements only. */
   --color-accent-cyan: #48d0f0;
-  --color-accent-magenta: #f05af7;
+  --color-accent-magenta: #ff66ff;
   --color-accent-green: #55d78c;
   --color-accent-gold: #f4c542;
 
+  /*
+   * Token bridge — ref/impulso-empreendedor's component/page vocabulary
+   * (primary-dark/-light/-bright, secondary, accent, brand.*, foreground,
+   * text) aliased onto the SAME Estímulo values above, so its screens can
+   * be ported with their original class names and read as Estímulo brand
+   * automatically instead of Impulso's blue/lime/coral. Prototype's own
+   * "surface" (a cream neutral block) intentionally maps to white here —
+   * Estímulo's palette has no off-white tier and design.md prefers plain
+   * white/lavender surfaces.
+   */
+  --color-primary-dark: var(--color-primary-active);
+  --color-primary-light: var(--color-primary-soft);
+  --color-primary-bright: #0023da;
+  --color-secondary: var(--color-ink);
+  --color-accent: var(--color-accent-gold);
+  --color-foreground: var(--color-ink);
+  --color-brand-green: var(--color-accent-green);
+  --color-brand-green-light: var(--color-success-soft);
+  --color-brand-cyan: var(--color-accent-cyan);
+  --color-brand-blue: #0023da;
+  --color-brand-magenta: var(--color-accent-magenta);
+
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
+  --radius-card: 1.25rem;
 
   --shadow-xs: 0 1px 2px rgba(23, 20, 95, 0.06);
   --shadow-sm: 0 2px 8px rgba(23, 20, 95, 0.06);
   --shadow-md: 0 8px 24px rgba(23, 20, 95, 0.08);
   --shadow-lg: 0 16px 40px rgba(23, 20, 95, 0.12);
+  --shadow-card: 0 8px 24px rgba(23, 20, 95, 0.06);
+  --shadow-focus: 0 0 0 4px rgba(0, 32, 216, 0.14);
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -84,6 +110,12 @@
   @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+
+  --animate-float-in: float-in 550ms var(--ease-out-expo) both;
+  @keyframes float-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
@@ -116,13 +148,57 @@
   }
 
   h1, h2, h3 {
-    color: var(--color-ink);
+    /* No explicit color here: it must inherit (ink by default from body,
+       white when nested in a text-white dark panel) rather than force ink
+       everywhere and make headings on dark backgrounds unreadable. */
     line-height: 1.15;
     text-wrap: balance;
   }
 }
 
 @layer components {
+  .display-font {
+    font-weight: 700;
+    letter-spacing: -0.055em;
+  }
+
+  .animate-in {
+    animation: var(--animate-float-in);
+  }
+
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    box-shadow: var(--shadow-focus);
+  }
+
+  .surface-grid {
+    background-image:
+      linear-gradient(rgba(23, 20, 95, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(23, 20, 95, 0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .dot-pattern {
+    background-image: radial-gradient(rgba(23, 20, 95, 0.18) 1px, transparent 1px);
+    background-size: 14px 14px;
+  }
+
+  .brand-dots-bg {
+    background-image: url("/brand/estimulo-dots-cyan.svg");
+    background-repeat: no-repeat;
+    background-position: right -40px top -40px;
+    background-size: 320px auto;
+  }
+
+  .brand-chevrons-bg {
+    background-image: url("/brand/estimulo-chevrons-magenta.svg");
+    background-repeat: no-repeat;
+    background-position: left -60px bottom -60px;
+    background-size: 280px auto;
+  }
+
   .skip-link {
     position: fixed;
     z-index: 100;

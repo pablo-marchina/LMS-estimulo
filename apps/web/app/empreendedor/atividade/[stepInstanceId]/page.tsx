@@ -86,7 +86,7 @@ export default async function ActivityPage({
   const practiceError = query.codigo ? practiceErrors[query.codigo] ?? practiceErrors.PRACTICE_UPLOAD_FAILED : null;
 
   return (
-    <div className="grid gap-8">
+    <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
         eyebrow="Atividade"
         title={experience.activity.title}

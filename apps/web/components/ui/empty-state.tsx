@@ -25,7 +25,7 @@ export function EmptyState({
 }) {
   return (
     <section
-      className={cn("rounded-xl border p-8 text-center", toneClasses[tone], className)}
+      className={cn("rounded-lg border p-8 text-center", toneClasses[tone], className)}
       aria-live="polite"
     >
       {icon ? <div className="mx-auto mb-3 flex size-11 items-center justify-center rounded-full bg-surface text-primary">{icon}</div> : null}

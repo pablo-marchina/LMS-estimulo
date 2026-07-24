@@ -12,12 +12,14 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
   const { journey } = await searchParams;
   if (!journey) {
     return (
-      <StatusPanel title="Jornada não informada" tone="warning">
-        <p>Volte para o painel e selecione uma jornada.</p>
-        <ButtonLink href="/empreendedor" variant="secondary" className="mt-3">
-          Ir para o painel
-        </ButtonLink>
-      </StatusPanel>
+      <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-9 lg:py-10">
+        <StatusPanel title="Jornada não informada" tone="warning">
+          <p>Volte para o painel e selecione uma jornada.</p>
+          <ButtonLink href="/empreendedor" variant="secondary" className="mt-3">
+            Ir para o painel
+          </ButtonLink>
+        </StatusPanel>
+      </div>
     );
   }
   const auth = await getAuthContext();
@@ -27,7 +29,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
   if (experience.state.d?.status === "completed") {
     const step = experience.state.s?.step_instance_id;
     return (
-      <div className="grid gap-8">
+      <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
         <PageHeader
           eyebrow="Diagnóstico"
           title={experience.journey.title}
@@ -48,7 +50,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
 
   if (!experience.diagnostic) {
     return (
-      <div className="grid gap-8">
+      <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
         <JourneyProgressNav state={experience.state} current="diagnostic" />
         <StatusPanel title="Diagnóstico indisponível" tone="warning">
           <p>A versão publicada desta jornada não possui um diagnóstico disponível.</p>

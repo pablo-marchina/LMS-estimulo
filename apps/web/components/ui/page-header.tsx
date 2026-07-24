@@ -31,7 +31,7 @@ export function PageHeader({
             {eyebrow}
           </p>
         ) : null}
-        <h1 className={cn("text-2xl font-bold sm:text-3xl", dark ? "text-white" : "text-ink")}>{title}</h1>
+        <h1 className={cn("display-font text-2xl sm:text-3xl", dark ? "text-white" : "text-ink")}>{title}</h1>
         {description ? (
           <p className={cn("mt-2 text-sm sm:text-base", dark ? "text-white/85" : "text-muted")}>{description}</p>
         ) : null}

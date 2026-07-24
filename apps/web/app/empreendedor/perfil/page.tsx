@@ -31,7 +31,7 @@ export default async function ParticipantProfilePage() {
   const archetype = engagement.archetype;
 
   return (
-    <div className="grid gap-8">
+    <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
         eyebrow="Seu perfil"
         title={engagement.preferred_name ?? "Empreendedor"}

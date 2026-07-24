@@ -40,7 +40,7 @@ export default async function JourneyOutlinePage({
   }
 
   return (
-    <div className="grid gap-8">
+    <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
         eyebrow="Sua trilha"
         title={outline.journey_title}

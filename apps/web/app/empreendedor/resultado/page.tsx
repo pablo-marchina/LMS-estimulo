@@ -22,12 +22,14 @@ export default async function ResultPage({
   const journey = query.journey;
   if (!journey) {
     return (
-      <StatusPanel title="Jornada não informada" tone="warning">
-        <p>Selecione uma jornada para consultar o resultado.</p>
-        <ButtonLink href="/empreendedor" variant="secondary" className="mt-3">
-          Ir para o painel
-        </ButtonLink>
-      </StatusPanel>
+      <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-9 lg:py-10">
+        <StatusPanel title="Jornada não informada" tone="warning">
+          <p>Selecione uma jornada para consultar o resultado.</p>
+          <ButtonLink href="/empreendedor" variant="secondary" className="mt-3">
+            Ir para o painel
+          </ButtonLink>
+        </StatusPanel>
+      </div>
     );
   }
   const auth = await getAuthContext();
@@ -40,7 +42,7 @@ export default async function ResultPage({
   const certificates = credentials.certificates.filter((item) => item.journey_instance_id === journey);
 
   return (
-    <div className="grid gap-8">
+    <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
         eyebrow="Resultado da jornada"
         title={state.journey_title ?? state.journey_code}

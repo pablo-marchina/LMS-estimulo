@@ -1,0 +1,17 @@
+{
+  "journeyStatus": "available",
+  "journeyAggregateVersion": 0,
+  "diagnosticStatus": null,
+  "diagnosticAggregateVersion": 0,
+  "diagnosticResponses": {},
+  "activityStatus": null,
+  "activityAggregateVersion": 0,
+  "activitySessionId": null,
+  "acceptedSections": [],
+  "attempt": null,
+  "comments": [],
+  "submissions": [],
+  "badges": [],
+  "certificates": [],
+  "idempotency": {}
+}
