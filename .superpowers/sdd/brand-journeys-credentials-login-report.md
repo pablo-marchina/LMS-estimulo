@@ -96,7 +96,7 @@ Verified live:
 - New credential RPCs: `anon=false`, `authenticated=false`, `service_role=true` for execute privilege.
 - OpenAI completed context returns one valid certificate candidate.
 
-## Regression gates
+## Regression gates and build verification
 
 The web `prebuild` now runs:
 - `brand-experience-regression.test.mjs`
@@ -104,10 +104,13 @@ The web `prebuild` now runs:
 - `credential-wallet-regression.test.mjs`
 - `vercel-login-origin-regression.test.mjs`
 
-A Vercel deployment is accepted only after these tests, Next.js compilation, TypeScript and route generation succeed.
+The latest functional deployment before the CI-only commits reached Vercel `READY` at commit `9faf42ea2accde51f0967149c537b434ac66dbc0`. It successfully compiled Next.js, completed TypeScript, generated all credential/template/upload/download routes and deployed the outputs.
+
+The final commit added only regression/CI/reporting files on top of that verified runtime. Vercel did not execute another preview because the account returned `build-rate-limit`, not a source/build failure. A GitHub Actions validation workflow was added as a second verifier; no workflow run was emitted by the repository during this session.
 
 ## Remaining acceptance conditions
 
 - Perform a manual Google OAuth login on the production deployment after this branch is promoted to production and its exact callback URL is allowlisted in Supabase/Google if not already covered.
 - Perform one real authenticated external-certificate upload and one real JPG certificate-template upload; connected tooling validated the upload-intent contracts but did not transmit personal binary documents.
+- Re-run the final CI commit when the Vercel build-rate window resets so the newly wired `prebuild` tests appear in deployment logs.
 - The historical OpenAI editorial-source and two-RPC aula-write concerns from prior fronts remain unchanged and unrelated to this package.
