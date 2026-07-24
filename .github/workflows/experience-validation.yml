@@ -4,13 +4,16 @@ on:
   push:
     branches:
       - refactor/web-frontend-rebuild
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: experience-validation-${{ github.ref }}
+  group: experience-validation-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -18,12 +21,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
+      APP_ENV: test
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
-      SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
+      SUPABASE_URL: https://example.supabase.co
       SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
-      AUTHENTICATED_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/authenticated-rpc
-      NEXT_PUBLIC_APP_URL: https://lms-estimulo-web.vercel.app
+      AUTHENTICATED_RPC_FUNCTION_URL: https://example.supabase.co/functions/v1/authenticated-rpc
+      CPF_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      CPF_LOOKUP_HMAC_KEY: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,5 +46,8 @@ jobs:
       - name: Run experience regression gates
         run: npm --workspace @estimulo/web run prebuild
 
+      - name: Typecheck
+        run: npm run typecheck:web
+
       - name: Build Next.js application
-        run: npm --workspace @estimulo/web run build
+        run: npm run build:web
