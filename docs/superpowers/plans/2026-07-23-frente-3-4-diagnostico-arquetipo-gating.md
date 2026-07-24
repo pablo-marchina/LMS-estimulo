@@ -272,6 +272,43 @@ git commit -m "feat(admin): support publishing diagnostic versions and storing a
 
 ---
 
+### Task 2.5: Fix hardcoded `aggregate_version=1` in `save_admin_product_resource`'s shared epilogue
+
+**Discovered during Task 2, confirmed independently twice (implementer + reviewer), fix approved by the user.** This is a pre-existing bug, not introduced by this plan, but it blocks every admin "edit already-saved content a second time" workflow across **all 8** resource types (`journey`, `activity`, `path_step`, `rule`, `diagnostic`, `point_rule`, `badge`, `certificate`) — including the diagnostic editor (Task 5) and trilha editor (Task 6) this plan is building. Fixing it now, before Task 5/6, means those tasks get a real "create → edit → edit again" verification instead of only ever exercising a first save.
+
+**Files:**
+- Create: `supabase/migrations/20260723150150_fix_admin_resource_event_aggregate_version.sql`
+
+**Root cause:** the function's shared epilogue (identical across all branches) calls:
+```sql
+perform app_private.e14_append_event(v_event_id,'admin.product.configuration.saved','user_account',p_actor_user_account_id,'user_account',p_actor_user_account_id,p_organization_id,null,p_resource_type,v_subject_id,1,v_event_id,null,jsonb_build_object('resource_type',p_resource_type,'request_hash',v_request_hash,'result',v_result));
+```
+The `1` (the `p_aggregate_version` argument) is a literal constant. `eventing.events` has a unique index `uq_eventing_aggregate_version` on `(aggregate_type, aggregate_id, aggregate_version)` and is append-only (`governance.reject_mutation()` blocks UPDATE/DELETE). Since `aggregate_type=p_resource_type` and `aggregate_id=v_subject_id` (the resource's definition_id, stable across saves of the same definition), the second-ever save of any definition collides on `(resource_type, definition_id, 1)` and the whole transaction rolls back.
+
+**Confirmed safe to fix:** nothing reads `aggregate_version` for this event — `get_admin_reporting_dashboard`'s `recent_events` selects only `event_name, occurred_at, aggregate_type, aggregate_id` (no `aggregate_version`), and no other function in the database references `admin.product.configuration.saved` at all (checked via `pg_proc.prosrc`). The correct value is a per-aggregate monotonic counter: `coalesce(max(aggregate_version),0)+1` scoped to `(aggregate_type=p_resource_type, aggregate_id=v_subject_id)` in `eventing.events`.
+
+- [ ] **Step 1: Apply and verify the fix live**
+
+Read the live function body first (`select pg_get_functiondef('public.save_admin_product_resource'::regproc);`) — do not trust any migration file, per this plan's standing constraint. Change only the epilogue's final `perform app_private.e14_append_event(...)` call: add one `declare` variable (e.g. `v_aggregate_version bigint;`) and one statement right before the `perform`:
+```sql
+select coalesce(max(aggregate_version),0)+1 into v_aggregate_version
+  from eventing.events where aggregate_type=p_resource_type and aggregate_id=v_subject_id;
+```
+then replace the literal `1` argument with `v_aggregate_version`. Every other line of the function (every branch, the declare block, everything else in the epilogue) must be byte-for-byte unchanged from the live pull. Apply via `mcp__supabase__apply_migration` with `name: "fix_admin_resource_event_aggregate_version"`.
+
+- [ ] **Step 2: Verify live — the exact repeated-save sequence Task 2 could not run**
+
+Using a throwaway `rule` (cheapest resource type to seed, per Task 2's own reproduction) or a throwaway `diagnostic`: call `save_admin_product_resource` three times against the same `definition_id` (create, edit, edit again) and confirm all three succeed now (no `uq_eventing_aggregate_version` collision), and confirm `select aggregate_version from eventing.events where aggregate_type='<type>' and aggregate_id='<definition_id>' order by aggregate_version;` shows `1, 2, 3` in order. Also re-run Task 2's own diagnostic create→edit→publish→(attempt third edit, expect `DIAGNOSTIC_DRAFT_NOT_FOUND`) sequence end-to-end now that the epilogue no longer blocks the second call — confirm it behaves exactly as Task 2's report described the two-call version behaving, but now provably able to go further (a fourth call on a **new** draft version created after publish, to prove multi-version editing works too). Delete all throwaway rows afterward, including the `eventing.events` rows this test created for the throwaway aggregate (these are fine to leave per append-only design, but delete the throwaway `rule`/`diagnostic` definitions and their versions).
+
+- [ ] **Step 3: Write the migration file and commit**
+
+```bash
+git add supabase/migrations/20260723150150_fix_admin_resource_event_aggregate_version.sql
+git commit -m "fix(admin): use a real per-aggregate counter instead of a hardcoded aggregate_version, unblocking repeat saves of any admin resource"
+```
+
+---
+
 ### Task 3: Generalize dimension scoring (`e14_dimension_scores_c`) — additive, does not touch `e14_scores_c`
 
 **Files:**
