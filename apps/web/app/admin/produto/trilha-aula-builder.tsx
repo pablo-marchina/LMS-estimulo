@@ -10,7 +10,7 @@ type TrilhaAulaBuilderProps = {
 };
 
 function aulaSummary(aula: TrilhaAula) {
-  const details = [];
+  const details: string[] = [];
   if (aula.assessment) details.push(`Quiz (${aula.assessment.questions.length} pergunta(s))`);
   if (aula.practice) details.push("Entrega prática");
   return details.length ? ` · ${details.join(" · ")}` : "";
@@ -99,7 +99,7 @@ export function TrilhaAulaBuilder({ journeyVersionId, organizationId, trilha }: 
                     <Input name={`quiz_prompt_${questionIndex}`} placeholder={`Pergunta ${questionIndex + 1}`} />
                     <div className="grid gap-2 sm:grid-cols-2">
                       {[0, 1, 2, 3].map((optionIndex) => (
-                        <label key={optionIndex} className="flex items-center gap-2 text-xs text-ink">
+                        <div key={optionIndex} className="flex items-center gap-2 text-xs text-ink">
                           <input
                             type="radio"
                             name={`quiz_correct_${questionIndex}`}
@@ -107,8 +107,8 @@ export function TrilhaAulaBuilder({ journeyVersionId, organizationId, trilha }: 
                             className="size-4 shrink-0 accent-primary"
                             aria-label={`Marcar alternativa ${optionIndex + 1} como correta`}
                           />
-                          <Input name={`quiz_option_${questionIndex}_${optionIndex}`} placeholder={`Alternativa ${optionIndex + 1}`} />
-                        </label>
+                          <Input name={`quiz_option_${questionIndex}_${optionIndex}`} placeholder={`Alternativa ${optionIndex + 1}`} aria-label={`Texto da alternativa ${optionIndex + 1}`} />
+                        </div>
                       ))}
                     </div>
                   </div>
