@@ -11,12 +11,12 @@ export function NavItem({
   icon,
   variant = "light",
   exact = false,
-  className
+  className,
 }: {
   href: string;
   children: ReactNode;
   icon?: ReactNode;
-  variant?: "light" | "dark";
+  variant?: "light" | "dark" | "top";
   exact?: boolean;
   className?: string;
 }) {
@@ -28,15 +28,13 @@ export function NavItem({
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "focus-ring flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors duration-150",
+        "focus-ring flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-[background-color,color,transform] duration-150",
         variant === "dark"
-          ? isActive
-            ? "bg-brand-green !text-secondary"
-            : "!text-white/65 hover:bg-white/10 hover:!text-white"
-          : isActive
-            ? "bg-primary text-white"
-            : "text-ink hover:bg-primary-light",
-        className
+          ? isActive ? "bg-white !text-primary" : "!text-white/75 hover:bg-white/10 hover:!text-white"
+          : variant === "top"
+            ? isActive ? "bg-white !text-primary shadow-sm" : "!text-white/75 hover:bg-white/10 hover:!text-white"
+            : isActive ? "bg-primary text-white" : "text-ink hover:bg-primary-light",
+        className,
       )}
     >
       {icon}
