@@ -43,7 +43,7 @@ Confirmed live:
 
 ## Build verification
 
-Final source commit: `462331946f6dd349e1698b727b7c002f992bf3fb`
+Verified source commit: `462331946f6dd349e1698b727b7c002f992bf3fb`
 Vercel deployment: `dpl_6KoonBw7i4ccDL3RpUb9sMLjn13T` (`READY`)
 
 - 26/26 regression tests passed;
