@@ -21,16 +21,19 @@ test("brand system uses the full Estimulo palette and reduced-motion support", (
   assert.match(completeCss, /brand-auth-stage/u);
   assert.match(completeCss, /brand-carousel/u);
   assert.match(completeCss, /participant-stage/u);
-  assert.match(completeCss, /estimulo-orbit/u);
   assert.match(completeCss, /prefers-reduced-motion/u);
+  assert.doesNotMatch(completeCss, /conic-gradient/u);
 });
 
-test("login and application shells use the color logo capsule", () => {
+test("login and application shells use color logo capsules and top navigation", () => {
   assert.match(auth, /brand-logo-capsule/u);
   assert.match(auth, /Mais clareza, repertório e movimento/u);
   assert.match(participantShell, /brand-logo-capsule/u);
-  assert.match(participantShell, /participant-stage-orb/u);
+  assert.match(participantShell, /sticky top-0/u);
   assert.match(adminShell, /brand-logo-capsule/u);
+  assert.match(adminShell, /sticky top-0/u);
+  assert.doesNotMatch(adminShell, /<aside/u);
+  assert.doesNotMatch(participantShell, /participant-stage-orb/u);
   assert.doesNotMatch(participantShell, /invert\s*\/>/u);
 });
 
