@@ -3,6 +3,7 @@ import type { RpcEnvelope } from "@/lib/journey-runtime/contracts";
 import type {
   OperatorAnnouncements,
   ParticipantEngagementHub,
+  ParticipantPointRules,
   SavedAnnouncement,
 } from "@/lib/engagement/contracts";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
@@ -10,6 +11,10 @@ import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 export const engagementRuntime = {
   participantHub: (actorUserAccountId: string) => invokeServerRpc<ParticipantEngagementHub>(
     "get_participant_engagement_hub",
+    { p_actor_user_account_id: actorUserAccountId },
+  ),
+  participantPointRules: (actorUserAccountId: string) => invokeServerRpc<ParticipantPointRules>(
+    "list_participant_point_rules",
     { p_actor_user_account_id: actorUserAccountId },
   ),
   listOperatorAnnouncements: (actorUserAccountId: string, organizationId: string) => invokeServerRpc<OperatorAnnouncements>(
