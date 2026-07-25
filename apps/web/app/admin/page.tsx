@@ -47,7 +47,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
   const attention = [
     { icon: AlertCircle, label: "Identidades para resolver", value: identityPending, href: "/admin/usuarios#identidades-pendentes-titulo", cta: "Resolver" },
     { icon: ClipboardCheck, label: "Entregas para revisar", value: practicePending, href: "/admin/operacao#praticas", cta: "Revisar" },
-    { icon: MessageSquare, label: "Comentários para moderar", value: visibleComments, href: "/admin/operacao#comentarios", cta: "ModerAR" },
+    { icon: MessageSquare, label: "Comentários para moderar", value: visibleComments, href: "/admin/operacao#comentarios", cta: "Moderar" },
   ].filter((item) => (item.value ?? 0) > 0);
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-8">
