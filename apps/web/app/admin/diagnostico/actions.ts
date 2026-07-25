@@ -2,27 +2,27 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { saveAdminProductResource } from "@/lib/admin/product-management";
+import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
-import { saveAdminProductResource } from "@/lib/admin/product-management";
 
 const ARCHETYPE_CODES = ["fazedor", "batalhador", "construtor", "navegador"] as const;
 const DIMENSION_CODES = ["gestao_financeira", "disciplina_habito", "visao_planejamento", "perfil_empreendedor", "credito_risco"] as const;
 
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
 function nullable(formData: FormData, name: string) { return text(formData, name) || null; }
-function count(formData: FormData, prefix: string) {
-  let n = 0;
-  while (formData.has(`${prefix}${n}`)) n += 1;
-  return n;
+function count(formData: FormData, prefix: string) { let n = 0; while (formData.has(`${prefix}${n}`)) n += 1; return n; }
+function deriveCode(source: string) {
+  const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60);
+  return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : `diagnostico_${randomUUID().slice(0, 8)}`;
 }
 
 export async function saveDiagnosticAction(formData: FormData) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
-  const organizationId = text(formData, "organization_id");
-  const organization = auth.identity.organizations.find((item) => item.organization_id === organizationId);
-  if (!organization?.permissions.includes("diagnostic.configuration.manage")) redirect(`/admin/diagnostico?organization=${organizationId}&erro=sem_permissao`);
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization?.permissions.includes("diagnostic.configuration.manage")) redirect("/admin/diagnostico?erro=sem_permissao");
 
   const dimensions = DIMENSION_CODES.map((code, position) => ({
     code,
@@ -51,21 +51,7 @@ export async function saveDiagnosticAction(formData: FormData) {
   }).filter((item) => item.prompt && item.dimension_code);
 
   const archetypeNames: Record<string, string> = { fazedor: "Fazedor(a)", batalhador: "Batalhador(a)", construtor: "Construtor(a)", navegador: "Navegador(a)" };
-  // getAdminProductWorkspace now returns archetypes per diagnostic version
-  // (see get_admin_product_workspace's diagnostics.archetype_versions /
-  // archetype_definitions join), so the page's textareas are always
-  // pre-filled with the current description on edit-load. All 4 archetype
-  // codes are therefore always sent unconditionally -- a blank field now
-  // means the admin genuinely cleared it, and this is also what makes
-  // "Publicar" actually publish all 4 archetype_versions rows every time
-  // (save_admin_product_resource only promotes archetype_versions.status
-  // for codes present in this array).
-  const archetypes = ARCHETYPE_CODES.map((code) => ({
-    code,
-    name: archetypeNames[code],
-    description: text(formData, `archetype_description_${code}`),
-  }));
-
+  const archetypes = ARCHETYPE_CODES.map((code) => ({ code, name: archetypeNames[code], description: text(formData, `archetype_description_${code}`) }));
   const rules = ARCHETYPE_CODES.map((code, index) => {
     const thresholds: Record<string, number> = {};
     for (const dimension of DIMENSION_CODES) {
@@ -75,27 +61,26 @@ export async function saveDiagnosticAction(formData: FormData) {
     return { archetype_code: code, priority: index + 1, thresholds };
   }).filter((rule) => Object.keys(rule.thresholds).length > 0);
 
-  const defaultArchetypeCode = text(formData, "default_archetype_code");
-  const status = text(formData, "status") === "published" ? "published" : "draft";
-
+  const name = text(formData, "name");
+  const existingCode = text(formData, "definition_code");
   const payload = {
     definition_id: nullable(formData, "definition_id"),
     version_id: nullable(formData, "version_id"),
-    code: text(formData, "code"),
-    name: text(formData, "name"),
+    code: existingCode || deriveCode(name),
+    name,
     purpose: text(formData, "purpose"),
-    status,
+    status: text(formData, "status") === "published" ? "published" : "draft",
     configuration: {},
     dimensions,
     items,
     archetypes,
-    classification_rules: { default_archetype_code: defaultArchetypeCode, rules },
+    classification_rules: { default_archetype_code: text(formData, "default_archetype_code"), rules },
   };
 
   try {
-    await saveAdminProductResource({ actorUserAccountId: auth.identity.user_account_id, organizationId, resourceType: "diagnostic", payload, idempotencyKey: randomUUID() });
+    await saveAdminProductResource({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, resourceType: "diagnostic", payload, idempotencyKey: randomUUID() });
   } catch {
-    redirect(`/admin/diagnostico?organization=${organizationId}&erro=falha`);
+    redirect("/admin/diagnostico?erro=falha");
   }
-  redirect(`/admin/diagnostico?organization=${organizationId}&sucesso=salvo`);
+  redirect("/admin/diagnostico?sucesso=salvo");
 }
