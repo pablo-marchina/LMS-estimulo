@@ -54,6 +54,7 @@ const allowedRpcs = new Set([
   "list_organization_role_management",
   "list_participant_credentials",
   "list_participant_external_credentials",
+  "list_participant_point_rules",
   "list_practice_submissions",
   "moderate_activity_comment",
   "persist_configurable_product_result",
