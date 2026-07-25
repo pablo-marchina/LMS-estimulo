@@ -52,6 +52,8 @@ Vercel deployment: `dpl_6KoonBw7i4ccDL3RpUb9sMLjn13T` (`READY`)
 - static page generation passed;
 - all participant, admin, upload and download routes were generated.
 
+Commits after the verified source commit modify only this handoff document.
+
 ## Remaining manual acceptance
 
 An end-to-end click-through that creates and publishes a disposable journey through the protected admin UI was not completed because this session did not have an administrative browser session or user credentials. No authentication bypass or persistent test backdoor was introduced. The exact gateway operations that previously blocked this flow are now allowlisted, protected and covered by regression tests.
