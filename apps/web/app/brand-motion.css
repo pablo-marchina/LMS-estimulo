@@ -1,251 +1,50 @@
-@keyframes estimulo-orbit {
-  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
-  50% { transform: translate3d(22px, -18px, 0) rotate(8deg); }
-  100% { transform: translate3d(-12px, 16px, 0) rotate(-5deg); }
-}
+/* Legacy compatibility layer.
+ * The active Estímulo visual system lives in globals.css.
+ * Keep only solid-color utilities here so an accidental import cannot
+ * reintroduce multicolor gradients into authenticated screens. */
 
-@keyframes estimulo-shimmer {
-  0% { transform: translateX(-140%) skewX(-18deg); }
-  60%, 100% { transform: translateX(260%) skewX(-18deg); }
-}
-
-@keyframes estimulo-pulse {
-  0%, 100% { transform: scale(1); opacity: .72; }
-  50% { transform: scale(1.08); opacity: 1; }
-}
-
-@keyframes estimulo-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7px); }
-}
-
-.participant-stage {
+.brand-motion-surface {
   position: relative;
-  isolation: isolate;
-  overflow-x: clip;
-  background:
-    radial-gradient(circle at 6% 14%, rgba(72,208,240,.18), transparent 24rem),
-    radial-gradient(circle at 94% 24%, rgba(255,102,255,.13), transparent 25rem),
-    radial-gradient(circle at 75% 92%, rgba(85,215,140,.15), transparent 26rem),
-    linear-gradient(180deg, #f5f6ff 0%, #eef0ff 44%, #f8f4ff 100%);
+  overflow: hidden;
+  background-color: var(--color-primary);
+  color: white;
 }
 
-.participant-stage::before {
+.brand-motion-surface::after {
   content: "";
-  position: fixed;
-  inset: 5.5rem 0 auto;
-  height: 1px;
-  z-index: -1;
-  background: linear-gradient(90deg, transparent, rgba(72,208,240,.8), rgba(255,102,255,.75), rgba(85,215,140,.8), transparent);
-  box-shadow: 0 0 24px rgba(72,208,240,.45);
-}
-
-.participant-stage-orb {
-  position: fixed;
-  z-index: -1;
+  position: absolute;
+  right: -3rem;
+  bottom: -3rem;
+  width: 9rem;
+  height: 9rem;
+  border: 1.5rem solid rgba(72, 208, 240, 0.22);
   border-radius: 999px;
   pointer-events: none;
-  filter: blur(.2px);
-  animation: estimulo-orbit 14s ease-in-out infinite alternate;
 }
-.participant-stage-orb-cyan { width: 16rem; height: 16rem; left: -9rem; top: 28rem; border: 2.8rem solid rgba(72,208,240,.11); }
-.participant-stage-orb-magenta { width: 20rem; height: 20rem; right: -12rem; top: 48rem; border: 3.6rem solid rgba(255,102,255,.09); animation-delay: -4s; }
-.participant-stage-orb-green { width: 13rem; height: 13rem; right: 8%; bottom: -6rem; border: 2.4rem solid rgba(85,215,140,.12); animation-delay: -8s; }
 
-.brand-card {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(250,250,255,.94));
-  border-color: rgba(185,190,237,.78);
-}
-.brand-card::after {
-  content: "";
-  position: absolute;
-  inset: 0 auto auto 0;
-  width: 100%;
-  height: 3px;
-  z-index: 2;
-  background: linear-gradient(90deg, #48d0f0, #0023da 32%, #ff66ff 63%, #55d78c);
-  opacity: .58;
-}
-.brand-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(105deg, transparent 25%, rgba(255,255,255,.62) 45%, transparent 65%);
-  transform: translateX(-140%) skewX(-18deg);
-  pointer-events: none;
-}
-.brand-card:hover::before { animation: estimulo-shimmer 1.1s ease-out; }
-
-.brand-button {
+.brand-motion-card {
   position: relative;
   overflow: hidden;
-  box-shadow: 0 7px 18px rgba(0,0,141,.16);
-  transition: transform 180ms cubic-bezier(.16,1,.3,1), box-shadow 180ms cubic-bezier(.16,1,.3,1), background-color 150ms;
-}
-.brand-button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,141,.22); }
-.brand-button:active { transform: translateY(1px) scale(.985); box-shadow: 0 4px 10px rgba(0,0,141,.15); }
-.brand-button::after {
-  content: "";
-  position: absolute;
-  inset: -40% auto -40% -30%;
-  width: 22%;
-  background: rgba(255,255,255,.32);
-  transform: skewX(-18deg);
-  transition: left 420ms ease;
-}
-.brand-button:hover::after { left: 112%; }
-
-.brand-page-header {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  border-color: rgba(185,190,237,.75) !important;
-  background:
-    radial-gradient(circle at 92% 12%, rgba(255,102,255,.16), transparent 18rem),
-    radial-gradient(circle at 4% 100%, rgba(72,208,240,.19), transparent 19rem),
-    linear-gradient(125deg, rgba(255,255,255,.98), rgba(237,239,255,.94));
-  box-shadow: 0 14px 35px rgba(23,20,95,.08);
-}
-.brand-page-header::after {
-  content: "";
-  position: absolute;
-  right: -4rem;
-  bottom: -7rem;
-  width: 14rem;
-  height: 14rem;
-  border-radius: 999px;
-  border: 2.5rem solid rgba(85,215,140,.18);
-  z-index: -1;
-  animation: estimulo-orbit 11s ease-in-out infinite alternate;
-}
-
-.brand-spark-card::after {
-  content: "✦";
-  position: absolute;
-  right: 1.2rem;
-  top: .85rem;
-  color: rgba(255,102,255,.48);
-  font-size: 1.15rem;
-  animation: estimulo-pulse 2.6s ease-in-out infinite;
-}
-
-.brand-carousel { margin-top: 0; }
-.brand-carousel-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; }
-.brand-carousel-control {
-  display: grid;
-  place-items: center;
-  width: 2.75rem;
-  height: 2.75rem;
-  border-radius: 999px;
-  border: 1px solid rgba(185,190,237,.9);
-  color: #00008d;
-  background: rgba(255,255,255,.88);
-  box-shadow: 0 7px 18px rgba(23,20,95,.09);
-  transition: transform 160ms ease, background 160ms ease, color 160ms ease;
-}
-.brand-carousel-control:hover { transform: translateY(-2px) scale(1.04); background: #00008d; color: white; }
-.brand-carousel-viewport {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  border-radius: 2rem;
-  box-shadow: 0 20px 48px rgba(23,20,95,.16);
-}
-.brand-carousel-viewport::-webkit-scrollbar { display: none; }
-.brand-carousel-slide {
-  position: relative;
-  isolation: isolate;
-  min-height: clamp(21rem, 39vw, 31rem);
-  width: 100%;
-  min-width: 100%;
-  overflow: hidden;
-  scroll-snap-align: start;
-  border-radius: 2rem;
-  background: #00008d;
-}
-.brand-carousel-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.015); transition: transform 8s ease-out; }
-.brand-carousel-slide:hover .brand-carousel-image { transform: scale(1.065); }
-.brand-carousel-overlay { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,70,.94) 0%, rgba(0,0,90,.68) 48%, rgba(0,0,80,.05) 82%); }
-.brand-carousel-copy { position: relative; z-index: 2; display: flex; min-height: inherit; flex-direction: column; justify-content: center; padding: clamp(1.5rem, 5vw, 4.5rem); width: min(70%, 49rem); }
-.brand-carousel-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  margin-top: 1.5rem;
-  min-height: 2.8rem;
-  border-radius: .9rem;
-  padding: .7rem 1.15rem;
   background: white;
-  color: #00008d;
-  font-weight: 700;
-  box-shadow: 0 9px 24px rgba(0,0,50,.22);
-  transition: transform 170ms ease, box-shadow 170ms ease;
-}
-.brand-carousel-cta:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(0,0,50,.28); }
-
-.brand-welcome-strip {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  overflow: hidden;
-  border: 1px solid rgba(185,190,237,.7);
-  border-radius: 1.6rem;
-  padding: clamp(1.4rem, 3vw, 2.2rem);
-  background: linear-gradient(105deg, rgba(255,255,255,.96), rgba(233,234,255,.88));
-  box-shadow: 0 12px 30px rgba(23,20,95,.07);
-}
-.brand-welcome-bubbles { position: relative; width: 9rem; height: 5rem; flex: none; }
-.brand-welcome-bubbles span { position: absolute; display: block; border-radius: 999px; animation: estimulo-bob 4s ease-in-out infinite; }
-.brand-welcome-bubbles span:nth-child(1) { width: 4.5rem; height: 4.5rem; right: 0; top: 0; background: #55d78c; }
-.brand-welcome-bubbles span:nth-child(2) { width: 3rem; height: 3rem; right: 4.3rem; bottom: 0; background: #ff66ff; animation-delay: -.8s; }
-.brand-welcome-bubbles span:nth-child(3) { width: 1.8rem; height: 1.8rem; left: .2rem; top: .25rem; background: #48d0f0; animation-delay: -1.6s; }
-
-.brand-points-card {
-  position: relative;
-  overflow: hidden;
-  color: #17145f;
-  background: linear-gradient(145deg, #8ef1b4, #55d78c 55%, #48d0f0);
-}
-.brand-points-card::after { content: ""; position: absolute; right: -3.5rem; bottom: -4.5rem; width: 10rem; height: 10rem; border: 1.8rem solid rgba(255,255,255,.34); border-radius: 999px; }
-.brand-points-card svg { animation: estimulo-bob 3.4s ease-in-out infinite; }
-
-.brand-recognition-strip {
-  border: 1px solid rgba(244,197,66,.7);
-  border-radius: 1.4rem;
-  padding: 1.35rem;
-  background: linear-gradient(105deg, rgba(255,255,255,.96), rgba(255,244,214,.9), rgba(255,230,250,.78));
-  box-shadow: 0 10px 26px rgba(146,101,10,.08);
+  border: 1px solid var(--color-border);
+  transition: transform 180ms var(--ease-out-expo), box-shadow 180ms var(--ease-out-expo);
 }
 
-.brand-metric-card { min-height: 10rem; border: 0 !important; box-shadow: 0 13px 30px rgba(23,20,95,.09) !important; }
-.metric-cyan { background: linear-gradient(145deg, #dff8ff, #a6ebfa) !important; }
-.metric-green { background: linear-gradient(145deg, #eafff1, #9be9b9) !important; }
-.metric-magenta { background: linear-gradient(145deg, #fff0ff, #f4b4f4) !important; }
+.brand-motion-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.3rem;
+  background: var(--color-primary);
+}
 
-.brand-journey-card { min-height: 15rem; border: 0 !important; box-shadow: 0 14px 32px rgba(23,20,95,.1) !important; }
-.journey-card-cyan { background: linear-gradient(145deg, rgba(255,255,255,.98), #dff8ff) !important; }
-.journey-card-green { background: linear-gradient(145deg, rgba(255,255,255,.98), #eafff1) !important; }
-.journey-card-magenta { background: linear-gradient(145deg, rgba(255,255,255,.98), #fff0ff) !important; }
-
-@media (max-width: 720px) {
-  .brand-carousel-copy { width: 100%; justify-content: flex-end; padding: 1.5rem; }
-  .brand-carousel-overlay { background: linear-gradient(0deg, rgba(0,0,70,.96) 0%, rgba(0,0,90,.7) 58%, rgba(0,0,80,.18) 100%); }
-  .brand-carousel-slide { min-height: 28rem; }
-  .brand-welcome-bubbles { display: none; }
+.brand-motion-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .participant-stage-orb, .brand-page-header::after, .brand-spark-card::after,
-  .brand-welcome-bubbles span, .brand-points-card svg { animation: none !important; }
-  .brand-carousel-image { transition: none !important; }
-  .brand-card:hover::before { animation: none !important; }
+  .brand-motion-card {
+    transition: none;
+  }
 }
