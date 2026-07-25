@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
-import { protectCpf } from "@/lib/identity/cpf";
+import { isValidCpf, protectCpf } from "@/lib/identity/cpf";
 import { isValidCnpj, normalizeCnpj } from "@/lib/identity/cnpj-core.mjs";
 import { isValidPhoneBr, toE164Br } from "@/lib/identity/phone-br.mjs";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
@@ -12,7 +12,7 @@ import { createSessionClient } from "@/lib/supabase/server";
 const signupSchema = z.object({
   preferredName: z.string().trim().min(2).max(120),
   businessName: z.string().trim().max(160).optional(),
-  cpf: z.string().trim().refine((value) => /^\D*\d/.test(value) && value.replace(/\D/g, "").length === 11, "CPF_INVALID"),
+  cpf: z.string().trim().refine(isValidCpf, "CPF_INVALID"),
   telefone: z.string().trim().refine(isValidPhoneBr, "TELEFONE_INVALID"),
   cnpj: z.string().trim().refine((value) => value === "" || isValidCnpj(value), "CNPJ_INVALID"),
   email: z.string().trim().email().max(320).transform((value: string) => value.toLowerCase()),
@@ -70,7 +70,6 @@ export async function createPublicAccountAction(formData: FormData) {
     const code = rateLimited ? "limite_email" : error.code === "user_already_exists" || error.code === "user_already_registered" ? "usuario_existente" : "criacao_falhou";
     redirect(`/cadastro?erro=${code}`);
   }
-
   if (!data.user) redirect("/cadastro?erro=criacao_falhou");
 
   try {
