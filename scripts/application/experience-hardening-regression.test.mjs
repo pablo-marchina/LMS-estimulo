@@ -68,3 +68,12 @@ test("authenticated runtime allows journey discovery self enrollment and diagnos
   assert.match(gateway, /"e14_self_enroll"/u);
   assert.match(gateway, /"get_participant_experience_with_default_diagnostic"/u);
 });
+
+test("admin publishing identity resolution and library uploads use the gateway", () => {
+  assert.match(gateway, /"publish_admin_journey_version"/u);
+  assert.match(gateway, /"create_library_upload_intent"/u);
+  assert.match(gateway, /"confirm_library_upload"/u);
+  assert.match(gateway, /"get_library_file_download"/u);
+  assert.match(gateway, /"list_admin_identity_resolution_cases"/u);
+  assert.match(gateway, /"resolve_admin_identity_resolution_case"/u);
+});
