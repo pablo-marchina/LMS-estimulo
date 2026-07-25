@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node ../../scripts/runtime/run-web.mjs dev",
-    "prebuild": "cd ../.. && node --test --test-reporter=spec scripts/application/brand-experience-regression.test.mjs scripts/application/participant-journey-navigation-regression.test.mjs scripts/application/credential-wallet-regression.test.mjs scripts/application/vercel-login-origin-regression.test.mjs",
+    "prebuild": "cd ../.. && node --test --test-reporter=spec scripts/application/brand-experience-regression.test.mjs scripts/application/participant-journey-navigation-regression.test.mjs scripts/application/credential-wallet-regression.test.mjs scripts/application/vercel-login-origin-regression.test.mjs scripts/application/experience-hardening-regression.test.mjs",
     "build": "node ../../scripts/runtime/run-web.mjs build",
     "start": "node ../../scripts/runtime/run-web.mjs start",
     "typecheck": "tsc --noEmit"
