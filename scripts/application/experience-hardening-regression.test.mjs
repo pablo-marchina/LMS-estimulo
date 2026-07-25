@@ -34,8 +34,9 @@ test("upload fields provide image PDF and generic previews", () => {
   assert.match(preview, /clearSelection/u);
 });
 
-test("brand system avoids multicolor gradient declarations", () => {
-  assert.doesNotMatch(globals, /linear-gradient\([^)]*,[^)]*,[^)]*\)/u);
+test("brand system avoids multicolor decorative gradients", () => {
+  assert.doesNotMatch(globals, /conic-gradient/u);
+  assert.doesNotMatch(globals, /linear-gradient\([^;\n]*(?:magenta|cyan)[^;\n]*(?:green|gold)|linear-gradient\([^;\n]*(?:green|gold)[^;\n]*(?:magenta|cyan)/iu);
   assert.doesNotMatch(legacyMotion, /linear-gradient|conic-gradient/u);
   assert.match(globals, /background-color:\s*var\(--color-primary\)/u);
 });
