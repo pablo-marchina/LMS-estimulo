@@ -24,6 +24,18 @@ export type PointHistoryEntry = {
   journey_instance_id: string | null;
 };
 
+export type ParticipantPointRule = {
+  definition_id: string;
+  name: string;
+  amount: number;
+  frequency: "once" | "per_activity" | "per_assessment" | "daily" | "weekly" | "unlimited";
+  maximum_awards: number;
+};
+
+export type ParticipantPointRules = {
+  point_rules: ParticipantPointRule[];
+};
+
 export type AvailableReward = {
   type: "badge" | "certificate";
   version_id: string;
