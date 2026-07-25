@@ -1,7 +1,7 @@
 "use client";
 
 import { File, FileText, Image as ImageIcon, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 function formatBytes(bytes: number) {
@@ -25,6 +25,7 @@ export function FileUploadPreview({
   help?: string;
   className?: string;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -38,6 +39,11 @@ export function FileUploadPreview({
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
+  function clearSelection() {
+    if (inputRef.current) inputRef.current.value = "";
+    setFile(null);
+  }
+
   const isImage = Boolean(file?.type.startsWith("image/"));
   const isPdf = file?.type === "application/pdf";
   const PreviewIcon = isImage ? ImageIcon : isPdf ? FileText : File;
@@ -47,6 +53,7 @@ export function FileUploadPreview({
       <label className="grid gap-1.5 text-sm font-medium text-ink">
         {label}
         <input
+          ref={inputRef}
           name={name}
           type="file"
           accept={accept}
@@ -62,7 +69,7 @@ export function FileUploadPreview({
           <div className="flex items-center gap-3 border-b border-border bg-white px-4 py-3">
             <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary"><PreviewIcon size={19} /></span>
             <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-ink">{file.name}</p><p className="text-xs text-muted">{formatBytes(file.size)} · {file.type || "tipo não identificado"}</p></div>
-            <button type="button" onClick={() => setFile(null)} className="grid size-9 place-items-center rounded-lg text-muted hover:bg-danger-soft hover:text-danger" aria-label="Remover arquivo selecionado"><X size={17} /></button>
+            <button type="button" onClick={clearSelection} className="grid size-9 place-items-center rounded-lg text-muted hover:bg-danger-soft hover:text-danger" aria-label="Remover arquivo selecionado"><X size={17} /></button>
           </div>
           {previewUrl && isImage ? <img src={previewUrl} alt={`Prévia de ${file.name}`} className="max-h-80 w-full object-contain bg-white p-3" /> : null}
           {previewUrl && isPdf ? <object data={previewUrl} type="application/pdf" className="h-80 w-full bg-white"><p className="p-4 text-sm text-muted">A prévia do PDF não está disponível neste navegador.</p></object> : null}
