@@ -14,7 +14,7 @@ import { saveGamificationResourceAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
-const frequencyLabels: Record<string, string> = { enrollment_activity: "Uma vez por aula", enrollment_assessment: "Uma vez por avaliação", day: "Limite diário", week: "Limite semanal", unlimited: "Sem limite" };
+const frequencyLabels: Record<string, string> = { enrollment_activity: "Uma vez por aula", enrollment_assessment: "Uma vez por avaliação", participant_day: "Limite diário", participant_week: "Limite semanal", event: "Sem limite" };
 
 export default async function AdminGamificationPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
