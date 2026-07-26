@@ -47,7 +47,7 @@ test("points page contains only points history rules and ranking", () => {
 });
 
 test("profile removes misplaced card accent and displays five-area diagnostic chart", () => {
-  assert.match(profile, /no-card-top-accent/u);
+  assert.match(profile, /after:!hidden/u);
   assert.match(profile, /DiagnosticDimensionChart/u);
   assert.match(profile, /participantDiagnosticSummary/u);
   assert.match(chart, /role="meter"/u);
