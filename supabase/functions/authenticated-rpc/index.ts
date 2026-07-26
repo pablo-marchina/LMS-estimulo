@@ -39,6 +39,7 @@ const allowedRpcs = new Set([
   "e14_start_journey",
   "e14_start_quick_check",
   "e14_submit_quick_check",
+  "ensure_participant_default_path",
   "get_activity_utility_rating",
   "get_admin_product_workspace",
   "get_admin_reporting_dashboard",
@@ -94,10 +95,7 @@ const legacyActorArgument = new Set([
 ]);
 
 function json(status: number, body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "content-type": "application/json", "cache-control": "no-store" },
-  });
+  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 }
 
 async function fingerprint(value: unknown): Promise<string> {
