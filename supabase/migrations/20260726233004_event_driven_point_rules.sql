@@ -1,24 +1,48 @@
-update engagement.point_rule_versions version set recurrence_policy=version.recurrence_policy || jsonb_build_object(
-  'trigger',case definition.code
-    when 'complete_welcome' then jsonb_build_object('event_name','journey.instance.started')
-    when 'rate_lesson' then jsonb_build_object('event_name','learning.activity.utility.rated')
-    when 'complete_quick_activity' then jsonb_build_object('event_name','assessment.attempt.submitted')
-    when 'complete_lesson' then jsonb_build_object('event_name','learning.activity.completed')
-    when 'complete_basic_module' then jsonb_build_object('event_name','journey.path.completed','path_codes',jsonb_build_array('marketing_vendas_ia'))
-    when 'submit_practice' then jsonb_build_object('event_name','learning.practice.evidence.confirmed')
-    when 'pass_path_assessment' then jsonb_build_object('event_name','assessment.attempt.passed','activity_codes',jsonb_build_array('marketing_aula_4','gestao_aula_5','codex_aula_6'))
-    when 'complete_bonus_content' then jsonb_build_object('event_name','learning.activity.completed','is_bonus',true)
-    when 'pass_basic_assessment' then jsonb_build_object('event_name','assessment.attempt.passed','activity_codes',jsonb_build_array('marketing_aula_4','gestao_aula_5'),'path_codes',jsonb_build_array('marketing_vendas_ia','gestao_ia'))
-    when 'pass_advanced_assessment' then jsonb_build_object('event_name','assessment.attempt.passed','activity_codes',jsonb_build_array('codex_aula_6'),'path_codes',jsonb_build_array('desenvolvimento_codex'))
-    else coalesce(version.recurrence_policy->'trigger','{}'::jsonb)
-  end
-)
-from engagement.point_rule_definitions definition
-where definition.id=version.point_rule_definition_id
-  and definition.code in (
-    'complete_welcome','rate_lesson','complete_quick_activity','complete_lesson','complete_basic_module',
-    'submit_practice','pass_path_assessment','complete_bonus_content','pass_basic_assessment','pass_advanced_assessment'
-  );
+do $version_triggers$
+declare
+  v_rule record;
+  v_trigger jsonb;
+begin
+  for v_rule in
+    select definition.id definition_id,definition.code,version.amount,
+      version.eligibility_rule_version_id,version.recurrence_policy,
+      coalesce((select max(existing.version_number) from engagement.point_rule_versions existing
+        where existing.point_rule_definition_id=definition.id),0)+1 next_version
+    from engagement.point_rule_definitions definition
+    join lateral (
+      select current_version.* from engagement.point_rule_versions current_version
+      where current_version.point_rule_definition_id=definition.id
+        and current_version.status='published' and current_version.published_at is not null
+      order by current_version.version_number desc limit 1
+    ) version on true
+    where definition.code in (
+      'complete_welcome','rate_lesson','complete_quick_activity','complete_lesson','complete_basic_module',
+      'submit_practice','pass_path_assessment','complete_bonus_content','pass_basic_assessment','pass_advanced_assessment'
+    )
+      and not (version.recurrence_policy#>>'{trigger,event_name}' is not null)
+  loop
+    v_trigger:=case v_rule.code
+      when 'complete_welcome' then jsonb_build_object('event_name','journey.instance.started')
+      when 'rate_lesson' then jsonb_build_object('event_name','learning.activity.utility.rated')
+      when 'complete_quick_activity' then jsonb_build_object('event_name','assessment.attempt.submitted')
+      when 'complete_lesson' then jsonb_build_object('event_name','learning.activity.completed')
+      when 'complete_basic_module' then jsonb_build_object('event_name','journey.path.completed','path_codes',jsonb_build_array('marketing_vendas_ia'))
+      when 'submit_practice' then jsonb_build_object('event_name','learning.practice.evidence.confirmed')
+      when 'pass_path_assessment' then jsonb_build_object('event_name','assessment.attempt.passed','activity_codes',jsonb_build_array('marketing_aula_4','gestao_aula_5','codex_aula_6'))
+      when 'complete_bonus_content' then jsonb_build_object('event_name','learning.activity.completed','is_bonus',true)
+      when 'pass_basic_assessment' then jsonb_build_object('event_name','assessment.attempt.passed','activity_codes',jsonb_build_array('marketing_aula_4','gestao_aula_5'),'path_codes',jsonb_build_array('marketing_vendas_ia','gestao_ia'))
+      when 'pass_advanced_assessment' then jsonb_build_object('event_name','assessment.attempt.passed','activity_codes',jsonb_build_array('codex_aula_6'),'path_codes',jsonb_build_array('desenvolvimento_codex'))
+    end;
+    insert into engagement.point_rule_versions(
+      id,point_rule_definition_id,version_number,status,amount,
+      eligibility_rule_version_id,recurrence_policy,published_at
+    ) values(
+      gen_random_uuid(),v_rule.definition_id,v_rule.next_version,'published',v_rule.amount,
+      v_rule.eligibility_rule_version_id,v_rule.recurrence_policy||jsonb_build_object('trigger',v_trigger),now()
+    );
+  end loop;
+end;
+$version_triggers$;
 
 create or replace function app_private.award_points_for_event()
 returns trigger
