@@ -13,9 +13,24 @@ export async function openJourneyAction(formData: FormData) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar");
   const journeyInstanceId = uuid.parse(formData.get("journey_instance_id"));
-  const aggregateVersion = version.parse(formData.get("aggregate_version"));
+  const submittedVersion = version.parse(formData.get("aggregate_version") ?? 0);
   const key = String(formData.get("idempotency_key") || randomUUID());
 
-  await journeyRuntime.startJourney(auth.identity.user_account_id, journeyInstanceId, aggregateVersion, key);
+  try {
+    const state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
+    if (state.journey_status === "available") {
+      await journeyRuntime.startJourney(
+        auth.identity.user_account_id,
+        journeyInstanceId,
+        state.journey_aggregate_version ?? submittedVersion,
+        `${key}:start`,
+      );
+    }
+    if (state.journey_status !== "completed") {
+      await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:default-path`);
+    }
+  } catch {
+    redirect("/empreendedor/jornadas?erro=abrir_jornada");
+  }
   redirect(`/empreendedor/jornada/${journeyInstanceId}`);
 }
