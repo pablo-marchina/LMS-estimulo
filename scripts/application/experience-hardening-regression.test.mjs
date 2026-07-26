@@ -63,8 +63,10 @@ test("admin home and builders use Estimulo context without organization selector
   assert.doesNotMatch(diagnostic, /name="organization"/u);
 });
 
-test("library explains paths belong to journeys and points follow admin rules", () => {
-  assert.match(library, /Trilhas e aulas ficam na área Jornadas/u);
+test("library remains complementary without journey-location notice and points follow admin rules", () => {
+  assert.match(library, /Conteúdo complementar/u);
+  assert.doesNotMatch(library, /Procurando a jornada da OpenAI/u);
+  assert.doesNotMatch(library, /Trilhas e aulas ficam na área Jornadas/u);
   assert.match(points, /Como ganhar pontos/u);
   assert.match(points, /participantPointRules/u);
 });
@@ -87,11 +89,9 @@ test("authenticated runtime allows journey discovery self enrollment diagnostic 
   assert.match(gateway, /"get_announcement_banner_download"/u);
 });
 
-test("admin publishing identity resolution and library uploads use the gateway", () => {
+test("admin publishing and library uploads use the gateway", () => {
   assert.match(gateway, /"publish_admin_journey_version"/u);
   assert.match(gateway, /"create_library_upload_intent"/u);
   assert.match(gateway, /"confirm_library_upload"/u);
   assert.match(gateway, /"get_library_file_download"/u);
-  assert.match(gateway, /"list_admin_identity_resolution_cases"/u);
-  assert.match(gateway, /"resolve_admin_identity_resolution_case"/u);
 });
