@@ -3,26 +3,21 @@ import type { JourneyState } from "@/lib/journey-runtime/contracts";
 export function participantNextHref(state: JourneyState): string {
   const query = `?journey=${encodeURIComponent(state.journey_instance_id)}`;
   if (state.journey_status === "completed") return `/empreendedor/resultado${query}`;
-  if (!state.d || state.d.status !== "completed") return `/empreendedor/diagnostico${query}`;
-  if (state.s) return `/empreendedor/jornada/${encodeURIComponent(state.journey_instance_id)}`;
-  return `/empreendedor/resultado${query}`;
+  return `/empreendedor/jornada/${encodeURIComponent(state.journey_instance_id)}`;
 }
 
 export function participantNextActionLabel(state: JourneyState): string {
   if (state.journey_status === "completed") return "Rever resultado";
   if (state.journey_status === "available") return "Começar jornada";
-  if (!state.d || state.d.status !== "completed") return "Continuar diagnóstico";
-  if (state.q?.passed) return "Ver resultado";
   if (state.s) return "Abrir trilha";
   return "Continuar jornada";
 }
 
 export function participantCurrentStageLabel(state: JourneyState): string {
   if (state.journey_status === "completed") return "Resultado disponível";
-  if (!state.d || state.d.status !== "completed") return "Diagnóstico inicial";
   if (state.q?.passed) return "Conclusão da jornada";
   if (state.s) return "Atividades da trilha disponíveis";
-  return "Preparando próxima etapa";
+  return "Jornada pronta para começar";
 }
 
 export function participantJourneyPriority(state: JourneyState): number {
