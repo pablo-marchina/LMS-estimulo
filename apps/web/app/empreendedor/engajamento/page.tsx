@@ -19,6 +19,8 @@ const frequencyLabel: Record<string, string> = {
   once: "uma única vez",
   per_activity: "uma vez por aula",
   per_assessment: "uma vez por avaliação",
+  per_path: "uma vez por trilha",
+  per_journey: "uma vez por jornada",
   daily: "por dia",
   weekly: "por semana",
   unlimited: "sempre que acontecer",
@@ -71,8 +73,8 @@ export default async function ParticipantEngagementPage() {
                 <thead className="bg-primary-soft text-ink"><tr><th className="px-5 py-3 font-semibold">Ação</th><th className="px-5 py-3 font-semibold">Pontos</th><th className="px-5 py-3 font-semibold">Frequência</th></tr></thead>
                 <tbody>
                   {pointRules.point_rules.map((rule) => (
-                    <tr key={rule.definition_id} className="border-t border-border bg-white">
-                      <td className="px-5 py-4 font-semibold text-ink">{rule.name}</td>
+                    <tr key={rule.definition_id} className="border-t border-border bg-white align-top">
+                      <td className="px-5 py-4"><strong className="block font-semibold text-ink">{rule.name}</strong>{rule.description ? <span className="mt-1 block max-w-xl text-sm leading-5 text-muted">{rule.description}</span> : null}</td>
                       <td className="px-5 py-4 font-bold tabular-nums text-primary">+{rule.amount}</td>
                       <td className="px-5 py-4 text-muted">{frequencyLabel[rule.frequency] ?? rule.frequency}{rule.maximum_awards > 1 ? ` · até ${rule.maximum_awards} vezes` : ""}</td>
                     </tr>
