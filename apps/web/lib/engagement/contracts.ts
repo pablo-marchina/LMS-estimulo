@@ -26,9 +26,11 @@ export type PointHistoryEntry = {
 
 export type ParticipantPointRule = {
   definition_id: string;
+  code: string;
   name: string;
+  description: string;
   amount: number;
-  frequency: "once" | "per_activity" | "per_assessment" | "daily" | "weekly" | "unlimited";
+  frequency: "once" | "per_activity" | "per_assessment" | "per_path" | "per_journey" | "daily" | "weekly" | "unlimited";
   maximum_awards: number;
 };
 
