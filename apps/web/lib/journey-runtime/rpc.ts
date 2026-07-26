@@ -179,6 +179,19 @@ export const journeyRuntime = {
     p_idempotency_key: key
   }),
 
+  ensureDefaultPath: (actor: string, instanceId: string, key: string) => invoke<RpcEnvelope<{
+    journey_instance_id: string;
+    path_assignment_id: string;
+    path_template_id: string;
+    path_code: string;
+    first_step_instance_id: string;
+    step_count: number;
+  }>>("ensure_participant_default_path", {
+    p_actor_user_account_id: actor,
+    p_journey_instance_id: instanceId,
+    p_idempotency_key: key
+  }),
+
   startDiagnostic: (actor: string, instanceId: string, diagnosticVersionId: string, key: string) => invoke<RpcEnvelope<unknown>>("e14_start_diagnostic", {
     p_actor_user_account_id: actor,
     p_journey_instance_id: instanceId,
