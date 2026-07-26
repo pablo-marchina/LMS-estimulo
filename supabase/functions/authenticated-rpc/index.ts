@@ -3,16 +3,19 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
 const currentIdentityOperation = "e14_resolve_current_identity";
 const allowedRpcs = new Set([
+  "abort_announcement_banner_upload",
   "abort_external_credential_upload",
   "abort_library_upload",
   "abort_practice_upload",
   "award_participant_action_points",
+  "confirm_announcement_banner_upload",
   "confirm_certificate_template_upload",
   "confirm_external_credential_upload",
   "confirm_library_upload",
   "confirm_practice_upload",
   "configure_certificate_version",
   "create_activity_comment",
+  "create_announcement_banner_upload_intent",
   "create_certificate_template_upload_intent",
   "create_external_credential_upload_intent",
   "create_library_upload_intent",
@@ -39,6 +42,7 @@ const allowedRpcs = new Set([
   "get_activity_utility_rating",
   "get_admin_product_workspace",
   "get_admin_reporting_dashboard",
+  "get_announcement_banner_download",
   "get_business_maturity_draft",
   "get_certificate_render_payload",
   "get_external_credential_download",
