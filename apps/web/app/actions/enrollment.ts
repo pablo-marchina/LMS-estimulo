@@ -28,6 +28,7 @@ export async function selfEnrollAction(formData: FormData) {
         `${key}:start`,
       );
     }
+    await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:default-path`);
   } catch {
     redirect("/empreendedor/jornadas?erro=matricula");
   }
