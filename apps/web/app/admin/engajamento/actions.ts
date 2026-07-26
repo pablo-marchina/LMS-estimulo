@@ -42,9 +42,7 @@ export async function saveAnnouncementAction(formData: FormData) {
   const parsed = schema.safeParse({
     organizationId: String(formData.get("organization_id") ?? ""),
     announcementId: nullable(formData.get("announcement_id")),
-    expectedVersion: nullable(formData.get("expected_version")) === null
-      ? null
-      : Number(formData.get("expected_version")),
+    expectedVersion: nullable(formData.get("expected_version")) === null ? null : Number(formData.get("expected_version")),
     title: formData.get("title"),
     body: formData.get("body"),
     ctaLabel: nullable(formData.get("cta_label")),
@@ -57,16 +55,9 @@ export async function saveAnnouncementAction(formData: FormData) {
   if (!parsed.success) redirect("/admin/engajamento?erro=dados_invalidos");
 
   const organization = auth.identity.organizations.find((item) => item.organization_id === parsed.data.organizationId);
-  if (!organization?.permissions.includes("engagement.manage")) {
-    redirect("/admin/engajamento?erro=sem_permissao");
-  }
-
-  if ((parsed.data.ctaLabel === null) !== (parsed.data.ctaUrl === null)) {
-    redirect(`/admin/engajamento?organization=${parsed.data.organizationId}&erro=cta_incompleto`);
-  }
-  if (parsed.data.endsAt && parsed.data.startsAt && parsed.data.endsAt <= parsed.data.startsAt) {
-    redirect(`/admin/engajamento?organization=${parsed.data.organizationId}&erro=periodo_invalido`);
-  }
+  if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/engajamento?erro=sem_permissao");
+  if ((parsed.data.ctaLabel === null) !== (parsed.data.ctaUrl === null)) redirect("/admin/engajamento?erro=cta_incompleto");
+  if (parsed.data.endsAt && parsed.data.startsAt && parsed.data.endsAt <= parsed.data.startsAt) redirect("/admin/engajamento?erro=periodo_invalido");
 
   try {
     await engagementRuntime.saveAnnouncement({
@@ -82,13 +73,14 @@ export async function saveAnnouncementAction(formData: FormData) {
       priority: parsed.data.priority,
       startsAt: parsed.data.startsAt,
       endsAt: parsed.data.endsAt,
+      imageFileObjectId: null,
+      imageAlt: null,
+      displayMode: "image_with_text",
       idempotencyKey: randomUUID(),
     });
   } catch (error) {
     const code = error instanceof Error ? error.message : "";
-    const reason = code.includes("VERSION_CONFLICT") ? "conflito_versao" : "falha";
-    redirect(`/admin/engajamento?organization=${parsed.data.organizationId}&erro=${reason}`);
+    redirect(`/admin/engajamento?erro=${code.includes("VERSION_CONFLICT") ? "conflito_versao" : "falha"}`);
   }
-
-  redirect(`/admin/engajamento?organization=${parsed.data.organizationId}&sucesso=salvo`);
+  redirect("/admin/engajamento?sucesso=salvo");
 }
