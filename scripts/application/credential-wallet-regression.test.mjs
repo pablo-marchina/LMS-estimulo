@@ -8,6 +8,7 @@ const participantUpload = await readFile("apps/web/app/api/external-credential-u
 const certificateDownload = await readFile("apps/web/app/api/certificates/[issuanceId]/download/route.ts", "utf8");
 const pdf = await readFile("apps/web/lib/credentials/pdf.ts", "utf8");
 const admin = await readFile("apps/web/app/admin/gamificacao/page.tsx", "utf8");
+const positioning = await readFile("apps/web/components/certificate-template-positioning.tsx", "utf8");
 const gateway = await readFile("supabase/functions/authenticated-rpc/index.ts", "utf8");
 
 test("achievements is the single credential wallet", () => {
@@ -33,11 +34,14 @@ test("platform certificates are generated as downloadable PDFs", () => {
   assert.match(pdf, /DCTDecode/u);
 });
 
-test("administrator can prepare and configure a certificate template", () => {
+test("administrator can prepare and visually configure a certificate template", () => {
   assert.match(admin, /Template visual/u);
   assert.match(admin, /certificate-template-uploads/u);
-  assert.match(admin, /Altura do nome/u);
-  assert.match(admin, /Cor do texto/u);
+  assert.match(admin, /CertificateTemplatePositioning/u);
+  assert.match(positioning, /Altura do nome/u);
+  assert.match(positioning, /Altura da jornada/u);
+  assert.match(positioning, /Cor dos textos/u);
+  assert.match(positioning, /NOME DO PARTICIPANTE/u);
 });
 
 test("credential commands are only exposed through the authenticated gateway", () => {
