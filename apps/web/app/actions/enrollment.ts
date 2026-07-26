@@ -8,13 +8,11 @@ import { engagementRuntime } from "@/lib/engagement/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 const uuid = z.string().uuid();
-const destination = z.enum(["journey", "diagnostic"]).catch("journey");
 
 export async function selfEnrollAction(formData: FormData) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar");
   const journeyVersionId = uuid.parse(formData.get("journey_version_id"));
-  const next = destination.parse(String(formData.get("next") ?? "journey"));
   const key = String(formData.get("idempotency_key") || randomUUID());
 
   let journeyInstanceId: string;
@@ -42,7 +40,5 @@ export async function selfEnrollAction(formData: FormData) {
     redirect("/empreendedor/jornadas?erro=matricula");
   }
 
-  redirect(next === "diagnostic"
-    ? `/empreendedor/diagnostico?journey=${journeyInstanceId}`
-    : `/empreendedor/jornada/${journeyInstanceId}?matricula=criada`);
+  redirect(`/empreendedor/jornada/${journeyInstanceId}?matricula=criada`);
 }
