@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { Bot, BookOpen, Play, Sparkles, Trophy } from "lucide-react";
-import { startJourneyAction } from "@/app/actions/journey";
+import { openJourneyAction } from "@/app/actions/open-journey";
+import { startProfileDiagnosticAction } from "@/app/empreendedor/perfil/actions";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
 import { StatusPanel } from "@/components/status-panel";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -47,10 +48,27 @@ export default async function ParticipantHome() {
   const credentialCount = credentials.badges.length + credentials.certificates.length;
   const pendingRewards = engagement?.rewards.filter((reward) => !reward.earned) ?? [];
   const firstName = (engagement?.preferred_name ?? "").trim().split(/\s+/)[0] || "Empreendedor";
+  const diagnosticPending = !engagement?.archetype;
 
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-6 lg:px-9 lg:py-8">
       <AnnouncementCarousel announcements={engagement?.announcements ?? []} />
+
+      {diagnosticPending ? (
+        <Card className="mt-6 border-primary/25 bg-primary-soft/45">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-bold text-primary">Antes de começar</p>
+              <h1 className="mt-1 text-xl font-black text-secondary">Conheça seu perfil empreendedor</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">O diagnóstico tem 12 perguntas e ajuda a personalizar recomendações. Ele é opcional: você pode entrar agora nas jornadas abertas para todos.</p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <form action={startProfileDiagnosticAction}><Button type="submit">Fazer diagnóstico</Button></form>
+              <ButtonLink href="/empreendedor/jornadas" variant="secondary">Agora não</ButtonLink>
+            </div>
+          </div>
+        </Card>
+      ) : null}
 
       <header className="brand-welcome-strip mt-8">
         <div>
@@ -75,7 +93,7 @@ export default async function ParticipantHome() {
               <p className="mt-5 max-w-xl leading-7 text-white/80">{nextJourney.journey_description ?? participantCurrentStageLabel(nextJourney)}</p>
               <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-white/90"><StatusPill tone="expressive" className="!bg-white/15 !text-white">{statusLabel(nextJourney.journey_status)}</StatusPill><span>{nextJourney.completed_required_steps} de {nextJourney.total_required_steps} etapas obrigatórias concluídas</span></div>
               <div className="mt-8">
-                {nextJourney.journey_status === "available" ? <form action={startJourneyAction}><input type="hidden" name="journey_instance_id" value={nextJourney.journey_instance_id} /><input type="hidden" name="aggregate_version" value={nextJourney.journey_aggregate_version} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" variant="secondary" size="lg" icon={<Play size={17} fill="currentColor" />}>Começar jornada</Button></form> : <ButtonLink href={participantNextHref(nextJourney)} variant="secondary" size="lg" icon={<Play size={17} fill="currentColor" />}>{participantNextActionLabel(nextJourney)}</ButtonLink>}
+                {nextJourney.journey_status === "available" ? <form action={openJourneyAction}><input type="hidden" name="journey_instance_id" value={nextJourney.journey_instance_id} /><input type="hidden" name="aggregate_version" value={nextJourney.journey_aggregate_version} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" variant="secondary" size="lg" icon={<Play size={17} fill="currentColor" />}>Começar jornada</Button></form> : <ButtonLink href={participantNextHref(nextJourney)} variant="secondary" size="lg" icon={<Play size={17} fill="currentColor" />}>{participantNextActionLabel(nextJourney)}</ButtonLink>}
               </div>
             </div>
           </article>
