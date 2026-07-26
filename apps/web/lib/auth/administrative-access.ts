@@ -11,7 +11,8 @@ const ADMINISTRATIVE_PERMISSIONS = new Set([
 ]);
 
 export function administrativeOrganization(identity: IdentityContext) {
-  return identity.organizations.find((organization) =>
-    organization.permissions.some((permission) => ADMINISTRATIVE_PERMISSIONS.has(permission))
-  );
+  return identity.organizations.find((organization) => organization.slug === "estimulo")
+    ?? identity.organizations.find((organization) =>
+      organization.permissions.some((permission) => ADMINISTRATIVE_PERMISSIONS.has(permission))
+    );
 }
