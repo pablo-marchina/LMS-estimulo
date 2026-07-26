@@ -21,18 +21,18 @@ export function ParticipantShell({ email, children }: { email: string; children:
   const [mobileOpen, setMobileOpen] = useState(false);
   const nav = links.map((link) => {
     const Icon = link.icon;
-    return <NavItem key={link.href} href={link.href} exact={link.exact} variant="top" icon={<Icon size={17} aria-hidden="true" />}>{link.label}</NavItem>;
+    return <NavItem key={link.href} href={link.href} exact={link.exact} variant="top" icon={<Icon size={16} aria-hidden="true" />}>{link.label}</NavItem>;
   });
 
   return (
     <div className="participant-stage min-h-screen bg-background">
       <a className="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
       <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
-        <div className="mx-auto flex min-h-18 w-full max-w-[1400px] items-center gap-4 px-5 lg:px-9">
-          <div className="brand-logo-capsule shrink-0"><EstimuloBrand href="/empreendedor" compact /></div>
-          <nav className="hidden flex-1 items-center justify-center gap-1 overflow-x-auto xl:flex" aria-label="Navegação principal">{nav}</nav>
-          <div className="ml-auto hidden items-center gap-3 xl:flex"><span className="max-w-44 truncate text-xs text-white/70" title={email}>{email}</span><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">Sair</Button></form></div>
-          <button type="button" className="ml-auto grid size-11 place-items-center rounded-xl text-white hover:bg-white/10 xl:hidden" aria-expanded={mobileOpen} aria-controls="participant-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>
+        <div className="mx-auto flex min-h-16 w-full max-w-[1400px] items-center gap-3 px-5 lg:px-9">
+          <div className="brand-logo-capsule shrink-0 scale-[.96]"><EstimuloBrand href="/empreendedor" compact /></div>
+          <nav className="hidden flex-1 items-center justify-center gap-0.5 overflow-x-auto xl:flex" aria-label="Navegação principal">{nav}</nav>
+          <div className="ml-auto hidden items-center gap-2 xl:flex"><span className="max-w-44 truncate text-xs text-white/70" title={email}>{email}</span><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">Sair</Button></form></div>
+          <button type="button" className="ml-auto grid size-10 place-items-center rounded-xl text-white hover:bg-white/10 xl:hidden" aria-expanded={mobileOpen} aria-controls="participant-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={19} /> : <Menu size={19} />}</button>
         </div>
         {mobileOpen ? <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 xl:hidden"><nav className="grid gap-1 pt-3 sm:grid-cols-2">{nav}</nav><div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3"><span className="truncate text-xs text-white/70">{email}</span><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">Sair</Button></form></div></div> : null}
       </header>
