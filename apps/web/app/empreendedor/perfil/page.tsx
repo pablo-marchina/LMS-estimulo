@@ -45,7 +45,7 @@ export default async function ParticipantProfilePage({
       {query.sucesso === "objetivo_salvo" ? <StatusPanel title="Objetivo definido" tone="success">Seu caso de uso foi salvo. Os 50 pontos são concedidos uma única vez.</StatusPanel> : null}
 
       <section className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
-        <Card className="brand-accent-card brand-spark-card no-card-top-accent">
+        <Card className="brand-accent-card after:!hidden">
           <div className="flex items-center gap-4"><div className="grid size-14 place-items-center rounded-full bg-brand-green text-secondary shadow-md"><UserRound size={26} /></div><div><h2 className="font-bold text-ink">{preferredName}</h2><p className="text-sm text-muted">Empreendedor(a)</p></div></div>
           <dl className="mt-6 grid gap-4 text-sm"><div className="flex gap-3"><Mail size={17} className="mt-0.5 shrink-0 text-primary" /><div><dt className="font-medium text-muted">E-mail</dt><dd className="text-ink">{auth.email}</dd></div></div></dl>
         </Card>
@@ -68,7 +68,7 @@ export default async function ParticipantProfilePage({
       <section aria-labelledby="diagnostico-perfil-titulo">
         <div className="mb-4"><p className="brand-kicker">Seu momento</p><h2 id="diagnostico-perfil-titulo" className="display-font mt-1 text-2xl text-secondary">Diagnóstico empreendedor</h2></div>
         {archetype ? (
-          <Card className="brand-accent-card brand-spark-card no-card-top-accent">
+          <Card className="brand-accent-card after:!hidden">
             <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-semibold text-muted">Seu arquétipo atual</p><p className="display-font mt-1 text-3xl text-primary">{archetype.name ?? "Perfil identificado"}</p></div><Compass size={32} className="text-brand-magenta" aria-hidden="true" /></div>
             {archetype.description ? <p className="mt-5 text-sm leading-6 text-muted">{archetype.description}</p> : null}
             {diagnosticSummary.dimensions.length ? <DiagnosticDimensionChart dimensions={diagnosticSummary.dimensions} /> : null}
