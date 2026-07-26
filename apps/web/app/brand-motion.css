@@ -43,6 +43,10 @@
   box-shadow: var(--shadow-lg);
 }
 
+.no-card-top-accent::after {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .brand-motion-card {
     transition: none;
