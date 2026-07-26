@@ -5,6 +5,7 @@ import type {
   AnnouncementUploadedFile,
   AnnouncementUploadIntent,
   OperatorAnnouncements,
+  ParticipantDiagnosticSummary,
   ParticipantEngagementHub,
   ParticipantPointRules,
   SavedAnnouncement,
@@ -20,21 +21,9 @@ export const engagementRuntime = {
     "list_participant_point_rules",
     { p_actor_user_account_id: actorUserAccountId },
   ),
-  awardAction: (input: {
-    actorUserAccountId: string;
-    journeyInstanceId: string | null;
-    actionCode: string;
-    sourceReference: string;
-    idempotencyKey: string;
-  }) => invokeServerRpc<RpcEnvelope<{ amount: number; action_code: string; replayed: boolean }>>(
-    "award_participant_action_points",
-    {
-      p_actor_user_account_id: input.actorUserAccountId,
-      p_journey_instance_id: input.journeyInstanceId,
-      p_action_code: input.actionCode,
-      p_source_reference: input.sourceReference,
-      p_idempotency_key: input.idempotencyKey,
-    },
+  participantDiagnosticSummary: (actorUserAccountId: string) => invokeServerRpc<ParticipantDiagnosticSummary>(
+    "get_participant_diagnostic_summary",
+    { p_actor_user_account_id: actorUserAccountId },
   ),
   listOperatorAnnouncements: (actorUserAccountId: string, organizationId: string) => invokeServerRpc<OperatorAnnouncements>(
     "list_operator_announcements",
