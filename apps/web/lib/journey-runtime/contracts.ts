@@ -83,21 +83,108 @@ export type DiagnosticItem = {
   position: number;
   is_required: boolean;
   options: DiagnosticOption[];
-  response: { revision: number; option_code: string } | null;
+  response?: { revision: number; option_code: string } | null;
+};
+
+export type ContentSection = {
+  code: string;
+  heading?: string;
+  title?: string;
+  body?: string;
+  [key: string]: unknown;
+};
+
+export type AssessmentOption = { id: string; code: string; label: string; position: number };
+export type AssessmentQuestion = {
+  id: string;
+  code: string;
+  prompt: string;
+  question_type: string;
+  position: number;
+  options: AssessmentOption[];
+  response?: { option_code: string } | null;
 };
 
 export type ParticipantExperience = {
   state: JourneyState;
   journey: { title: string; description: string | null; purpose: string | null };
   diagnostic: { version_id: string; items: DiagnosticItem[] } | null;
-  activity: { version_id: string; title: string; description: string | null; estimated_minutes: number | null; sections: unknown[] } | null;
-  assessment: unknown;
+  activity: {
+    version_id: string;
+    title: string;
+    description: string | null;
+    estimated_minutes: number;
+    sections: ContentSection[];
+  } | null;
+  assessment: {
+    passing_score: number | null;
+    max_attempts: number | null;
+    questions: AssessmentQuestion[];
+  } | null;
 };
 
-export type ActivityComment = Record<string, unknown>;
-export type ActivityComments = { comments: ActivityComment[] };
-export type OperatorActivityComment = Record<string, unknown>;
-export type OperatorActivityComments = { comments: OperatorActivityComment[] };
-export type OperatorInstances = { organization_id: string; instances: JourneyState[] };
-export type OperatorWorkspace = Record<string, unknown>;
-export type RpcEnvelope<T> = { request_id: string; idempotency_key: string; replayed: boolean; data: T };
+export type ActivityComment = {
+  id: string;
+  step_instance_id: string;
+  author_name: string;
+  body: string;
+  status: "visible" | "hidden";
+  created_at: string;
+  is_own: boolean;
+};
+
+export type ActivityComments = {
+  step_instance_id: string;
+  comments: ActivityComment[];
+};
+
+export type OperatorActivityComment = {
+  id: string;
+  organization_id: string;
+  journey_instance_id: string;
+  step_instance_id: string;
+  activity_title: string;
+  author_name: string;
+  body: string;
+  status: "visible" | "hidden";
+  aggregate_version: number;
+  created_at: string;
+  moderated_at: string | null;
+  moderation_reason: string | null;
+};
+
+export type OperatorActivityComments = {
+  organization_id: string;
+  comments: OperatorActivityComment[];
+};
+
+export type OperatorInstances = {
+  organization_id: string;
+  instances: JourneyState[];
+};
+
+export type OperatorWorkspace = {
+  organization_id: string;
+  journey_versions: Array<{
+    journey_version_id: string;
+    journey_definition_id: string;
+    journey_code: string;
+    title: string;
+    version_number: number;
+    status: string;
+    content_hash: string;
+    published_at: string | null;
+  }>;
+  participants: Array<{
+    entrepreneur_id: string;
+    display_name: string;
+    email: string;
+  }>;
+};
+
+export type RpcEnvelope<T> = {
+  request_id: string;
+  idempotency_key: string;
+  replayed: boolean;
+  data: T;
+};
