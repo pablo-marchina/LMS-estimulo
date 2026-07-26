@@ -75,6 +75,7 @@ const allowedRpcs = new Set([
   "save_admin_product_resource",
   "save_library_content_draft",
   "save_operator_announcement",
+  "set_participant_application_objective",
 ]);
 
 const legacyActorArgument = new Set([
@@ -91,10 +92,7 @@ const legacyActorArgument = new Set([
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      "content-type": "application/json",
-      "cache-control": "no-store",
-    },
+    headers: { "content-type": "application/json", "cache-control": "no-store" },
   });
 }
 
@@ -104,100 +102,39 @@ async function fingerprint(value: unknown): Promise<string> {
 }
 
 Deno.serve(async (request: Request) => {
-  if (request.method !== "POST") {
-    return json(405, { ok: false, code: "METHOD_NOT_ALLOWED", message: "POST required" });
-  }
-
+  if (request.method !== "POST") return json(405, { ok: false, code: "METHOD_NOT_ALLOWED", message: "POST required" });
   const authorization = request.headers.get("authorization") ?? "";
   const accessToken = authorization.replace(/^Bearer\s+/i, "").trim();
-  if (!accessToken) {
-    return json(401, { ok: false, code: "AUTHENTICATED_SESSION_REQUIRED", message: "Missing bearer token" });
-  }
+  if (!accessToken) return json(401, { ok: false, code: "AUTHENTICATED_SESSION_REQUIRED", message: "Missing bearer token" });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
-    return json(500, {
-      ok: false,
-      code: "RUNTIME_CONFIGURATION_INVALID",
-      message: "Supabase runtime secrets are unavailable",
-    });
-  }
+  if (!supabaseUrl || !anonKey || !serviceRoleKey) return json(500, { ok: false, code: "RUNTIME_CONFIGURATION_INVALID", message: "Supabase runtime secrets are unavailable" });
 
   let payload: { name?: unknown; args?: unknown };
-  try {
-    payload = await request.json();
-  } catch {
-    return json(400, { ok: false, code: "INVALID_JSON", message: "JSON body required" });
-  }
-
+  try { payload = await request.json(); } catch { return json(400, { ok: false, code: "INVALID_JSON", message: "JSON body required" }); }
   const name = typeof payload.name === "string" ? payload.name : "";
-  const args = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args)
-    ? payload.args as Record<string, unknown>
-    : null;
-  if ((!allowedRpcs.has(name) && name !== currentIdentityOperation) || !args) {
-    return json(400, { ok: false, code: "RPC_NOT_ALLOWED", message: "RPC is not allowlisted" });
-  }
+  const args = payload.args && typeof payload.args === "object" && !Array.isArray(payload.args) ? payload.args as Record<string, unknown> : null;
+  if ((!allowedRpcs.has(name) && name !== currentIdentityOperation) || !args) return json(400, { ok: false, code: "RPC_NOT_ALLOWED", message: "RPC is not allowlisted" });
 
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
+  const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: `Bearer ${accessToken}` } }, auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
   const { data: userData, error: userError } = await userClient.auth.getUser(accessToken);
   const user = userData.user;
   const email = user?.email?.trim().toLowerCase() ?? "";
   const provider = typeof user?.app_metadata?.provider === "string" ? user.app_metadata.provider : "";
-  if (userError || !user?.email_confirmed_at || !email || !["email", "google"].includes(provider)) {
-    return json(401, { ok: false, code: "VERIFIED_SESSION_REQUIRED", message: "Session could not be verified" });
-  }
+  if (userError || !user?.email_confirmed_at || !email || !["email", "google"].includes(provider)) return json(401, { ok: false, code: "VERIFIED_SESSION_REQUIRED", message: "Session could not be verified" });
 
   const issuer = `${supabaseUrl.replace(/\/$/, "")}/auth/v1`;
-  const claimsFingerprint = await fingerprint({
-    issuer,
-    subject: user.id,
-    email,
-    provider,
-    audience: user.aud,
-    appMetadata: user.app_metadata,
-  });
-
-  const admin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
-  const { data: identity, error: identityError } = await admin.rpc("e14_resolve_identity", {
-    p_provider: provider,
-    p_issuer: issuer,
-    p_subject: user.id,
-    p_email_normalized: email,
-    p_email_verified: true,
-    p_claims_fingerprint: claimsFingerprint,
-  });
-  if (identityError || !identity?.user_account_id) {
-    return json(403, {
-      ok: false,
-      code: identityError?.code ?? "IDENTITY_RESOLUTION_FAILED",
-      message: identityError?.message ?? "Internal identity unavailable",
-    });
-  }
-
-  if (name === currentIdentityOperation) {
-    return json(200, { ok: true, data: identity });
-  }
+  const claimsFingerprint = await fingerprint({ issuer, subject: user.id, email, provider, audience: user.aud, appMetadata: user.app_metadata });
+  const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+  const { data: identity, error: identityError } = await admin.rpc("e14_resolve_identity", { p_provider: provider, p_issuer: issuer, p_subject: user.id, p_email_normalized: email, p_email_verified: true, p_claims_fingerprint: claimsFingerprint });
+  if (identityError || !identity?.user_account_id) return json(403, { ok: false, code: identityError?.code ?? "IDENTITY_RESOLUTION_FAILED", message: identityError?.message ?? "Internal identity unavailable" });
+  if (name === currentIdentityOperation) return json(200, { ok: true, data: identity });
 
   const actorArgument = legacyActorArgument.has(name) ? "a" : "p_actor_user_account_id";
-  if (args[actorArgument] !== identity.user_account_id) {
-    return json(403, {
-      ok: false,
-      code: "ACTOR_MISMATCH",
-      message: "RPC actor does not match the authenticated identity",
-    });
-  }
-
+  if (args[actorArgument] !== identity.user_account_id) return json(403, { ok: false, code: "ACTOR_MISMATCH", message: "RPC actor does not match the authenticated identity" });
   const { data, error } = await admin.rpc(name, args);
-  if (error) {
-    return json(400, { ok: false, code: error.code ?? "RPC_ERROR", message: error.message });
-  }
-
+  if (error) return json(400, { ok: false, code: error.code ?? "RPC_ERROR", message: error.message });
   return json(200, { ok: true, data });
 });
