@@ -6,6 +6,7 @@ const allowedRpcs = new Set([
   "abort_external_credential_upload",
   "abort_library_upload",
   "abort_practice_upload",
+  "award_participant_action_points",
   "confirm_certificate_template_upload",
   "confirm_external_credential_upload",
   "confirm_library_upload",
