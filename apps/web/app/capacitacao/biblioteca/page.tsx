@@ -17,25 +17,23 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   const query = await searchParams;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const data = await libraryRuntime.list(auth.identity.user_account_id);
-  const topics = [...new Set(data.items.flatMap((item) => item.topics))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   const selectedTopic = typeof query.tema === "string" ? query.tema : "";
   const selectedFormat = typeof query.formato === "string" ? query.formato : "";
   const selectedLevel = typeof query.nivel === "string" ? query.nivel : "";
   const rawSearch = typeof query.q === "string" ? query.q : "";
-  const search = rawSearch.trim().toLocaleLowerCase("pt-BR");
-  const filtered = data.items.filter((item) => {
-    if (selectedTopic && !item.topics.includes(selectedTopic)) return false;
-    if (selectedFormat && item.content_format !== selectedFormat) return false;
-    if (selectedLevel && item.level !== selectedLevel) return false;
-    if (search && ![item.title, item.summary, ...item.topics].join(" ").toLocaleLowerCase("pt-BR").includes(search)) return false;
-    return true;
+  const data = await libraryRuntime.list({
+    actorUserAccountId: auth.identity.user_account_id,
+    query: rawSearch || null,
+    topic: selectedTopic || null,
+    contentFormat: selectedFormat || null,
+    level: selectedLevel || null,
   });
+  const topics = data.facets.topics.length ? data.facets.topics : [...new Set(data.items.flatMap((item) => item.topics))].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
     <PageHeader eyebrow="Conteúdo complementar" title="Biblioteca" description="Artigos, arquivos, links e materiais para consultar no seu ritmo." />
     <Card><form method="get" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><Label className="sm:col-span-2">Buscar<Input name="q" defaultValue={rawSearch} placeholder="Título, resumo ou tema" /></Label><Label>Tema<Select name="tema" defaultValue={selectedTopic}><option value="">Todos</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</Select></Label><Label>Formato<Select name="formato" defaultValue={selectedFormat}><option value="">Todos</option>{data.facets.formats.map((format) => <option value={format} key={format}>{formatLabels[format] ?? format}</option>)}</Select></Label><Label>Nível<Select name="nivel" defaultValue={selectedLevel}><option value="">Todos</option>{data.facets.levels.map((level) => <option value={level} key={level}>{levelLabels[level] ?? level}</option>)}</Select></Label><div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-5"><Button type="submit" size="sm">Aplicar filtros</Button><ButtonLink href="/capacitacao/biblioteca" variant="secondary" size="sm">Limpar</ButtonLink></div></form></Card>
-    {filtered.length ? <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Materiais da biblioteca">{filtered.map((item) => <LibraryCard item={item} key={item.library_item_version_id} />)}</section> : <EmptyState icon={<BookOpen size={24} />} title="Nenhum material encontrado" tone="info">Ajuste os filtros ou volte mais tarde para consultar novos conteúdos.</EmptyState>}
+    {data.items.length ? <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Materiais da biblioteca">{data.items.map((item) => <LibraryCard item={item} key={item.library_item_version_id} />)}</section> : <EmptyState icon={<BookOpen size={24} />} title="Nenhum material encontrado" tone="info">Ajuste os filtros ou volte mais tarde para consultar novos conteúdos.</EmptyState>}
   </div>;
 }
 
