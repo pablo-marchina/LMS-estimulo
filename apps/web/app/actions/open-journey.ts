@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
-import { engagementRuntime } from "@/lib/engagement/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 const uuid = z.string().uuid();
@@ -18,13 +17,5 @@ export async function openJourneyAction(formData: FormData) {
   const key = String(formData.get("idempotency_key") || randomUUID());
 
   await journeyRuntime.startJourney(auth.identity.user_account_id, journeyInstanceId, aggregateVersion, key);
-  await engagementRuntime.awardAction({
-    actorUserAccountId: auth.identity.user_account_id,
-    journeyInstanceId,
-    actionCode: "complete_welcome",
-    sourceReference: "first_journey_start",
-    idempotencyKey: `${key}:welcome-points`,
-  }).catch(() => null);
-
   redirect(`/empreendedor/jornada/${journeyInstanceId}`);
 }
