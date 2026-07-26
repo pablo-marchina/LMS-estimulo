@@ -25,14 +25,14 @@ test("brand system uses the full Estimulo palette and reduced-motion support", (
   assert.doesNotMatch(completeCss, /conic-gradient/u);
 });
 
-test("login and application shells use color logo capsules and top navigation", () => {
+test("login and application shells use color logo capsules and appropriate navigation", () => {
   assert.match(auth, /brand-logo-capsule/u);
   assert.match(auth, /Mais clareza, repertório e movimento/u);
   assert.match(participantShell, /brand-logo-capsule/u);
   assert.match(participantShell, /sticky top-0/u);
-  assert.match(adminShell, /brand-logo-capsule/u);
-  assert.match(adminShell, /sticky top-0/u);
-  assert.doesNotMatch(adminShell, /<aside/u);
+  assert.match(adminShell, /<aside/u);
+  assert.match(adminShell, /collapsed/u);
+  assert.match(adminShell, /Recolher menu/u);
   assert.doesNotMatch(participantShell, /participant-stage-orb/u);
   assert.doesNotMatch(participantShell, /invert\s*\/>/u);
 });
@@ -45,12 +45,12 @@ test("landing page is a high-impact Estimulo journey story", () => {
   assert.match(landing, /Desenvolvimento com Codex/u);
 });
 
-test("participant home begins with a visual announcement carousel", () => {
+test("participant home reserves the first position for published announcements only", () => {
   const carouselIndex = home.indexOf("<AnnouncementCarousel");
   const welcomeIndex = home.indexOf("<header className=\"brand-welcome-strip");
   assert.ok(carouselIndex >= 0 && carouselIndex < welcomeIndex);
-  assert.match(carousel, /fallbackAnnouncements/u);
-  assert.match(carousel, /announcement-openai\.svg/u);
+  assert.match(carousel, /if \(!slides\.length\) return null/u);
+  assert.match(carousel, /image_file_object_id/u);
   assert.match(carousel, /setInterval/u);
   assert.match(carousel, /brand-carousel-viewport/u);
 });
