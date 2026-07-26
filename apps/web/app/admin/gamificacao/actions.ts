@@ -13,7 +13,14 @@ function nullable(formData: FormData, name: string) { return text(formData, name
 function deriveCode(source: string, fallback: string) { const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60); return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback; }
 function positiveInteger(value: string, fallback: number) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function boundedRatio(value: string, fallback: number) { const parsed = Number.parseFloat(value); return Number.isFinite(parsed) ? Math.min(.8, Math.max(.15, parsed / 100)) : fallback; }
-function recurrencePolicy(formData: FormData): Record<string, unknown> { const frequency = text(formData, "frequency") || "once"; const maximum = positiveInteger(text(formData, "maximum_awards"), 1); const scope: Record<string, string> = { once: "participant", per_activity: "enrollment_activity", per_assessment: "enrollment_assessment", daily: "participant_day", weekly: "participant_week", unlimited: "event" }; return { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false }; }
+function recurrencePolicy(formData: FormData): Record<string, unknown> {
+  const frequency = text(formData, "frequency") || "once";
+  const maximum = positiveInteger(text(formData, "maximum_awards"), 1);
+  const scope: Record<string, string> = { once: "participant", per_activity: "enrollment_activity", per_assessment: "enrollment_assessment", per_path: "path", per_journey: "journey", daily: "participant_day", weekly: "participant_week", unlimited: "event" };
+  const eventName = text(formData, "trigger_event");
+  if (!eventName) throw new Error("POINT_TRIGGER_REQUIRED");
+  return { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false, trigger: { event_name: eventName } };
+}
 function validityPolicy(formData: FormData): Record<string, unknown> { return text(formData, "validity_mode") === "months" ? { expires: true, duration_months: positiveInteger(text(formData, "validity_months"), 12) } : { expires: false }; }
 
 export async function saveGamificationResourceAction(formData: FormData) {
@@ -25,7 +32,7 @@ export async function saveGamificationResourceAction(formData: FormData) {
   const resourceType = text(formData, "resource_type") as "point_rule" | "badge" | "certificate";
   const typeQuery = resourceType === "badge" ? "selos" : resourceType === "certificate" ? "certificados" : "pontos";
   const definitionId = nullable(formData, "definition_id");
-  const workspace = definitionId ? await getAdminProductWorkspace(auth.identity.user_account_id, organizationId).catch(() => null) : null;
+  const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organizationId).catch(() => null);
   let payload: Record<string, unknown>;
   let requestedCertificateStatus = "draft";
 
