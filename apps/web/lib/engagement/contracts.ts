@@ -70,6 +70,22 @@ export type ParticipantEngagementHub = {
   archetype: ArchetypeSummary;
 };
 
+export type DiagnosticDimensionSummary = {
+  code: string;
+  name: string;
+  score: number;
+  maximum_score: number;
+  percentage: number;
+  answered_ratio: number;
+  position: number;
+};
+
+export type ParticipantDiagnosticSummary = {
+  diagnostic_name: string | null;
+  completed_at: string | null;
+  dimensions: DiagnosticDimensionSummary[];
+};
+
 export type OperatorAnnouncement = ParticipantAnnouncement & {
   status: "draft" | "published" | "retired";
   aggregate_version: number;
