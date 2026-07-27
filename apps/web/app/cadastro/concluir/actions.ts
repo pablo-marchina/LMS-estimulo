@@ -7,7 +7,7 @@ import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
 import { decodeFirstTouch, FIRST_TOUCH_COOKIE } from "@/lib/auth/first-touch";
 import { provisionPublicSignupParticipant } from "@/lib/auth/public-signup-provisioning";
-import { isValidCpf, protectCpf, unprotectCpf, type ProtectedCpf } from "@/lib/identity/cpf";
+import { assertCpfProtectionReady, isValidCpf, protectCpf, unprotectCpf, type ProtectedCpf } from "@/lib/identity/cpf";
 import { isValidCnpj, normalizeCnpj } from "@/lib/identity/cnpj-core.mjs";
 import { isValidPhoneBr, toE164Br } from "@/lib/identity/phone-br.mjs";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
@@ -37,6 +37,14 @@ function encryptedCpfFromMetadata(value: unknown): ProtectedCpf | null {
   };
 }
 
+function logCpfProtectionFailure(stage: "legacy_recovery" | "final_protection", error: unknown) {
+  console.error("PUBLIC_SIGNUP_CPF_PROTECTION_FAILED", {
+    stage,
+    errorCode: error && typeof error === "object" && "code" in error ? error.code : null,
+    errorMessage: error instanceof Error ? error.message : null,
+  });
+}
+
 export async function completePublicSignupAction(formData: FormData) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar?erro=confirmacao_necessaria");
@@ -52,7 +60,8 @@ export async function completePublicSignupAction(formData: FormData) {
     const encrypted = encryptedCpfFromMetadata(metadata.signup_cpf_encrypted);
     try {
       if (encrypted) cpf = unprotectCpf(encrypted, userData.user.id);
-    } catch {
+    } catch (error) {
+      logCpfProtectionFailure("legacy_recovery", error);
       redirect("/cadastro/concluir?erro=protecao_cpf_indisponivel");
     }
   }
@@ -76,9 +85,11 @@ export async function completePublicSignupAction(formData: FormData) {
 
   let protectedCpf: ProtectedCpf;
   try {
+    assertCpfProtectionReady();
     protectedCpf = protectCpf(parsed.data.cpf, auth.identity.user_account_id);
   } catch (error) {
     if (error instanceof Error && error.message === "CPF_INVALID") redirect("/cadastro/concluir?erro=cpf_invalido");
+    logCpfProtectionFailure("final_protection", error);
     redirect("/cadastro/concluir?erro=protecao_cpf_indisponivel");
   }
 
@@ -105,19 +116,32 @@ export async function completePublicSignupAction(formData: FormData) {
     if (code.includes("CPF_ALREADY_LINKED_TO_ANOTHER_ACCOUNT")) redirect("/cadastro/concluir?erro=cpf_ja_vinculado");
     if (code.includes("CPF_CHANGE_REQUIRES_IDENTITY_REVIEW")) redirect("/cadastro/concluir?erro=cpf_revisao_necessaria");
     if (code.includes("CNPJ_ALREADY_LINKED_TO_ANOTHER_BUSINESS")) redirect("/cadastro/concluir?erro=cnpj_ja_vinculado");
+    console.error("PUBLIC_SIGNUP_PROVISIONING_FAILED", {
+      errorMessage: error instanceof Error ? error.message : null,
+    });
     redirect("/cadastro/concluir?erro=provisionamento_falhou");
   }
 
-  await createPrivilegedClient().auth.admin.updateUserById(userData.user.id, {
-    user_metadata: {
-      preferred_name: parsed.data.preferredName,
-      business_name: parsed.data.businessName || null,
-      signup_profile_version: 2,
-      signup_phone_e164: null,
-      signup_cnpj: null,
-      signup_cpf_encrypted: null,
-    },
-  });
+  // The profile is already committed at this point. Metadata cleanup is
+  // maintenance only and must never turn a successful signup into an error.
+  try {
+    const { error: cleanupError } = await createPrivilegedClient().auth.admin.updateUserById(userData.user.id, {
+      user_metadata: {
+        preferred_name: parsed.data.preferredName,
+        business_name: parsed.data.businessName || null,
+        signup_profile_version: 3,
+        signup_phone_e164: null,
+        signup_cnpj: null,
+        signup_cpf_encrypted: null,
+      },
+    });
+    if (cleanupError) throw cleanupError;
+  } catch (error) {
+    console.warn("PUBLIC_SIGNUP_METADATA_CLEANUP_FAILED", {
+      errorCode: error && typeof error === "object" && "code" in error ? error.code : null,
+      errorMessage: error instanceof Error ? error.message : null,
+    });
+  }
 
   cookieStore.delete(FIRST_TOUCH_COOKIE);
   redirect("/empreendedor");
