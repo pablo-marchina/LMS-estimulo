@@ -17,6 +17,15 @@ function normalizeOrigin(value: string | undefined): string | null {
   }
 }
 
+function isLocalOrigin(value: string): boolean {
+  try {
+    const hostname = new URL(value).hostname;
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
 function firstOrigin(...values: Array<string | undefined>): string | null {
   for (const value of values) {
     const origin = normalizeOrigin(value);
@@ -41,8 +50,9 @@ export function publicApplicationOrigin(): string {
   }
 
   if (process.env.VERCEL_ENV === "production") {
+    const configuredProductionOrigin = configured && !isLocalOrigin(configured) ? configured : null;
     return firstOrigin(
-      configured ?? undefined,
+      configuredProductionOrigin ?? undefined,
       process.env.VERCEL_PROJECT_PRODUCTION_URL,
       process.env.VERCEL_URL,
       process.env.NEXT_PUBLIC_VERCEL_URL,
