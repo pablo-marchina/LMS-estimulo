@@ -17,7 +17,7 @@ export async function openJourneyAction(formData: FormData) {
   const key = String(formData.get("idempotency_key") || randomUUID());
 
   try {
-    const state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
+    let state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     if (state.journey_status === "available") {
       await journeyRuntime.startJourney(
         auth.identity.user_account_id,
@@ -25,8 +25,9 @@ export async function openJourneyAction(formData: FormData) {
         state.journey_aggregate_version ?? submittedVersion,
         `${key}:start`,
       );
+      state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     }
-    if (state.journey_status !== "completed") {
+    if (state.journey_status !== "completed" && !state.s?.step_instance_id) {
       await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:default-path`);
     }
   } catch {
