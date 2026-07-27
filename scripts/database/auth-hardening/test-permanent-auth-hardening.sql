@@ -90,6 +90,7 @@ declare
   v_new_subject uuid := gen_random_uuid();
   v_issuer text := 'https://test-project.supabase.co/auth/v1';
   v_email text := 'identity-recovery-active-old@estimulo.org';
+  v_old_email text := 'identity-recovery-active-old-previous@estimulo.org';
   v_rejected boolean := false;
 begin
   insert into iam.user_accounts(id,email_normalized,status)
@@ -106,7 +107,7 @@ begin
     raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values
   (
-    v_old_subject,'authenticated','authenticated',v_email,now(),
+    v_old_subject,'authenticated','authenticated',v_old_email,now(),
     '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now()
   ),
   (
