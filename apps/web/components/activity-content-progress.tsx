@@ -16,11 +16,12 @@ export function ActivityContentProgress({ completedSections, sectionTotal, asset
   useEffect(() => {
     const listener = (event: Event) => {
       const detail = (event as CustomEvent<{ assetId?: string; completed?: boolean }>).detail;
-      if (!detail?.assetId || !detail.completed) return;
+      const assetId = detail?.assetId;
+      if (!assetId || !detail.completed) return;
       setAssetState((current) => {
-        if (current.get(detail.assetId)) return current;
+        if (current.get(assetId)) return current;
         const next = new Map(current);
-        next.set(detail.assetId, true);
+        next.set(assetId, true);
         return next;
       });
     };
