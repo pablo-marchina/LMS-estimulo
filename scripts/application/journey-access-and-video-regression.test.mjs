@@ -3,43 +3,56 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const read = (path) => readFile(path, "utf8");
-const [openJourney, enrollment, pathMigration, assetMigration, contracts, progressNav, activityBuilder, activityActions] = await Promise.all([
+const [openJourney, journeyActivityAction, contracts, viewer, progress, activityPage, libraryPage, gateway, activityBuilder, activityActions] = await Promise.all([
   read("apps/web/app/actions/open-journey.ts"),
-  read("apps/web/app/actions/enrollment.ts"),
-  read("supabase/migrations/20260726235500_idempotent_existing_journey_path.sql"),
-  read("supabase/migrations/20260727000500_activity_video_assets_and_estimulo_test.sql"),
+  read("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts"),
   read("apps/web/lib/journey-runtime/contracts.ts"),
-  read("apps/web/components/journey-progress-nav.tsx"),
+  read("apps/web/components/content-asset-viewer.tsx"),
+  read("apps/web/components/activity-content-progress.tsx"),
+  read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx"),
+  read("apps/web/app/capacitacao/biblioteca/[slug]/page.tsx"),
+  read("supabase/functions/authenticated-rpc/index.ts"),
   read("apps/web/app/admin/produto/trilha-aula-builder.tsx"),
   read("apps/web/app/admin/produto/actions.ts"),
 ]);
 
-test("opening an existing journey does not assign its path again", () => {
+test("opening an existing journey prepares paths only when no activity exists", () => {
   assert.match(openJourney, /!state\.s\?\.step_instance_id/u);
-  assert.match(enrollment, /!state\.s\?\.step_instance_id/u);
-  assert.match(pathMigration, /replayed',true/u);
-  assert.match(pathMigration, /aggregate_version=0/u);
-  assert.match(pathMigration, /aggregate_version=1/u);
+  assert.match(journeyActivityAction, /focusActivity/u);
+  assert.match(journeyActivityAction, /available/u);
+  assert.match(journeyActivityAction, /completed/u);
 });
 
-test("activity experience exposes ordered external assets", () => {
-  assert.match(assetMigration, /catalog\.content_assets/u);
-  assert.match(assetMigration, /'assets'/u);
-  assert.match(assetMigration, /Mentorias inspiracionais — Estímulo/u);
+test("activity experience exposes tracked internal and external assets", () => {
   assert.match(contracts, /export type ActivityAsset/u);
-  assert.match(contracts, /assets: ActivityAsset\[\]/u);
+  assert.match(contracts, /content_progress/u);
+  assert.match(contracts, /duration_seconds/u);
+  assert.match(gateway, /record_activity_asset_progress/u);
+  assert.match(gateway, /get_activity_asset_download/u);
 });
 
-test("participant activity renders safe YouTube video players", () => {
-  assert.match(progressNav, /youtube-nocookie\.com\/embed/u);
-  assert.match(progressNav, /embed\/videoseries/u);
-  assert.match(progressNav, /allowFullScreen/u);
-  assert.match(progressNav, /Vídeos desta atividade/u);
+test("participant activity renders playable media and live progress", () => {
+  assert.match(viewer, /youtube\.com\/iframe_api/u);
+  assert.match(viewer, /onTimeUpdate/u);
+  assert.match(viewer, /estimulo:asset-progress/u);
+  assert.match(progress, /estimulo:asset-progress/u);
+  assert.match(activityPage, /ContentAssetViewer/u);
+  assert.match(activityPage, /ActivityContentProgress/u);
 });
 
-test("administrator can attach an HTTPS video while creating an activity", () => {
-  assert.match(activityBuilder, /name="video_url"/u);
-  assert.match(activityBuilder, /Vídeo da atividade/u);
+test("library content plays media inside the platform", () => {
+  assert.match(libraryPage, /ContentAssetViewer/u);
+  assert.match(libraryPage, /Assista agora/u);
+  assert.match(libraryPage, /Ouça agora/u);
+  assert.match(libraryPage, /Visualize o material/u);
+  assert.match(libraryPage, /Leia o documento/u);
+});
+
+test("administrator can configure generic HTTPS content and quick checks", () => {
+  assert.match(activityBuilder, /name="asset_type"/u);
+  assert.match(activityBuilder, /name="asset_url"/u);
+  assert.match(activityBuilder, /Verificação rápida de aprendizagem/u);
   assert.match(activityActions, /secureExternalUrl/u);
-  assert.match(activityActions, /asset:\s*\{ type: "video"/u);
+  assert.match(activityActions, /content_sections/u);
+  assert.match(activityActions, /passing_score/u);
 });
