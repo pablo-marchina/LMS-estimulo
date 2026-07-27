@@ -15,6 +15,13 @@ export class ServerRpcError extends Error {
   }
 }
 
+function liveRpcName(name: string): string {
+  if (name === "e14_get_participant_experience") {
+    return "get_participant_experience_with_default_diagnostic";
+  }
+  return name;
+}
+
 export async function invokeServerRpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   if (browserE2EEnabled()) {
     try {
@@ -28,7 +35,7 @@ export async function invokeServerRpc<T>(name: string, args: Record<string, unkn
   }
 
   try {
-    return await invokeAuthenticatedGateway<T>(name, args);
+    return await invokeAuthenticatedGateway<T>(liveRpcName(name), args);
   } catch (error) {
     if (error instanceof AuthenticatedGatewayError) {
       throw new ServerRpcError(error.code, error.message);

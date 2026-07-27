@@ -7,6 +7,9 @@ export type ParticipantAnnouncement = {
   priority: number;
   starts_at: string | null;
   ends_at: string | null;
+  image_file_object_id: string | null;
+  image_alt: string | null;
+  display_mode: "image_only" | "image_with_text";
 };
 
 export type RankingEntry = {
@@ -22,6 +25,20 @@ export type PointHistoryEntry = {
   reason: string;
   occurred_at: string;
   journey_instance_id: string | null;
+};
+
+export type ParticipantPointRule = {
+  definition_id: string;
+  code: string;
+  name: string;
+  description: string;
+  amount: number;
+  frequency: "once" | "per_activity" | "per_assessment" | "per_path" | "per_journey" | "daily" | "weekly" | "unlimited";
+  maximum_awards: number;
+};
+
+export type ParticipantPointRules = {
+  point_rules: ParticipantPointRule[];
 };
 
 export type AvailableReward = {
@@ -53,6 +70,22 @@ export type ParticipantEngagementHub = {
   archetype: ArchetypeSummary;
 };
 
+export type DiagnosticDimensionSummary = {
+  code: string;
+  name: string;
+  score: number;
+  maximum_score: number;
+  percentage: number;
+  answered_ratio: number;
+  position: number;
+};
+
+export type ParticipantDiagnosticSummary = {
+  diagnostic_name: string | null;
+  completed_at: string | null;
+  dimensions: DiagnosticDimensionSummary[];
+};
+
 export type OperatorAnnouncement = ParticipantAnnouncement & {
   status: "draft" | "published" | "retired";
   aggregate_version: number;
@@ -65,9 +98,40 @@ export type OperatorAnnouncements = {
   announcements: OperatorAnnouncement[];
 };
 
+export type AnnouncementUploadIntent = {
+  upload_intent_id: string;
+  bucket: string;
+  object_key: string;
+  original_filename: string;
+  expected_content_type: string;
+  max_size_bytes: number;
+  expires_at: string;
+};
+
+export type AnnouncementUploadedFile = {
+  file_object_id: string;
+  original_filename: string;
+  content_type: string;
+  size_bytes: number;
+  bucket: string;
+  object_key: string;
+  security_status: string;
+};
+
+export type AnnouncementBannerDownload = {
+  announcement_id: string;
+  file_object_id: string;
+  bucket: string;
+  object_key: string;
+  content_type: string;
+  original_filename: string;
+};
+
 export type SavedAnnouncement = {
   announcement_id: string;
   organization_id: string;
   status: "draft" | "published" | "retired";
   aggregate_version: number;
+  image_file_object_id: string | null;
+  display_mode: "image_only" | "image_with_text";
 };

@@ -3,6 +3,7 @@ import type {
   ActivityComment,
   ActivityComments,
   IdentityContext,
+  JourneyPresentation,
   JourneyState,
   OperatorActivityComment,
   OperatorActivityComments,
@@ -68,7 +69,30 @@ export const configurableProductRuntime = {
     })
 };
 
-export type EligibleJourney = { journey_version_id: string; title: string; description: string | null; open_to_all: boolean };
+export type EligibleJourney = {
+  journey_version_id: string;
+  title: string;
+  description: string | null;
+  open_to_all: boolean;
+  presentation?: JourneyPresentation;
+};
+
+export type ActivityAssetProgressData = {
+  step_instance_id: string;
+  content_asset_id: string;
+  watched_seconds: number;
+  duration_seconds: number | null;
+  completion_ratio: number;
+  completed: boolean;
+  aggregate_version: number;
+};
+
+export type ActivityAssetDownload = {
+  bucket: string;
+  object_key: string;
+  filename: string;
+  content_type: string;
+};
 
 export const journeyRuntime = {
   listActivityComments: (actor: string, stepInstanceId: string) => invoke<ActivityComments>("list_activity_comments", {
@@ -179,6 +203,53 @@ export const journeyRuntime = {
     p_idempotency_key: key
   }),
 
+  ensureDefaultPath: (actor: string, instanceId: string, key: string) => invoke<RpcEnvelope<{
+    journey_instance_id: string;
+    path_assignment_id: string;
+    path_template_id: string;
+    path_code: string;
+    first_step_instance_id: string;
+    step_count: number;
+    path_count?: number;
+  }>>("ensure_participant_default_path", {
+    p_actor_user_account_id: actor,
+    p_journey_instance_id: instanceId,
+    p_idempotency_key: key
+  }),
+
+  focusActivity: (actor: string, journeyInstanceId: string, stepInstanceId: string, key: string) =>
+    invoke<RpcEnvelope<{ journey_instance_id: string; step_instance_id: string; status: string }>>("focus_participant_activity", {
+      p_actor_user_account_id: actor,
+      p_journey_instance_id: journeyInstanceId,
+      p_step_instance_id: stepInstanceId,
+      p_idempotency_key: key
+    }),
+
+  recordAssetProgress: (input: {
+    actor: string;
+    stepInstanceId: string;
+    contentAssetId: string;
+    positionSeconds: number;
+    durationSeconds: number | null;
+    completed: boolean;
+    key: string;
+  }) => invoke<RpcEnvelope<ActivityAssetProgressData>>("record_activity_asset_progress", {
+    p_actor_user_account_id: input.actor,
+    p_step_instance_id: input.stepInstanceId,
+    p_content_asset_id: input.contentAssetId,
+    p_position_seconds: input.positionSeconds,
+    p_duration_seconds: input.durationSeconds,
+    p_completed: input.completed,
+    p_idempotency_key: input.key
+  }),
+
+  getActivityAssetDownload: (actor: string, stepInstanceId: string, contentAssetId: string) =>
+    invoke<ActivityAssetDownload>("get_activity_asset_download", {
+      p_actor_user_account_id: actor,
+      p_step_instance_id: stepInstanceId,
+      p_content_asset_id: contentAssetId
+    }),
+
   startDiagnostic: (actor: string, instanceId: string, diagnosticVersionId: string, key: string) => invoke<RpcEnvelope<unknown>>("e14_start_diagnostic", {
     p_actor_user_account_id: actor,
     p_journey_instance_id: instanceId,
@@ -199,79 +270,41 @@ export const journeyRuntime = {
 
   completeDiagnostic: (actor: string, sessionId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_complete_diagnostic",
-    legacyRpcArguments.completeDiagnostic({
-      actorUserAccountId: actor,
-      sessionId,
-      expectedAggregateVersion: version,
-      idempotencyKey: key
-    })
+    legacyRpcArguments.completeDiagnostic({ actorUserAccountId: actor, sessionId, expectedAggregateVersion: version, idempotencyKey: key })
   ),
 
   startActivity: (actor: string, stepId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_start_activity",
-    legacyRpcArguments.startActivity({
-      actorUserAccountId: actor,
-      stepInstanceId: stepId,
-      expectedAggregateVersion: version,
-      idempotencyKey: key
-    })
+    legacyRpcArguments.startActivity({ actorUserAccountId: actor, stepInstanceId: stepId, expectedAggregateVersion: version, idempotencyKey: key })
   ),
 
   acknowledgeSection: (actor: string, sessionId: string, sectionCode: string, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_acknowledge_section",
-    legacyRpcArguments.acknowledgeSection({
-      actorUserAccountId: actor,
-      activitySessionId: sessionId,
-      sectionCode,
-      acknowledged: true,
-      idempotencyKey: key
-    })
+    legacyRpcArguments.acknowledgeSection({ actorUserAccountId: actor, activitySessionId: sessionId, sectionCode, acknowledged: true, idempotencyKey: key })
   ),
 
   startQuickCheck: (actor: string, stepId: string, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_start_quick_check",
-    legacyRpcArguments.startQuickCheck({
-      actorUserAccountId: actor,
-      stepInstanceId: stepId,
-      idempotencyKey: key
-    })
+    legacyRpcArguments.startQuickCheck({ actorUserAccountId: actor, stepInstanceId: stepId, idempotencyKey: key })
   ),
 
   recordQuickCheckAnswer: (actor: string, attemptId: string, questionId: string, optionCode: string, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_record_quick_check_answer",
-    legacyRpcArguments.recordQuickCheckAnswer({
-      actorUserAccountId: actor,
-      attemptId,
-      questionId,
-      optionCode,
-      idempotencyKey: key
-    })
+    legacyRpcArguments.recordQuickCheckAnswer({ actorUserAccountId: actor, attemptId, questionId, optionCode, idempotencyKey: key })
   ),
 
   submitQuickCheck: (actor: string, attemptId: string, version: number, key: string) => invoke<RpcEnvelope<unknown>>(
     "e14_submit_quick_check",
-    legacyRpcArguments.submitQuickCheck({
-      actorUserAccountId: actor,
-      attemptId,
-      expectedAggregateVersion: version,
-      idempotencyKey: key
-    })
+    legacyRpcArguments.submitQuickCheck({ actorUserAccountId: actor, attemptId, expectedAggregateVersion: version, idempotencyKey: key })
   ),
 
   getParticipantState: (actor: string, instanceId: string) => invoke<JourneyState>(
     "e14_get_participant_state",
-    legacyRpcArguments.getParticipantState({
-      actorUserAccountId: actor,
-      journeyInstanceId: instanceId
-    })
+    legacyRpcArguments.getParticipantState({ actorUserAccountId: actor, journeyInstanceId: instanceId })
   ),
 
   getOperatorResult: (actor: string, organizationId: string, instanceId: string) => invoke<Record<string, unknown>>(
     "e14_get_operator_result",
-    legacyRpcArguments.getOperatorResult({
-      actorUserAccountId: actor,
-      organizationId,
-      journeyInstanceId: instanceId
-    })
+    legacyRpcArguments.getOperatorResult({ actorUserAccountId: actor, organizationId, journeyInstanceId: instanceId })
   )
 };

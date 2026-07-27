@@ -2,143 +2,274 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { attachLibraryContentToActivity, configureAdminPathTemplate, saveAdminProductResource } from "@/lib/admin/product-management";
+import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
-import { saveAdminProductResource } from "@/lib/admin/product-management";
+import { libraryRuntime } from "@/lib/library/runtime";
+import { libraryContentBucket, removeLibraryContent, uploadLibraryContent } from "@/lib/storage/library-content";
 
-function text(formData: FormData, name: string) {
-  return String(formData.get(name) ?? "").trim();
+function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
+function nullable(formData: FormData, name: string) { return text(formData, name) || null; }
+function checked(formData: FormData, name: string) { return formData.get(name) === "on" || formData.get(name) === "true"; }
+function deriveCode(source: string, fallback: string) {
+  const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60);
+  return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback;
+}
+function positiveInteger(value: string, fallback = 1) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
+function secureExternalUrl(value: string): string | null {
+  if (!value) return null;
+  try { const url = new URL(value); return url.protocol === "https:" ? url.toString() : null; } catch { return null; }
+}
+function selectedFile(formData: FormData, name: string) {
+  const entry = formData.get(name);
+  return entry instanceof File && entry.size > 0 ? entry : null;
 }
 
-function nullable(formData: FormData, name: string) {
-  return text(formData, name) || null;
-}
+const questionTypes = new Set(["single_choice", "multiple_choice", "true_false", "open_text"]);
 
-function checked(formData: FormData, name: string) {
-  return formData.get(name) === "on" || formData.get(name) === "true";
-}
+function quizQuestionsFromForm(formData: FormData) {
+  const count = Math.min(3, Math.max(0, Number.parseInt(text(formData, "quiz_question_count"), 10) || 0));
+  const questions: Array<{
+    code: string;
+    prompt: string;
+    question_type: string;
+    position: number;
+    options: Array<{ code: string; label: string; is_correct: boolean; position: number }>;
+  }> = [];
 
-function json(formData: FormData, name: string, fallback: unknown = {}) {
-  const value = text(formData, name);
-  if (!value) return fallback;
-  return JSON.parse(value) as unknown;
-}
-
-async function authorize(formData: FormData) {
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
-    redirect("/entrar?erro=acesso_nao_autorizado");
-  }
-  const organizationId = text(formData, "organization_id");
-  const organization = auth.identity.organizations.find((item) => item.organization_id === organizationId);
-  if (!organization?.permissions.includes("journey.definition.manage")) {
-    redirect(`/admin/produto?organization=${organizationId}&erro=sem_permissao`);
-  }
-  return { auth, organizationId };
-}
-
-export async function saveProductResourceAction(formData: FormData) {
-  const { auth, organizationId } = await authorize(formData);
-  const resourceType = text(formData, "resource_type") as "journey" | "activity" | "path_step" | "rule";
-  let payload: Record<string, unknown>;
-
-  try {
-    if (resourceType === "journey") {
-      payload = {
-        definition_id: nullable(formData, "definition_id"),
-        version_id: nullable(formData, "version_id"),
-        program_id: nullable(formData, "program_id"),
-        code: text(formData, "code"),
-        slug: text(formData, "slug"),
-        name: text(formData, "name"),
-        purpose: text(formData, "purpose"),
-        title: text(formData, "title"),
-        description: text(formData, "description"),
-        configuration: json(formData, "configuration", {}),
-        eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
-      };
-    } else if (resourceType === "activity") {
-      const assetTitle = nullable(formData, "asset_title");
-      const activityType = text(formData, "activity_type");
-      payload = {
-        definition_id: nullable(formData, "definition_id"),
-        version_id: nullable(formData, "version_id"),
-        code: text(formData, "code"),
-        name: text(formData, "name"),
-        title: text(formData, "title"),
-        description: text(formData, "description"),
-        activity_type: activityType,
-        estimated_minutes: Number(text(formData, "estimated_minutes") || 0),
-        configuration: json(formData, "configuration", {}),
-        ...(assetTitle ? {
-          asset: {
-            type: text(formData, "asset_type") || "external_link",
-            title: assetTitle,
-            url: nullable(formData, "asset_url"),
-            language: text(formData, "asset_language") || "pt-BR",
-            required: checked(formData, "asset_required"),
-            accessibility: json(formData, "asset_accessibility", {}),
-          },
-        } : {}),
-        ...(activityType === "practice" ? {
-          practice: {
-            submission_mode: text(formData, "submission_mode") || "file",
-            allowed_evidence_types: json(formData, "allowed_evidence_types", ["file"]),
-            max_submissions: nullable(formData, "max_submissions") ? Number(text(formData, "max_submissions")) : null,
-            review_required: checked(formData, "review_required"),
-            terms_version: nullable(formData, "terms_version"),
-          },
-        } : {}),
-      };
-    } else if (resourceType === "path_step") {
-      payload = {
-        path_template_id: nullable(formData, "path_template_id"),
-        step_id: nullable(formData, "step_id"),
-        journey_version_id: nullable(formData, "journey_version_id"),
-        code: text(formData, "code"),
-        path_name: text(formData, "path_name"),
-        path_description: text(formData, "path_description"),
-        is_default: checked(formData, "is_default"),
-        step_code: text(formData, "step_code"),
-        activity_version_id: text(formData, "activity_version_id"),
-        position: Number(text(formData, "position") || 1),
-        is_required: checked(formData, "is_required"),
-        availability_rule_version_id: nullable(formData, "availability_rule_version_id"),
-        completion_rule_version_id: nullable(formData, "completion_rule_version_id"),
-        due_offset: nullable(formData, "due_offset"),
-        metadata: json(formData, "metadata", {}),
-      };
-    } else if (resourceType === "rule") {
-      payload = {
-        definition_id: nullable(formData, "definition_id"),
-        version_id: nullable(formData, "version_id"),
-        code: text(formData, "code"),
-        name: text(formData, "name"),
-        rule_type: text(formData, "rule_type"),
-        language: text(formData, "language") || "json-logic",
-        expression: json(formData, "expression", {}),
-        input_schema: json(formData, "input_schema", {}),
-        output_schema: json(formData, "output_schema", {}),
-      };
-    } else {
-      redirect(`/admin/produto?organization=${organizationId}&erro=tipo_invalido`);
+  for (let questionIndex = 0; questionIndex < count; questionIndex += 1) {
+    const prompt = text(formData, `quiz_prompt_${questionIndex}`);
+    if (!prompt) continue;
+    const rawType = text(formData, `quiz_type_${questionIndex}`);
+    const questionType = questionTypes.has(rawType) ? rawType : "single_choice";
+    if (questionType === "open_text") {
+      questions.push({ code: `pergunta_${questionIndex + 1}`, prompt, question_type: questionType, position: questionIndex + 1, options: [] });
+      continue;
     }
-  } catch {
-    redirect(`/admin/produto?organization=${organizationId}&erro=json_invalido`);
-  }
 
+    const correctIndexes = new Set(formData.getAll(`quiz_correct_${questionIndex}`).map(String));
+    const optionLimit = questionType === "true_false" ? 2 : 4;
+    const options = [];
+    for (let optionIndex = 0; optionIndex < optionLimit; optionIndex += 1) {
+      const fallback = questionType === "true_false" ? (optionIndex === 0 ? "Verdadeiro" : "Falso") : "";
+      const label = text(formData, `quiz_option_${questionIndex}_${optionIndex}`) || fallback;
+      if (!label) continue;
+      options.push({ code: `opcao_${optionIndex + 1}`, label, is_correct: correctIndexes.has(String(optionIndex)), position: optionIndex + 1 });
+    }
+    if (options.length >= 2 && options.some((option) => option.is_correct)) {
+      questions.push({ code: `pergunta_${questionIndex + 1}`, prompt, question_type: questionType, position: questionIndex + 1, options });
+    }
+  }
+  return questions;
+}
+
+function contentSectionsFromForm(formData: FormData) {
+  return [0, 1, 2, 3].map((index) => ({
+    code: `parte_${index + 1}`,
+    heading: text(formData, `section_heading_${index}`),
+    body: text(formData, `section_body_${index}`),
+  })).filter((section) => section.heading && section.body);
+}
+
+async function authorize() {
+  const auth = await getAuthContext();
+  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization?.permissions.includes("journey.definition.manage")) redirect("/admin/produto?erro=sem_permissao");
+  return { auth, organizationId: organization.organization_id };
+}
+
+async function uploadInlineLibraryFile(input: { actor: string; organizationId: string; file: File }) {
+  const bucket = libraryContentBucket();
+  const key = randomUUID();
+  let intentId: string | null = null;
+  let objectKey: string | null = null;
+  let objectCreated = false;
   try {
-    await saveAdminProductResource({
+    const intent = await libraryRuntime.createUploadIntent({
+      actorUserAccountId: input.actor,
+      organizationId: input.organizationId,
+      originalFilename: input.file.name,
+      expectedContentType: input.file.type,
+      storageProvider: "supabase_storage",
+      bucket,
+      idempotencyKey: `${key}:intent`,
+    });
+    intentId = intent.data.upload_intent_id;
+    objectKey = intent.data.object_key;
+    const uploaded = await uploadLibraryContent({ bucket, objectKey, file: input.file });
+    objectCreated = uploaded.created;
+    const confirmed = await libraryRuntime.confirmUpload({
+      actorUserAccountId: input.actor,
+      organizationId: input.organizationId,
+      uploadIntentId: intentId,
+      actualContentType: input.file.type,
+      actualSizeBytes: input.file.size,
+      sha256: uploaded.sha256,
+      providerObjectVersion: uploaded.providerObjectVersion,
+      etag: uploaded.etag,
+      metadata: { source: "activity_builder", originalFilename: input.file.name },
+      idempotencyKey: `${key}:confirm`,
+    });
+    return confirmed.data.file_object_id;
+  } catch (error) {
+    if (intentId) await libraryRuntime.abortUpload(input.actor, input.organizationId, intentId, "INLINE_LIBRARY_UPLOAD_FAILED", `${key}:abort`).catch(() => undefined);
+    if (objectCreated && objectKey) await removeLibraryContent(bucket, objectKey).catch(() => undefined);
+    throw error;
+  }
+}
+
+function fileFormat(file: File) {
+  if (file.type === "application/pdf") return "pdf";
+  if (file.type.startsWith("image/")) return "image";
+  return "guide";
+}
+
+async function createInlineLibraryContent(input: {
+  formData: FormData;
+  actor: string;
+  organizationId: string;
+  journeyVersionId: string;
+}) {
+  const kindRaw = text(input.formData, "new_content_kind");
+  const contentKind = kindRaw === "article" || kindRaw === "file" ? kindRaw : "external_link";
+  const title = text(input.formData, "new_content_title");
+  const summary = text(input.formData, "new_content_summary");
+  if (!title || !summary) throw new Error("LIBRARY_CONTENT_FIELDS_REQUIRED");
+
+  const file = contentKind === "file" ? selectedFile(input.formData, "new_content_file") : null;
+  if (contentKind === "file" && !file) throw new Error("LIBRARY_CONTENT_FILE_REQUIRED");
+  const externalUrl = contentKind === "external_link" ? secureExternalUrl(text(input.formData, "new_content_url")) : null;
+  if (contentKind === "external_link" && !externalUrl) throw new Error("LIBRARY_CONTENT_URL_INVALID");
+  const fileObjectId = file ? await uploadInlineLibraryFile({ actor: input.actor, organizationId: input.organizationId, file }) : null;
+  const format = file ? fileFormat(file) : text(input.formData, "new_content_format") || (contentKind === "article" ? "article" : "video");
+  const key = randomUUID();
+  const draft = await libraryRuntime.saveDraft({
+    actorUserAccountId: input.actor,
+    organizationId: input.organizationId,
+    libraryItemId: null,
+    slug: deriveCode(`${title}_${key.slice(0, 8)}`, "conteudo").replaceAll("_", "-"),
+    title,
+    summary,
+    body: contentKind === "article" ? nullable(input.formData, "new_content_body") : null,
+    contentKind,
+    contentFormat: format,
+    level: "all",
+    estimatedMinutes: 10,
+    sourceType: "estimulo",
+    sourceName: "Estímulo",
+    externalUrl,
+    languageCode: "pt-BR",
+    topics: [],
+    visibility: "authenticated",
+    journeyVersionIds: [input.journeyVersionId],
+    discoverableInLibrary: checked(input.formData, "new_content_discoverable"),
+    fileObjectId,
+    idempotencyKey: `${key}:draft`,
+  });
+  await libraryRuntime.publish(input.actor, input.organizationId, draft.data.library_item_version_id, draft.data.content_hash, `${key}:publish`);
+  return draft.data.library_item_version_id;
+}
+
+export async function saveTrilhaAction(formData: FormData) {
+  const { auth, organizationId } = await authorize();
+  const journeyVersionId = text(formData, "journey_version_id");
+  const name = text(formData, "name");
+  try {
+    const result = await saveAdminProductResource({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId,
-      resourceType,
-      payload,
+      resourceType: "path_template",
+      payload: { journey_version_id: journeyVersionId, name, description: nullable(formData, "description"), position: positiveInteger(text(formData, "position")), code: deriveCode(name, "trilha") },
+      idempotencyKey: randomUUID(),
+    });
+    const pathTemplateId = String(result.path_template_id ?? "");
+    if (!pathTemplateId) throw new Error("PATH_TEMPLATE_MISSING");
+    await configureAdminPathTemplate({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId,
+      pathTemplateId,
+      isRequired: checked(formData, "is_required"),
+      presentation: { tone: text(formData, "tone") || "cyan", icon: text(formData, "icon") || "sparkles" },
       idempotencyKey: randomUUID(),
     });
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
-    redirect(`/admin/produto?organization=${organizationId}&erro=${reason}`);
+    redirect(`/admin/produto?etapa=trilhas&versao=${journeyVersionId}&erro=${reason}`);
   }
+  redirect(`/admin/produto?etapa=trilhas&versao=${journeyVersionId}&sucesso=trilha_salva`);
+}
 
-  redirect(`/admin/produto?organization=${organizationId}&sucesso=salvo`);
+export async function saveAulaAction(formData: FormData) {
+  const { auth, organizationId } = await authorize();
+  const actor = auth.identity.user_account_id;
+  const journeyVersionId = text(formData, "journey_version_id");
+  const pathTemplateId = text(formData, "path_template_id");
+  const title = text(formData, "title");
+  const position = positiveInteger(text(formData, "position"));
+  const isClosing = checked(formData, "is_closing");
+  const prompts = [0, 1, 2, 3, 4, 5].map((index) => ({ title: text(formData, `prompt_title_${index}`), text: text(formData, `prompt_text_${index}`) })).filter((prompt) => prompt.title && prompt.text);
+  const sections = contentSectionsFromForm(formData);
+  const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
+  const questions = quizQuestionsFromForm(formData);
+  const contentSource = text(formData, "content_source");
+  const back = `/admin/produto?etapa=aulas&versao=${journeyVersionId}&trilha=${pathTemplateId}`;
+  if (!title || !pathTemplateId || (isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
+
+  try {
+    let libraryItemVersionId = contentSource === "library" ? text(formData, "library_item_version_id") : "";
+    if (contentSource === "new") {
+      libraryItemVersionId = await createInlineLibraryContent({ formData, actor, organizationId, journeyVersionId });
+    }
+    if (contentSource === "library" && !libraryItemVersionId) throw new Error("LIBRARY_CONTENT_REQUIRED");
+
+    const activityResult = await saveAdminProductResource({
+      actorUserAccountId: actor,
+      organizationId,
+      resourceType: "activity",
+      payload: {
+        code: deriveCode(`${title}_${randomUUID().slice(0, 8)}`, "aula"),
+        name: title,
+        title,
+        description: nullable(formData, "description"),
+        activity_type: isClosing ? "practice" : "content",
+        estimated_minutes: positiveInteger(text(formData, "estimated_minutes"), 10),
+        configuration: {
+          ...(sections.length ? { content_sections: sections } : {}),
+          ...(prompts.length ? { prompts } : {}),
+          ...(checklist.length ? { practice_checklist: checklist } : {}),
+        },
+        ...(questions.length ? { assessment: { questions, passing_score: positiveInteger(text(formData, "quiz_passing_score"), 70), max_attempts: positiveInteger(text(formData, "quiz_max_attempts"), 3) } } : {}),
+        ...(isClosing ? { practice: { submission_mode: "file", allowed_evidence_types: ["file", "text"], review_required: true } } : {}),
+      },
+      idempotencyKey: randomUUID(),
+    });
+    const activityVersionId = String(activityResult.version_id ?? "");
+    if (!activityVersionId) throw new Error("ACTIVITY_VERSION_MISSING");
+    const stepCode = `passo_${position}`;
+    await saveAdminProductResource({
+      actorUserAccountId: actor,
+      organizationId,
+      resourceType: "path_step",
+      payload: { code: deriveCode(stepCode, "passo"), path_template_id: pathTemplateId, step_code: stepCode, activity_version_id: activityVersionId, position, is_required: true, metadata: { always_available: true } },
+      idempotencyKey: randomUUID(),
+    });
+
+    if (libraryItemVersionId) {
+      await attachLibraryContentToActivity({
+        actorUserAccountId: actor,
+        organizationId,
+        journeyVersionId,
+        activityVersionId,
+        libraryItemVersionId,
+        isRequired: checked(formData, "content_required"),
+        idempotencyKey: randomUUID(),
+      });
+    }
+  } catch (error) {
+    const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
+    redirect(`${back}&erro=${reason}`);
+  }
+  redirect(`${back}&sucesso=aula_salva`);
 }

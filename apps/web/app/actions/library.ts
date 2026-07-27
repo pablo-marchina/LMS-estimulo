@@ -7,9 +7,8 @@ import { getAuthContext } from "@/lib/auth/context";
 import { libraryRuntime } from "@/lib/library/runtime";
 
 const uuid = z.string().uuid();
-const slug = z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
-const contentKind = z.enum(["article", "external_link"]);
-const contentFormat = z.enum(["article", "video", "podcast", "guide", "tool", "course", "other"]);
+const contentKind = z.enum(["article", "external_link", "file"]);
+const contentFormat = z.enum(["article", "video", "podcast", "audio", "image", "pdf", "guide", "tool", "course", "other"]);
 const level = z.enum(["introductory", "intermediate", "advanced", "all"]);
 const sourceType = z.enum(["estimulo", "partner", "external"]);
 const visibility = z.enum(["authenticated", "organization"]);
@@ -25,24 +24,29 @@ function optionalUuid(value: FormDataEntryValue | null): string | null {
   return text ? uuid.parse(text) : null;
 }
 
+function deriveSlug(value: string): string {
+  const slug = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 100);
+  return slug || `conteudo-${randomUUID().slice(0, 8)}`;
+}
+
 export async function saveLibraryContentAction(formData: FormData) {
   const actor = await actorId();
   const organizationId = uuid.parse(formData.get("organization_id"));
   const kind = contentKind.parse(formData.get("content_kind"));
-  const topics = String(formData.get("topics") ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const topics = String(formData.get("topics") ?? "").split(",").map((item) => item.trim()).filter(Boolean);
   const journeyVersionIds = formData.getAll("journey_version_ids").map((value) => uuid.parse(value));
   const body = String(formData.get("body") ?? "").trim();
   const externalUrl = String(formData.get("external_url") ?? "").trim();
+  const title = z.string().trim().min(3).max(200).parse(formData.get("title"));
+  const existingSlug = String(formData.get("existing_slug") ?? "").trim();
+  const fileObjectId = optionalUuid(formData.get("file_object_id"));
 
   await libraryRuntime.saveDraft({
     actorUserAccountId: actor,
     organizationId,
     libraryItemId: optionalUuid(formData.get("library_item_id")),
-    slug: slug.parse(formData.get("slug")),
-    title: z.string().trim().min(3).max(200).parse(formData.get("title")),
+    slug: existingSlug || deriveSlug(title),
+    title,
     summary: z.string().trim().min(10).max(600).parse(formData.get("summary")),
     body: kind === "article" ? z.string().trim().min(1).max(30000).parse(body) : null,
     contentKind: kind,
@@ -56,7 +60,9 @@ export async function saveLibraryContentAction(formData: FormData) {
     topics,
     visibility: visibility.parse(formData.get("visibility")),
     journeyVersionIds,
-    idempotencyKey: String(formData.get("idempotency_key") || randomUUID())
+    discoverableInLibrary: formData.get("discoverable_in_library") === "on",
+    fileObjectId: kind === "file" ? uuid.parse(fileObjectId) : null,
+    idempotencyKey: String(formData.get("idempotency_key") || randomUUID()),
   });
 
   redirect(`/admin/biblioteca?organization=${organizationId}&salvo=1`);
@@ -65,26 +71,14 @@ export async function saveLibraryContentAction(formData: FormData) {
 export async function publishLibraryContentAction(formData: FormData) {
   const actor = await actorId();
   const organizationId = uuid.parse(formData.get("organization_id"));
-  await libraryRuntime.publish(
-    actor,
-    organizationId,
-    uuid.parse(formData.get("library_item_version_id")),
-    z.string().regex(/^[0-9a-f]{64}$/).parse(formData.get("content_hash")),
-    String(formData.get("idempotency_key") || randomUUID())
-  );
+  await libraryRuntime.publish(actor, organizationId, uuid.parse(formData.get("library_item_version_id")), z.string().regex(/^[0-9a-f]{64}$/).parse(formData.get("content_hash")), String(formData.get("idempotency_key") || randomUUID()));
   redirect(`/admin/biblioteca?organization=${organizationId}&publicado=1`);
 }
 
 export async function openLibraryContentAction(formData: FormData) {
   const actor = await actorId();
-  const slugValue = slug.parse(formData.get("slug"));
-  const result = await libraryRuntime.recordAccess({
-    actorUserAccountId: actor,
-    libraryItemVersionId: uuid.parse(formData.get("library_item_version_id")),
-    action: "open",
-    source: "library_detail",
-    idempotencyKey: String(formData.get("idempotency_key") || randomUUID())
-  });
+  const slugValue = z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).parse(formData.get("slug"));
+  const result = await libraryRuntime.recordAccess({ actorUserAccountId: actor, libraryItemVersionId: uuid.parse(formData.get("library_item_version_id")), action: "open", source: "library_detail", idempotencyKey: String(formData.get("idempotency_key") || randomUUID()) });
   if (result.data.content_kind === "external_link" && result.data.external_url) redirect(result.data.external_url);
   redirect(`/capacitacao/biblioteca/${slugValue}#conteudo`);
 }

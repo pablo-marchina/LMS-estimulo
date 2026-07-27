@@ -6,7 +6,7 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "dark" | "danger";
 type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 const base =
-  "focus-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50";
+  "brand-button focus-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-primary !text-white hover:bg-primary-bright active:bg-primary-active",

@@ -1,0 +1,49 @@
+{
+  "task": 9,
+  "status": "published_with_editorial_provenance_concern",
+  "payload_source": ".superpowers/sdd/openai-journey-seed.sql",
+  "publication_rpc": "public.publish_admin_journey_version",
+  "publication_event": {
+    "event_name": "catalog.journey_version.published",
+    "published_at": "2026-07-24T18:55:49.521046Z",
+    "path_count": 3,
+    "step_count": 15,
+    "published_activity_count": 15,
+    "published_rule_count": 3,
+    "published_badge_count": 3
+  },
+  "provenance": {
+    "source_documents_available": false,
+    "disclosure": "Descriptions, prompts and distractors are reconstructed editorial drafts. The install-command block and all development guidance require institutional review before being treated as approved final copy."
+  },
+  "journey": {
+    "definition_id": "1c39a8a2-791d-4ff8-870e-3bec037b8f62",
+    "version_id": "a4ffebde-f7de-4a76-af6a-221a2c398dd6",
+    "content_hash": "74ebe5c85259b09be0de3750d81abf128156a9b6e47c7d9c8f27bdd8c4df5ceb",
+    "status": "published",
+    "open_to_all": true
+  },
+  "trilha": {
+    "path_template_id": "b4db233b-72e5-41c9-a40b-950c475c5127",
+    "code": "desenvolvimento_codex",
+    "name": "Desenvolvimento Avançado com Codex",
+    "position": 3,
+    "status": "published",
+    "aulas": [
+      {"position":1,"step_id":"6669d1fb-8137-42bb-b05d-add10b65d444","activity_version_id":"584cc3b3-6ea4-4d47-bb0c-d48a61d5c6c2","title":"Aula 1 — O que é o Codex: agente de desenvolvimento e instalação","prompt_count":1,"question_count":1,"checklist_count":0},
+      {"position":2,"step_id":"090ee0a0-1d7c-4c84-86da-97802c4b4054","activity_version_id":"0a670360-237a-4b45-85aa-75d20aef1775","title":"Aula 2 — Caso de uso: do pedido ao projeto","prompt_count":1,"question_count":0,"checklist_count":0},
+      {"position":3,"step_id":"c00213ed-a8da-4a59-ad9e-c3d51efab858","activity_version_id":"b836b2f5-70a2-4acd-b207-cf0ea30e2a75","title":"Aula 3 — Mão na massa: criar um site com Codex","prompt_count":3,"question_count":1,"checklist_count":0},
+      {"position":4,"step_id":"529699d2-e434-4bee-ba11-4a283a625198","activity_version_id":"20b5a909-0cfb-4682-a24b-094489598c4d","title":"Aula 4 — Mão na massa: criar uma proposta com Codex","prompt_count":2,"question_count":0,"checklist_count":0},
+      {"position":5,"step_id":"d8e32a38-5eaa-4c40-aef3-782346b128cd","activity_version_id":"653b87a6-6fab-4867-a361-717d56ba9dc1","title":"Aula 5 — Mão na massa: criar sistema com formulário","prompt_count":4,"question_count":1,"checklist_count":0},
+      {"position":6,"step_id":"2cacd542-022d-4175-bacd-5d7cbb65ec46","activity_version_id":"0817ee7d-b123-4611-be32-33d544391c52","title":"Aula 6 — Publicação, link compartilhável e fechamento","activity_type":"practice","prompt_count":0,"question_count":5,"checklist_count":10}
+    ],
+    "badge": {
+      "title": "Selo Desenvolvimento Avançado com Codex",
+      "status": "published",
+      "rule_language": "credential-v1",
+      "rule_scope": "path",
+      "path_template_id": "b4db233b-72e5-41c9-a40b-950c475c5127"
+    }
+  },
+  "plan_discrepancy": "The written Task 9 summary says four non-closing aulas have one-question assessments, but its detailed steps specify quick assessments only for aulas 1, 3 and 5. The seed follows the detailed steps: 3 quick assessments, 2 aulas without assessment, and the 5-question closing assessment."
+}

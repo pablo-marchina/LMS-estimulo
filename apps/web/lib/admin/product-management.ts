@@ -1,6 +1,58 @@
 import "server-only";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
+export type TrilhaAulaAsset = {
+  id: string;
+  asset_type: string;
+  title: string;
+  external_url: string | null;
+  file_object_id: string | null;
+  library_item_version_id?: string | null;
+  position: number;
+  is_required: boolean;
+  accessibility_metadata: Record<string, unknown>;
+};
+
+export type TrilhaAula = {
+  step_id: string;
+  code: string;
+  position: number;
+  is_required: boolean;
+  activity_version_id: string;
+  title: string;
+  description: string | null;
+  activity_type: string;
+  configuration: Record<string, unknown>;
+  assets?: TrilhaAulaAsset[];
+  assessment: {
+    spec_id: string;
+    passing_score: number | null;
+    max_attempts: number | null;
+    questions: Array<{
+      id: string;
+      code: string;
+      prompt: string;
+      question_type?: string;
+      position: number;
+      options: Array<{ id: string; code: string; label: string; is_correct: boolean; position: number }>;
+    }>;
+  } | null;
+  practice: { submission_mode: string; allowed_evidence_types: string[]; review_required: boolean } | null;
+};
+
+export type Trilha = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  position: number;
+  status: string;
+  is_required?: boolean;
+  presentation?: Record<string, unknown>;
+  badge: { badge_version_id: string; title: string; description: string | null } | null;
+  aulas: TrilhaAula[];
+};
+
 export type VersionSummary = {
   id: string;
   version_number: number;
@@ -16,6 +68,7 @@ export type VersionSummary = {
     options: Array<{ id: string; code: string; label: string; value: { score?: number }; position: number }>;
   }>;
   eligible_archetype_codes?: string[] | null;
+  trilhas?: Trilha[];
   [key: string]: unknown;
 };
 
@@ -35,6 +88,8 @@ export type PathSummary = {
   name: string;
   description: string | null;
   is_default: boolean;
+  is_required?: boolean;
+  presentation?: Record<string, unknown>;
   status: string;
   steps: Array<Record<string, unknown>>;
 };
@@ -67,32 +122,18 @@ export type AdminReportingDashboard = {
     badges_awarded: number;
     certificates_issued: number;
   };
-  journeys: Array<{
-    journey: string;
-    version: number;
-    enrollments: number;
-    completed: number;
-    average_progress: number;
-  }>;
-  recent_events: Array<{
-    event_name: string;
-    occurred_at: string;
-    aggregate_type: string | null;
-    aggregate_id: string | null;
-  }>;
+  journeys: Array<{ journey: string; version: number; enrollments: number; completed: number; average_progress: number }>;
+  recent_events: Array<{ event_name: string; occurred_at: string; aggregate_type: string | null; aggregate_id: string | null }>;
 };
 
 export async function getAdminProductWorkspace(actorUserAccountId: string, organizationId: string) {
-  return invokeServerRpc<AdminProductWorkspace>("get_admin_product_workspace", {
-    p_actor_user_account_id: actorUserAccountId,
-    p_organization_id: organizationId,
-  });
+  return invokeServerRpc<AdminProductWorkspace>("get_admin_product_workspace", { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId });
 }
 
 export async function saveAdminProductResource(input: {
   actorUserAccountId: string;
   organizationId: string;
-  resourceType: "journey" | "activity" | "path_step" | "rule" | "diagnostic" | "point_rule" | "badge" | "certificate";
+  resourceType: "journey" | "activity" | "path_step" | "path_template" | "rule" | "diagnostic" | "point_rule" | "badge" | "certificate";
   payload: Record<string, unknown>;
   idempotencyKey: string;
 }) {
@@ -105,9 +146,60 @@ export async function saveAdminProductResource(input: {
   });
 }
 
-export async function getAdminReportingDashboard(actorUserAccountId: string, organizationId: string) {
-  return invokeServerRpc<AdminReportingDashboard>("get_admin_reporting_dashboard", {
-    p_actor_user_account_id: actorUserAccountId,
-    p_organization_id: organizationId,
+export async function configureAdminPathTemplate(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  pathTemplateId: string;
+  isRequired: boolean;
+  presentation: Record<string, unknown>;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<Record<string, unknown>>("configure_admin_path_template", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_path_template_id: input.pathTemplateId,
+    p_is_required: input.isRequired,
+    p_presentation: input.presentation,
+    p_idempotency_key: input.idempotencyKey,
   });
+}
+
+export async function attachLibraryContentToActivity(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  journeyVersionId: string;
+  activityVersionId: string;
+  libraryItemVersionId: string;
+  isRequired: boolean;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<Record<string, unknown>>("attach_library_content_to_activity", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_journey_version_id: input.journeyVersionId,
+    p_activity_version_id: input.activityVersionId,
+    p_library_item_version_id: input.libraryItemVersionId,
+    p_is_required: input.isRequired,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
+export async function publishAdminJourneyVersion(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  journeyVersionId: string;
+  expectedContentHash: string;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<Record<string, unknown>>("publish_admin_journey_version", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_journey_version_id: input.journeyVersionId,
+    p_expected_content_hash: input.expectedContentHash,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
+export async function getAdminReportingDashboard(actorUserAccountId: string, organizationId: string) {
+  return invokeServerRpc<AdminReportingDashboard>("get_admin_reporting_dashboard", { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId });
 }

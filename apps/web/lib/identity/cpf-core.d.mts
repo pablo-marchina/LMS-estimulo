@@ -14,3 +14,8 @@ export function protectCpfWithKeys(
   lookupKeyBase64: string,
   initializationVector?: Uint8Array,
 ): ProtectedCpf;
+export function unprotectCpfWithKeys(
+  protectedCpf: ProtectedCpf,
+  userAccountId: string,
+  encryptionKeyBase64: string,
+): string;

@@ -7,8 +7,11 @@ import type {
   LibraryAccessResult,
   LibraryContent,
   LibraryDraftResult,
+  LibraryFileDownload,
   LibraryListing,
-  OperatorLibraryData
+  LibraryUploadedFile,
+  LibraryUploadIntent,
+  OperatorLibraryData,
 } from "@/lib/library/contracts";
 
 function invokeLibraryRpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
@@ -36,17 +39,17 @@ export const libraryRuntime = {
     p_level: input.level ?? null,
     p_journey_version_id: input.journeyVersionId ?? null,
     p_limit: input.limit ?? 24,
-    p_offset: input.offset ?? 0
+    p_offset: input.offset ?? 0,
   }),
 
   get: (actorUserAccountId: string, slug: string) => invokeLibraryRpc<LibraryContent>(
     "get_library_content",
-    { p_actor_user_account_id: actorUserAccountId, p_slug: slug }
+    { p_actor_user_account_id: actorUserAccountId, p_slug: slug },
   ),
 
   listOperator: (actorUserAccountId: string, organizationId: string) => invokeLibraryRpc<OperatorLibraryData>(
     "list_operator_library_content",
-    { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId }
+    { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId },
   ),
 
   saveDraft: (input: {
@@ -57,7 +60,7 @@ export const libraryRuntime = {
     title: string;
     summary: string;
     body: string | null;
-    contentKind: "article" | "external_link";
+    contentKind: "article" | "external_link" | "file";
     contentFormat: string;
     level: string;
     estimatedMinutes: number;
@@ -68,6 +71,8 @@ export const libraryRuntime = {
     topics: string[];
     visibility: string;
     journeyVersionIds: string[];
+    discoverableInLibrary: boolean;
+    fileObjectId: string | null;
     idempotencyKey: string;
   }) => invokeLibraryRpc<RpcEnvelope<LibraryDraftResult>>("save_library_content_draft", {
     p_actor_user_account_id: input.actorUserAccountId,
@@ -88,22 +93,81 @@ export const libraryRuntime = {
     p_topics: input.topics,
     p_visibility: input.visibility,
     p_journey_version_ids: input.journeyVersionIds,
-    p_idempotency_key: input.idempotencyKey
+    p_discoverable_in_library: input.discoverableInLibrary,
+    p_file_object_id: input.fileObjectId,
+    p_idempotency_key: input.idempotencyKey,
   }),
+
+  createUploadIntent: (input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    originalFilename: string;
+    expectedContentType: string;
+    storageProvider: "supabase_storage" | "s3";
+    bucket: string;
+    idempotencyKey: string;
+  }) => invokeLibraryRpc<RpcEnvelope<LibraryUploadIntent>>("create_library_upload_intent", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_original_filename: input.originalFilename,
+    p_expected_content_type: input.expectedContentType,
+    p_storage_provider: input.storageProvider,
+    p_bucket: input.bucket,
+    p_idempotency_key: input.idempotencyKey,
+  }),
+
+  confirmUpload: (input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    uploadIntentId: string;
+    actualContentType: string;
+    actualSizeBytes: number;
+    sha256: string;
+    providerObjectVersion: string | null;
+    etag: string | null;
+    metadata: Record<string, unknown>;
+    idempotencyKey: string;
+  }) => invokeLibraryRpc<RpcEnvelope<LibraryUploadedFile>>("confirm_library_upload", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_upload_intent_id: input.uploadIntentId,
+    p_actual_content_type: input.actualContentType,
+    p_actual_size_bytes: input.actualSizeBytes,
+    p_sha256: input.sha256,
+    p_provider_object_version: input.providerObjectVersion,
+    p_etag: input.etag,
+    p_metadata: input.metadata,
+    p_idempotency_key: input.idempotencyKey,
+  }),
+
+  abortUpload: (actorUserAccountId: string, organizationId: string, uploadIntentId: string, failureCode: string, idempotencyKey: string) =>
+    invokeLibraryRpc<RpcEnvelope<Record<string, unknown>>>("abort_library_upload", {
+      p_actor_user_account_id: actorUserAccountId,
+      p_organization_id: organizationId,
+      p_upload_intent_id: uploadIntentId,
+      p_failure_code: failureCode,
+      p_idempotency_key: idempotencyKey,
+    }),
 
   publish: (
     actorUserAccountId: string,
     organizationId: string,
     libraryItemVersionId: string,
     expectedContentHash: string,
-    idempotencyKey: string
+    idempotencyKey: string,
   ) => invokeLibraryRpc<RpcEnvelope<Record<string, unknown>>>("publish_library_content", {
     p_actor_user_account_id: actorUserAccountId,
     p_organization_id: organizationId,
     p_library_item_version_id: libraryItemVersionId,
     p_expected_content_hash: expectedContentHash,
-    p_idempotency_key: idempotencyKey
+    p_idempotency_key: idempotencyKey,
   }),
+
+  getFileDownload: (actorUserAccountId: string, libraryItemVersionId: string) =>
+    invokeLibraryRpc<LibraryFileDownload>("get_library_file_download", {
+      p_actor_user_account_id: actorUserAccountId,
+      p_library_item_version_id: libraryItemVersionId,
+    }),
 
   recordAccess: (input: {
     actorUserAccountId: string;
@@ -118,6 +182,6 @@ export const libraryRuntime = {
     p_action: input.action,
     p_source: input.source,
     p_journey_instance_id: input.journeyInstanceId ?? null,
-    p_idempotency_key: input.idempotencyKey
-  })
+    p_idempotency_key: input.idempotencyKey,
+  }),
 };

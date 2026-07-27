@@ -1,300 +1,106 @@
-import { ChevronDown } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 import { StatusPanel } from "@/components/status-panel";
-import { PageHeader } from "@/components/ui/page-header";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
+import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { getAdminProductWorkspace } from "@/lib/admin/product-management";
-import { saveProductResourceAction } from "./actions";
+import { getAdminProductWorkspace, type Trilha } from "@/lib/admin/product-management";
+import { libraryRuntime } from "@/lib/library/runtime";
+import { saveTrilhaAction } from "./actions";
+import { saveJourneyAction } from "./journey-action";
+import { publishJourneyAction } from "./publish-action";
+import { TrilhaAulaBuilder } from "./trilha-aula-builder";
 
 export const dynamic = "force-dynamic";
-
-function single(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
-
-function latest<T extends { versions?: Array<Record<string, unknown>> }>(item: T) {
-  return item.versions?.[0] ?? null;
-}
+function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
+function stringValue(value: unknown) { return typeof value === "string" ? value : ""; }
+function objectValue(value: unknown): Record<string, unknown> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 
 export default async function AdminProductPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated") return <main className="mx-auto max-w-3xl px-4 py-10"><StatusPanel title="Acesso indisponível" tone="warning"><p>Entre com sua conta Estímulo.</p></StatusPanel></main>;
-  const requested = single(query.organization);
-  const organization = auth.identity.organizations.find((item) => item.organization_id === requested)
-    ?? auth.identity.organizations.find((item) => item.permissions.includes("journey.definition.manage"));
-  if (!organization?.permissions.includes("journey.definition.manage")) {
-    return <AppShell area="admin" email={auth.email}><StatusPanel title="Gestão de produto restrita" tone="warning"><p>Seu papel não permite editar jornadas, atividades e regras.</p></StatusPanel></AppShell>;
-  }
-
-  const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
-  const journeyVersions = workspace.journeys.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
-  const activityVersions = workspace.activities.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
-  const ruleVersions = workspace.rules.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
+  if (auth.status !== "authenticated") return null;
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
+  const canEdit = organization.permissions.includes("journey.definition.manage");
+  const [workspace, libraryData] = await Promise.all([
+    getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id),
+    libraryRuntime.listOperator(auth.identity.user_account_id, organization.organization_id).catch(() => ({ organization_id: organization.organization_id, items: [], journey_versions: [] })),
+  ]);
+  const libraryItems = libraryData.items.filter((item) => item.status === "published").map((item) => ({
+    library_item_version_id: item.library_item_version_id,
+    title: item.title,
+    content_kind: item.content_kind,
+    content_format: item.content_format,
+    source_name: item.source_name,
+    discoverable_in_library: item.discoverable_in_library,
+  }));
+  const activePrograms = workspace.programs.filter((item) => item.status !== "retired");
+  const activeJourneys = workspace.journeys.filter((item) => item.status !== "retired");
+  const journeyVersions = activeJourneys.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name, definitionId: item.definition_id, definitionCode: item.code, definitionPurpose: stringValue(item.purpose), programId: stringValue(item.program_id) })));
+  const draftJourneyVersions = journeyVersions.filter((item) => item.status === "draft");
+  const selectedVersionId = single(query.versao);
+  const selectedJourneyVersion = draftJourneyVersions.find((item) => String(item.id) === selectedVersionId) ?? null;
+  const selectedTrilhas = selectedJourneyVersion?.trilhas?.slice().sort((a: Trilha, b: Trilha) => a.position - b.position) ?? [];
+  const selectedPathId = single(query.trilha);
+  const selectedPath = selectedTrilhas.find((item) => item.id === selectedPathId) ?? null;
+  const selectedArchetypes = new Set(selectedJourneyVersion?.eligible_archetype_codes ?? []);
+  const configuration = objectValue(selectedJourneyVersion?.configuration);
+  const presentation = objectValue(configuration.presentation);
+  const presentationTags = Array.isArray(presentation.tags) ? presentation.tags.filter((item): item is string => typeof item === "string").join(", ") : "";
+  const etapa = ["jornada", "trilhas", "aulas", "publicar"].includes(single(query.etapa)) ? single(query.etapa) : "jornada";
   const success = single(query.sucesso);
   const error = single(query.erro);
+  const canPublish = canEdit && organization.permissions.includes("journey.definition.publish");
+  const graphLooksComplete = selectedTrilhas.length > 0 && selectedTrilhas.every((trilha) => trilha.aulas.length > 0);
+  const base = selectedJourneyVersion ? `versao=${selectedJourneyVersion.id}` : "";
+  const href = (next: string, extra = "") => `/admin/produto?etapa=${next}${base ? `&${base}` : ""}${extra}`;
+  const currentCardId = stringValue(presentation.card_background_file_object_id);
+  const currentFeaturedId = stringValue(presentation.featured_background_file_object_id);
 
-  return <AppShell area="admin" email={auth.email}>
-    <div className="grid gap-8">
-      <PageHeader
-        eyebrow="Produto configurável"
-        title="Jornadas, atividades e regras"
-        description="Edite drafts sobre o modelo operacional real. Versões publicadas permanecem imutáveis e a publicação continua no fluxo de operação."
-        actions={
-          <form className="flex flex-wrap items-end gap-3" method="get">
-            <label className="grid gap-1.5 text-sm font-medium text-ink">
-              Organização
-              <Select name="organization" defaultValue={organization.organization_id}>
-                {auth.identity.organizations.filter((item) => item.permissions.includes("journey.definition.manage")).map((item) => <option key={item.organization_id} value={item.organization_id}>{item.display_name}</option>)}
-              </Select>
-            </label>
-            <Button variant="secondary" type="submit">Selecionar</Button>
-          </form>
-        }
-      />
+  return <AppShell area="admin" email={auth.email}><div className="grid gap-7">
+    <PageHeader eyebrow="Jornadas" title="Construtor de jornadas" description="Crie a jornada em quatro etapas. Configurações menos usadas ficam recolhidas para manter o fluxo limpo." />
+    {!canEdit ? <StatusPanel title="Acesso somente para visualização" tone="info">Os campos estão bloqueados, mas a estrutura pode ser consultada.</StatusPanel> : null}
+    <nav className="grid gap-2 rounded-2xl border border-border bg-white p-2 shadow-sm sm:grid-cols-4" aria-label="Etapas do construtor">{[{ id: "jornada", label: "1. Jornada" }, { id: "trilhas", label: "2. Trilhas" }, { id: "aulas", label: "3. Aulas" }, { id: "publicar", label: "4. Publicar" }].map((item) => <ButtonLink key={item.id} href={href(item.id)} variant={etapa === item.id ? "primary" : "ghost"} size="sm">{item.label}</ButtonLink>)}</nav>
+    {success ? <StatusPanel title={success === "jornada_publicada" ? "Jornada publicada" : "Configuração salva"} tone="success">A alteração foi registrada.</StatusPanel> : null}
+    {error ? <StatusPanel title="Não foi possível concluir" tone="warning">Revise os campos obrigatórios e tente novamente.</StatusPanel> : null}
 
-      {success ? <StatusPanel title="Configuração salva" tone="success"><p>O draft foi persistido e auditado.</p></StatusPanel> : null}
-      {error ? <StatusPanel title="Não foi possível salvar" tone="warning"><p>Revise os campos, permissões e JSON informado.</p></StatusPanel> : null}
+    <fieldset disabled={!canEdit} className="contents">
+      {etapa === "jornada" ? <Card className="grid gap-6">
+        <div><h2 className="text-lg font-black text-secondary">Jornada</h2><p className="mt-1 text-sm text-muted">Defina o conteúdo principal e como o cartão aparecerá para o participante.</p></div>
+        <form method="get" className="flex flex-wrap items-end gap-3"><input type="hidden" name="etapa" value="jornada" /><label className="grid min-w-72 flex-1 gap-1 text-sm font-medium text-ink">Rascunho<Select name="versao" defaultValue={selectedVersionId}><option value="">Criar nova jornada</option>{draftJourneyVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · versão {String(item.version_number)}</option>)}</Select><span className="text-[11px] font-normal text-muted">Abra para continuar editando.</span></label><Button variant="secondary" type="submit">Abrir</Button></form>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card><span className="text-xs font-semibold uppercase tracking-wide text-muted">Jornadas</span><strong className="mt-1 block text-2xl font-bold text-ink">{workspace.journeys.length}</strong></Card>
-        <Card><span className="text-xs font-semibold uppercase tracking-wide text-muted">Atividades</span><strong className="mt-1 block text-2xl font-bold text-ink">{workspace.activities.length}</strong></Card>
-        <Card><span className="text-xs font-semibold uppercase tracking-wide text-muted">Trilhas</span><strong className="mt-1 block text-2xl font-bold text-ink">{workspace.paths.length}</strong></Card>
-        <Card><span className="text-xs font-semibold uppercase tracking-wide text-muted">Regras</span><strong className="mt-1 block text-2xl font-bold text-ink">{workspace.rules.length}</strong></Card>
-      </section>
+        <form className="grid gap-5" action={saveJourneyAction} encType="multipart/form-data">
+          <input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="version_id" value={selectedJourneyVersion ? String(selectedJourneyVersion.id) : ""} /><input type="hidden" name="definition_code" value={selectedJourneyVersion?.definitionCode ?? ""} /><input type="hidden" name="configuration_snapshot" value={JSON.stringify(selectedJourneyVersion?.configuration ?? {})} /><input type="hidden" name="name" value={selectedJourneyVersion?.definitionName ?? ""} /><input type="hidden" name="current_card_background_file_object_id" value={currentCardId} /><input type="hidden" name="current_featured_background_file_object_id" value={currentFeaturedId} />
+          <div className="grid gap-4 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium text-ink">Programa<Select name="program_id" required defaultValue={selectedJourneyVersion?.programId ?? ""}><option value="">Selecione</option>{activePrograms.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</Select><span className="text-[11px] font-normal text-muted">Agrupamento administrativo.</span></label><label className="grid gap-1 text-sm font-medium text-ink">Jornada existente<Select name="definition_id" defaultValue={selectedJourneyVersion?.definitionId ?? ""}><option value="">Criar nova</option>{activeJourneys.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select><span className="text-[11px] font-normal text-muted">Use para criar nova versão.</span></label></div>
+          <label className="grid gap-1 text-sm font-medium text-ink">Título<Input name="title" required defaultValue={selectedJourneyVersion?.title ?? selectedJourneyVersion?.definitionName ?? ""} /><span className="text-[11px] font-normal text-muted">Nome exibido ao público.</span></label>
+          <label className="grid gap-1 text-sm font-medium text-ink">Descrição<Textarea name="description" rows={3} defaultValue={selectedJourneyVersion?.description ?? ""} /><span className="text-[11px] font-normal text-muted">Explique o resultado da jornada.</span></label>
 
-      <section className="grid gap-4">
-        <details className="group rounded-xl border border-border bg-surface" open>
-          <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-            <span className="grid gap-1">
-              <strong className="text-ink">Jornada</strong>
-              <small className="text-muted">Criar ou atualizar um draft</small>
-            </span>
-            <ChevronDown size={18} className="shrink-0 text-muted transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
-          </summary>
-          <div className="grid gap-4 border-t border-border p-5">
-            <form className="grid gap-4" action={saveProductResourceAction}>
-              <input type="hidden" name="organization_id" value={organization.organization_id} />
-              <input type="hidden" name="resource_type" value="journey" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Programa
-                  <Select name="program_id" required><option value="">Selecione</option>{workspace.programs.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Definição existente
-                  <Select name="definition_id"><option value="">Nova jornada</option>{workspace.journeys.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Versão draft existente
-                  <Select name="version_id"><option value="">Nova versão</option>{journeyVersions.filter((item) => item.status === "draft").map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Código<Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Slug<Input name="slug" pattern="[a-z0-9-]+" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Nome<Input name="name" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Título da versão<Input name="title" required /></label>
-              </div>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Propósito<Textarea name="purpose" rows={2} /></label>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição<Textarea name="description" rows={3} /></label>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Configuração JSON<Textarea className="font-mono text-xs" name="configuration" rows={5} defaultValue="{}" /></label>
-              <fieldset className="grid gap-2">
-                <legend className="text-sm font-medium text-ink">Arquétipos elegíveis (vazio = aberta para todos)</legend>
-                <div className="flex flex-wrap gap-4">
-                  {[
-                    { code: "fazedor", icon: "🔨", name: "Fazedor(a)" },
-                    { code: "batalhador", icon: "💪", name: "Batalhador(a)" },
-                    { code: "construtor", icon: "🧱", name: "Construtor(a)" },
-                    { code: "navegador", icon: "🧭", name: "Navegador(a)" },
-                  ].map((archetype) => (
-                    <label key={archetype.code} className="flex items-center gap-2 text-sm text-ink">
-                      <input type="checkbox" name="eligible_archetype_codes" value={archetype.code} className="size-4 accent-primary" />
-                      {archetype.icon} {archetype.name}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-              <Button type="submit" className="w-fit">Salvar jornada</Button>
-            </form>
-          </div>
-        </details>
+          <section className="grid gap-4 rounded-2xl border border-primary/20 bg-primary-soft/30 p-4" aria-labelledby="visual-jornada-title">
+            <div><h3 id="visual-jornada-title" className="font-black text-secondary">Visual da jornada</h3><p className="text-[11px] text-muted">As mesmas opções valem para toda jornada. O destaque apenas usa um cartão maior.</p></div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-3 rounded-xl bg-white p-3"><div><strong className="text-sm text-secondary">Imagem quadrada</strong><p className="text-[11px] text-muted">Cartões comuns · recomendado 1200 × 1200.</p></div>{selectedJourneyVersion && currentCardId ? <img src={`/api/journey-covers/${selectedJourneyVersion.id}/card`} alt="Capa quadrada atual" className="aspect-square w-full max-w-52 rounded-xl object-cover" /> : null}<FileUploadPreview name="card_background_file" accept="image/png,image/jpeg,image/webp" label="Nova imagem quadrada" help="PNG, JPG ou WebP." /><label className="grid gap-1 text-sm font-medium text-ink">Descrição da imagem<Input name="card_background_alt" defaultValue={stringValue(presentation.card_background_alt)} placeholder="Ex.: empreendedora usando tecnologia" /></label></div>
+              <div className="grid gap-3 rounded-xl bg-white p-3"><div><strong className="text-sm text-secondary">Imagem ampla</strong><p className="text-[11px] text-muted">Jornada em destaque · recomendado 1920 × 900.</p></div>{selectedJourneyVersion && (currentFeaturedId || currentCardId) ? <img src={`/api/journey-covers/${selectedJourneyVersion.id}/${currentFeaturedId ? "featured" : "card"}`} alt="Capa ampla atual" className="aspect-[16/8] w-full rounded-xl object-cover" /> : null}<FileUploadPreview name="featured_background_file" accept="image/png,image/jpeg,image/webp" label="Nova imagem ampla" help="Usada somente no destaque." /><label className="grid gap-1 text-sm font-medium text-ink">Descrição da imagem<Input name="featured_background_alt" defaultValue={stringValue(presentation.featured_background_alt)} placeholder="Descrição curta" /></label></div>
+            </div>
+            <label className="flex items-start gap-3 rounded-xl bg-white p-3 text-sm text-ink"><input type="checkbox" name="presentation_featured" defaultChecked={presentation.featured === true} className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Exibir como destaque</strong><small className="text-muted">Usa a imagem ampla e ocupa mais espaço.</small></span></label>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><label className="grid gap-1 text-sm font-medium text-ink">Prioridade<Input name="presentation_featured_rank" type="number" min="1" defaultValue={String(typeof presentation.featured_rank === "number" ? presentation.featured_rank : 9999)} /><span className="text-[11px] font-normal text-muted">Menor número aparece primeiro.</span></label><label className="grid gap-1 text-sm font-medium text-ink">Texto superior<Input name="presentation_eyebrow" defaultValue={stringValue(presentation.eyebrow) || "Jornada Estímulo"} /></label><label className="grid gap-1 text-sm font-medium text-ink">Selo ou parceria<Input name="presentation_badge" defaultValue={stringValue(presentation.badge) || "Capacitação Estímulo"} /></label><label className="grid gap-1 text-sm font-medium text-ink">Cor<Select name="presentation_tone" defaultValue={stringValue(presentation.tone) || "blue"}><option value="blue">Azul</option><option value="green">Verde</option><option value="cyan">Ciano</option><option value="magenta">Magenta</option><option value="orange">Laranja</option></Select></label><label className="grid gap-1 text-sm font-medium text-ink">Ícone<Select name="presentation_icon" defaultValue={stringValue(presentation.icon) || "sparkles"}><option value="sparkles">Brilhos</option><option value="rocket">Foguete</option><option value="book-open">Livro</option><option value="lightbulb">Ideia</option></Select></label><label className="grid gap-1 text-sm font-medium text-ink">Botão<Input name="presentation_cta" defaultValue={stringValue(presentation.cta) || "Entrar nesta jornada"} /></label></div>
+            <label className="grid gap-1 text-sm font-medium text-ink">Temas<Input name="presentation_tags" defaultValue={presentationTags} placeholder="Marketing, Gestão, IA" /><span className="text-[11px] font-normal text-muted">Separe por vírgulas.</span></label>
+          </section>
 
-        <details className="group rounded-xl border border-border bg-surface">
-          <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-            <span className="grid gap-1">
-              <strong className="text-ink">Atividade e conteúdo</strong>
-              <small className="text-muted">Vídeo, texto, link, avaliação ou prática</small>
-            </span>
-            <ChevronDown size={18} className="shrink-0 text-muted transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
-          </summary>
-          <div className="grid gap-4 border-t border-border p-5">
-            <form className="grid gap-4" action={saveProductResourceAction}>
-              <input type="hidden" name="organization_id" value={organization.organization_id} />
-              <input type="hidden" name="resource_type" value="activity" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Definição existente
-                  <Select name="definition_id"><option value="">Nova atividade</option>{workspace.activities.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Versão draft existente
-                  <Select name="version_id"><option value="">Nova versão</option>{activityVersions.filter((item) => item.status === "draft").map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Código<Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Tipo
-                  <Select name="activity_type" required>
-                    <option value="content">Conteúdo</option>
-                    <option value="video">Vídeo</option>
-                    <option value="assessment">Avaliação</option>
-                    <option value="practice">Prática</option>
-                    <option value="external">Externo</option>
-                  </Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Nome<Input name="name" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Título<Input name="title" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Duração estimada<Input name="estimated_minutes" type="number" min="0" defaultValue="10" /></label>
-              </div>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição<Textarea name="description" rows={3} /></label>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Configuração JSON<Textarea className="font-mono text-xs" name="configuration" rows={4} defaultValue="{}" /></label>
+          <details className="rounded-2xl border border-border"><summary className="cursor-pointer px-4 py-3 text-sm font-black text-secondary">Configurações adicionais</summary><div className="grid gap-4 border-t border-border p-4"><label className="grid gap-1 text-sm font-medium text-ink">Propósito interno<Textarea name="purpose" rows={2} defaultValue={selectedJourneyVersion?.definitionPurpose ?? ""} /><span className="text-[11px] font-normal text-muted">Não aparece no cartão.</span></label><fieldset className="grid gap-2"><legend className="text-sm font-medium text-ink">Perfis elegíveis</legend><p className="text-[11px] text-muted">Sem seleção, acesso aberto.</p><div className="flex flex-wrap gap-4">{[{ code: "fazedor", name: "Fazedor(a)" }, { code: "batalhador", name: "Batalhador(a)" }, { code: "construtor", name: "Construtor(a)" }, { code: "navegador", name: "Navegador(a)" }].map((archetype) => <label key={archetype.code} className="flex items-center gap-2 text-sm text-ink"><input type="checkbox" name="eligible_archetype_codes" value={archetype.code} defaultChecked={selectedArchetypes.has(archetype.code)} className="size-4 accent-primary" />{archetype.name}</label>)}</div></fieldset></div></details>
+          <Button type="submit" className="w-fit">Salvar e continuar</Button>
+        </form>
+      </Card> : null}
 
-              <fieldset className="grid gap-4 rounded-lg border border-border p-4">
-                <legend className="px-1 text-sm font-semibold text-ink">Asset opcional</legend>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-sm font-medium text-ink">Título<Input name="asset_title" /></label>
-                  <label className="grid gap-1.5 text-sm font-medium text-ink">Tipo
-                    <Select name="asset_type">
-                      <option value="external_link">Link</option>
-                      <option value="video">Vídeo</option>
-                      <option value="text">Texto</option>
-                      <option value="document">Documento</option>
-                    </Select>
-                  </label>
-                  <label className="grid gap-1.5 text-sm font-medium text-ink">URL<Input name="asset_url" type="url" /></label>
-                  <label className="grid gap-1.5 text-sm font-medium text-ink">Idioma<Input name="asset_language" defaultValue="pt-BR" /></label>
-                </div>
-                <label className="flex items-center gap-2.5 text-sm text-ink"><input name="asset_required" type="checkbox" defaultChecked className="size-4 accent-primary" /> Obrigatório</label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Acessibilidade JSON<Textarea className="font-mono text-xs" name="asset_accessibility" rows={3} defaultValue="{}" /></label>
-              </fieldset>
+      {etapa === "trilhas" ? selectedJourneyVersion ? <div className="grid gap-5"><Card><h2 className="text-lg font-black text-secondary">Trilhas de {selectedJourneyVersion.title}</h2><p className="mt-1 text-sm text-muted">Obrigatórias contam para a conclusão; opcionais ampliam o conteúdo.</p></Card>{selectedTrilhas.length ? <div className="grid gap-3 sm:grid-cols-2">{selectedTrilhas.map((trilha) => <Card key={trilha.id} className="brand-float-card"><div className="flex items-center justify-between gap-3"><span className="text-xs font-bold text-primary">TRILHA {trilha.position}</span><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${trilha.is_required === false ? "bg-surface-muted text-muted" : "bg-success-soft text-success"}`}>{trilha.is_required === false ? "Opcional" : "Principal"}</span></div><h3 className="mt-2 font-black text-secondary">{trilha.name}</h3><p className="mt-1 text-sm text-muted">{trilha.aulas.length} aula(s)</p><ButtonLink href={href("aulas", `&trilha=${trilha.id}`)} variant="secondary" size="sm" className="mt-4 w-fit">Ver aulas</ButtonLink></Card>)}</div> : <StatusPanel title="Nenhuma trilha criada" tone="info">Adicione a primeira trilha abaixo.</StatusPanel>}
+        <Card><h3 className="font-black text-secondary">Adicionar trilha</h3><form action={saveTrilhaAction} className="mt-4 grid gap-3 sm:grid-cols-2"><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="journey_version_id" value={String(selectedJourneyVersion.id)} /><label className="grid gap-1 text-sm font-medium text-ink">Nome<Input name="name" required /></label><label className="grid gap-1 text-sm font-medium text-ink">Posição<Input name="position" type="number" min="1" defaultValue={String(selectedTrilhas.length + 1)} required /></label><label className="col-span-full grid gap-1 text-sm font-medium text-ink">Descrição<Textarea name="description" rows={2} /></label><details className="col-span-full rounded-xl border border-border"><summary className="cursor-pointer px-3 py-2 text-sm font-semibold">Aparência</summary><div className="grid gap-3 border-t border-border p-3 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium text-ink">Cor<Select name="tone" defaultValue="cyan"><option value="cyan">Ciano</option><option value="magenta">Magenta</option><option value="green">Verde</option><option value="yellow">Amarelo</option><option value="orange">Laranja</option><option value="violet">Violeta</option></Select></label><label className="grid gap-1 text-sm font-medium text-ink">Ícone<Select name="icon" defaultValue="sparkles"><option value="sparkles">Brilhos</option><option value="rocket">Foguete</option><option value="book-open">Livro</option><option value="lightbulb">Ideia</option></Select></label></div></details><label className="col-span-full flex items-start gap-3 rounded-xl border border-border p-3 text-sm text-ink"><input type="checkbox" name="is_required" defaultChecked className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Conta para conclusão</strong><small className="text-muted">Desmarque para trilha opcional.</small></span></label><Button type="submit" size="sm" className="w-fit">Adicionar</Button></form></Card><ButtonLink href={href("aulas")} className="w-fit">Continuar para aulas</ButtonLink></div> : <StatusPanel title="Escolha uma jornada" tone="warning"><ButtonLink href="/admin/produto?etapa=jornada" className="mt-3 w-fit">Voltar à primeira etapa</ButtonLink></StatusPanel> : null}
 
-              <fieldset className="grid gap-4 rounded-lg border border-border p-4">
-                <legend className="px-1 text-sm font-semibold text-ink">Prática</legend>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-sm font-medium text-ink">Modo<Input name="submission_mode" defaultValue="file" /></label>
-                  <label className="grid gap-1.5 text-sm font-medium text-ink">Máximo de envios<Input name="max_submissions" type="number" min="1" /></label>
-                  <label className="grid gap-1.5 text-sm font-medium text-ink">Versão dos termos<Input name="terms_version" /></label>
-                </div>
-                <label className="flex items-center gap-2.5 text-sm text-ink"><input name="review_required" type="checkbox" defaultChecked className="size-4 accent-primary" /> Revisão humana obrigatória</label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Tipos de evidência JSON<Textarea className="font-mono text-xs" name="allowed_evidence_types" rows={2} defaultValue={'["file"]'} /></label>
-              </fieldset>
+      {etapa === "aulas" ? selectedJourneyVersion ? <div className="grid gap-5"><Card><h2 className="text-lg font-black text-secondary">Aulas</h2><p className="mt-1 text-sm text-muted">Escolha uma trilha. O conteúdo pode ser reutilizado da Biblioteca.</p><div className="mt-4 flex flex-wrap gap-2">{selectedTrilhas.map((trilha) => <ButtonLink key={trilha.id} href={href("aulas", `&trilha=${trilha.id}`)} variant={selectedPath?.id === trilha.id ? "primary" : "secondary"} size="sm">{trilha.name}</ButtonLink>)}</div></Card>{selectedPath ? <TrilhaAulaBuilder journeyVersionId={String(selectedJourneyVersion.id)} organizationId={organization.organization_id} trilha={selectedPath} libraryItems={libraryItems} /> : <StatusPanel title="Selecione uma trilha" tone="info">As aulas aparecerão aqui.</StatusPanel>}<ButtonLink href={href("publicar")} className="w-fit">Revisar publicação</ButtonLink></div> : <StatusPanel title="Escolha uma jornada" tone="warning"><ButtonLink href="/admin/produto?etapa=jornada" className="mt-3 w-fit">Voltar</ButtonLink></StatusPanel> : null}
 
-              <Button type="submit" className="w-fit">Salvar atividade</Button>
-            </form>
-          </div>
-        </details>
-
-        <details className="group rounded-xl border border-border bg-surface">
-          <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-            <span className="grid gap-1">
-              <strong className="text-ink">Trilha e bloco</strong>
-              <small className="text-muted">Organizar atividades e regras de disponibilidade</small>
-            </span>
-            <ChevronDown size={18} className="shrink-0 text-muted transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
-          </summary>
-          <div className="grid gap-4 border-t border-border p-5">
-            <form className="grid gap-4" action={saveProductResourceAction}>
-              <input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="resource_type" value="path_step" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Trilha existente
-                  <Select name="path_template_id"><option value="">Nova trilha</option>{workspace.paths.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Jornada draft
-                  <Select name="journey_version_id"><option value="">Selecione para nova trilha</option>{journeyVersions.filter((item) => item.status === "draft").map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Código da trilha<Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Nome da trilha<Input name="path_name" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">ID do passo existente<Input name="step_id" /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Código da atividade no bloco<Input name="step_code" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Atividade
-                  <Select name="activity_version_id" required>{activityVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)} · {String(item.status)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Posição<Input name="position" type="number" min="1" defaultValue="1" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Regra de disponibilidade
-                  <Select name="availability_rule_version_id"><option value="">Sempre disponível</option>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Regra de conclusão
-                  <Select name="completion_rule_version_id"><option value="">Regra da atividade</option>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Prazo relativo<Input name="due_offset" placeholder="7 days" /></label>
-              </div>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição da trilha<Textarea name="path_description" rows={2} /></label>
-              <div className="flex flex-wrap gap-5">
-                <label className="flex items-center gap-2.5 text-sm text-ink"><input name="is_default" type="checkbox" className="size-4 accent-primary" /> Trilha padrão</label>
-                <label className="flex items-center gap-2.5 text-sm text-ink"><input name="is_required" type="checkbox" defaultChecked className="size-4 accent-primary" /> Atividade obrigatória</label>
-              </div>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Metadados do bloco JSON<Textarea className="font-mono text-xs" name="metadata" rows={3} defaultValue={'{"block":"Módulo 1"}'} /></label>
-              <Button type="submit" className="w-fit">Salvar trilha e atividade</Button>
-            </form>
-          </div>
-        </details>
-
-        <details className="group rounded-xl border border-border bg-surface">
-          <summary className="flex cursor-pointer items-center justify-between gap-4 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-            <span className="grid gap-1">
-              <strong className="text-ink">Regra</strong>
-              <small className="text-muted">Elegibilidade, disponibilidade, conclusão ou credencial</small>
-            </span>
-            <ChevronDown size={18} className="shrink-0 text-muted transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
-          </summary>
-          <div className="grid gap-4 border-t border-border p-5">
-            <form className="grid gap-4" action={saveProductResourceAction}>
-              <input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="resource_type" value="rule" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Definição existente
-                  <Select name="definition_id"><option value="">Nova regra</option>{workspace.rules.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Versão draft
-                  <Select name="version_id"><option value="">Nova versão</option>{ruleVersions.filter((item) => item.status === "draft").map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}</Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Código<Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Nome<Input name="name" required /></label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Tipo
-                  <Select name="rule_type">
-                    <option value="eligibility">Elegibilidade</option>
-                    <option value="availability">Disponibilidade</option>
-                    <option value="completion">Conclusão</option>
-                    <option value="credential">Credencial</option>
-                    <option value="points">Pontos</option>
-                  </Select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-medium text-ink">Linguagem<Input name="language" defaultValue="json-logic" /></label>
-              </div>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Expressão JSON<Textarea className="font-mono text-xs" name="expression" rows={6} defaultValue={'{"==":[1,1]}'} /></label>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Schema de entrada<Textarea className="font-mono text-xs" name="input_schema" rows={3} defaultValue="{}" /></label>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Schema de saída<Textarea className="font-mono text-xs" name="output_schema" rows={3} defaultValue="{}" /></label>
-              <Button type="submit" className="w-fit">Salvar regra</Button>
-            </form>
-          </div>
-        </details>
-      </section>
-
-      <Card className="grid gap-5">
-        <h2 className="text-lg font-semibold text-ink">Inventário configurado</h2>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="grid gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Jornadas</h3>
-            {workspace.journeys.map((item) => <p key={item.definition_id} className="text-sm text-ink"><strong>{item.name}</strong><br /><small className="text-muted">{item.code} · {item.versions.length} versões · {String(latest(item)?.status ?? item.status)}</small></p>)}
-          </div>
-          <div className="grid gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Atividades</h3>
-            {workspace.activities.map((item) => <p key={item.definition_id} className="text-sm text-ink"><strong>{item.name}</strong><br /><small className="text-muted">{item.code} · {item.versions.length} versões · {String(latest(item)?.status ?? item.status)}</small></p>)}
-          </div>
-          <div className="grid gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Trilhas</h3>
-            {workspace.paths.map((item) => <p key={item.id} className="text-sm text-ink"><strong>{item.name}</strong><br /><small className="text-muted">{item.steps.length} atividades · {item.status}</small></p>)}
-          </div>
-          <div className="grid gap-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Regras</h3>
-            {workspace.rules.map((item) => <p key={item.definition_id} className="text-sm text-ink"><strong>{item.name}</strong><br /><small className="text-muted">{item.code} · {item.versions.length} versões</small></p>)}
-          </div>
-        </div>
-      </Card>
-    </div>
-  </AppShell>;
+      {etapa === "publicar" ? selectedJourneyVersion ? <Card className="grid gap-5"><div><h2 className="text-lg font-black text-secondary">Revisar e publicar</h2><p className="mt-1 text-sm text-muted">A versão publicada fica imutável.</p></div><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl bg-primary-soft p-4"><strong className="text-2xl text-primary">{selectedTrilhas.length}</strong><p className="text-sm text-muted">trilhas</p></div><div className="rounded-xl bg-success-soft p-4"><strong className="text-2xl text-success">{selectedTrilhas.reduce((sum, item) => sum + item.aulas.length, 0)}</strong><p className="text-sm text-muted">aulas</p></div><div className="rounded-xl bg-warning-soft p-4"><strong className="text-2xl text-warning">{selectedTrilhas.filter((item) => item.aulas.length === 0).length}</strong><p className="text-sm text-muted">trilhas vazias</p></div></div>{canPublish ? <form action={publishJourneyAction}><input type="hidden" name="organization_id" value={organization.organization_id} /><input type="hidden" name="journey_version_id" value={String(selectedJourneyVersion.id)} /><input type="hidden" name="content_hash" value={selectedJourneyVersion.content_hash ?? ""} /><Button type="submit" disabled={!graphLooksComplete || !selectedJourneyVersion.content_hash}>Validar e publicar</Button>{!graphLooksComplete ? <p className="mt-2 text-sm text-warning">Cada trilha precisa ter ao menos uma aula.</p> : null}</form> : <p className="text-sm text-muted">Somente um Administrador geral pode publicar.</p>}</Card> : <StatusPanel title="Escolha uma jornada" tone="warning"><ButtonLink href="/admin/produto?etapa=jornada" className="mt-3 w-fit">Voltar</ButtonLink></StatusPanel> : null}
+    </fieldset>
+  </div></AppShell>;
 }

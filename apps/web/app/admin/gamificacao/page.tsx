@@ -1,264 +1,61 @@
+import { ImageUp } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { CertificateTemplatePositioning } from "@/components/certificate-template-positioning";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 import { StatusPanel } from "@/components/status-panel";
-import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
-import { getAuthContext } from "@/lib/auth/context";
+import { PageHeader } from "@/components/ui/page-header";
+import { Table, TableScroll, Td, Th } from "@/components/ui/table";
 import { getAdminProductWorkspace } from "@/lib/admin/product-management";
+import { administrativeOrganization } from "@/lib/auth/administrative-access";
+import { getAuthContext } from "@/lib/auth/context";
 import { saveGamificationResourceAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
+const frequencyLabels: Record<string, string> = { participant: "Uma única vez", enrollment_activity: "Uma vez por aula", enrollment_assessment: "Uma vez por avaliação", path: "Uma vez por trilha", journey: "Uma vez por jornada", participant_day: "Limite diário", participant_week: "Limite semanal", event: "Sem limite" };
+const triggerOptions = [
+  ["journey.instance.started", "Iniciar uma jornada"],
+  ["learning.activity.utility.rated", "Avaliar uma aula"],
+  ["learning.activity.completed", "Concluir uma aula"],
+  ["assessment.attempt.submitted", "Enviar uma atividade rápida ou avaliação"],
+  ["assessment.attempt.passed", "Ser aprovado em uma avaliação"],
+  ["learning.practice.evidence.confirmed", "Enviar uma atividade prática"],
+  ["journey.path.completed", "Concluir uma trilha"],
+] as const;
 
 export default async function AdminGamificationPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated") {
-    return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <StatusPanel title="Acesso indisponível" tone="warning"><p>Entre com sua conta Estímulo.</p></StatusPanel>
-      </main>
-    );
-  }
-  const requested = single(query.organization);
-  const organization = auth.identity.organizations.find((item) => item.organization_id === requested)
-    ?? auth.identity.organizations.find((item) => item.permissions.includes("engagement.manage"));
-  if (!organization?.permissions.includes("engagement.manage")) {
-    return (
-      <AppShell area="admin" email={auth.email}>
-        <StatusPanel title="Gamificação restrita" tone="warning"><p>Seu papel não permite configurar pontos e credenciais.</p></StatusPanel>
-      </AppShell>
-    );
-  }
-
+  if (auth.status !== "authenticated") return null;
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
+  const canEdit = organization.permissions.includes("engagement.manage");
   const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
   const ruleVersions = workspace.rules.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
-  const journeyVersions = workspace.journeys.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
+  const journeyVersions = workspace.journeys.filter((item) => item.status !== "retired").flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name })));
+  const type = ["pontos", "selos", "certificados"].includes(single(query.tipo)) ? single(query.tipo) : "pontos";
+  const templateId = single(query.template);
+  const templateName = single(query.templateNome);
+  const activePointRules = workspace.point_rules.filter((item) => item.status !== "retired");
 
-  return (
-    <AppShell area="admin" email={auth.email}>
-      <div className="grid gap-8">
-        <PageHeader
-          eyebrow="Engajamento governado"
-          title="Pontos, selos e certificados"
-          description="Configure regras versionadas e credenciais sem alterar o ledger histórico. Publicação é explícita e auditada."
-        />
+  return <AppShell area="admin" email={auth.email}><div className="grid gap-7">
+    <PageHeader eyebrow="Engajamento" title="Pontuação e certificados" description="Consulte regras e credenciais. Somente um Administrador geral pode criar ou publicar versões." />
+    {!canEdit ? <StatusPanel title="Acesso somente para visualização" tone="info">As configurações estão visíveis, mas os formulários ficam bloqueados.</StatusPanel> : null}
+    <nav className="grid gap-2 rounded-xl border border-border bg-white p-2 sm:grid-cols-3"><ButtonLink href="/admin/gamificacao?tipo=pontos" variant={type === "pontos" ? "primary" : "ghost"} size="sm">Pontos</ButtonLink><ButtonLink href="/admin/gamificacao?tipo=selos" variant={type === "selos" ? "primary" : "ghost"} size="sm">Selos</ButtonLink><ButtonLink href="/admin/gamificacao?tipo=certificados" variant={type === "certificados" ? "primary" : "ghost"} size="sm">Certificados</ButtonLink></nav>
+    {single(query.sucesso) ? <StatusPanel title="Configuração salva" tone="success">A nova versão foi registrada.</StatusPanel> : null}
+    {single(query.erro) ? <StatusPanel title="Não foi possível salvar" tone="warning">Revise os campos obrigatórios e o acontecimento monitorado.</StatusPanel> : null}
 
-        <form method="get" className="flex flex-wrap items-end gap-3">
-          <Label>
-            Organização
-            <Select name="organization" defaultValue={organization.organization_id} className="w-64">
-              {auth.identity.organizations
-                .filter((item) => item.permissions.includes("engagement.manage"))
-                .map((item) => <option key={item.organization_id} value={item.organization_id}>{item.display_name}</option>)}
-            </Select>
-          </Label>
-          <Button variant="secondary" type="submit">Selecionar</Button>
-        </form>
+    {type === "pontos" ? <div className="grid gap-5">
+      <Card><h2 className="text-lg font-semibold text-ink">Regras publicadas</h2><p className="mt-1 text-sm text-muted">Cada versão publicada observa um acontecimento real da plataforma e vale para novas ações.</p>{activePointRules.length ? <TableScroll className="mt-4"><Table><thead><tr><Th>Ação</Th><Th>Pontos</Th><Th>Frequência</Th></tr></thead><tbody>{activePointRules.map((item) => { const version = [...item.versions].sort((a,b) => Number(b.version_number)-Number(a.version_number)).find((entry) => String(entry.status) === "published") ?? item.versions[0]; const recurrence = (version?.recurrence_policy ?? {}) as Record<string, unknown>; return <tr key={item.definition_id}><Td><strong>{item.name}</strong></Td><Td>{String(version?.amount ?? "—")}</Td><Td>{frequencyLabels[String(recurrence.scope ?? "")] ?? "Uma única vez"}</Td></tr>; })}</tbody></Table></TableScroll> : <p className="mt-4 text-sm text-muted">Nenhuma regra criada.</p>}</Card>
+      <fieldset disabled={!canEdit} className="contents"><Card><h2 className="text-lg font-semibold text-ink">Criar ou atualizar regra funcional</h2><p className="mt-1 text-sm text-muted">Escolha exatamente qual ação do usuário deve gerar pontos. A regra publicada passa a valer imediatamente para eventos futuros.</p><form action={saveGamificationResourceAction} className="mt-5 grid gap-4 sm:grid-cols-2"><input type="hidden" name="resource_type" value="point_rule" /><Label>Regra existente<Select name="definition_id"><option value="">Criar nova</option>{activePointRules.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select></Label><Label>Nome da ação<Input name="name" required placeholder="Ex.: Participar de uma aula" /></Label><Label>Acontecimento monitorado<Select name="trigger_event" required><option value="">Selecione</option>{triggerOptions.map(([value,label]) => <option value={value} key={value}>{label}</option>)}</Select></Label><Label>Pontos por ação<Input name="amount" type="number" min="1" required defaultValue="10" /></Label><Label>Frequência<Select name="frequency" defaultValue="once"><option value="once">Uma única vez</option><option value="per_activity">Uma vez por aula</option><option value="per_assessment">Uma vez por avaliação</option><option value="per_path">Uma vez por trilha</option><option value="per_journey">Uma vez por jornada</option><option value="daily">Limite por dia</option><option value="weekly">Limite por semana</option><option value="unlimited">Sempre que acontecer</option></Select></Label><Label>Máximo no período<Input name="maximum_awards" type="number" min="1" defaultValue="1" /></Label><Label>Condição necessária<Select name="eligibility_rule_version_id" required><option value="">Selecione</option>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · versão {String(item.version_number)}</option>)}</Select></Label><Label>Disponibilidade<Select name="status"><option value="draft">Rascunho</option><option value="published">Publicar agora</option></Select></Label><Button type="submit" className="w-fit sm:col-span-2">Salvar regra</Button></form></Card></fieldset>
+    </div> : null}
 
-        {single(query.sucesso) ? <StatusPanel title="Configuração salva" tone="success"><p>A nova versão foi persistida.</p></StatusPanel> : null}
-        {single(query.erro) ? <StatusPanel title="Falha ao salvar" tone="warning"><p>Revise campos, regras vinculadas e JSON.</p></StatusPanel> : null}
+    {type === "selos" ? <fieldset disabled={!canEdit} className="contents"><Card><h2 className="text-lg font-semibold text-ink">Criar ou atualizar selo</h2><form action={saveGamificationResourceAction} className="mt-5 grid gap-4 sm:grid-cols-2"><input type="hidden" name="resource_type" value="badge" /><Label>Selo existente<Select name="definition_id"><option value="">Criar novo</option>{workspace.badges.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select></Label><Label>Nome interno<Input name="name" required /></Label><Label>Título para o participante<Input name="title" required /></Label><Label className="sm:col-span-2">O que reconhece<Textarea name="description" rows={3} required /></Label><Label>Condição para receber<Select name="criteria_rule_version_id" required><option value="">Selecione</option>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · versão {String(item.version_number)}</option>)}</Select></Label><Label>Disponibilidade<Select name="status"><option value="draft">Rascunho</option><option value="published">Publicar agora</option></Select></Label><Button type="submit" className="w-fit sm:col-span-2">Salvar selo</Button></form></Card></fieldset> : null}
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <details className="group rounded-xl border border-border bg-surface" open>
-            <summary className="grid cursor-pointer gap-1 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-              <strong className="text-ink">Regra de pontos</strong>
-              <span className="text-sm text-muted">Valor, elegibilidade e recorrência</span>
-            </summary>
-            <div className="border-t border-border p-5">
-              <form action={saveGamificationResourceAction} className="grid gap-4">
-                <input type="hidden" name="organization_id" value={organization.organization_id} />
-                <input type="hidden" name="resource_type" value="point_rule" />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Label>
-                    Definição existente
-                    <Select name="definition_id">
-                      <option value="">Nova regra</option>
-                      {workspace.point_rules.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}
-                    </Select>
-                  </Label>
-                  <Label>
-                    Código
-                    <Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required />
-                  </Label>
-                  <Label>
-                    Nome
-                    <Input name="name" required />
-                  </Label>
-                  <Label>
-                    Pontos
-                    <Input name="amount" type="number" required />
-                  </Label>
-                  <Label>
-                    Regra de elegibilidade
-                    <Select name="eligibility_rule_version_id" required>
-                      {ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}
-                    </Select>
-                  </Label>
-                  <Label>
-                    Status
-                    <Select name="status">
-                      <option value="draft">Draft</option>
-                      <option value="published">Publicada</option>
-                    </Select>
-                  </Label>
-                </div>
-                <Label>
-                  Recorrência JSON
-                  <Textarea className="font-mono text-xs" name="recurrence_policy" rows={4} defaultValue={'{"mode":"once"}'} />
-                </Label>
-                <Button type="submit" className="w-fit">Salvar regra de pontos</Button>
-              </form>
-            </div>
-          </details>
-
-          <details className="group rounded-xl border border-border bg-surface">
-            <summary className="grid cursor-pointer gap-1 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-              <strong className="text-ink">Selo</strong>
-              <span className="text-sm text-muted">Conquista e critério</span>
-            </summary>
-            <div className="border-t border-border p-5">
-              <form action={saveGamificationResourceAction} className="grid gap-4">
-                <input type="hidden" name="organization_id" value={organization.organization_id} />
-                <input type="hidden" name="resource_type" value="badge" />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Label>
-                    Definição existente
-                    <Select name="definition_id">
-                      <option value="">Novo selo</option>
-                      {workspace.badges.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}
-                    </Select>
-                  </Label>
-                  <Label>
-                    Código
-                    <Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required />
-                  </Label>
-                  <Label>
-                    Nome interno
-                    <Input name="name" required />
-                  </Label>
-                  <Label>
-                    Título ao participante
-                    <Input name="title" required />
-                  </Label>
-                  <Label>
-                    Regra de critério
-                    <Select name="criteria_rule_version_id" required>
-                      {ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}
-                    </Select>
-                  </Label>
-                  <Label>
-                    Status
-                    <Select name="status">
-                      <option value="draft">Draft</option>
-                      <option value="published">Publicado</option>
-                    </Select>
-                  </Label>
-                </div>
-                <Label>
-                  Descrição
-                  <Textarea name="description" rows={3} required />
-                </Label>
-                <Button type="submit" className="w-fit">Salvar selo</Button>
-              </form>
-            </div>
-          </details>
-
-          <details className="group rounded-xl border border-border bg-surface">
-            <summary className="grid cursor-pointer gap-1 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-              <strong className="text-ink">Certificado</strong>
-              <span className="text-sm text-muted">Jornada, requisitos e validade</span>
-            </summary>
-            <div className="border-t border-border p-5">
-              <form action={saveGamificationResourceAction} className="grid gap-4">
-                <input type="hidden" name="organization_id" value={organization.organization_id} />
-                <input type="hidden" name="resource_type" value="certificate" />
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Label>
-                    Definição existente
-                    <Select name="definition_id">
-                      <option value="">Novo certificado</option>
-                      {workspace.certificates.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}
-                    </Select>
-                  </Label>
-                  <Label>
-                    Código
-                    <Input name="code" pattern="[a-z][a-z0-9_-]{1,79}" required />
-                  </Label>
-                  <Label>
-                    Nome
-                    <Input name="name" required />
-                  </Label>
-                  <Label>
-                    Jornada
-                    <Select name="journey_version_id" required>
-                      {journeyVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)} · {String(item.status)}</option>)}
-                    </Select>
-                  </Label>
-                  <Label>
-                    Regra de requisitos
-                    <Select name="requirements_rule_version_id" required>
-                      {ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · v{String(item.version_number)}</option>)}
-                    </Select>
-                  </Label>
-                  <Label>
-                    Status
-                    <Select name="status">
-                      <option value="draft">Draft</option>
-                      <option value="published">Publicado</option>
-                    </Select>
-                  </Label>
-                </div>
-                <Label>
-                  Política de validade JSON
-                  <Textarea className="font-mono text-xs" name="validity_policy" rows={4} defaultValue={'{"expires":false}'} />
-                </Label>
-                <Button type="submit" className="w-fit">Salvar certificado</Button>
-              </form>
-            </div>
-          </details>
-        </div>
-
-        <Card>
-          <CardHeader><CardTitle>Inventário de engajamento</CardTitle></CardHeader>
-          <div className="grid gap-6 sm:grid-cols-3">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Regras de pontos</h3>
-              <div className="mt-3 grid gap-2">
-                {workspace.point_rules.map((item) => (
-                  <div key={item.definition_id} className="text-sm text-ink">
-                    <strong>{item.name}</strong>
-                    <p className="text-xs text-muted">{item.versions.length} versões</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Selos</h3>
-              <div className="mt-3 grid gap-2">
-                {workspace.badges.map((item) => (
-                  <div key={item.definition_id} className="text-sm text-ink">
-                    <strong>{item.name}</strong>
-                    <p className="text-xs text-muted">{item.versions.length} versões</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Certificados</h3>
-              <div className="mt-3 grid gap-2">
-                {workspace.certificates.map((item) => (
-                  <div key={item.definition_id} className="text-sm text-ink">
-                    <strong>{item.name}</strong>
-                    <p className="text-xs text-muted">{item.versions.length} versões</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-    </AppShell>
-  );
+    {type === "certificados" ? <div className="grid gap-5"><fieldset disabled={!canEdit} className="contents"><Card><div className="flex gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-white"><ImageUp size={18} /></span><div><h2 className="font-semibold text-ink">Template visual</h2><p className="mt-1 text-sm text-muted">A imagem JPG vira o fundo completo do PDF. Os campos são sobrepostos nas posições escolhidas abaixo.</p></div></div>{single(query.templateStatus) === "enviado" ? <p className="mt-3 text-sm font-semibold text-success">Template preparado: {templateName}</p> : null}<form action="/api/certificate-template-uploads" method="post" encType="multipart/form-data" className="mt-5 grid gap-3"><input type="hidden" name="organization_id" value={organization.organization_id} /><FileUploadPreview name="file" accept=".jpg,.jpeg" required label="Imagem do certificado" help="JPG horizontal. Deixe espaços livres para nome, jornada e rodapé." /><Button variant="secondary" size="sm" type="submit" className="w-fit">Preparar template</Button></form></Card>
+      <Card><h2 className="text-lg font-semibold text-ink">Configurar certificado</h2><form action={saveGamificationResourceAction} className="mt-5 grid gap-4 sm:grid-cols-2"><input type="hidden" name="resource_type" value="certificate" /><input type="hidden" name="template_file_object_id" value={templateId} /><Label>Certificado existente<Select name="definition_id"><option value="">Criar novo</option>{workspace.certificates.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select></Label><Label>Nome do certificado<Input name="name" required /></Label><Label>Jornada<Select name="journey_version_id" required><option value="">Selecione</option>{journeyVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · versão {String(item.version_number)}</option>)}</Select></Label><Label>Condição para receber<Select name="requirements_rule_version_id" required><option value="">Selecione</option>{ruleVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · versão {String(item.version_number)}</option>)}</Select></Label><div className="sm:col-span-2"><CertificateTemplatePositioning /></div><Label>Validade<Select name="validity_mode" defaultValue="never"><option value="never">Não expira</option><option value="months">Expira em meses</option></Select></Label><Label>Meses de validade<Input name="validity_months" type="number" min="1" max="120" defaultValue="12" /></Label><Label>Disponibilidade<Select name="status"><option value="draft">Rascunho</option><option value="published">Publicar agora</option></Select></Label><Button type="submit" className="w-fit sm:col-span-2">Salvar certificado</Button></form></Card></fieldset></div> : null}
+  </div></AppShell>;
 }

@@ -1,47 +1,17 @@
 @import "tailwindcss";
 
-/* Self-hosted Poppins — the browser E2E harness asserts document.body's
-   computed font-family includes "poppins", so this stays the body font. */
-@font-face {
-  font-family: "Poppins";
-  src: url("/fonts/Poppins-Regular.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Poppins";
-  src: url("/fonts/Poppins-Medium.ttf") format("truetype");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Poppins";
-  src: url("/fonts/Poppins-SemiBold.ttf") format("truetype");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Poppins";
-  src: url("/fonts/Poppins-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
+@font-face { font-family: "Poppins"; src: url("/fonts/Poppins-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("/fonts/Poppins-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("/fonts/Poppins-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("/fonts/Poppins-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
 
 @theme {
   --font-sans: "Poppins", ui-sans-serif, system-ui, Arial, sans-serif;
-
-  /* Institutional base — corrected against Brandbook Estímulo.pdf (2021),
-     WCAG AA against white/lavender. */
   --color-primary: #00008d;
   --color-primary-hover: #1a1aa4;
   --color-primary-active: #000071;
   --color-primary-foreground: #ffffff;
   --color-primary-soft: #e9eaff;
-
   --color-ink: #17145f;
   --color-muted: #55527a;
   --color-background: #f2f3ff;
@@ -49,11 +19,7 @@
   --color-surface-muted: #f7f8fc;
   --color-border: #d9dcf5;
   --color-border-strong: #b9beed;
-
-  /* Single interaction accent (focus/selection), not decoration. */
   --color-ring: #0020d8;
-
-  /* Semantic state colors. */
   --color-success: #1d9479;
   --color-success-soft: #eafbf1;
   --color-warning: #92650a;
@@ -62,23 +28,10 @@
   --color-danger-soft: #fdeced;
   --color-info: #0a5a92;
   --color-info-soft: #e8f6ff;
-
-  /* Logo accents — reserved for gamification, badges, achievements only. */
   --color-accent-cyan: #48d0f0;
   --color-accent-magenta: #ff66ff;
   --color-accent-green: #55d78c;
   --color-accent-gold: #f4c542;
-
-  /*
-   * Token bridge — ref/impulso-empreendedor's component/page vocabulary
-   * (primary-dark/-light/-bright, secondary, accent, brand.*, foreground,
-   * text) aliased onto the SAME Estímulo values above, so its screens can
-   * be ported with their original class names and read as Estímulo brand
-   * automatically instead of Impulso's blue/lime/coral. Prototype's own
-   * "surface" (a cream neutral block) intentionally maps to white here —
-   * Estímulo's palette has no off-white tier and design.md prefers plain
-   * white/lavender surfaces.
-   */
   --color-primary-dark: var(--color-primary-active);
   --color-primary-light: var(--color-primary-soft);
   --color-primary-bright: #0023da;
@@ -90,152 +43,113 @@
   --color-brand-cyan: var(--color-accent-cyan);
   --color-brand-blue: #0023da;
   --color-brand-magenta: var(--color-accent-magenta);
-
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
+  --radius-sm: .5rem;
+  --radius-md: .75rem;
   --radius-lg: 1.125rem;
   --radius-xl: 1.5rem;
   --radius-card: 1.25rem;
-
-  --shadow-xs: 0 1px 2px rgba(23, 20, 95, 0.06);
-  --shadow-sm: 0 2px 8px rgba(23, 20, 95, 0.06);
-  --shadow-md: 0 8px 24px rgba(23, 20, 95, 0.08);
-  --shadow-lg: 0 16px 40px rgba(23, 20, 95, 0.12);
-  --shadow-card: 0 8px 24px rgba(23, 20, 95, 0.06);
-  --shadow-focus: 0 0 0 4px rgba(0, 32, 216, 0.14);
-
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-
+  --shadow-xs: 0 1px 2px rgba(23,20,95,.06);
+  --shadow-sm: 0 2px 8px rgba(23,20,95,.06);
+  --shadow-md: 0 8px 24px rgba(23,20,95,.08);
+  --shadow-lg: 0 16px 40px rgba(23,20,95,.12);
+  --shadow-card: 0 8px 24px rgba(23,20,95,.06);
+  --shadow-focus: 0 0 0 4px rgba(0,32,216,.14);
+  --ease-out-expo: cubic-bezier(.16,1,.3,1);
   --animate-fade-in: fade-in 200ms var(--ease-out-expo);
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
   --animate-float-in: float-in 550ms var(--ease-out-expo) both;
-  @keyframes float-in {
-    from { opacity: 0; transform: translateY(14px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes float-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 }
 
+@keyframes estimulo-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes estimulo-pulse { 0%,100% { transform: scale(1); opacity: .65; } 50% { transform: scale(1.06); opacity: 1; } }
+
 @layer base {
-  * {
-    border-color: var(--color-border);
-  }
-
-  html {
-    scroll-behavior: smooth;
-  }
-
-  body {
-    background: var(--color-background);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  ::selection {
-    background: var(--color-accent-cyan);
-    color: var(--color-primary);
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--color-ring);
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
-
-  h1, h2, h3 {
-    /* No explicit color here: it must inherit (ink by default from body,
-       white when nested in a text-white dark panel) rather than force ink
-       everywhere and make headings on dark backgrounds unreadable. */
-    line-height: 1.15;
-    text-wrap: balance;
-  }
+  * { border-color: var(--color-border); }
+  html { scroll-behavior: smooth; }
+  body { background: var(--color-background); color: var(--color-ink); font-family: var(--font-sans); text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--color-accent-cyan); color: var(--color-primary); }
+  :focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; border-radius: 2px; }
+  h1,h2,h3 { line-height: 1.15; text-wrap: balance; }
 }
 
 @layer components {
-  .display-font {
-    font-weight: 700;
-    letter-spacing: -0.055em;
-  }
+  .display-font { font-weight: 700; letter-spacing: -.055em; }
+  .animate-in { animation: var(--animate-float-in); }
+  .focus-ring { outline: none; }
+  .focus-ring:focus-visible { box-shadow: var(--shadow-focus); }
+  .surface-grid { background-color: #f7f8ff; background-image: linear-gradient(rgba(23,20,95,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(23,20,95,.06) 1px, transparent 1px); background-size: 32px 32px; }
+  .dot-pattern { background-image: radial-gradient(rgba(23,20,95,.18) 1px, transparent 1px); background-size: 14px 14px; }
+  .brand-dots-bg { background-image: url("/brand/estimulo-dots-cyan.svg"); background-repeat: no-repeat; background-position: right -40px top -40px; background-size: 320px auto; }
+  .brand-chevrons-bg { background-image: url("/brand/estimulo-chevrons-magenta.svg"); background-repeat: no-repeat; background-position: left -60px bottom -60px; background-size: 280px auto; }
 
-  .animate-in {
-    animation: var(--animate-float-in);
-  }
+  .participant-stage { position: relative; isolation: isolate; background-color: var(--color-background); background-image: radial-gradient(rgba(0,0,141,.055) 1px, transparent 1px); background-size: 24px 24px; }
+  .participant-stage-orb,.brand-app-header-glow,.brand-admin-orb { display: none; }
+  .brand-app-header,.brand-admin-sidebar { background: var(--color-primary); }
+  .brand-logo-capsule { display: inline-flex; align-items: center; width: fit-content; border: 1px solid rgba(255,255,255,.7); border-radius: .9rem; background: white; padding: .5rem .7rem; box-shadow: 0 8px 20px rgba(0,0,60,.16); }
 
-  .focus-ring {
-    outline: none;
-  }
-  .focus-ring:focus-visible {
-    box-shadow: var(--shadow-focus);
-  }
+  .brand-auth-stage,.brand-hero { position: relative; isolation: isolate; overflow: hidden; color: white; background-color: var(--color-primary); background-image: url("/brand/estimulo-dots-cyan.svg"); background-repeat: no-repeat; background-position: right -5rem top -5rem; background-size: 24rem auto; }
+  .brand-auth-stage::before,.brand-auth-stage::after,.brand-hero::after { content: ""; position: absolute; pointer-events: none; z-index: -1; }
+  .brand-auth-stage::before,.brand-hero::after { right: -5rem; bottom: -8rem; width: 17rem; height: 17rem; border: 2.6rem solid rgba(85,215,140,.28); border-radius: 999px; }
+  .brand-auth-stage::after { left: 2.5rem; bottom: 2rem; width: 5rem; height: 5rem; background: var(--color-accent-gold); border-radius: 1.4rem; transform: rotate(12deg); opacity: .8; }
 
-  .surface-grid {
-    background-image:
-      linear-gradient(rgba(23, 20, 95, 0.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(23, 20, 95, 0.06) 1px, transparent 1px);
-    background-size: 32px 32px;
-  }
+  .brand-accent-card { position: relative; overflow: hidden; }
+  .brand-accent-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: .35rem; background: var(--color-primary); }
+  .brand-float-card,.brand-card { position: relative; overflow: hidden; background: white; transition: transform 220ms var(--ease-out-expo), box-shadow 220ms var(--ease-out-expo), border-color 220ms var(--ease-out-expo); }
+  .brand-float-card:hover,.brand-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--color-border-strong); }
+  .brand-card::after { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: var(--color-primary); opacity: .8; }
+  .brand-kicker { color: var(--color-primary); text-transform: uppercase; letter-spacing: .14em; font-size: .72rem; font-weight: 700; }
 
-  .dot-pattern {
-    background-image: radial-gradient(rgba(23, 20, 95, 0.18) 1px, transparent 1px);
-    background-size: 14px 14px;
-  }
+  .brand-button { position: relative; box-shadow: 0 7px 18px rgba(0,0,141,.16); transition: transform 180ms var(--ease-out-expo), box-shadow 180ms var(--ease-out-expo), background-color 150ms; }
+  .brand-button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,141,.22); }
+  .brand-button:active { transform: translateY(1px) scale(.985); }
 
-  .brand-dots-bg {
-    background-image: url("/brand/estimulo-dots-cyan.svg");
-    background-repeat: no-repeat;
-    background-position: right -40px top -40px;
-    background-size: 320px auto;
-  }
+  .brand-page-header { position: relative; overflow: hidden; border-color: var(--color-border-strong) !important; background-color: white; background-image: url("/brand/estimulo-dots-cyan.svg"); background-repeat: no-repeat; background-position: right -4rem top -5rem; background-size: 15rem auto; box-shadow: 0 14px 35px rgba(23,20,95,.08); }
+  .brand-page-header::after { content: ""; position: absolute; right: 0; bottom: 0; width: 5rem; height: .42rem; background: var(--color-accent-green); }
+  .brand-spark-card::after { content: "✦"; position: absolute; right: 1.2rem; top: .85rem; color: var(--color-primary); font-size: 1.15rem; animation: estimulo-pulse 2.6s ease-in-out infinite; }
 
-  .brand-chevrons-bg {
-    background-image: url("/brand/estimulo-chevrons-magenta.svg");
-    background-repeat: no-repeat;
-    background-position: left -60px bottom -60px;
-    background-size: 280px auto;
-  }
+  .brand-carousel { margin-top: 0; }
+  .brand-carousel-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; }
+  .brand-carousel-control { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; border: 1px solid var(--color-border-strong); color: var(--color-primary); background: white; box-shadow: var(--shadow-sm); transition: transform 160ms ease, background 160ms ease, color 160ms ease; }
+  .brand-carousel-control:hover { transform: translateY(-2px); background: var(--color-primary); color: white; }
+  .brand-carousel-viewport { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 2rem; box-shadow: 0 20px 48px rgba(23,20,95,.16); }
+  .brand-carousel-viewport::-webkit-scrollbar { display: none; }
+  .brand-carousel-slide { position: relative; isolation: isolate; min-height: clamp(21rem,39vw,31rem); width: 100%; min-width: 100%; overflow: hidden; scroll-snap-align: start; border-radius: 2rem; background: var(--color-primary); }
+  .brand-carousel-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.015); transition: transform 8s ease-out; }
+  .brand-carousel-slide:hover .brand-carousel-image { transform: scale(1.055); }
+  .brand-carousel-overlay { position: absolute; inset: 0; background: rgba(0,0,80,.72); }
+  .brand-carousel-copy { position: relative; z-index: 2; display: flex; min-height: inherit; flex-direction: column; justify-content: center; padding: clamp(1.5rem,5vw,4.5rem); width: min(70%,49rem); }
+  .brand-carousel-cta { display: inline-flex; align-items: center; justify-content: center; width: fit-content; margin-top: 1.5rem; min-height: 2.8rem; border-radius: .9rem; padding: .7rem 1.15rem; background: white; color: var(--color-primary); font-weight: 700; box-shadow: 0 9px 24px rgba(0,0,50,.22); }
 
-  .skip-link {
-    position: fixed;
-    z-index: 100;
-    top: 0.5rem;
-    left: 0.5rem;
-    transform: translateY(-140%);
-    padding: 0.625rem 1rem;
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    color: var(--color-primary);
-    font-weight: 700;
-    box-shadow: var(--shadow-md);
-    transition: transform 150ms var(--ease-out-expo);
-  }
-  .skip-link:focus {
-    transform: translateY(0);
-  }
+  .brand-welcome-strip { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 2rem; overflow: hidden; border: 1px solid var(--color-border-strong); border-radius: 1.6rem; padding: clamp(1.4rem,3vw,2.2rem); background: white; box-shadow: var(--shadow-sm); }
+  .brand-welcome-bubbles { position: relative; width: 9rem; height: 5rem; flex: none; }
+  .brand-welcome-bubbles span { position: absolute; display: block; border-radius: 999px; animation: estimulo-bob 4s ease-in-out infinite; }
+  .brand-welcome-bubbles span:nth-child(1) { width: 4.5rem; height: 4.5rem; right: 0; top: 0; background: var(--color-accent-green); }
+  .brand-welcome-bubbles span:nth-child(2) { width: 3rem; height: 3rem; right: 4.3rem; bottom: 0; background: var(--color-accent-magenta); animation-delay: -.8s; }
+  .brand-welcome-bubbles span:nth-child(3) { width: 1.8rem; height: 1.8rem; left: .2rem; top: .25rem; background: var(--color-accent-cyan); animation-delay: -1.6s; }
+
+  .brand-points-card { position: relative; overflow: hidden; color: var(--color-ink); background: var(--color-success-soft); border-color: rgba(29,148,121,.3) !important; }
+  .brand-points-card::after { content: ""; position: absolute; right: -3rem; bottom: -4rem; width: 9rem; height: 9rem; border: 1.6rem solid rgba(29,148,121,.12); border-radius: 999px; }
+  .brand-recognition-strip { border: 1px solid rgba(244,197,66,.7); border-radius: 1.4rem; padding: 1.35rem; background: var(--color-warning-soft); box-shadow: 0 10px 26px rgba(146,101,10,.08); }
+  .brand-metric-card { min-height: 10rem; border-width: 1px !important; box-shadow: var(--shadow-md) !important; }
+  .metric-cyan { background: #e8f6ff !important; border-color: rgba(10,90,146,.2) !important; }
+  .metric-green { background: #eafbf1 !important; border-color: rgba(29,148,121,.2) !important; }
+  .metric-magenta { background: #fff0ff !important; border-color: rgba(165,23,49,.12) !important; }
+  .brand-journey-card { min-height: 15rem; box-shadow: var(--shadow-md) !important; }
+  .journey-card-cyan { background: #e8f6ff !important; }
+  .journey-card-green { background: #eafbf1 !important; }
+  .journey-card-magenta { background: #fff0ff !important; }
+
+  .skip-link { position: fixed; z-index: 100; top: .5rem; left: .5rem; transform: translateY(-140%); padding: .625rem 1rem; border-radius: var(--radius-md); background: white; color: var(--color-primary); font-weight: 700; box-shadow: var(--shadow-md); transition: transform 150ms var(--ease-out-expo); }
+  .skip-link:focus { transform: translateY(0); }
 }
 
-@media print {
-  @page {
-    size: A4 landscape;
-    margin: 0;
-  }
-  body {
-    background: white;
-  }
-  .no-print {
-    display: none !important;
-  }
+@media (max-width: 720px) {
+  .brand-carousel-copy { width: 100%; justify-content: flex-end; padding: 1.5rem; }
+  .brand-carousel-overlay { background: rgba(0,0,80,.76); }
+  .brand-carousel-slide { min-height: 28rem; }
+  .brand-welcome-bubbles { display: none; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
+@media print { @page { size: A4 landscape; margin: 0; } body { background: white; } .no-print { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

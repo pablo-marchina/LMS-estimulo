@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Award, Route, Sparkles } from "lucide-react";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { cn } from "@/lib/utils";
 
@@ -7,7 +8,7 @@ export function AuthLayout({
   title,
   description,
   wide = false,
-  children
+  children,
 }: {
   eyebrow: string;
   title: ReactNode;
@@ -16,17 +17,45 @@ export function AuthLayout({
   children: ReactNode;
 }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-primary p-4 sm:p-6">
-      <section className={cn("w-full rounded-xl bg-surface p-6 shadow-lg sm:p-10", wide ? "max-w-xl" : "max-w-md")}>
-        <EstimuloBrand centered className="mb-6" />
-        <div className="mb-6 text-center">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-primary">{eyebrow}</p>
-          <h1 className="display-font text-2xl text-ink">{title}</h1>
-          {description ? <p className="mt-2 text-sm text-muted">{description}</p> : null}
+    <main className="brand-auth-stage min-h-screen px-4 py-6 sm:px-6 lg:grid lg:grid-cols-[1.05fr_.95fr] lg:p-0">
+      <section className="relative hidden min-h-screen flex-col justify-between overflow-hidden p-10 text-white lg:flex xl:p-16" aria-label="Sobre a plataforma">
+        <div className="brand-logo-capsule"><EstimuloBrand href="/" /></div>
+        <div className="max-w-xl animate-in">
+          <p className="brand-kicker">Desenvolvimento que vira ação</p>
+          <h2 className="display-font mt-5 text-5xl leading-[.98] xl:text-6xl">Mais clareza, repertório e movimento para o seu negócio.</h2>
+          <p className="mt-6 max-w-lg text-lg leading-8 text-white/78">Jornadas práticas, diagnósticos e conquistas em uma experiência construída com a identidade viva da Estímulo.</p>
+          <div className="mt-10 grid gap-3 sm:grid-cols-3">
+            <BrandPromise icon={<Route size={18} />} title="Seu caminho" text="Próximos passos claros" />
+            <BrandPromise icon={<Sparkles size={18} />} title="Aplicação" text="Conteúdo para usar agora" />
+            <BrandPromise icon={<Award size={18} />} title="Reconhecimento" text="Selos e certificados" />
+          </div>
         </div>
-        {children}
+        <p className="text-sm text-white/55">Uma plataforma Estímulo para empreendedores que seguem construindo.</p>
+      </section>
+
+      <section className="grid min-h-[calc(100vh-3rem)] place-items-center lg:min-h-screen lg:bg-white/8 lg:p-8">
+        <div className={cn(
+          "animate-in w-full rounded-[2rem] border border-white/55 bg-white p-6 shadow-[0_28px_90px_rgba(0,0,60,.28)] backdrop-blur sm:p-10 lg:p-12",
+          wide ? "max-w-2xl" : "max-w-xl",
+        )}>
+          <div className="mb-8 flex justify-center lg:hidden"><div className="brand-logo-capsule border-border shadow-sm"><EstimuloBrand href="/" /></div></div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">{eyebrow}</p>
+          <h1 className="display-font mt-3 text-3xl text-ink sm:text-4xl">{title}</h1>
+          {description ? <div className="mt-4 text-sm leading-7 text-muted">{description}</div> : null}
+          <div className="mt-8 grid gap-5">{children}</div>
+        </div>
       </section>
     </main>
+  );
+}
+
+function BrandPromise({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm">
+      <span className="grid size-9 place-items-center rounded-xl bg-brand-green text-secondary">{icon}</span>
+      <strong className="mt-4 block text-sm">{title}</strong>
+      <span className="mt-1 block text-xs text-white/65">{text}</span>
+    </div>
   );
 }
 
@@ -34,15 +63,11 @@ export function FormMessage({ tone, children }: { tone: "error" | "success" | "i
   const toneClasses = {
     error: "border-danger/25 bg-danger-soft text-danger",
     success: "border-success/25 bg-success-soft text-success",
-    info: "border-info/25 bg-info-soft text-info"
+    info: "border-info/25 bg-info-soft text-info",
   } as const;
-  return (
-    <p role={tone === "error" ? "alert" : "status"} className={cn("mb-5 rounded-lg border px-4 py-3 text-sm font-medium", toneClasses[tone])}>
-      {children}
-    </p>
-  );
+  return <p role={tone === "error" ? "alert" : "status"} className={cn("rounded-lg border px-4 py-3 text-sm font-medium", toneClasses[tone])}>{children}</p>;
 }
 
 export function AuthFooter({ children }: { children: ReactNode }) {
-  return <div className="mt-6 grid gap-3 border-t border-border pt-5 text-center text-sm">{children}</div>;
+  return <div className="grid gap-3 border-t border-border pt-5 text-center text-sm">{children}</div>;
 }

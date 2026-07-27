@@ -1,3 +1,5 @@
+import type { JourneyPresentation } from "@/lib/journey-runtime/contracts";
+
 export type JourneyOutlineActivity = {
   step_instance_id: string;
   step_status: string;
@@ -25,7 +27,7 @@ export type JourneyOutlineModule = {
   module_description: string;
   module_position: number;
   estimated_minutes: number | null;
-  metadata: Record<string, unknown>;
+  metadata: Record<string, unknown> & { is_required?: boolean; tone?: string; icon?: string };
   path_name: string;
   activity_count: number;
   completed_count: number;
@@ -40,6 +42,7 @@ export type ParticipantJourneyOutline = {
   journey_title: string;
   journey_description: string | null;
   journey_version_number: number;
+  presentation?: JourneyPresentation;
   progress: number;
   completed_required_steps: number;
   total_required_steps: number;

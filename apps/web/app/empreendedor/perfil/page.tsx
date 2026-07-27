@@ -1,161 +1,89 @@
-import Link from "next/link";
-import { ProgressMeter } from "@/components/status-panel";
+import { Compass, Mail, Sparkles, Star, Target, Trophy, UserRound } from "lucide-react";
+import { DiagnosticDimensionChart } from "@/components/diagnostic-dimension-chart";
+import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MetricTile } from "@/components/ui/metric-tile";
-import { PageHeader } from "@/components/ui/page-header";
-import { ButtonLink } from "@/components/ui/button";
-import { StatusPill } from "@/components/ui/status-pill";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/input";
+import { StatusPanel } from "@/components/status-panel";
 import { getAuthContext } from "@/lib/auth/context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { engagementRuntime } from "@/lib/engagement/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
-import { participantCurrentStageLabel, participantNextHref, statusLabel } from "@/lib/journey-runtime/navigation";
+import { saveApplicationObjectiveAction, startProfileDiagnosticAction } from "./actions";
 
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "medium",
-  timeZone: "America/Sao_Paulo",
-});
+export const dynamic = "force-dynamic";
 
-export default async function ParticipantProfilePage() {
+export default async function ParticipantProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ erro?: string; sucesso?: string }>;
+}) {
+  const query = await searchParams;
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !auth.identity.entrepreneur_id) return null;
+  if (auth.status !== "authenticated") return null;
 
-  const [engagement, journeyData, credentials] = await Promise.all([
-    engagementRuntime.participantHub(auth.identity.user_account_id),
-    journeyRuntime.listParticipantJourneys(auth.identity.user_account_id),
-    credentialRuntime.listParticipant(auth.identity.user_account_id),
+  const [engagement, credentials, journeys, diagnosticSummary] = await Promise.all([
+    engagementRuntime.participantHub(auth.identity.user_account_id).catch(() => null),
+    credentialRuntime.listParticipant(auth.identity.user_account_id).catch(() => ({ entrepreneur_id: null, badges: [], certificates: [] })),
+    journeyRuntime.listParticipantJourneys(auth.identity.user_account_id).catch(() => ({ actor_user_account_id: auth.identity.user_account_id, entrepreneur_id: null, journeys: [] })),
+    engagementRuntime.participantDiagnosticSummary(auth.identity.user_account_id).catch(() => ({ diagnostic_name: null, completed_at: null, dimensions: [] })),
   ]);
-  const completed = journeyData.journeys.filter((journey) => journey.journey_status === "completed");
-  const totalPoints = engagement.own_rank?.points ?? 0;
-  const archetype = engagement.archetype;
+  const preferredName = engagement?.preferred_name ?? auth.email.split("@")[0];
+  const archetype = engagement?.archetype ?? null;
+  const completedJourneyCount = journeys.journeys.filter((journey) => journey.journey_status === "completed").length;
+  const credentialCount = credentials.badges.length + credentials.certificates.length;
+  const points = engagement?.own_rank?.points ?? 0;
 
   return (
     <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-      <PageHeader
-        eyebrow="Seu perfil"
-        title={engagement.preferred_name ?? "Empreendedor"}
-        description="Consulte seu diagnóstico, histórico de aprendizagem, pontuação e credenciais em um único lugar."
-      />
+      <PageHeader eyebrow="Minha conta" title="Perfil" description="Seus dados, momento empreendedor e evolução na plataforma." />
 
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Resumo do perfil">
-        <Card>
-          <h2 className="text-lg font-semibold text-ink">Identidade confirmada</h2>
-          <p className="mt-2 text-sm text-ink">{engagement.email}</p>
-          <p className="mt-2 text-xs text-muted">O CPF permanece protegido e não é exibido na interface.</p>
+      {query.erro === "diagnostico_indisponivel" ? <StatusPanel title="Não foi possível abrir o diagnóstico" tone="warning">Tente novamente pela área de Jornadas.</StatusPanel> : null}
+      {query.erro === "objetivo_invalido" ? <StatusPanel title="Revise o objetivo" tone="warning">Escreva entre 5 e 500 caracteres.</StatusPanel> : null}
+      {query.erro === "objetivo_indisponivel" ? <StatusPanel title="Objetivo não salvo" tone="warning">Tente novamente em instantes.</StatusPanel> : null}
+      {query.sucesso === "objetivo_salvo" ? <StatusPanel title="Objetivo definido" tone="success">Seu caso de uso foi salvo. Os 50 pontos são concedidos uma única vez.</StatusPanel> : null}
+
+      <section className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+        <Card className="brand-accent-card after:!hidden">
+          <div className="flex items-center gap-4"><div className="grid size-14 place-items-center rounded-full bg-brand-green text-secondary shadow-md"><UserRound size={26} /></div><div><h2 className="font-bold text-ink">{preferredName}</h2><p className="text-sm text-muted">Empreendedor(a)</p></div></div>
+          <dl className="mt-6 grid gap-4 text-sm"><div className="flex gap-3"><Mail size={17} className="mt-0.5 shrink-0 text-primary" /><div><dt className="font-medium text-muted">E-mail</dt><dd className="text-ink">{auth.email}</dd></div></div></dl>
         </Card>
-        <MetricTile
-          index={0}
-          label="Pontos acumulados"
-          value={totalPoints}
-          meta={engagement.own_rank ? `Posição ${engagement.own_rank.position}` : undefined}
-        />
-        <MetricTile index={1} label="Jornadas concluídas" value={completed.length} />
-        <MetricTile
-          index={2}
-          label="Credenciais"
-          value={credentials.badges.length + credentials.certificates.length}
-          meta={<Link href="/empreendedor/credenciais" className="hover:underline">Abrir carteira</Link>}
-        />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Metric icon={<Star size={20} />} value={points} label="Pontos" tone="cyan" />
+          <Metric icon={<Compass size={20} />} value={completedJourneyCount} label={completedJourneyCount === 1 ? "Jornada concluída" : "Jornadas concluídas"} tone="green" />
+          <Metric icon={<Trophy size={20} />} value={credentialCount} label={credentialCount === 1 ? "Conquista" : "Conquistas"} href="/empreendedor/conquistas" tone="magenta" />
+        </div>
       </section>
 
-      <section className="grid gap-4" aria-labelledby="diagnostico-perfil-titulo">
-        <h2 id="diagnostico-perfil-titulo" className="text-xl font-semibold text-ink">
-          Resultado do diagnóstico
-        </h2>
-        {archetype?.name ? (
-          <Card>
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <StatusPill tone="info">{archetype.classification_status}</StatusPill>
-              <time dateTime={archetype.assigned_at} className="text-xs text-muted">
-                {dateFormatter.format(new Date(archetype.assigned_at))}
-              </time>
-            </div>
-            <h3 className="text-lg font-semibold text-ink">{archetype.name}</h3>
-            {archetype.description ? <p className="mt-2 text-sm text-muted">{archetype.description}</p> : null}
-            {archetype.probability !== null ? (
-              <p className="mt-2 text-xs text-muted">Confiança registrada: {Math.round(archetype.probability * 100)}%</p>
-            ) : null}
-            <p className="mt-3 text-xs text-muted">
-              O diagnóstico orienta a experiência educacional e não determina elegibilidade ou risco de crédito.
-            </p>
+      <section aria-labelledby="objetivo-aplicacao-titulo">
+        <div className="mb-4"><p className="brand-kicker">Aplicação prática</p><h2 id="objetivo-aplicacao-titulo" className="display-font mt-1 text-2xl text-secondary">Seu objetivo de aplicação</h2></div>
+        <Card>
+          <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary"><Target size={20} /></span><div><h3 className="font-semibold text-ink">O que você quer desenvolver com o aprendizado?</h3><p className="mt-1 text-sm text-muted">Defina um caso de uso real do negócio. A primeira definição concede 50 pontos; alterações futuras atualizam o objetivo sem duplicar pontos.</p></div></div>
+          <form action={saveApplicationObjectiveAction} className="mt-5 grid gap-3"><Textarea name="application_objective" minLength={5} maxLength={500} rows={4} placeholder="Ex.: criar um processo de atendimento com IA para responder clientes mais rápido e acompanhar propostas." required /><Button type="submit" className="w-fit">Salvar objetivo</Button></form>
+        </Card>
+      </section>
+
+      <section aria-labelledby="diagnostico-perfil-titulo">
+        <div className="mb-4"><p className="brand-kicker">Seu momento</p><h2 id="diagnostico-perfil-titulo" className="display-font mt-1 text-2xl text-secondary">Diagnóstico empreendedor</h2></div>
+        {archetype ? (
+          <Card className="brand-accent-card after:!hidden">
+            <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-semibold text-muted">Seu arquétipo atual</p><p className="display-font mt-1 text-3xl text-primary">{archetype.name ?? "Perfil identificado"}</p></div><Compass size={32} className="text-brand-magenta" aria-hidden="true" /></div>
+            {archetype.description ? <p className="mt-5 text-sm leading-6 text-muted">{archetype.description}</p> : null}
+            {diagnosticSummary.dimensions.length ? <DiagnosticDimensionChart dimensions={diagnosticSummary.dimensions} /> : null}
+            <p className="mt-5 text-xs text-muted">O diagnóstico é opcional, orienta recomendações e pode ser atualizado quando uma nova avaliação estiver disponível.</p>
           </Card>
         ) : (
-          <EmptyState title="Diagnóstico ainda não concluído" tone="info">
-            Quando houver um resultado oficial atribuído, ele aparecerá aqui.
-          </EmptyState>
-        )}
-      </section>
-
-      <section className="grid gap-4" aria-labelledby="historico-jornadas-titulo">
-        <h2 id="historico-jornadas-titulo" className="text-xl font-semibold text-ink">
-          Jornadas e progresso
-        </h2>
-        {journeyData.journeys.length ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {journeyData.journeys.map((journey) => (
-              <Card key={journey.journey_instance_id} className="flex flex-col">
-                <div className="mb-4 flex items-center justify-between text-sm text-muted">
-                  <StatusPill tone={journey.journey_status === "completed" ? "success" : "info"}>
-                    {statusLabel(journey.journey_status)}
-                  </StatusPill>
-                  <span>Versão {journey.journey_version_number}</span>
-                </div>
-                <h3 className="font-semibold text-ink">{journey.journey_title ?? journey.journey_code}</h3>
-                <p className="mt-2 text-sm text-muted">{participantCurrentStageLabel(journey)}</p>
-                <ProgressMeter value={journey.progress} label="Progresso" />
-                <p className="mt-2 text-xs text-muted">
-                  {journey.completed_required_steps}/{journey.total_required_steps} etapas obrigatórias
-                </p>
-                <div className="mt-auto pt-4">
-                  <ButtonLink href={participantNextHref(journey)} variant="secondary" size="sm">
-                    {journey.journey_status === "completed" ? "Rever resultado" : "Abrir jornada"}
-                  </ButtonLink>
-                </div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="Sem jornadas" tone="info">
-            Seu histórico aparecerá quando uma jornada for atribuída.
-          </EmptyState>
-        )}
-      </section>
-
-      <section className="grid gap-4" aria-labelledby="historico-pontos-titulo">
-        <h2 id="historico-pontos-titulo" className="text-xl font-semibold text-ink">
-          Histórico de pontuação
-        </h2>
-        {engagement.point_history.length ? (
-          <ol className="grid gap-2">
-            {engagement.point_history.map((entry) => (
-              <li
-                key={entry.id}
-                className="flex items-center gap-4 rounded-lg border border-border bg-surface px-4 py-3"
-              >
-                <span
-                  className={`w-16 shrink-0 text-right text-sm font-bold tabular-nums ${
-                    entry.amount >= 0 ? "text-success" : "text-danger"
-                  }`}
-                >
-                  {entry.amount >= 0 ? "+" : ""}
-                  {entry.amount}
-                </span>
-                <div>
-                  <strong className="font-semibold text-ink">{entry.reason}</strong>
-                  <time dateTime={entry.occurred_at} className="block text-xs text-muted">
-                    {dateFormatter.format(new Date(entry.occurred_at))}
-                  </time>
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <EmptyState title="Nenhum ponto registrado" tone="info">
-            As ações elegíveis aparecerão neste histórico.
-          </EmptyState>
+          <EmptyState icon={<Compass size={24} />} title="Descubra seu perfil empreendedor" tone="info" className="brand-spark-card"><p>Responda 12 perguntas quando desejar. O diagnóstico não bloqueia jornadas abertas.</p><form action={startProfileDiagnosticAction} className="mt-4"><Button type="submit" size="lg" icon={<Sparkles size={17} />}>Fazer diagnóstico agora</Button></form></EmptyState>
         )}
       </section>
     </div>
   );
+}
+
+function Metric({ icon, value, label, href, tone }: { icon: React.ReactNode; value: number; label: string; href?: string; tone: "cyan" | "green" | "magenta" }) {
+  const toneClass = tone === "cyan" ? "metric-cyan" : tone === "green" ? "metric-green" : "metric-magenta";
+  const content = <><div className="grid size-10 place-items-center rounded-xl bg-white/80 text-primary shadow-sm">{icon}</div><p className="display-font mt-5 text-3xl text-secondary">{value}</p><p className="mt-1 text-sm text-muted">{label}</p></>;
+  return <Card className={`brand-metric-card ${toneClass}`}>{href ? <a href={href} className="block">{content}</a> : content}</Card>;
 }

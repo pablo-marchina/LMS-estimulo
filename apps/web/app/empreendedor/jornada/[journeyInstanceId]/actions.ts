@@ -8,7 +8,7 @@ import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 const uuid = z.string().uuid();
 const version = z.coerce.number().int().nonnegative();
-const stepStatus = z.enum(["available", "in_progress"]);
+const stepStatus = z.enum(["available", "in_progress", "completed"]);
 
 export async function openJourneyActivityAction(formData: FormData) {
   const auth = await getAuthContext();
@@ -18,15 +18,12 @@ export async function openJourneyActivityAction(formData: FormData) {
   const stepInstanceId = uuid.parse(formData.get("step_instance_id"));
   const aggregateVersion = version.parse(formData.get("step_aggregate_version"));
   const status = stepStatus.parse(formData.get("step_status"));
+  const key = String(formData.get("idempotency_key") || randomUUID());
 
   if (status === "available") {
-    await journeyRuntime.startActivity(
-      auth.identity.user_account_id,
-      stepInstanceId,
-      aggregateVersion,
-      String(formData.get("idempotency_key") || randomUUID()),
-    );
+    await journeyRuntime.startActivity(auth.identity.user_account_id, stepInstanceId, aggregateVersion, `${key}:start`);
   }
+  await journeyRuntime.focusActivity(auth.identity.user_account_id, journeyInstanceId, stepInstanceId, `${key}:focus`);
 
   redirect(`/empreendedor/atividade/${stepInstanceId}?journey=${journeyInstanceId}`);
 }

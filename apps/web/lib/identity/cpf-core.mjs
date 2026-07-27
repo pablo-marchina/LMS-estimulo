@@ -1,4 +1,4 @@
-import { createCipheriv, createHmac, randomBytes } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:crypto";
 
 const CPF_DIGITS = 11;
 const KEY_BYTES = 32;
@@ -60,4 +60,23 @@ export function protectCpfWithKeys(value, userAccountId, encryptionKeyBase64, lo
     authenticationTag: authenticationTag.toString("base64"),
     keyVersion: KEY_VERSION,
   };
+}
+
+export function unprotectCpfWithKeys(protectedCpf, userAccountId, encryptionKeyBase64) {
+  const accountId = String(userAccountId ?? "").trim();
+  if (!/^[0-9a-f-]{36}$/iu.test(accountId)) throw new Error("USER_ACCOUNT_ID_INVALID");
+  if (!protectedCpf || Number(protectedCpf.keyVersion) !== KEY_VERSION) throw new Error("CPF_KEY_VERSION_INVALID");
+
+  const encryptionKey = decodeKey(encryptionKeyBase64, "CPF_ENCRYPTION_KEY");
+  const iv = Buffer.from(String(protectedCpf.initializationVector ?? ""), "base64");
+  const authenticationTag = Buffer.from(String(protectedCpf.authenticationTag ?? ""), "base64");
+  const ciphertext = Buffer.from(String(protectedCpf.ciphertext ?? ""), "base64");
+  if (iv.length !== IV_BYTES || authenticationTag.length !== 16 || ciphertext.length === 0) throw new Error("CPF_ENCRYPTED_PAYLOAD_INVALID");
+
+  const decipher = createDecipheriv("aes-256-gcm", encryptionKey, iv);
+  decipher.setAAD(Buffer.from(`estimulo:cpf:v${KEY_VERSION}:${accountId}`, "utf8"));
+  decipher.setAuthTag(authenticationTag);
+  const normalized = Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
+  if (!isValidCpf(normalized)) throw new Error("CPF_INVALID");
+  return normalized;
 }

@@ -1,56 +1,84 @@
+"use client";
+
 import Link from "next/link";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ParticipantAnnouncement } from "@/lib/engagement/contracts";
-import { ButtonLink } from "@/components/ui/button";
 
 function isInternalHref(value: string): boolean {
   return value.startsWith("/") && !value.startsWith("//");
 }
 
-const backgrounds = ["bg-primary", "bg-[#0020D8]", "bg-[#7B1FA2]"];
+const artwork = [
+  "/brand/announcement-openai.svg",
+  "/brand/announcement-diagnostic.svg",
+  "/brand/announcement-achievements.svg",
+];
+
+function BannerImage({ announcement, index }: { announcement: ParticipantAnnouncement; index: number }) {
+  const src = announcement.image_file_object_id
+    ? `/api/announcements/${announcement.id}/image`
+    : artwork[index % artwork.length];
+  const image = <img src={src} alt={announcement.image_alt ?? ""} className="brand-carousel-image" />;
+  if (!announcement.cta_url || !announcement.cta_label || announcement.display_mode !== "image_only") return image;
+  return isInternalHref(announcement.cta_url)
+    ? <Link href={announcement.cta_url} aria-label={announcement.cta_label} className="absolute inset-0 z-10">{image}</Link>
+    : <a href={announcement.cta_url} target="_blank" rel="noopener noreferrer" aria-label={announcement.cta_label} className="absolute inset-0 z-10">{image}</a>;
+}
 
 export function AnnouncementCarousel({ announcements }: { announcements: ParticipantAnnouncement[] }) {
-  if (!announcements.length) return null;
+  const slides = announcements;
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+
+  const goTo = useCallback((index: number, behavior: ScrollBehavior = "smooth") => {
+    const viewport = viewportRef.current;
+    if (!viewport || !slides.length) return;
+    const normalized = (index + slides.length) % slides.length;
+    const target = viewport.children.item(normalized) as HTMLElement | null;
+    if (target) viewport.scrollTo({ left: target.offsetLeft, behavior });
+    setActive(normalized);
+  }, [slides.length]);
+
+  useEffect(() => {
+    if (slides.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => goTo(active + 1), 6500);
+    return () => window.clearInterval(timer);
+  }, [active, goTo, slides.length]);
+
+  const syncActiveSlide = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const children = Array.from(viewport.children) as HTMLElement[];
+    const nearest = children.reduce((best, child, index) => {
+      const distance = Math.abs(child.offsetLeft - viewport.scrollLeft);
+      return distance < best.distance ? { index, distance } : best;
+    }, { index: 0, distance: Number.POSITIVE_INFINITY });
+    setActive(nearest.index);
+  }, []);
+
+  if (!slides.length) return null;
+
   return (
-    <section className="mb-8" aria-labelledby="anuncios-titulo">
-      <div className="mb-3 flex items-end justify-between gap-4">
-        <h2 id="anuncios-titulo" className="text-xl font-semibold text-ink">
-          Acontecendo agora
-        </h2>
-        <p className="hidden text-sm text-muted sm:block">Deslize horizontalmente para ver os anúncios.</p>
+    <section className="brand-carousel animate-in" aria-labelledby="anuncios-titulo">
+      <div className="brand-carousel-heading">
+        <div><p className="brand-kicker">Novidades para você</p><h2 id="anuncios-titulo" className="display-font mt-1 text-2xl text-secondary sm:text-3xl">Acontecendo agora</h2></div>
+        {slides.length > 1 ? <div className="flex items-center gap-2"><button type="button" onClick={() => goTo(active - 1)} className="brand-carousel-control" aria-label="Anúncio anterior"><ChevronLeft size={20} /></button><button type="button" onClick={() => goTo(active + 1)} className="brand-carousel-control" aria-label="Próximo anúncio"><ChevronRight size={20} /></button></div> : null}
       </div>
-      <div
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2"
-        role="region"
-        aria-label="Carrossel de anúncios"
-        tabIndex={0}
-      >
-        {announcements.map((announcement, index) => (
-          <article
-            key={announcement.id}
-            className={`flex min-h-40 w-[min(78vw,360px)] shrink-0 snap-start flex-col justify-end gap-2 rounded-xl p-6 text-white ${backgrounds[index % backgrounds.length]}`}
-            aria-label={`Anúncio ${index + 1} de ${announcements.length}`}
-          >
-            <h3 className="text-lg font-semibold">{announcement.title}</h3>
-            <p className="text-sm text-white/85">{announcement.body}</p>
-            {announcement.cta_label && announcement.cta_url ? (
-              isInternalHref(announcement.cta_url) ? (
-                <ButtonLink href={announcement.cta_url} variant="secondary" size="sm" className="mt-2 self-start !border-white !bg-white !text-primary">
-                  {announcement.cta_label}
-                </ButtonLink>
-              ) : (
-                <Link
-                  href={announcement.cta_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex h-8 items-center self-start rounded-full bg-white px-3.5 text-sm font-semibold text-primary hover:bg-white/90"
-                >
-                  {announcement.cta_label}
-                </Link>
-              )
-            ) : null}
-          </article>
-        ))}
+
+      <div ref={viewportRef} onScroll={syncActiveSlide} className="brand-carousel-viewport" role="region" aria-label="Carrossel de anúncios" tabIndex={0}>
+        {slides.map((announcement, index) => {
+          const imageOnly = announcement.display_mode === "image_only";
+          return (
+            <article key={announcement.id} className="brand-carousel-slide" aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
+              <BannerImage announcement={announcement} index={index} />
+              {imageOnly ? <span className="sr-only">{announcement.title}. {announcement.body}</span> : <><div className="brand-carousel-overlay" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-4 max-w-2xl text-3xl leading-none text-white sm:text-4xl lg:text-5xl">{announcement.title}</h3><p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p>{announcement.cta_label && announcement.cta_url ? (isInternalHref(announcement.cta_url) ? <Link href={announcement.cta_url} className="brand-carousel-cta">{announcement.cta_label}</Link> : <a href={announcement.cta_url} target="_blank" rel="noopener noreferrer" className="brand-carousel-cta">{announcement.cta_label}</a>) : null}</div></>}
+            </article>
+          );
+        })}
       </div>
+
+      {slides.length > 1 ? <div className="mt-3 flex items-center justify-center gap-2" aria-label="Selecionar anúncio">{slides.map((slide, index) => <button key={slide.id} type="button" onClick={() => goTo(index)} className={`h-2.5 rounded-full transition-all ${active === index ? "w-9 bg-primary" : "w-2.5 bg-border-strong hover:bg-primary/45"}`} aria-label={`Mostrar anúncio ${index + 1}`} aria-current={active === index ? "true" : undefined} />)}</div> : null}
     </section>
   );
 }
