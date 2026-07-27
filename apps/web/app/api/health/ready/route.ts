@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertCpfProtectionReady } from "@/lib/identity/cpf";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -56,8 +57,21 @@ function logReadinessFailure(error: unknown) {
 export async function GET() {
   const missing = requiredEnvironment.filter((name) => !process.env[name]?.trim());
   if (missing.length > 0) {
+    console.error("APPLICATION_READINESS_CONFIGURATION_UNAVAILABLE", { missing });
     return NextResponse.json(
       { status: "not_ready", reason: "configuration_unavailable" },
+      { status: 503, headers: { "cache-control": "no-store" } }
+    );
+  }
+
+  try {
+    assertCpfProtectionReady();
+  } catch (error) {
+    console.error("APPLICATION_READINESS_CPF_PROTECTION_UNAVAILABLE", {
+      errorMessage: error instanceof Error ? error.message : null,
+    });
+    return NextResponse.json(
+      { status: "not_ready", reason: "security_configuration_unavailable" },
       { status: 503, headers: { "cache-control": "no-store" } }
     );
   }
