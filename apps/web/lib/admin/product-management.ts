@@ -7,6 +7,7 @@ export type TrilhaAulaAsset = {
   title: string;
   external_url: string | null;
   file_object_id: string | null;
+  library_item_version_id?: string | null;
   position: number;
   is_required: boolean;
   accessibility_metadata: Record<string, unknown>;
@@ -31,6 +32,7 @@ export type TrilhaAula = {
       id: string;
       code: string;
       prompt: string;
+      question_type?: string;
       position: number;
       options: Array<{ id: string; code: string; label: string; is_correct: boolean; position: number }>;
     }>;
@@ -158,6 +160,26 @@ export async function configureAdminPathTemplate(input: {
     p_path_template_id: input.pathTemplateId,
     p_is_required: input.isRequired,
     p_presentation: input.presentation,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
+export async function attachLibraryContentToActivity(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  journeyVersionId: string;
+  activityVersionId: string;
+  libraryItemVersionId: string;
+  isRequired: boolean;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<Record<string, unknown>>("attach_library_content_to_activity", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_journey_version_id: input.journeyVersionId,
+    p_activity_version_id: input.activityVersionId,
+    p_library_item_version_id: input.libraryItemVersionId,
+    p_is_required: input.isRequired,
     p_idempotency_key: input.idempotencyKey,
   });
 }
