@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import { Award, BookOpen, CheckCircle2, Play, Rocket, Sparkles, Trophy } from "lucide-react";
 import { openJourneyAction } from "@/app/actions/open-journey";
 import { startProfileDiagnosticAction } from "@/app/empreendedor/perfil/actions";
 import { AnnouncementCarousel } from "@/components/announcement-carousel";
-import { StatusPanel } from "@/components/status-panel";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,8 +21,8 @@ function rank(journey: EligibleJourney) {
 
 export default async function ParticipantHome() {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated") return null;
-  if (!auth.identity.entrepreneur_id) return <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-9 lg:py-10"><StatusPanel title="Perfil empreendedor não disponível" tone="warning">A conta está autenticada, mas ainda não possui um perfil empreendedor ativo.</StatusPanel></div>;
+  if (auth.status !== "authenticated") redirect("/entrar");
+  if (!auth.identity.entrepreneur_id) redirect("/cadastro/concluir");
 
   const [data, credentials, engagement, eligibleJourneys] = await Promise.all([
     journeyRuntime.listParticipantJourneys(auth.identity.user_account_id).catch(() => ({ actor_user_account_id: auth.identity.user_account_id, entrepreneur_id: auth.identity.entrepreneur_id, journeys: [] })),
