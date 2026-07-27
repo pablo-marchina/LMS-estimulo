@@ -15,6 +15,15 @@ function deriveCode(source: string, fallback: string) {
   return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback;
 }
 function positiveInteger(value: string, fallback = 1) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
+function secureExternalUrl(value: string): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 function quizQuestionsFromForm(formData: FormData) {
   const questions: Array<{ code: string; prompt: string; position: number; options: Array<{ code: string; label: string; is_correct: boolean; position: number }> }> = [];
@@ -70,8 +79,11 @@ export async function saveAulaAction(formData: FormData) {
   const prompts = [0,1,2,3,4,5].map((index) => ({ title: text(formData, `prompt_title_${index}`), text: text(formData, `prompt_text_${index}`) })).filter((prompt) => prompt.title && prompt.text);
   const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
   const questions = quizQuestionsFromForm(formData);
+  const videoUrl = secureExternalUrl(text(formData, "video_url"));
+  const videoTitle = text(formData, "video_title") || title;
+  const videoDescription = text(formData, "video_description");
   const back = `/admin/produto?etapa=aulas&versao=${journeyVersionId}&trilha=${pathTemplateId}`;
-  if (!title || !pathTemplateId || (isClosing && (!questions.length || !checklist.length))) redirect(`${back}&erro=campos_incompletos`);
+  if (!title || !pathTemplateId || (text(formData, "video_url") && !videoUrl) || (isClosing && (!questions.length || !checklist.length))) redirect(`${back}&erro=campos_incompletos`);
 
   try {
     const activityResult = await saveAdminProductResource({
@@ -86,6 +98,7 @@ export async function saveAulaAction(formData: FormData) {
         activity_type: isClosing ? "practice" : "content",
         estimated_minutes: positiveInteger(text(formData, "estimated_minutes"), 10),
         configuration: { ...(prompts.length ? { prompts } : {}), ...(checklist.length ? { practice_checklist: checklist } : {}) },
+        ...(videoUrl ? { asset: { type: "video", title: videoTitle, url: videoUrl, language: "pt-BR", required: false, accessibility: { description: videoDescription || `Vídeo complementar da atividade ${title}.` } } } : {}),
         ...(isClosing ? { assessment: { questions }, practice: { submission_mode: "file", allowed_evidence_types: ["file", "text"], review_required: true } } : {}),
       },
       idempotencyKey: randomUUID(),
