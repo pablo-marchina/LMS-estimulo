@@ -22,7 +22,13 @@ test("preview OAuth callbacks stay on the active Vercel environment", () => {
   assert.match(origin, /VERCEL_PROJECT_PRODUCTION_URL/u);
 });
 
-test("localhost and the Estimulo custom domain are valid origins", () => {
+test("production never accepts localhost as its public application origin", () => {
+  assert.match(origin, /function isLocalOrigin/u);
+  assert.match(origin, /configured && !isLocalOrigin\(configured\)/u);
+  assert.match(origin, /CANONICAL_VERCEL_ORIGIN/u);
+});
+
+test("localhost and the Estimulo custom domain are valid configured environments", () => {
   assert.match(origin, /http:\/\/localhost/u);
   assert.doesNotMatch(origin, /endsWith\("\.vercel\.app"\)/u);
   assert.match(supabaseConfig, /http:\/\/localhost:3000\/\*\*/u);
@@ -31,10 +37,11 @@ test("localhost and the Estimulo custom domain are valid origins", () => {
   assert.match(envExample, /NEXT_PUBLIC_APP_URL=https:\/\/plataforma\.estimulo\.org/u);
 });
 
-test("administrative login and callback share the same public origin helper", () => {
+test("administrative login builds a callback and callback redirects on its request origin", () => {
   assert.match(adminAction, /publicApplicationOrigin/u);
-  assert.match(callback, /publicApplicationOrigin/u);
   assert.match(callback, /exchangeCodeForSession/u);
+  assert.match(callback, /request\.nextUrl\.origin/u);
+  assert.doesNotMatch(callback, /publicApplicationOrigin/u);
 });
 
 test("OAuth codes returned to the landing page recover through the admin callback", () => {
