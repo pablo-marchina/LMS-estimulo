@@ -144,7 +144,16 @@ Deno.serve(async (request: Request) => {
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
   const { data: identity, error: identityError } = await admin.rpc("e14_resolve_identity", { p_provider: provider, p_issuer: issuer, p_subject: user.id, p_email_normalized: email, p_email_verified: true, p_claims_fingerprint: claimsFingerprint });
   if (identityError || !identity?.user_account_id) return json(403, { ok: false, code: identityError?.code ?? "IDENTITY_RESOLUTION_FAILED", message: identityError?.message ?? "Internal identity unavailable" });
-  if (name === currentIdentityOperation) return json(200, { ok: true, data: identity });
+  if (name === currentIdentityOperation) {
+    return json(200, {
+      ok: true,
+      data: {
+        ...identity,
+        authenticated_email: email,
+        authenticated_provider: provider,
+      },
+    });
+  }
 
   const actorArgument = legacyActorArgument.has(name)
     ? "a"
