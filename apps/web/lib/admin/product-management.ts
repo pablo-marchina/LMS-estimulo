@@ -1,6 +1,17 @@
 import "server-only";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
+export type TrilhaAulaAsset = {
+  id: string;
+  asset_type: string;
+  title: string;
+  external_url: string | null;
+  file_object_id: string | null;
+  position: number;
+  is_required: boolean;
+  accessibility_metadata: Record<string, unknown>;
+};
+
 export type TrilhaAula = {
   step_id: string;
   code: string;
@@ -11,6 +22,7 @@ export type TrilhaAula = {
   description: string | null;
   activity_type: string;
   configuration: Record<string, unknown>;
+  assets?: TrilhaAulaAsset[];
   assessment: {
     spec_id: string;
     passing_score: number | null;
@@ -33,6 +45,8 @@ export type Trilha = {
   description: string | null;
   position: number;
   status: string;
+  is_required?: boolean;
+  presentation?: Record<string, unknown>;
   badge: { badge_version_id: string; title: string; description: string | null } | null;
   aulas: TrilhaAula[];
 };
@@ -72,6 +86,8 @@ export type PathSummary = {
   name: string;
   description: string | null;
   is_default: boolean;
+  is_required?: boolean;
+  presentation?: Record<string, unknown>;
   status: string;
   steps: Array<Record<string, unknown>>;
 };
@@ -104,26 +120,12 @@ export type AdminReportingDashboard = {
     badges_awarded: number;
     certificates_issued: number;
   };
-  journeys: Array<{
-    journey: string;
-    version: number;
-    enrollments: number;
-    completed: number;
-    average_progress: number;
-  }>;
-  recent_events: Array<{
-    event_name: string;
-    occurred_at: string;
-    aggregate_type: string | null;
-    aggregate_id: string | null;
-  }>;
+  journeys: Array<{ journey: string; version: number; enrollments: number; completed: number; average_progress: number }>;
+  recent_events: Array<{ event_name: string; occurred_at: string; aggregate_type: string | null; aggregate_id: string | null }>;
 };
 
 export async function getAdminProductWorkspace(actorUserAccountId: string, organizationId: string) {
-  return invokeServerRpc<AdminProductWorkspace>("get_admin_product_workspace", {
-    p_actor_user_account_id: actorUserAccountId,
-    p_organization_id: organizationId,
-  });
+  return invokeServerRpc<AdminProductWorkspace>("get_admin_product_workspace", { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId });
 }
 
 export async function saveAdminProductResource(input: {
@@ -138,6 +140,24 @@ export async function saveAdminProductResource(input: {
     p_organization_id: input.organizationId,
     p_resource_type: input.resourceType,
     p_payload: input.payload,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
+export async function configureAdminPathTemplate(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  pathTemplateId: string;
+  isRequired: boolean;
+  presentation: Record<string, unknown>;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<Record<string, unknown>>("configure_admin_path_template", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_path_template_id: input.pathTemplateId,
+    p_is_required: input.isRequired,
+    p_presentation: input.presentation,
     p_idempotency_key: input.idempotencyKey,
   });
 }
@@ -159,8 +179,5 @@ export async function publishAdminJourneyVersion(input: {
 }
 
 export async function getAdminReportingDashboard(actorUserAccountId: string, organizationId: string) {
-  return invokeServerRpc<AdminReportingDashboard>("get_admin_reporting_dashboard", {
-    p_actor_user_account_id: actorUserAccountId,
-    p_organization_id: organizationId,
-  });
+  return invokeServerRpc<AdminReportingDashboard>("get_admin_reporting_dashboard", { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId });
 }
