@@ -18,8 +18,8 @@ const errorMessages: Record<string, string> = {
   cnpj_invalido: "Informe um CNPJ válido ou deixe o campo em branco.",
   cnpj_ja_vinculado: "Este CNPJ já está vinculado a outro negócio cadastrado.",
   cnpj_requer_nome_negocio: "Para informar um CNPJ, preencha também o nome do negócio.",
-  protecao_cpf_indisponivel: "A proteção do CPF não está configurada neste ambiente.",
-  provisionamento_falhou: "Não foi possível concluir o perfil agora.",
+  protecao_cpf_indisponivel: "O serviço seguro de proteção do CPF está temporariamente indisponível. Nenhum CPF foi armazenado.",
+  provisionamento_falhou: "Não foi possível concluir o perfil agora. Os dados protegidos não foram parcialmente gravados.",
 };
 
 export default async function CompleteSignupPage({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
@@ -38,7 +38,7 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
   const hasProtectedCpf = Boolean(metadata.signup_cpf_encrypted && typeof metadata.signup_cpf_encrypted === "object");
 
   return (
-    <AuthLayout eyebrow="E-mail confirmado" title="Revise seus dados" description="Confirme as informações fornecidas no cadastro antes de entrar na plataforma." wide>
+    <AuthLayout eyebrow="E-mail confirmado" title="Revise seus dados" description="Confirme as informações de identificação e contato antes de entrar na plataforma." wide>
       {erro ? <FormMessage tone="error">{errorMessages[erro] ?? "Revise os dados antes de continuar."}</FormMessage> : null}
       <form action={completePublicSignupAction} className="grid gap-4">
         <Label>Seu nome<Input name="preferred_name" defaultValue={preferredName} minLength={2} maxLength={120} autoComplete="name" required /></Label>
