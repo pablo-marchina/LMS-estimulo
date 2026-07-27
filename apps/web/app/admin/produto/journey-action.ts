@@ -28,12 +28,7 @@ function selectedFile(formData: FormData, name: string) {
   return entry instanceof File && entry.size > 0 ? entry : null;
 }
 
-async function uploadJourneyCover(input: {
-  actor: string;
-  organizationId: string;
-  file: File;
-  role: "card" | "featured";
-}) {
+async function uploadJourneyCover(input: { actor: string; organizationId: string; file: File; role: "card" | "featured" }) {
   validateAnnouncementBanner(input.file);
   const bucket = libraryContentBucket();
   const key = randomUUID();
@@ -80,7 +75,8 @@ export async function saveJourneyAction(formData: FormData) {
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("journey.definition.manage")) redirect("/admin/produto?erro=sem_permissao");
 
-  const name = text(formData, "name");
+  const publicTitle = text(formData, "title");
+  const name = text(formData, "name") || publicTitle;
   const existingCode = text(formData, "definition_code");
   const code = existingCode || deriveCode(name, `jornada_${randomUUID().slice(0, 8)}`);
   const versionId = nullable(formData, "version_id");
@@ -106,8 +102,8 @@ export async function saveJourneyAction(formData: FormData) {
       cta: text(formData, "presentation_cta") || "Entrar nesta jornada",
       ...(cardBackgroundId ? { card_background_file_object_id: String(cardBackgroundId) } : {}),
       ...(featuredBackgroundId ? { featured_background_file_object_id: String(featuredBackgroundId) } : {}),
-      card_background_alt: text(formData, "card_background_alt") || `Capa da jornada ${text(formData, "title") || name}`,
-      featured_background_alt: text(formData, "featured_background_alt") || `Imagem de destaque da jornada ${text(formData, "title") || name}`,
+      card_background_alt: text(formData, "card_background_alt") || `Capa da jornada ${publicTitle || name}`,
+      featured_background_alt: text(formData, "featured_background_alt") || `Imagem de destaque da jornada ${publicTitle || name}`,
     };
 
     const result = await saveAdminProductResource({
@@ -122,7 +118,7 @@ export async function saveJourneyAction(formData: FormData) {
         slug: deriveCode(name, code).replaceAll("_", "-"),
         name,
         purpose: text(formData, "purpose"),
-        title: text(formData, "title") || name,
+        title: publicTitle || name,
         description: text(formData, "description"),
         configuration: { ...previousConfiguration, presentation },
         eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
