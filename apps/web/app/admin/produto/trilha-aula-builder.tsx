@@ -69,6 +69,16 @@ export function TrilhaAulaBuilder({ journeyVersionId, organizationId, trilha }: 
             <Textarea name="description" rows={4} />
           </label>
 
+          <fieldset className="grid gap-3 rounded-lg border border-primary/20 bg-primary-soft/35 p-4">
+            <legend className="px-1 text-sm font-semibold text-ink">Vídeo da atividade (opcional)</legend>
+            <p className="text-xs leading-5 text-muted">Use um endereço HTTPS, incluindo vídeos ou playlists do YouTube. O participante verá um player incorporado quando o provedor for compatível.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1.5 text-sm font-medium text-ink">Título do vídeo<Input name="video_title" placeholder="Ex.: Mentorias inspiracionais — Estímulo" /></label>
+              <label className="grid gap-1.5 text-sm font-medium text-ink">Endereço do vídeo<Input name="video_url" type="url" inputMode="url" placeholder="https://www.youtube.com/watch?v=..." /></label>
+            </div>
+            <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição acessível<Textarea name="video_description" rows={2} placeholder="Explique brevemente o tema e a finalidade do vídeo." /></label>
+          </fieldset>
+
           <fieldset className="grid gap-3 rounded-lg border border-border p-3">
             <legend className="px-1 text-sm font-semibold text-ink">Prompts da aula (opcional)</legend>
             <p className="text-xs text-muted">Preencha apenas os blocos necessários. Cada prompt precisa de título e texto.</p>
