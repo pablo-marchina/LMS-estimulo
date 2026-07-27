@@ -9,14 +9,16 @@ import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
 function nullable(formData: FormData, name: string) { return text(formData, name) || null; }
+function checked(formData: FormData, name: string) { return formData.get(name) === "on" || formData.get(name) === "true"; }
+function positiveInteger(value: string, fallback = 9999) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function deriveCode(source: string, fallback: string) {
   const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60);
   return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback;
 }
 function configuration(formData: FormData) {
   const raw = text(formData, "configuration_snapshot");
-  if (!raw) return {};
-  try { const parsed = JSON.parse(raw) as unknown; return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {}; } catch { return {}; }
+  if (!raw) return {} as Record<string, unknown>;
+  try { const parsed = JSON.parse(raw) as unknown; return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}; } catch { return {}; }
 }
 
 export async function saveJourneyAction(formData: FormData) {
@@ -30,6 +32,21 @@ export async function saveJourneyAction(formData: FormData) {
   const code = existingCode || deriveCode(name, `jornada_${randomUUID().slice(0, 8)}`);
   const versionId = nullable(formData, "version_id");
   let savedVersionId = versionId ?? "";
+  const previousConfiguration = configuration(formData);
+  const previousPresentation = previousConfiguration.presentation && typeof previousConfiguration.presentation === "object" && !Array.isArray(previousConfiguration.presentation) ? previousConfiguration.presentation as Record<string, unknown> : {};
+  const tags = text(formData, "presentation_tags").split(/[\n,]/).map((item) => item.trim()).filter(Boolean).slice(0, 8);
+  const presentation = {
+    ...previousPresentation,
+    featured: checked(formData, "presentation_featured"),
+    featured_rank: positiveInteger(text(formData, "presentation_featured_rank")),
+    eyebrow: text(formData, "presentation_eyebrow") || "Jornada em destaque",
+    badge: text(formData, "presentation_badge") || "Capacitação Estímulo",
+    tone: text(formData, "presentation_tone") || "blue",
+    icon: text(formData, "presentation_icon") || "sparkles",
+    tags,
+    cta: text(formData, "presentation_cta") || "Entrar nesta jornada",
+  };
+
   try {
     const result = await saveAdminProductResource({
       actorUserAccountId: auth.identity.user_account_id,
@@ -45,7 +62,7 @@ export async function saveJourneyAction(formData: FormData) {
         purpose: text(formData, "purpose"),
         title: text(formData, "title") || name,
         description: text(formData, "description"),
-        configuration: configuration(formData),
+        configuration: { ...previousConfiguration, presentation },
         eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
       },
       idempotencyKey: randomUUID(),
