@@ -51,7 +51,7 @@ export async function createPublicAccountAction(formData: FormData) {
   if (!parsed.success) redirect(`/cadastro?erro=${validationError(parsed.error.issues)}`);
 
   const client = await createSessionClient();
-  const callback = new URL("/auth/confirm", publicApplicationOrigin()).toString();
+  const callback = new URL("/confirm", publicApplicationOrigin()).toString();
   const { data, error } = await client.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
