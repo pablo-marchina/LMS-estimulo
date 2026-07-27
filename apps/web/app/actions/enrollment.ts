@@ -19,7 +19,7 @@ export async function selfEnrollAction(formData: FormData) {
     const enrollment = await journeyRuntime.selfEnroll(auth.identity.user_account_id, journeyVersionId, key);
     journeyInstanceId = enrollment.data.journey_instance_id;
 
-    const state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
+    let state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     if (state.journey_status === "available") {
       await journeyRuntime.startJourney(
         auth.identity.user_account_id,
@@ -27,8 +27,11 @@ export async function selfEnrollAction(formData: FormData) {
         state.journey_aggregate_version,
         `${key}:start`,
       );
+      state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     }
-    await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:default-path`);
+    if (!state.s?.step_instance_id) {
+      await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:default-path`);
+    }
   } catch {
     redirect("/empreendedor/jornadas?erro=matricula");
   }
