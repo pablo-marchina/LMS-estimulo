@@ -46,6 +46,8 @@ test("every journey exposes clear square and featured background customization",
 test("admin content workflow is library-first and concise", () => {
   assert.match(libraryPage, /Cadastre uma vez e use o mesmo conteúdo/u);
   assert.match(libraryPage, /Detalhes opcionais/u);
+  assert.match(libraryPage, /Mostrar aos participantes/u);
+  assert.match(libraryPage, /Somente aulas/u);
   assert.match(activityFields, /Usar da Biblioteca/u);
   assert.match(activityFields, /Criar agora na Biblioteca/u);
   assert.match(activityActions, /attachLibraryContentToActivity/u);
