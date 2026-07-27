@@ -18,6 +18,13 @@ function localSyntheticSession(request: NextRequest): boolean {
   return request.cookies.get(BROWSER_E2E_COOKIE)?.value === token;
 }
 
+function adminOAuthFallback(request: NextRequest): NextResponse | null {
+  if (request.nextUrl.pathname !== "/" || !request.nextUrl.searchParams.get("code")) return null;
+  const callback = new URL("/auth/admin/callback", request.url);
+  callback.search = request.nextUrl.search;
+  return NextResponse.redirect(callback);
+}
+
 function shouldCaptureFirstTouch(request: NextRequest): boolean {
   return request.nextUrl.pathname === "/cadastro" && !request.cookies.has(FIRST_TOUCH_COOKIE);
 }
@@ -35,6 +42,9 @@ function withFirstTouch(response: NextResponse, request: NextRequest): NextRespo
 }
 
 export async function proxy(request: NextRequest) {
+  const oauthFallback = adminOAuthFallback(request);
+  if (oauthFallback) return oauthFallback;
+
   let response = NextResponse.next({ request });
   const administrativePath = request.nextUrl.pathname.startsWith("/admin");
   const protectedPath = request.nextUrl.pathname.startsWith("/empreendedor")
@@ -65,4 +75,4 @@ export async function proxy(request: NextRequest) {
   return withFirstTouch(response, request);
 }
 
-export const config = { matcher: ["/entrar/:path*", "/cadastro/:path*", "/auth/:path*", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };
+export const config = { matcher: ["/", "/entrar/:path*", "/cadastro/:path*", "/auth/:path*", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };
