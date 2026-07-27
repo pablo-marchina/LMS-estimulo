@@ -94,6 +94,17 @@ export type ContentSection = {
   [key: string]: unknown;
 };
 
+export type ActivityAsset = {
+  id: string;
+  asset_type: string;
+  title: string;
+  external_url: string | null;
+  language_code: string;
+  accessibility_metadata: Record<string, unknown>;
+  position: number;
+  is_required: boolean;
+};
+
 export type AssessmentOption = { id: string; code: string; label: string; position: number };
 export type AssessmentQuestion = {
   id: string;
@@ -115,6 +126,7 @@ export type ParticipantExperience = {
     description: string | null;
     estimated_minutes: number;
     sections: ContentSection[];
+    assets: ActivityAsset[];
   } | null;
   assessment: {
     passing_score: number | null;
