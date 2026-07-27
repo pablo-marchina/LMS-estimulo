@@ -21,10 +21,10 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,confirmed_at,
+    id,aud,role,email,email_confirmed_at,
     raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values(
-    v_new_subject,'authenticated','authenticated',v_email,now(),now(),
+    v_new_subject,'authenticated','authenticated',v_email,now(),
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"estimulo.org"}}'::jsonb,now(),now()
   );
@@ -63,10 +63,10 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,confirmed_at,
+    id,aud,role,email,email_confirmed_at,
     raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values(
-    v_new_subject,'authenticated','authenticated',v_email,now(),now(),
+    v_new_subject,'authenticated','authenticated',v_email,now(),
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"gmail.com"}}'::jsonb,now(),now()
   );
@@ -102,15 +102,15 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,confirmed_at,
+    id,aud,role,email,email_confirmed_at,
     raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values
   (
-    v_old_subject,'authenticated','authenticated',v_email,now(),now(),
+    v_old_subject,'authenticated','authenticated',v_email,now(),
     '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now()
   ),
   (
-    v_new_subject,'authenticated','authenticated',v_email,now(),now(),
+    v_new_subject,'authenticated','authenticated',v_email,now(),
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"estimulo.org"}}'::jsonb,now(),now()
   );
