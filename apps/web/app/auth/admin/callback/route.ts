@@ -3,21 +3,20 @@ import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { CurrentIdentityError, resolveCurrentIdentity } from "@/lib/auth/current-identity";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { isGoogleAuthProvider } from "@/lib/auth/provider";
-import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
 
-function redirectTo(path: string) {
-  return NextResponse.redirect(new URL(path, publicApplicationOrigin()));
+function redirectTo(request: NextRequest, path: string) {
+  return NextResponse.redirect(new URL(path, request.nextUrl.origin));
 }
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const providerError = request.nextUrl.searchParams.get("error");
-  if (!code || providerError) return redirectTo("/entrar/administracao?erro=oauth_invalido");
+  if (!code || providerError) return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
 
   const client = await createSessionClient();
   const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
-  if (exchangeError) return redirectTo("/entrar/administracao?erro=oauth_invalido");
+  if (exchangeError) return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
 
   const [{ data, error: userError }, { data: claimsData, error: claimsError }] = await Promise.all([
     client.auth.getUser(),
@@ -33,13 +32,13 @@ export async function GET(request: NextRequest) {
     || !isGoogleAuthProvider(user, claimsData.claims.amr)
   ) {
     await client.auth.signOut();
-    return redirectTo("/entrar/administracao?erro=conta_google_necessaria");
+    return redirectTo(request, "/entrar/administracao?erro=conta_google_necessaria");
   }
 
   const email = user.email?.trim().toLowerCase() ?? "";
   if (!isEstimuloAdministrativeEmail(email)) {
     await client.auth.signOut();
-    return redirectTo("/entrar/administracao?erro=dominio_invalido");
+    return redirectTo(request, "/entrar/administracao?erro=dominio_invalido");
   }
 
   try {
@@ -47,14 +46,14 @@ export async function GET(request: NextRequest) {
     const organization = administrativeOrganization(identity);
     if (!organization) {
       await client.auth.signOut();
-      return redirectTo("/entrar/administracao?erro=permissao_necessaria");
+      return redirectTo(request, "/entrar/administracao?erro=permissao_necessaria");
     }
-    return redirectTo(`/admin?organization=${encodeURIComponent(organization.organization_id)}`);
+    return redirectTo(request, `/admin?organization=${encodeURIComponent(organization.organization_id)}`);
   } catch (error) {
     await client.auth.signOut();
     if (error instanceof CurrentIdentityError && error.message.includes("identity_link_required")) {
-      return redirectTo("/entrar/administracao?erro=identidade_desvinculada");
+      return redirectTo(request, "/entrar/administracao?erro=identidade_desvinculada");
     }
-    return redirectTo("/entrar/administracao?erro=oauth_invalido");
+    return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
   }
 }
