@@ -10,7 +10,7 @@ import { NavItem } from "@/components/ui/nav-item";
 const links = [
   { href: "/empreendedor", label: "Início", icon: Home, exact: true },
   { href: "/empreendedor/jornadas", label: "Jornadas", icon: Compass },
-  { href: "/capacitacao/biblioteca", label: "Biblioteca", icon: BookOpen },
+  { href: "/empreendedor/biblioteca", label: "Biblioteca", icon: BookOpen },
   { href: "/empreendedor/entregas", label: "Entregas", icon: FileUp },
   { href: "/empreendedor/engajamento", label: "Pontuação", icon: Trophy },
   { href: "/empreendedor/conquistas", label: "Conquistas", icon: Award },
