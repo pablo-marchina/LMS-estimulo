@@ -4,12 +4,17 @@ import test from "node:test";
 
 const origin = await readFile("apps/web/lib/http-public-origin.ts", "utf8");
 const adminAction = await readFile("apps/web/app/entrar/administracao/actions.ts", "utf8");
+const participantAction = await readFile("apps/web/app/entrar/actions.ts", "utf8");
 const callback = await readFile("apps/web/app/auth/admin/callback/route.ts", "utf8");
+const proxy = await readFile("apps/web/proxy.ts", "utf8");
+const signupAction = await readFile("apps/web/app/cadastro/actions.ts", "utf8");
+const confirmationAction = await readFile("apps/web/app/auth/confirm/actions.ts", "utf8");
+const confirmationAlias = await readFile("apps/web/app/confirm/page.tsx", "utf8");
 const authLayout = await readFile("apps/web/components/auth-layout.tsx", "utf8");
 const supabaseConfig = await readFile("supabase/config.toml", "utf8");
 const envExample = await readFile(".env.example", "utf8");
 
- test("preview OAuth callbacks stay on the active Vercel environment", () => {
+test("preview OAuth callbacks stay on the active Vercel environment", () => {
   assert.match(origin, /VERCEL_ENV === "preview"/u);
   assert.match(origin, /VERCEL_BRANCH_URL/u);
   assert.match(origin, /VERCEL_URL/u);
@@ -30,6 +35,26 @@ test("administrative login and callback share the same public origin helper", ()
   assert.match(adminAction, /publicApplicationOrigin/u);
   assert.match(callback, /publicApplicationOrigin/u);
   assert.match(callback, /exchangeCodeForSession/u);
+});
+
+test("OAuth codes returned to the landing page recover through the admin callback", () => {
+  assert.match(proxy, /adminOAuthFallback/u);
+  assert.match(proxy, /new URL\("\/auth\/admin\/callback", request\.url\)/u);
+  assert.match(proxy, /callback\.search = request\.nextUrl\.search/u);
+  assert.match(proxy, /matcher: \["\/"/u);
+});
+
+test("Estimulo email accounts may authenticate as participants", () => {
+  assert.match(participantAction, /signInWithPassword/u);
+  assert.doesNotMatch(participantAction, /isEstimuloAdministrativeEmail/u);
+  assert.match(participantAction, /entrepreneur_id/u);
+});
+
+test("public signup and resend use the configured confirmation URL", () => {
+  assert.match(signupAction, /new URL\("\/confirm", publicApplicationOrigin\(\)\)/u);
+  assert.match(confirmationAction, /new URL\("\/confirm", publicApplicationOrigin\(\)\)/u);
+  assert.match(confirmationAction, /redirect\("\/confirm\?/u);
+  assert.match(confirmationAlias, /auth\/confirm\/page/u);
 });
 
 test("login uses the expressive Estimulo brand composition", () => {
