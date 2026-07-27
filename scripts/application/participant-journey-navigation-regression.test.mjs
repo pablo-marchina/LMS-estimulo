@@ -11,7 +11,7 @@ const resilienceMigration = await readFile("supabase/migrations/20260724011100_p
 const diagnosticMigration = await readFile("supabase/migrations/20260724011500_openai_default_diagnostic.sql", "utf8");
 const gateway = await readFile("supabase/functions/authenticated-rpc/index.ts", "utf8");
 
- test("participant navigation keeps journeys, deliveries, achievements and profile", () => {
+test("participant navigation keeps journeys, deliveries, achievements and profile", () => {
   assert.match(shell, /label:\s*"Jornadas"/u);
   assert.match(shell, /label:\s*"Entregas"/u);
   assert.match(shell, /label:\s*"Conquistas"/u);
@@ -26,17 +26,21 @@ test("profile creates or reuses a journey and opens the diagnostic directly", ()
   assert.match(profileAction, /\/empreendedor\/diagnostico\?journey=/u);
 });
 
-test("activity stage tabs were replaced by compact journey context", () => {
+test("activity stage tabs were replaced by lesson-specific context", () => {
   assert.match(progress, /Contexto de/u);
   assert.match(progress, /Voltar à jornada/u);
-  assert.doesNotMatch(progress, /Painel/u);
+  assert.match(progress, /activityTitle/u);
+  assert.doesNotMatch(progress, /Diagnóstico concluído|Diagnóstico pendente/u);
 });
 
-test("OpenAI journey remains prominent before and after enrollment", () => {
-  assert.match(catalog, /eligibleOpenAI/u);
-  assert.match(catalog, /enrolledOpenAI/u);
-  assert.match(catalog, /Minhas jornadas/u);
-  assert.match(catalog, /Começar jornada OpenAI/u);
+test("featured journey and catalog sections are driven by published presentation data", () => {
+  assert.match(catalog, /presentation\.featured/u);
+  assert.match(catalog, /featured_rank/u);
+  assert.match(catalog, /Em andamento/u);
+  assert.match(catalog, /Para começar/u);
+  assert.match(catalog, /Outras jornadas/u);
+  assert.match(catalog, /Concluídas/u);
+  assert.doesNotMatch(catalog, /eligibleOpenAI|enrolledOpenAI/u);
   assert.match(resilienceMigration, /internal_test_only/u);
   assert.match(resilienceMigration, /exception[\s\S]*when others/u);
 });
