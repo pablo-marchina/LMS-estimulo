@@ -5,6 +5,7 @@ export type LibraryJourneyLink = {
 };
 
 export type LibraryContentKind = "article" | "external_link" | "file";
+export type LibraryContentFormat = "article" | "video" | "podcast" | "guide" | "tool" | "course" | "image" | "pdf" | "audio" | "other";
 
 export type LibraryItemSummary = {
   library_item_id: string;
@@ -14,11 +15,12 @@ export type LibraryItemSummary = {
   title: string;
   summary: string;
   content_kind: LibraryContentKind;
-  content_format: "article" | "video" | "podcast" | "guide" | "tool" | "course" | "other";
+  content_format: LibraryContentFormat;
   level: "introductory" | "intermediate" | "advanced" | "all";
   estimated_minutes: number;
   source_type: "estimulo" | "partner" | "external";
   source_name: string;
+  external_url?: string | null;
   language_code: string;
   topics: string[];
   visibility: "authenticated" | "organization";
@@ -27,6 +29,7 @@ export type LibraryItemSummary = {
   rank: number;
   file_object_id: string | null;
   original_filename: string | null;
+  file_content_type?: string | null;
 };
 
 export type LibraryListing = {
@@ -34,11 +37,7 @@ export type LibraryListing = {
   total: number;
   limit: number;
   offset: number;
-  facets: {
-    topics: string[];
-    formats: string[];
-    levels: string[];
-  };
+  facets: { topics: string[]; formats: string[]; levels: string[] };
 };
 
 export type LibraryContent = LibraryItemSummary & {
@@ -46,6 +45,8 @@ export type LibraryContent = LibraryItemSummary & {
   accessibility_metadata: Record<string, unknown>;
   has_external_link: boolean;
   has_file: boolean;
+  external_url: string | null;
+  file_content_type: string | null;
 };
 
 export type OperatorLibraryItem = {
@@ -60,7 +61,7 @@ export type OperatorLibraryItem = {
   summary: string;
   body: string | null;
   content_kind: LibraryContentKind;
-  content_format: LibraryItemSummary["content_format"];
+  content_format: LibraryContentFormat;
   level: LibraryItemSummary["level"];
   estimated_minutes: number;
   source_type: LibraryItemSummary["source_type"];
@@ -82,12 +83,7 @@ export type OperatorLibraryItem = {
 export type OperatorLibraryData = {
   organization_id: string;
   items: OperatorLibraryItem[];
-  journey_versions: Array<{
-    journey_version_id: string;
-    title: string;
-    version_number: number;
-    status: "draft" | "published";
-  }>;
+  journey_versions: Array<{ journey_version_id: string; title: string; version_number: number; status: "draft" | "published" }>;
 };
 
 export type LibraryAccessResult = {
@@ -131,9 +127,4 @@ export type LibraryUploadedFile = {
   security_status: string;
 };
 
-export type LibraryFileDownload = {
-  bucket: string;
-  object_key: string;
-  filename: string;
-  content_type: string;
-};
+export type LibraryFileDownload = { bucket: string; object_key: string; filename: string; content_type: string };
