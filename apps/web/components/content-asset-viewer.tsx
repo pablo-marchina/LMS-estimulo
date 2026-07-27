@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ExternalLink, FileAudio, FileImage, FileText, PlayCircle } from "lucide-react";
+import { CheckCircle2, ExternalLink, FileAudio, FileImage, FileText, PlayCircle, RefreshCw } from "lucide-react";
 import type { ActivityAsset } from "@/lib/journey-runtime/contracts";
 
 export type ContentViewerAsset = Partial<ActivityAsset> & {
@@ -33,11 +33,7 @@ type YouTubePlayer = {
 type YouTubeApi = {
   Player: new (
     element: HTMLElement,
-    options: {
-      events?: {
-        onStateChange?: (event: { data: number; target: YouTubePlayer }) => void;
-      };
-    },
+    options: { events?: { onStateChange?: (event: { data: number; target: YouTubePlayer }) => void } },
   ) => YouTubePlayer;
   PlayerState: { PLAYING: number; ENDED: number; PAUSED: number };
 };
@@ -73,15 +69,17 @@ function loadYouTubeApi(): Promise<YouTubeApi> {
   return youtubeApiPromise;
 }
 
-function youtubeSource(raw: string | null | undefined) {
+type YouTubeSource = { videoId: string | null; playlistId: string | null };
+
+function youtubeSource(raw: string | null | undefined): YouTubeSource | null {
   if (!raw) return null;
   try {
     const url = new URL(raw);
     const host = url.hostname.replace(/^www\./, "");
-    if (host === "youtu.be") return { videoId: url.pathname.slice(1), playlistId: url.searchParams.get("list") };
+    if (host === "youtu.be") return { videoId: url.pathname.split("/").filter(Boolean)[0] ?? null, playlistId: url.searchParams.get("list") };
     if (["youtube.com", "m.youtube.com", "youtube-nocookie.com"].includes(host)) {
       const parts = url.pathname.split("/").filter(Boolean);
-      const videoId = url.searchParams.get("v") ?? (parts[0] === "embed" || parts[0] === "shorts" ? parts[1] : null);
+      const videoId = url.searchParams.get("v") ?? (["embed", "shorts", "live"].includes(parts[0] ?? "") ? parts[1] ?? null : null);
       return { videoId, playlistId: url.searchParams.get("list") };
     }
   } catch {
@@ -90,15 +88,15 @@ function youtubeSource(raw: string | null | undefined) {
   return null;
 }
 
-function youtubeEmbed(source: ReturnType<typeof youtubeSource>) {
-  if (!source || typeof window === "undefined") return null;
-  const params = new URLSearchParams({ rel: "0", playsinline: "1", enablejsapi: "1", origin: window.location.origin });
+function youtubeEmbed(source: YouTubeSource | null) {
+  if (!source) return null;
+  const params = new URLSearchParams({ rel: "0", playsinline: "1", enablejsapi: "1" });
   if (source.playlistId) params.set("list", source.playlistId);
   if (!source.videoId && source.playlistId) {
     params.set("listType", "playlist");
-    return `https://www.youtube-nocookie.com/embed/videoseries?${params.toString()}`;
+    return `https://www.youtube.com/embed/videoseries?${params.toString()}`;
   }
-  return source.videoId ? `https://www.youtube-nocookie.com/embed/${source.videoId}?${params.toString()}` : null;
+  return source.videoId ? `https://www.youtube.com/embed/${source.videoId}?${params.toString()}` : null;
 }
 
 function vimeoEmbed(raw: string | null | undefined) {
@@ -132,6 +130,7 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
   const [ratio, setRatio] = useState(asset.progress?.completion_ratio ?? 0);
   const [completed, setCompleted] = useState(Boolean(asset.progress?.completed));
   const [saving, setSaving] = useState(false);
+  const [frameLoaded, setFrameLoaded] = useState(false);
   const ratioRef = useRef(ratio);
   const lastSent = useRef(asset.progress?.watched_seconds ?? 0);
   const youtubeFrame = useRef<HTMLIFrameElement>(null);
@@ -178,7 +177,7 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
   }, [asset.id, progressEndpoint]);
 
   useEffect(() => {
-    if (!youtubeUrl || !youtubeFrame.current) return;
+    if (!youtubeUrl || !youtube?.videoId || !youtubeFrame.current) return;
     let cancelled = false;
     loadYouTubeApi().then((YT) => {
       if (cancelled || !youtubeFrame.current) return;
@@ -191,27 +190,24 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
                 void persist(event.target.getCurrentTime(), event.target.getDuration() || null, false);
               }, 5000);
             }
-            if (event.data === YT.PlayerState.ENDED) {
-              void persist(event.target.getDuration(), event.target.getDuration(), true);
-            }
+            if (event.data === YT.PlayerState.ENDED) void persist(event.target.getDuration(), event.target.getDuration(), true);
           },
         },
       });
-    }).catch(() => {
-      // O iframe continua funcional mesmo quando a API de acompanhamento é bloqueada.
-    });
+    }).catch(() => undefined);
     return () => {
       cancelled = true;
       if (interval.current) clearInterval(interval.current);
       youtubePlayer.current?.destroy();
       youtubePlayer.current = null;
     };
-  }, [persist, youtubeUrl]);
+  }, [persist, youtube?.videoId, youtubeUrl]);
 
   const markViewed = () => void persist(1, 1, true);
   const viewerClass = compact ? "rounded-xl" : "rounded-2xl";
   const mediaUrl = downloadHref ?? externalUrl;
   const isLibraryArticle = type === "library_article" && Boolean(asset.library_body);
+  const embedded = Boolean(youtubeUrl || vimeo);
 
   return (
     <article className={`brand-media-card overflow-hidden border border-border bg-white shadow-sm ${viewerClass}`}>
@@ -227,24 +223,24 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
         </span>
       </div>
 
-      {youtubeUrl ? <iframe ref={youtubeFrame} className="aspect-video w-full bg-black" src={youtubeUrl} title={asset.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /> : null}
-      {!youtubeUrl && vimeo ? <iframe className="aspect-video w-full bg-black" src={vimeo} title={asset.title} allow="autoplay; fullscreen; picture-in-picture" allowFullScreen /> : null}
-      {!youtubeUrl && !vimeo && type === "video" && mediaUrl ? <video className="aspect-video w-full bg-black" src={mediaUrl} controls preload="metadata" onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /> : null}
+      {youtubeUrl ? <div className="relative aspect-video w-full bg-black"><iframe ref={youtube?.videoId ? youtubeFrame : undefined} className="absolute inset-0 size-full" src={youtubeUrl} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /><span className="sr-only">Carregando vídeo</span></div> : null}</div> : null}
+      {!youtubeUrl && vimeo ? <div className="relative aspect-video w-full bg-black"><iframe className="absolute inset-0 size-full" src={vimeo} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="autoplay; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /></div> : null}</div> : null}
+      {!embedded && type === "video" && mediaUrl ? <video className="aspect-video w-full bg-black" src={mediaUrl} controls playsInline preload="metadata" onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /> : null}
       {type === "audio" && mediaUrl ? <div className="flex min-h-36 items-center gap-4 bg-info-soft p-6"><FileAudio className="text-info" size={34} /><audio className="w-full" src={mediaUrl} controls preload="metadata" onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /></div> : null}
       {type === "image" && mediaUrl ? <img src={mediaUrl} alt={metadataText(asset, "alt") ?? asset.title} className="max-h-[38rem] w-full bg-surface-muted object-contain" /> : null}
       {type === "pdf" && mediaUrl ? <object data={mediaUrl} type="application/pdf" className="h-[min(70vh,48rem)] w-full"><p className="p-6 text-sm text-muted">Seu navegador não exibiu o PDF. Use o botão abaixo para abrir o arquivo.</p></object> : null}
       {isLibraryArticle ? <div className="grid gap-4 px-5 py-6 text-sm leading-7 text-ink/90">{asset.library_body?.split(/\n{2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`} className="whitespace-pre-line">{paragraph}</p>)}</div> : null}
-      {(type === "external_link" || type === "link" || type === "library") && !youtubeUrl && !vimeo ? <div className="grid min-h-44 place-items-center bg-primary-soft/55 p-6 text-center"><div><ExternalLink className="mx-auto text-primary" size={34} /><p className="mt-3 max-w-xl text-sm leading-6 text-muted">Este conteúdo é mantido pela fonte indicada. Use o botão abaixo para acessá-lo.</p></div></div> : null}
-      {!mediaUrl && !youtubeUrl && !vimeo && !isLibraryArticle ? <div className="grid min-h-40 place-items-center bg-surface-muted p-6 text-center"><FileText className="text-primary" size={34} /><p className="mt-2 text-sm text-muted">O arquivo está indisponível no momento.</p></div> : null}
+      {(type === "external_link" || type === "link" || type === "library") && !embedded ? <div className="grid min-h-44 place-items-center bg-primary-soft/55 p-6 text-center"><div><ExternalLink className="mx-auto text-primary" size={34} /><p className="mt-3 max-w-xl text-sm leading-6 text-muted">Este conteúdo é mantido pela fonte indicada. Use o botão abaixo para acessá-lo.</p></div></div> : null}
+      {!mediaUrl && !embedded && !isLibraryArticle ? <div className="grid min-h-40 place-items-center bg-surface-muted p-6 text-center"><FileText className="text-primary" size={34} /><p className="mt-2 text-sm text-muted">O conteúdo não pôde ser carregado. Abra a fonte ou tente novamente.</p></div> : null}
 
       <div className="grid gap-3 px-4 py-3">
         {progressEndpoint ? <div className="grid gap-1.5"><div className="flex justify-between text-xs font-semibold text-muted"><span>Progresso deste conteúdo</span><span>{saving ? "Salvando…" : `${Math.round(ratio * 100)}%`}</span></div><div className="h-2 overflow-hidden rounded-full bg-primary-soft"><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.round(ratio * 100)}%` }} /></div></div> : null}
         <div className="flex flex-wrap items-center gap-2">
-          {externalUrl && !youtubeUrl && !vimeo && !["video", "audio", "image", "pdf", "library_article"].includes(type) ? <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-hover"><ExternalLink size={15} /> Abrir conteúdo</a> : null}
-          {externalUrl && (youtubeUrl || vimeo) ? <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft"><ExternalLink size={15} /> Abrir na fonte</a> : null}
+          {externalUrl ? <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft"><ExternalLink size={15} /> Abrir na fonte</a> : null}
           {downloadHref ? <a href={downloadHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft">{type === "image" ? <FileImage size={15} /> : <FileText size={15} />} Abrir arquivo</a> : null}
-          {progressEndpoint && !completed && !["video", "audio"].includes(type) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">Marcar como visto</button> : null}
+          {progressEndpoint && !completed && (!(["video", "audio"].includes(type)) || Boolean(youtube?.playlistId && !youtube.videoId)) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">Marcar como concluído</button> : null}
         </div>
+        {embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
       </div>
     </article>
   );
