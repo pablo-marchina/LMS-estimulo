@@ -7,6 +7,10 @@ export type JourneyPresentation = {
   icon?: string;
   tags?: string[];
   cta?: string;
+  card_background_file_object_id?: string;
+  featured_background_file_object_id?: string;
+  card_background_alt?: string;
+  featured_background_alt?: string;
   [key: string]: unknown;
 };
 
@@ -130,6 +134,13 @@ export type ActivityAsset = {
   position: number;
   is_required: boolean;
   progress: ActivityAssetProgress;
+  library_item_version_id?: string | null;
+  library_slug?: string | null;
+  library_body?: string | null;
+  library_content_kind?: string | null;
+  library_content_format?: string | null;
+  library_summary?: string | null;
+  library_source_name?: string | null;
 };
 
 export type AssessmentOption = { id: string; code: string; label: string; position: number };
