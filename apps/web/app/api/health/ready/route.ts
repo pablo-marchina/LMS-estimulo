@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertCpfProtectionReady } from "@/lib/identity/cpf";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 
+// This route is the production release gate for authentication and signup contracts.
 export const dynamic = "force-dynamic";
 
 const requiredEnvironment = [
