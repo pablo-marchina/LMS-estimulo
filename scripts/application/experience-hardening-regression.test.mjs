@@ -3,9 +3,11 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const read = (path) => readFile(path, "utf8");
-const [signup, signupAction, preview, globals, legacyMotion, participantShell, adminShell, adminHome, product, library, diagnostic, points, gateway, announcementAdmin, announcementCarousel, announcementRoute] = await Promise.all([
+const [signup, signupAction, signupCompletion, signupCompletionAction, preview, globals, legacyMotion, participantShell, adminShell, adminHome, product, library, diagnostic, points, gateway, announcementAdmin, announcementCarousel, announcementRoute] = await Promise.all([
   read("apps/web/app/cadastro/page.tsx"),
   read("apps/web/app/cadastro/actions.ts"),
+  read("apps/web/app/cadastro/concluir/page.tsx"),
+  read("apps/web/app/cadastro/concluir/actions.ts"),
   read("apps/web/components/file-upload-preview.tsx"),
   read("apps/web/app/globals.css"),
   read("apps/web/app/brand-motion.css"),
@@ -22,13 +24,16 @@ const [signup, signupAction, preview, globals, legacyMotion, participantShell, a
   read("apps/web/app/api/announcement-banner-uploads/route.ts"),
 ]);
 
-test("initial signup collects protected identity and contact data", () => {
-  assert.match(signup, /name="cpf"/u);
-  assert.match(signup, /name="telefone"/u);
-  assert.match(signup, /name="cnpj"/u);
-  assert.match(signupAction, /protectCpf/u);
-  assert.match(signupAction, /signup_cpf_encrypted/u);
-  assert.match(signupAction, /toE164Br/u);
+test("signup confirms email before collecting protected identity and contact data", () => {
+  assert.doesNotMatch(signup, /name="cpf"/u);
+  assert.doesNotMatch(signup, /name="telefone"/u);
+  assert.doesNotMatch(signup, /name="cnpj"/u);
+  assert.doesNotMatch(signupAction, /protectCpf/u);
+  assert.match(signupCompletion, /name="cpf"/u);
+  assert.match(signupCompletion, /name="telefone"/u);
+  assert.match(signupCompletion, /name="cnpj"/u);
+  assert.match(signupCompletionAction, /protectCpf/u);
+  assert.match(signupCompletionAction, /toE164Br/u);
 });
 
 test("upload fields provide image PDF and generic previews", () => {
