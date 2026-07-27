@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
-import { saveAdminProductResource } from "@/lib/admin/product-management";
+import { configureAdminPathTemplate, saveAdminProductResource } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
@@ -17,12 +17,7 @@ function deriveCode(source: string, fallback: string) {
 function positiveInteger(value: string, fallback = 1) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function secureExternalUrl(value: string): string | null {
   if (!value) return null;
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : null;
-  } catch {
-    return null;
-  }
+  try { const url = new URL(value); return url.protocol === "https:" ? url.toString() : null; } catch { return null; }
 }
 
 function quizQuestionsFromForm(formData: FormData) {
@@ -42,6 +37,14 @@ function quizQuestionsFromForm(formData: FormData) {
   return questions;
 }
 
+function contentSectionsFromForm(formData: FormData) {
+  return [0, 1, 2, 3].map((index) => ({
+    code: `parte_${index + 1}`,
+    heading: text(formData, `section_heading_${index}`),
+    body: text(formData, `section_body_${index}`),
+  })).filter((section) => section.heading && section.body);
+}
+
 async function authorize() {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
@@ -55,11 +58,21 @@ export async function saveTrilhaAction(formData: FormData) {
   const journeyVersionId = text(formData, "journey_version_id");
   const name = text(formData, "name");
   try {
-    await saveAdminProductResource({
+    const result = await saveAdminProductResource({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId,
       resourceType: "path_template",
       payload: { journey_version_id: journeyVersionId, name, description: nullable(formData, "description"), position: positiveInteger(text(formData, "position")), code: deriveCode(name, "trilha") },
+      idempotencyKey: randomUUID(),
+    });
+    const pathTemplateId = String(result.path_template_id ?? "");
+    if (!pathTemplateId) throw new Error("PATH_TEMPLATE_MISSING");
+    await configureAdminPathTemplate({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId,
+      pathTemplateId,
+      isRequired: checked(formData, "is_required"),
+      presentation: { tone: text(formData, "tone") || "cyan", icon: text(formData, "icon") || "sparkles" },
       idempotencyKey: randomUUID(),
     });
   } catch (error) {
@@ -76,14 +89,17 @@ export async function saveAulaAction(formData: FormData) {
   const title = text(formData, "title");
   const position = positiveInteger(text(formData, "position"));
   const isClosing = checked(formData, "is_closing");
-  const prompts = [0,1,2,3,4,5].map((index) => ({ title: text(formData, `prompt_title_${index}`), text: text(formData, `prompt_text_${index}`) })).filter((prompt) => prompt.title && prompt.text);
+  const prompts = [0, 1, 2, 3, 4, 5].map((index) => ({ title: text(formData, `prompt_title_${index}`), text: text(formData, `prompt_text_${index}`) })).filter((prompt) => prompt.title && prompt.text);
+  const sections = contentSectionsFromForm(formData);
   const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
   const questions = quizQuestionsFromForm(formData);
-  const videoUrl = secureExternalUrl(text(formData, "video_url"));
-  const videoTitle = text(formData, "video_title") || title;
-  const videoDescription = text(formData, "video_description");
+  const assetUrlRaw = text(formData, "asset_url") || text(formData, "video_url");
+  const assetUrl = secureExternalUrl(assetUrlRaw);
+  const assetType = text(formData, "asset_type") || "video";
+  const assetTitle = text(formData, "asset_title") || text(formData, "video_title") || title;
+  const assetDescription = text(formData, "asset_description") || text(formData, "video_description");
   const back = `/admin/produto?etapa=aulas&versao=${journeyVersionId}&trilha=${pathTemplateId}`;
-  if (!title || !pathTemplateId || (text(formData, "video_url") && !videoUrl) || (isClosing && (!questions.length || !checklist.length))) redirect(`${back}&erro=campos_incompletos`);
+  if (!title || !pathTemplateId || (assetUrlRaw && !assetUrl) || (isClosing && (!questions.length || !checklist.length))) redirect(`${back}&erro=campos_incompletos`);
 
   try {
     const activityResult = await saveAdminProductResource({
@@ -97,9 +113,14 @@ export async function saveAulaAction(formData: FormData) {
         description: nullable(formData, "description"),
         activity_type: isClosing ? "practice" : "content",
         estimated_minutes: positiveInteger(text(formData, "estimated_minutes"), 10),
-        configuration: { ...(prompts.length ? { prompts } : {}), ...(checklist.length ? { practice_checklist: checklist } : {}) },
-        ...(videoUrl ? { asset: { type: "video", title: videoTitle, url: videoUrl, language: "pt-BR", required: false, accessibility: { description: videoDescription || `Vídeo complementar da atividade ${title}.` } } } : {}),
-        ...(isClosing ? { assessment: { questions }, practice: { submission_mode: "file", allowed_evidence_types: ["file", "text"], review_required: true } } : {}),
+        configuration: {
+          ...(sections.length ? { content_sections: sections } : {}),
+          ...(prompts.length ? { prompts } : {}),
+          ...(checklist.length ? { practice_checklist: checklist } : {}),
+        },
+        ...(assetUrl ? { asset: { type: assetType, title: assetTitle, url: assetUrl, language: "pt-BR", required: checked(formData, "asset_required"), accessibility: { description: assetDescription || `Conteúdo complementar da atividade ${title}.` } } } : {}),
+        ...(questions.length ? { assessment: { questions, passing_score: positiveInteger(text(formData, "passing_score"), 80), max_attempts: positiveInteger(text(formData, "max_attempts"), 5) } } : {}),
+        ...(isClosing ? { practice: { submission_mode: "file", allowed_evidence_types: ["file", "text"], review_required: true } } : {}),
       },
       idempotencyKey: randomUUID(),
     });
@@ -110,7 +131,7 @@ export async function saveAulaAction(formData: FormData) {
       actorUserAccountId: auth.identity.user_account_id,
       organizationId,
       resourceType: "path_step",
-      payload: { code: deriveCode(stepCode, "passo"), path_template_id: pathTemplateId, step_code: stepCode, activity_version_id: activityVersionId, position, is_required: true, metadata: {} },
+      payload: { code: deriveCode(stepCode, "passo"), path_template_id: pathTemplateId, step_code: stepCode, activity_version_id: activityVersionId, position, is_required: true, metadata: { always_available: true } },
       idempotencyKey: randomUUID(),
     });
   } catch (error) {
