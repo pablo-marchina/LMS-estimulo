@@ -81,18 +81,17 @@ export default async function ActivityPage({ params, searchParams }: {
       <ActivityContentProgress completedSections={accepted} sectionTotal={sectionTotal} assets={activity.assets.map((asset) => ({ id: asset.id, completed: asset.progress.completed }))} />
 
       {activity.assets.length ? (
-        <section className="grid gap-4" aria-labelledby="midias-titulo">
-          <div><p className="brand-kicker">Assista, ouça ou explore</p><h2 id="midias-titulo" className="display-font mt-1 text-2xl text-secondary">Conteúdos desta atividade</h2><p className="mt-2 text-sm text-muted">Seu progresso é salvo enquanto você consome os materiais. Conteúdos obrigatórios precisam chegar a 90% ou ser marcados como vistos.</p></div>
+        <section className="grid gap-4" id="conteudo" aria-labelledby="midias-titulo">
+          <div><p className="brand-kicker">Assista, ouça ou explore</p><h2 id="midias-titulo" className="display-font mt-1 text-2xl text-secondary">Conteúdos desta atividade</h2><p className="mt-2 text-sm text-muted">Seu progresso é salvo enquanto você consome os materiais. Conteúdos obrigatórios precisam chegar a 90% ou ser marcados como concluídos.</p></div>
           {activity.assets.map((asset) => <ContentAssetViewer key={asset.id} asset={asset} progressEndpoint={`/api/activity-assets/progress?step=${encodeURIComponent(stepInstanceId)}`} downloadHref={asset.file_object_id ? `/api/activity-assets/${asset.id}/download?step=${encodeURIComponent(stepInstanceId)}` : null} />)}
         </section>
       ) : null}
 
       {activity.sections.length ? (
-        <form action={acknowledgeActivityAction} className="grid gap-4" id="conteudo">
+        <form action={acknowledgeActivityAction} className="grid gap-4" id={activity.assets.length ? "leitura" : "conteudo"} aria-label="Conteúdo escrito da atividade">
           <input type="hidden" name="journey_instance_id" value={journey} />
           <input type="hidden" name="step_instance_id" value={stepInstanceId} />
           <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <div><p className="brand-kicker">Leitura guiada</p><h2 className="display-font mt-1 text-2xl text-secondary">Ideias essenciais</h2></div>
           <div className="grid gap-4 lg:grid-cols-2">
             {activity.sections.map((section, index) => {
               const alreadyAccepted = index < accepted;
@@ -100,7 +99,7 @@ export default async function ActivityPage({ params, searchParams }: {
                 <div className="flex items-center justify-between gap-3"><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">Parte {index + 1}</p>{alreadyAccepted ? <span className="inline-flex items-center gap-1 text-xs font-bold text-success"><CheckCircle2 size={14} /> Confirmada</span> : null}</div>
                 <h3 className="mt-2 text-lg font-black text-secondary">{text(section.heading) ?? text(section.title) ?? section.code}</h3>
                 {text(section.body) ? <p className="mt-3 whitespace-pre-line text-sm leading-7 text-ink/90">{text(section.body)}</p> : null}
-                {!alreadyAccepted ? <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-xl bg-primary-soft/60 p-3 text-sm text-ink"><input type="checkbox" name={`section_${section.code}`} className="mt-0.5 size-4 accent-primary" /><span>Li, compreendi e consigo relacionar esta parte à atividade.</span></label> : null}
+                {!alreadyAccepted ? <label className="mt-5 flex cursor-pointer items-start gap-2.5 rounded-xl bg-primary-soft/60 p-3 text-sm text-ink"><input type="checkbox" name={`section_${section.code}`} className="mt-0.5 size-4 accent-primary" /><span>Li e compreendi esta parte.</span></label> : null}
               </Card>;
             })}
           </div>
