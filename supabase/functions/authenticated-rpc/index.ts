@@ -74,6 +74,7 @@ const allowedRpcs = new Set([
   "list_practice_submissions",
   "moderate_activity_comment",
   "persist_configurable_product_result",
+  "provision_public_signup_participant_v3",
   "publish_admin_journey_version",
   "publish_certificate_version",
   "publish_library_content",
@@ -99,6 +100,10 @@ const legacyActorArgument = new Set([
   "e14_start_activity",
   "e14_start_quick_check",
   "e14_submit_quick_check",
+]);
+
+const userAccountActorArgument = new Set([
+  "provision_public_signup_participant_v3",
 ]);
 
 function json(status: number, body: Record<string, unknown>) {
@@ -141,7 +146,11 @@ Deno.serve(async (request: Request) => {
   if (identityError || !identity?.user_account_id) return json(403, { ok: false, code: identityError?.code ?? "IDENTITY_RESOLUTION_FAILED", message: identityError?.message ?? "Internal identity unavailable" });
   if (name === currentIdentityOperation) return json(200, { ok: true, data: identity });
 
-  const actorArgument = legacyActorArgument.has(name) ? "a" : "p_actor_user_account_id";
+  const actorArgument = legacyActorArgument.has(name)
+    ? "a"
+    : userAccountActorArgument.has(name)
+      ? "p_user_account_id"
+      : "p_actor_user_account_id";
   if (args[actorArgument] !== identity.user_account_id) return json(403, { ok: false, code: "ACTOR_MISMATCH", message: "RPC actor does not match the authenticated identity" });
   const { data, error } = await admin.rpc(name, args);
   if (error) return json(400, { ok: false, code: error.code ?? "RPC_ERROR", message: error.message });
