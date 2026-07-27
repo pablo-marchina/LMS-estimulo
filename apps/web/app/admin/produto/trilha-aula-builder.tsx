@@ -1,143 +1,43 @@
 import { Button } from "@/components/ui/button";
-import { Input, Textarea } from "@/components/ui/input";
+import { Input, Select, Textarea } from "@/components/ui/input";
 import type { Trilha, TrilhaAula } from "@/lib/admin/product-management";
 import { saveAulaAction } from "./actions";
 
-type TrilhaAulaBuilderProps = {
-  journeyVersionId: string;
-  organizationId: string;
-  trilha: Trilha;
-};
+type TrilhaAulaBuilderProps = { journeyVersionId: string; organizationId: string; trilha: Trilha };
 
 function aulaSummary(aula: TrilhaAula) {
   const details: string[] = [];
-  if (aula.assessment) details.push(`Quiz (${aula.assessment.questions.length} pergunta(s))`);
+  if (aula.assets?.length) details.push(`${aula.assets.length} mídia(s)`);
+  if (aula.assessment) details.push(`Verificação (${aula.assessment.questions.length})`);
   if (aula.practice) details.push("Entrega prática");
   return details.length ? ` · ${details.join(" · ")}` : "";
 }
 
 export function TrilhaAulaBuilder({ journeyVersionId, organizationId, trilha }: TrilhaAulaBuilderProps) {
   const aulas = trilha.aulas.slice().sort((a, b) => a.position - b.position);
-
   return (
-    <article className="grid gap-4 rounded-xl border border-border bg-surface p-4">
-      <header className="grid gap-1">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-base font-semibold text-ink">{trilha.position}. {trilha.name}</h4>
-          <span className="text-xs text-muted">{aulas.length} aula(s)</span>
-        </div>
-        {trilha.description ? <p className="max-w-3xl text-sm text-muted">{trilha.description}</p> : null}
-        {trilha.badge ? <p className="text-xs font-medium text-ink">Selo: {trilha.badge.title}</p> : null}
-      </header>
+    <article className="grid gap-4 rounded-2xl border border-border bg-surface p-4 shadow-sm">
+      <header className="grid gap-1"><div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-base font-black text-secondary">{trilha.position}. {trilha.name}</h4><span className="text-xs text-muted">{aulas.length} aula(s) · todas ficarão disponíveis</span></div>{trilha.description ? <p className="max-w-3xl text-sm text-muted">{trilha.description}</p> : null}{trilha.badge ? <p className="text-xs font-medium text-ink">Selo: {trilha.badge.title}</p> : null}</header>
 
-      <section className="grid gap-2" aria-label={`Aulas de ${trilha.name}`}>
-        <h5 className="text-sm font-semibold text-ink">Aulas</h5>
-        {aulas.length ? aulas.map((aula) => (
-          <div key={aula.step_id} className="flex flex-wrap items-start justify-between gap-2 rounded-lg bg-background px-3 py-2">
-            <p className="text-sm text-ink">
-              <strong>{aula.position}. {aula.title}</strong>
-              <span className="text-muted">{aulaSummary(aula)}</span>
-            </p>
-            <span className="text-xs text-muted">{aula.activity_type === "practice" ? "Encerramento" : "Conteúdo"}</span>
-          </div>
-        )) : <p className="text-sm text-muted">Nenhuma aula adicionada.</p>}
-      </section>
+      <section className="grid gap-2" aria-label={`Aulas de ${trilha.name}`}><h5 className="text-sm font-semibold text-ink">Aulas configuradas</h5>{aulas.length ? aulas.map((aula) => <div key={aula.step_id} className="flex flex-wrap items-start justify-between gap-2 rounded-xl border border-border bg-white px-3 py-3"><p className="text-sm text-ink"><strong>{aula.position}. {aula.title}</strong><span className="text-muted">{aulaSummary(aula)}</span></p><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">{aula.activity_type === "practice" ? "Encerramento" : "Conteúdo"}</span></div>) : <p className="text-sm text-muted">Nenhuma aula adicionada.</p>}</section>
 
-      <details className="group rounded-lg border border-border bg-background">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-primary marker:content-none [&::-webkit-details-marker]:hidden">
-          Adicionar aula
-        </summary>
-        <form action={saveAulaAction} className="grid gap-4 border-t border-border p-4">
-          <input type="hidden" name="organization_id" value={organizationId} />
-          <input type="hidden" name="journey_version_id" value={journeyVersionId} />
-          <input type="hidden" name="path_template_id" value={trilha.id} />
-          <input type="hidden" name="position" value={String(aulas.length + 1)} />
+      <details className="group rounded-2xl border border-primary/20 bg-white" open={aulas.length === 0}>
+        <summary className="cursor-pointer px-4 py-3 text-sm font-black text-primary marker:content-none [&::-webkit-details-marker]:hidden">Adicionar aula completa</summary>
+        <form action={saveAulaAction} className="grid gap-5 border-t border-border p-4">
+          <input type="hidden" name="organization_id" value={organizationId} /><input type="hidden" name="journey_version_id" value={journeyVersionId} /><input type="hidden" name="path_template_id" value={trilha.id} /><input type="hidden" name="position" value={String(aulas.length + 1)} />
+          <div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1.5 text-sm font-medium text-ink">Título da aula<Input name="title" required /></label><label className="grid gap-1.5 text-sm font-medium text-ink">Duração estimada em minutos<Input name="estimated_minutes" type="number" min="1" defaultValue="10" required /></label></div>
+          <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição para o participante<Textarea name="description" rows={3} placeholder="Explique o resultado esperado e por que a atividade importa." /></label>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="grid gap-1.5 text-sm font-medium text-ink">
-              Título da aula
-              <Input name="title" required />
-            </label>
-            <label className="grid gap-1.5 text-sm font-medium text-ink">
-              Duração estimada em minutos
-              <Input name="estimated_minutes" type="number" min="1" defaultValue="10" required />
-            </label>
-          </div>
+          <fieldset className="grid gap-3 rounded-2xl border border-brand-cyan/35 bg-info-soft/40 p-4"><legend className="px-1 text-sm font-black text-secondary">Conteúdo interno da aula</legend><p className="text-xs leading-5 text-muted">Crie até quatro partes de leitura. Cada parte precisa de título e texto; blocos vazios serão ignorados.</p>{[0, 1, 2, 3].map((index) => <div key={index} className="grid gap-2 rounded-xl bg-white p-3"><Input name={`section_heading_${index}`} placeholder={`Título da parte ${index + 1}`} /><Textarea name={`section_body_${index}`} rows={3} placeholder="Texto, instruções, exemplo ou contexto da atividade." /></div>)}</fieldset>
 
-          <label className="grid gap-1.5 text-sm font-medium text-ink">
-            Descrição (rascunho editável)
-            <Textarea name="description" rows={4} />
-          </label>
+          <fieldset className="grid gap-3 rounded-2xl border border-primary/20 bg-primary-soft/35 p-4"><legend className="px-1 text-sm font-black text-secondary">Conteúdo externo ou arquivo relacionado</legend><p className="text-xs leading-5 text-muted">Use um endereço HTTPS. Vídeos e playlists compatíveis são exibidos dentro da plataforma; áudio, imagem e PDF recebem o visualizador correto; páginas externas são abertas com segurança.</p><div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1.5 text-sm font-medium text-ink">Tipo<Select name="asset_type" defaultValue="video"><option value="video">Vídeo</option><option value="audio">Áudio ou podcast</option><option value="image">Imagem</option><option value="pdf">PDF</option><option value="external_link">Página ou ferramenta externa</option><option value="library">Conteúdo da Biblioteca</option></Select></label><label className="grid gap-1.5 text-sm font-medium text-ink">Título<Input name="asset_title" placeholder="Ex.: Mentorias inspiracionais — Estímulo" /></label></div><label className="grid gap-1.5 text-sm font-medium text-ink">Endereço HTTPS<Input name="asset_url" type="url" inputMode="url" placeholder="https://..." /></label><label className="grid gap-1.5 text-sm font-medium text-ink">Descrição acessível<Textarea name="asset_description" rows={2} placeholder="Explique o tema, a fonte e a finalidade do conteúdo." /></label><label className="flex items-start gap-2.5 rounded-xl bg-white p-3 text-sm text-ink"><input type="checkbox" name="asset_required" className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Conteúdo obrigatório</strong><span className="text-muted">Vídeo e áudio são concluídos a partir de 90%; outros formatos podem ser marcados como vistos.</span></span></label></fieldset>
 
-          <fieldset className="grid gap-3 rounded-lg border border-primary/20 bg-primary-soft/35 p-4">
-            <legend className="px-1 text-sm font-semibold text-ink">Vídeo da atividade (opcional)</legend>
-            <p className="text-xs leading-5 text-muted">Use um endereço HTTPS, incluindo vídeos ou playlists do YouTube. O participante verá um player incorporado quando o provedor for compatível.</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Título do vídeo<Input name="video_title" placeholder="Ex.: Mentorias inspiracionais — Estímulo" /></label>
-              <label className="grid gap-1.5 text-sm font-medium text-ink">Endereço do vídeo<Input name="video_url" type="url" inputMode="url" placeholder="https://www.youtube.com/watch?v=..." /></label>
-            </div>
-            <label className="grid gap-1.5 text-sm font-medium text-ink">Descrição acessível<Textarea name="video_description" rows={2} placeholder="Explique brevemente o tema e a finalidade do vídeo." /></label>
-          </fieldset>
+          <fieldset className="grid gap-3 rounded-2xl border border-brand-magenta/25 bg-primary-soft/25 p-4"><legend className="px-1 text-sm font-black text-secondary">Prompts da aula (opcional)</legend><p className="text-xs text-muted">Cada prompt precisa de título e texto.</p>{[0, 1, 2, 3, 4, 5].map((index) => <div key={index} className="grid gap-2 rounded-xl bg-white p-2 sm:grid-cols-[minmax(0,.7fr)_minmax(0,1.3fr)]"><Input name={`prompt_title_${index}`} placeholder={`Título do prompt ${index + 1}`} /><Textarea name={`prompt_text_${index}`} rows={2} placeholder="Texto do prompt" /></div>)}</fieldset>
 
-          <fieldset className="grid gap-3 rounded-lg border border-border p-3">
-            <legend className="px-1 text-sm font-semibold text-ink">Prompts da aula (opcional)</legend>
-            <p className="text-xs text-muted">Preencha apenas os blocos necessários. Cada prompt precisa de título e texto.</p>
-            {[0, 1, 2, 3, 4, 5].map((index) => (
-              <div key={index} className="grid gap-2 rounded-lg bg-background sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)]">
-                <Input name={`prompt_title_${index}`} placeholder={`Título do prompt ${index + 1}`} />
-                <Textarea name={`prompt_text_${index}`} rows={2} placeholder="Texto do prompt" />
-              </div>
-            ))}
-          </fieldset>
+          <fieldset className="grid gap-4 rounded-2xl border border-accent-gold/50 bg-warning-soft/45 p-4"><legend className="px-1 text-sm font-black text-secondary">Verificação rápida de aprendizagem</legend><p className="text-xs leading-5 text-muted">Disponível em qualquer aula. Preencha ao menos uma pergunta, duas alternativas e marque a correta. A equipe pode criar até cinco perguntas.</p><div className="grid gap-3 sm:grid-cols-2"><label className="grid gap-1.5 text-sm font-medium text-ink">Aprovação mínima (%)<Input name="passing_score" type="number" min="1" max="100" defaultValue="80" /></label><label className="grid gap-1.5 text-sm font-medium text-ink">Máximo de tentativas<Input name="max_attempts" type="number" min="1" defaultValue="5" /></label></div>{[0, 1, 2, 3, 4].map((questionIndex) => <div key={questionIndex} className="grid gap-2 rounded-xl bg-white p-3"><Input name={`quiz_prompt_${questionIndex}`} placeholder={questionIndex === 0 ? "Pergunta curta principal da aula" : `Pergunta opcional ${questionIndex + 1}`} /><div className="grid gap-2 sm:grid-cols-2">{[0, 1, 2, 3].map((optionIndex) => <div key={optionIndex} className="flex items-center gap-2 text-xs text-ink"><input type="radio" name={`quiz_correct_${questionIndex}`} value={String(optionIndex)} className="size-4 shrink-0 accent-primary" aria-label={`Marcar alternativa ${optionIndex + 1} como correta`} /><Input name={`quiz_option_${questionIndex}_${optionIndex}`} placeholder={`Alternativa ${optionIndex + 1}`} aria-label={`Texto da alternativa ${optionIndex + 1}`} /></div>)}</div></div>)}</fieldset>
 
-          <label className="flex items-start gap-2.5 rounded-lg border border-border p-3 text-sm text-ink">
-            <input type="checkbox" name="is_closing" value="on" className="mt-0.5 size-4 accent-primary" />
-            <span>
-              <strong className="block">Esta aula encerra a trilha</strong>
-              <span className="text-muted">Cria o quiz final e a entrega prática desta trilha.</span>
-            </span>
-          </label>
-
-          <details className="rounded-lg border border-border">
-            <summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-ink">Quiz e entrega de encerramento</summary>
-            <div className="grid gap-4 border-t border-border p-3">
-              <fieldset className="grid gap-3">
-                <legend className="text-sm font-semibold text-ink">Quiz de encerramento</legend>
-                <p className="text-xs text-muted">Para cada pergunta preenchida, inclua ao menos duas alternativas e marque a correta.</p>
-                {[0, 1, 2, 3, 4].map((questionIndex) => (
-                  <div key={questionIndex} className="grid gap-2 rounded-lg bg-background p-3">
-                    <Input name={`quiz_prompt_${questionIndex}`} placeholder={`Pergunta ${questionIndex + 1}`} />
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {[0, 1, 2, 3].map((optionIndex) => (
-                        <div key={optionIndex} className="flex items-center gap-2 text-xs text-ink">
-                          <input
-                            type="radio"
-                            name={`quiz_correct_${questionIndex}`}
-                            value={String(optionIndex)}
-                            className="size-4 shrink-0 accent-primary"
-                            aria-label={`Marcar alternativa ${optionIndex + 1} como correta`}
-                          />
-                          <Input name={`quiz_option_${questionIndex}_${optionIndex}`} placeholder={`Alternativa ${optionIndex + 1}`} aria-label={`Texto da alternativa ${optionIndex + 1}`} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </fieldset>
-
-              <label className="grid gap-1.5 text-sm font-medium text-ink">
-                Checklist da entrega prática (um item por linha)
-                <Textarea name="practice_checklist" rows={6} />
-              </label>
-
-              <label className="grid gap-1.5 text-sm font-medium text-ink">
-                Nome do Selo desta trilha
-                <Input name="badge_title" />
-                <span className="text-xs font-normal text-muted">O nome fica registrado no formulário; a vinculação automática do Selo será concluída na etapa de credenciais.</span>
-              </label>
-            </div>
-          </details>
-
+          <label className="flex items-start gap-2.5 rounded-2xl border border-border p-3 text-sm text-ink"><input type="checkbox" name="is_closing" value="on" className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Esta aula inclui uma entrega prática</strong><span className="text-muted">Use para atividades de encerramento que exigem arquivo ou evidência. Isso não bloqueia o acesso às outras aulas.</span></span></label>
+          <details className="rounded-2xl border border-border"><summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-ink">Configurar entrega prática</summary><div className="grid gap-4 border-t border-border p-3"><label className="grid gap-1.5 text-sm font-medium text-ink">Checklist da entrega (um item por linha)<Textarea name="practice_checklist" rows={6} /></label><label className="grid gap-1.5 text-sm font-medium text-ink">Nome do selo relacionado<Input name="badge_title" /><span className="text-xs font-normal text-muted">A emissão automática segue a configuração de credenciais da jornada.</span></label></div></details>
           <Button type="submit" size="sm" className="w-fit">Salvar aula</Button>
         </form>
       </details>
