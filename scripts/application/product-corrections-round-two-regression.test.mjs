@@ -46,11 +46,13 @@ test("points page contains only points history rules and ranking", () => {
   assert.match(points, /Ranking/u);
 });
 
-test("profile removes misplaced card accent and displays five-area diagnostic chart", () => {
+test("profile removes misplaced card accent and displays a radar diagnostic chart", () => {
   assert.match(profile, /after:!hidden/u);
   assert.match(profile, /DiagnosticDimensionChart/u);
   assert.match(profile, /participantDiagnosticSummary/u);
-  assert.match(chart, /role="meter"/u);
+  assert.match(chart, /role="img"/u);
+  assert.match(chart, /Gráfico radar do diagnóstico empreendedor/u);
+  assert.match(chart, /polygon/u);
   assert.match(chart, /percentage/u);
 });
 
