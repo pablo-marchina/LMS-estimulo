@@ -12,6 +12,7 @@ const allowedRpcs = new Set([
   "confirm_external_credential_upload",
   "confirm_library_upload",
   "confirm_practice_upload",
+  "configure_admin_path_template",
   "configure_certificate_version",
   "create_activity_comment",
   "create_announcement_banner_upload_intent",
