@@ -10,7 +10,7 @@ const [openJourney, journeyActivityAction, contracts, viewer, progress, activity
   read("apps/web/components/content-asset-viewer.tsx"),
   read("apps/web/components/activity-content-progress.tsx"),
   read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx"),
-  read("apps/web/app/capacitacao/biblioteca/[slug]/page.tsx"),
+  read("apps/web/components/participant-library-content-page.tsx"),
   read("supabase/functions/authenticated-rpc/index.ts"),
   read("apps/web/app/admin/produto/trilha-aula-builder.tsx"),
   read("apps/web/app/admin/produto/activity-content-fields.tsx"),
