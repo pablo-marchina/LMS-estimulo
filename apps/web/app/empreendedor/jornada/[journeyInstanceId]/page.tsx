@@ -69,10 +69,6 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
         <div className="relative mt-6 h-3 overflow-hidden rounded-full bg-white/20"><div className="h-full rounded-full bg-brand-green transition-[width] duration-500" style={{ width: `${Math.min(100, Math.max(0, overallPercent))}%` }} /></div>
       </section>
 
-      <Card className="brand-recognition-strip !border-accent-gold/60 !bg-warning-soft after:!hidden" aria-label="Reconhecimento da jornada">
-        <div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-accent-gold text-secondary"><Award size={21} /></span><div><p className="font-black text-secondary">O que esta jornada pode liberar</p><p className="mt-1 max-w-3xl text-sm leading-6 text-muted">Selos e certificados são concedidos conforme os marcos configurados pela equipe Estímulo. Você pode acompanhar os critérios antes de concluir cada caminho.</p></div></div><ButtonLink href="/empreendedor/conquistas" variant="secondary" size="sm">Ver reconhecimentos</ButtonLink></div>
-      </Card>
-
       {outline.modules.length ? (
         <section className="grid gap-5" aria-labelledby="trilhas-titulo">
           <div><p className="brand-kicker">Seu mapa de aprendizagem</p><h2 id="trilhas-titulo" className="display-font mt-1 text-3xl text-secondary">Trilhas e atividades</h2><p className="mt-2 text-sm text-muted">Abra qualquer aula, alterne entre trilhas e retome exatamente onde parou.</p></div>
@@ -88,6 +84,10 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
           })}
         </section>
       ) : <EmptyState icon={<Route size={24} />} title="Atividades em preparação" tone="info">A equipe ainda está organizando os conteúdos desta jornada.</EmptyState>}
+
+      <Card className="brand-recognition-strip !border-accent-gold/60 !bg-warning-soft after:!hidden" aria-label="Reconhecimento da jornada">
+        <div className="flex flex-wrap items-center justify-between gap-4"><div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-accent-gold text-secondary"><Award size={21} /></span><div><p className="font-black text-secondary">O que esta jornada pode liberar</p><p className="mt-1 max-w-3xl text-sm leading-6 text-muted">Veja os selos e certificados associados depois de conhecer as trilhas e os critérios desta jornada.</p></div></div><ButtonLink href="/empreendedor/conquistas" variant="secondary" size="sm">Ver reconhecimentos</ButtonLink></div>
+      </Card>
 
       <div className="flex flex-wrap gap-3"><ButtonLink href="/empreendedor/jornadas" variant="secondary">Explorar outras jornadas</ButtonLink><ButtonLink href="/empreendedor" variant="ghost" icon={<Sparkles size={15} />}>Voltar ao início</ButtonLink></div>
     </div>
