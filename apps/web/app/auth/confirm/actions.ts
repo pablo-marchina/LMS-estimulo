@@ -56,10 +56,10 @@ export async function confirmEmailAction(formData: FormData) {
 
 export async function resendConfirmationAction(formData: FormData) {
   const parsed = emailSchema.safeParse(formData.get("email"));
-  if (!parsed.success) redirect("/auth/confirm?erro=email_invalido");
+  if (!parsed.success) redirect("/confirm?erro=email_invalido");
 
   const client = await createSessionClient();
-  const callback = new URL("/auth/confirm", publicApplicationOrigin()).toString();
+  const callback = new URL("/confirm", publicApplicationOrigin()).toString();
   const { error } = await client.auth.resend({
     type: "signup",
     email: parsed.data,
@@ -69,13 +69,13 @@ export async function resendConfirmationAction(formData: FormData) {
   if (error) {
     const code = authErrorCode(error);
     if (authErrorStatus(error) === 429 || code.includes("rate_limit")) {
-      redirect("/auth/confirm?erro=limite_envio");
+      redirect("/confirm?erro=limite_envio");
     }
-    redirect("/auth/confirm?erro=envio_falhou");
+    redirect("/confirm?erro=envio_falhou");
   }
 
   // The response remains generic so it does not disclose whether an account
   // exists or whether it is already confirmed. Confirmed accounts do not get
   // another signup email even when the endpoint accepts the request.
-  redirect("/auth/confirm?reenviado=1");
+  redirect("/confirm?reenviado=1");
 }
