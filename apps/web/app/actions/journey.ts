@@ -167,20 +167,19 @@ export async function submitQuickCheckAction(formData: FormData) {
   if (!attempt) throw new Error("ASSESSMENT_ATTEMPT_NOT_AVAILABLE");
 
   for (const question of assessment.questions) {
-    const answer = String(formData.get(`answer_${question.id}`) ?? "");
+    if (question.response) continue;
+    const field = `answer_${question.id}`;
+    const answer = question.question_type === "multiple_choice"
+      ? formData.getAll(field).map(String).map((value) => value.trim()).filter(Boolean).join(",")
+      : String(formData.get(field) ?? "").trim();
     if (!answer) throw new Error("ASSESSMENT_ANSWER_REQUIRED");
-    if (question.response && question.response.option_code !== answer) {
-      throw new Error("ASSESSMENT_ANSWER_ALREADY_RECORDED");
-    }
-    if (!question.response) {
-      await journeyRuntime.recordQuickCheckAnswer(
-        actor,
-        attempt.attempt_id,
-        question.id,
-        answer,
-        `${baseKey}:answer:${question.id}`
-      );
-    }
+    await journeyRuntime.recordQuickCheckAnswer(
+      actor,
+      attempt.attempt_id,
+      question.id,
+      answer,
+      `${baseKey}:answer:${question.id}`
+    );
   }
 
   experience = await journeyRuntime.getParticipantExperience(actor, journey);
