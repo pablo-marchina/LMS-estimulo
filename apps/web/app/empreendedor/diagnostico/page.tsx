@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { submitDiagnosisAction } from "@/app/actions/journey";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StatusPanel } from "@/components/status-panel";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { getAuthContext } from "@/lib/auth/context";
-import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { requireParticipantContext } from "@/lib/auth/participant-context";
+import { participantDiagnosticRuntime } from "@/lib/diagnostics/participant-runtime";
 
 export default async function DiagnosisPage({ searchParams }: { searchParams: Promise<{ journey?: string }> }) {
   const { journey } = await searchParams;
@@ -22,9 +23,9 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
       </div>
     );
   }
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated") return null;
-  const experience = await journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey);
+
+  const auth = await requireParticipantContext();
+  const experience = await participantDiagnosticRuntime.getExperience(auth.identity.user_account_id, journey);
 
   if (experience.state.d?.status === "completed") {
     const step = experience.state.s?.step_instance_id;
@@ -53,9 +54,9 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
       <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
         <JourneyProgressNav state={experience.state} current="diagnostic" />
         <StatusPanel title="Diagnóstico indisponível" tone="warning">
-          <p>A versão publicada desta jornada não possui um diagnóstico disponível.</p>
-          <ButtonLink href="/empreendedor" variant="secondary" className="mt-3">
-            Voltar ao painel
+          <p>O diagnóstico de perfil ainda não está publicado. Nenhuma resposta foi perdida.</p>
+          <ButtonLink href="/empreendedor/perfil" variant="secondary" className="mt-3">
+            Voltar ao perfil
           </ButtonLink>
         </StatusPanel>
       </div>
@@ -67,7 +68,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
       <PageHeader
         eyebrow="Etapa 1"
         title="Diagnóstico inicial"
-        description="As respostas ajudam a escolher o próximo passo da jornada. Elas não constituem avaliação de crédito."
+        description="As respostas ajudam a personalizar recomendações de aprendizagem. Elas não constituem avaliação de crédito."
       />
       <JourneyProgressNav state={experience.state} current="diagnostic" />
       <form action={submitDiagnosisAction} className="grid gap-4">
@@ -103,7 +104,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
           <ButtonLink href="/empreendedor" variant="secondary">
             Voltar ao painel
           </ButtonLink>
-          <Button type="submit">Concluir diagnóstico</Button>
+          <PendingSubmitButton pendingLabel="Salvando diagnóstico…">Concluir diagnóstico</PendingSubmitButton>
         </div>
       </form>
     </div>
