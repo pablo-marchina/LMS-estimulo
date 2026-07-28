@@ -2,12 +2,14 @@ import { randomUUID } from "node:crypto";
 import { BookOpen, CheckCircle2, Compass, Lightbulb, Play, Rocket, Sparkles } from "lucide-react";
 import { selfEnrollAction } from "@/app/actions/enrollment";
 import { openJourneyAction } from "@/app/actions/open-journey";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusPanel } from "@/components/status-panel";
 import { StatusPill } from "@/components/ui/status-pill";
-import { getAuthContext } from "@/lib/auth/context";
+import { requireParticipantContext } from "@/lib/auth/participant-context";
+import { participantCopy } from "@/lib/content/participant-copy";
 import type { JourneyPresentation, JourneyState } from "@/lib/journey-runtime/contracts";
 import { participantNextActionLabel, participantNextHref, statusLabel } from "@/lib/journey-runtime/navigation";
 import { journeyRuntime, type EligibleJourney } from "@/lib/journey-runtime/rpc";
@@ -54,17 +56,22 @@ function coverHref(journey: CatalogJourney, variant: "card" | "featured") {
   return `/api/journey-covers/${versionId}/${resolvedVariant}`;
 }
 
+function fulfilled<T>(result: PromiseSettledResult<T>): T | null {
+  return result.status === "fulfilled" ? result.value : null;
+}
+
 export default async function JornadasCatalogPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated") return null;
+  const auth = await requireParticipantContext();
+  const results = await Promise.allSettled([
+    journeyRuntime.listEligibleJourneys(auth.identity.user_account_id),
+    journeyRuntime.listParticipantJourneys(auth.identity.user_account_id),
+  ] as const);
+  const eligible = fulfilled(results[0]) ?? [];
+  const participant = fulfilled(results[1]);
+  const dataUnavailable = results.some((result) => result.status === "rejected");
 
-  const [eligible, participant] = await Promise.all([
-    journeyRuntime.listEligibleJourneys(auth.identity.user_account_id).catch(() => [] as EligibleJourney[]),
-    journeyRuntime.listParticipantJourneys(auth.identity.user_account_id).catch(() => ({ actor_user_account_id: auth.identity.user_account_id, entrepreneur_id: auth.identity.entrepreneur_id, journeys: [] })),
-  ]);
-
-  const enrolledModels: CatalogJourney[] = participant.journeys.map((journey) => ({ key: `enrolled-${journey.journey_instance_id}`, title: journey.journey_title ?? journey.journey_code, description: journey.journey_description ?? null, presentation: journey.journey_presentation ?? {}, enrolled: journey }));
+  const enrolledModels: CatalogJourney[] = (participant?.journeys ?? []).map((journey) => ({ key: `enrolled-${journey.journey_instance_id}`, title: journey.journey_title ?? journey.journey_code, description: journey.journey_description ?? null, presentation: journey.journey_presentation ?? {}, enrolled: journey }));
   const eligibleModels: CatalogJourney[] = eligible.map((journey) => ({ key: `eligible-${journey.journey_version_id}`, title: journey.title, description: journey.description, presentation: journey.presentation ?? {}, eligible: journey }));
   const all = [...enrolledModels, ...eligibleModels];
   const featured = all.filter((journey) => journey.presentation.featured === true).sort((a, b) => rank(a.presentation) - rank(b.presentation))[0] ?? all[0] ?? null;
@@ -76,13 +83,15 @@ export default async function JornadasCatalogPage({ searchParams }: { searchPara
 
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-9 lg:py-10">
-      <PageHeader eyebrow="Capacitação" title="Jornadas para aprender, aplicar e evoluir" description="Escolha um caminho, abra qualquer aula no seu ritmo e acompanhe o que cada jornada pode liberar." />
+      <PageHeader eyebrow="Capacitação" title="Jornadas para aprender, aplicar e evoluir" description="Escolha uma jornada, avance no seu ritmo e acompanhe seu aprendizado." />
+      {dataUnavailable ? <StatusPanel title="O catálogo não pôde ser atualizado por completo" tone="warning"><p>Nenhuma jornada foi removida. Recarregue a página para tentar novamente.</p></StatusPanel> : null}
       {query.erro ? <StatusPanel title="Não foi possível entrar nesta jornada" tone="warning"><p>Tente novamente em instantes.</p></StatusPanel> : null}
-      {featured ? <FeaturedJourney journey={featured} /> : <Card className="mt-8"><p className="text-sm text-muted">A equipe ainda não definiu uma jornada em destaque.</p></Card>}
-      <JourneySection eyebrow="Continue avançando" title="Em andamento" description="Retome suas jornadas ativas ou explore outra aula disponível." journeys={inProgress} empty="Quando você começar outra jornada, ela aparecerá aqui." />
-      <JourneySection eyebrow="Feitas para o seu momento" title="Para começar" description="Jornadas recomendadas de acordo com seu perfil e as regras publicadas." journeys={recommended} empty="Não há novas recomendações específicas neste momento." />
-      <JourneySection eyebrow="Mais possibilidades" title="Outras jornadas" description="Caminhos abertos para todos os participantes." journeys={open} empty="Novas jornadas abertas aparecerão nesta seção assim que forem publicadas." />
-      <JourneySection eyebrow="Seu histórico" title="Concluídas" description="Reveja atividades, materiais e resultados sempre que precisar." journeys={completed} empty="Suas jornadas concluídas ficarão organizadas aqui." />
+      {query.aviso === "diagnostico_requer_jornada" ? <StatusPanel title="Escolha uma jornada para iniciar o diagnóstico" tone="info"><p>Ao entrar em uma jornada, o diagnóstico ficará disponível no seu perfil.</p></StatusPanel> : null}
+      {featured ? <FeaturedJourney journey={featured} /> : dataUnavailable ? null : <Card className="mt-8"><p className="text-sm text-muted">A equipe ainda não definiu uma jornada em destaque.</p></Card>}
+      <JourneySection eyebrow="Continue avançando" title="Em andamento" description={participantCopy.journeys.inProgressDescription} journeys={inProgress} empty={participantCopy.journeys.inProgressEmpty} />
+      <JourneySection eyebrow="Feitas para o seu momento" title={participantCopy.journeys.recommendedTitle} description={participantCopy.journeys.recommendedDescription} journeys={recommended} empty={participantCopy.journeys.recommendedEmpty} />
+      <JourneySection eyebrow="Mais possibilidades" title="Outras jornadas" description={participantCopy.journeys.openDescription} journeys={open} empty="Novas jornadas disponíveis aparecerão aqui quando forem publicadas." />
+      <JourneySection eyebrow="Seu histórico" title="Concluídas" description={participantCopy.journeys.completedDescription} journeys={completed} empty={participantCopy.journeys.completedEmpty} />
     </div>
   );
 }
@@ -101,7 +110,7 @@ function FeaturedJourney({ journey }: { journey: CatalogJourney }) {
           <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">{iconFor(presentation.icon, 14)} {typeof presentation.eyebrow === "string" ? presentation.eyebrow : "Jornada em destaque"}</span>
           <div className="mt-6 flex items-start gap-4"><span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white text-primary shadow-md">{iconFor(presentation.icon, 28)}</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-white/70">{typeof presentation.badge === "string" ? presentation.badge : "Capacitação Estímulo"}</p><h2 id="featured-journey-title" className="display-font mt-1 text-3xl text-white sm:text-4xl">{journey.title}</h2><p className="mt-3 max-w-2xl leading-7 text-white/85">{journey.description}</p></div></div>
           {tags.length ? <div className="mt-7 flex flex-wrap gap-2 text-xs font-semibold text-white/95">{tags.map((tag) => <span key={tag} className="rounded-full border border-white/30 bg-primary/35 px-3 py-1.5">{tag}</span>)}</div> : null}
-          {journey.enrolled ? <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/95"><StatusPill tone="expressive" className="!bg-white/15 !text-white">{statusLabel(journey.enrolled.journey_status)}</StatusPill><span>{journey.enrolled.completed_required_steps} de {journey.enrolled.total_required_steps} atividades obrigatórias concluídas</span></div> : null}
+          {journey.enrolled ? <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/95"><StatusPill tone="expressive" className="!bg-white/15 !text-white">{statusLabel(journey.enrolled.journey_status)}</StatusPill><span>{journey.enrolled.completed_required_steps} de {journey.enrolled.total_required_steps} {participantCopy.journeys.completedProgressLabel}</span></div> : null}
         </div>
         <JourneyAction journey={journey} large />
       </div>
@@ -117,14 +126,14 @@ function JourneyCard({ journey, index }: { journey: CatalogJourney; index: numbe
   const tones = ["journey-card-cyan", "journey-card-green", "journey-card-magenta"];
   const presentation = journey.presentation;
   const cover = coverHref(journey, "card");
-  return <Card className={`brand-journey-card ${tones[index % tones.length]} flex min-h-[24rem] flex-col overflow-hidden p-0 after:!hidden`}><div className="relative aspect-square overflow-hidden bg-primary-soft">{cover ? <><img src={cover} alt={typeof presentation.card_background_alt === "string" ? presentation.card_background_alt : ""} className="size-full object-cover transition duration-700 hover:scale-105" /><div className="absolute inset-0 bg-primary/25" /></> : <div className="grid size-full place-items-center"><span className="grid size-16 place-items-center rounded-3xl bg-white text-primary shadow-md">{iconFor(presentation.icon, 28)}</span></div>}<div className="absolute left-4 top-4"><StatusPill tone={journey.enrolled?.journey_status === "completed" ? "success" : journey.enrolled ? "info" : journey.eligible?.open_to_all ? "neutral" : "expressive"}>{journey.enrolled ? statusLabel(journey.enrolled.journey_status) : journey.eligible?.open_to_all ? "Aberta para todos" : "Indicada para você"}</StatusPill></div></div><div className="flex flex-1 flex-col p-5"><p className="text-xs font-bold uppercase tracking-[.12em] text-primary/70">{typeof presentation.badge === "string" ? presentation.badge : "Jornada Estímulo"}</p><h3 className="mt-1 font-black text-secondary">{journey.title}</h3>{journey.description ? <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">{journey.description}</p> : null}{journey.enrolled ? <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/80"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.round(journey.enrolled.progress * 100)}%` }} /></div> : null}<div className="mt-auto pt-5"><JourneyAction journey={journey} /></div></div></Card>;
+  return <Card className={`brand-journey-card ${tones[index % tones.length]} flex min-h-[24rem] flex-col overflow-hidden p-0 after:!hidden`}><div className="relative aspect-square overflow-hidden bg-primary-soft">{cover ? <><img src={cover} alt={typeof presentation.card_background_alt === "string" ? presentation.card_background_alt : ""} className="size-full object-cover transition duration-700 hover:scale-105" /><div className="absolute inset-0 bg-primary/25" /></> : <div className="grid size-full place-items-center"><span className="grid size-16 place-items-center rounded-3xl bg-white text-primary shadow-md">{iconFor(presentation.icon, 28)}</span></div>}<div className="absolute left-4 top-4"><StatusPill tone={journey.enrolled?.journey_status === "completed" ? "success" : journey.enrolled ? "info" : journey.eligible?.open_to_all ? "neutral" : "expressive"}>{journey.enrolled ? statusLabel(journey.enrolled.journey_status) : journey.eligible?.open_to_all ? participantCopy.journeys.openBadge : "Indicada para você"}</StatusPill></div></div><div className="flex flex-1 flex-col p-5"><p className="text-xs font-bold uppercase tracking-[.12em] text-primary/70">{typeof presentation.badge === "string" ? presentation.badge : "Jornada Estímulo"}</p><h3 className="mt-1 font-black text-secondary">{journey.title}</h3>{journey.description ? <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">{journey.description}</p> : null}{journey.enrolled ? <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/80"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.round(journey.enrolled.progress * 100)}%` }} /></div> : null}<div className="mt-auto pt-5"><JourneyAction journey={journey} /></div></div></Card>;
 }
 
 function JourneyAction({ journey, large = false }: { journey: CatalogJourney; large?: boolean }) {
   if (journey.enrolled) {
     if (journey.enrolled.journey_status === "completed") return <ButtonLink href={participantNextHref(journey.enrolled)} variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<CheckCircle2 size={16} />}>Rever jornada</ButtonLink>;
-    return <form action={openJourneyAction}><input type="hidden" name="journey_instance_id" value={journey.enrolled.journey_instance_id} /><input type="hidden" name="aggregate_version" value={journey.enrolled.journey_aggregate_version} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<Play size={16} fill="currentColor" />}>{participantNextActionLabel(journey.enrolled)}</Button></form>;
+    return <form action={openJourneyAction}><input type="hidden" name="journey_instance_id" value={journey.enrolled.journey_instance_id} /><input type="hidden" name="aggregate_version" value={journey.enrolled.journey_aggregate_version} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><PendingSubmitButton pendingLabel="Abrindo jornada…" variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<Play size={16} fill="currentColor" />}>{participantNextActionLabel(journey.enrolled)}</PendingSubmitButton></form>;
   }
-  if (journey.eligible) return <form action={selfEnrollAction}><input type="hidden" name="journey_version_id" value={journey.eligible.journey_version_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} type="submit" icon={<Play size={16} fill="currentColor" />}>{typeof journey.presentation.cta === "string" ? journey.presentation.cta : "Entrar nesta jornada"}</Button></form>;
+  if (journey.eligible) return <form action={selfEnrollAction}><input type="hidden" name="journey_version_id" value={journey.eligible.journey_version_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><PendingSubmitButton pendingLabel="Entrando na jornada…" variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<Play size={16} fill="currentColor" />}>{typeof journey.presentation.cta === "string" ? journey.presentation.cta : "Entrar nesta jornada"}</PendingSubmitButton></form>;
   return null;
 }

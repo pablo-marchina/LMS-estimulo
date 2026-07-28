@@ -1,9 +1,10 @@
 import { CheckCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AuthLayout, FormMessage } from "@/components/auth-layout";
-import { Button } from "@/components/ui/button";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Input, Label } from "@/components/ui/input";
 import { getAuthContext } from "@/lib/auth/context";
+import { participantCopy } from "@/lib/content/participant-copy";
 import { createSessionClient } from "@/lib/supabase/server";
 import { completePublicSignupAction } from "./actions";
 
@@ -44,14 +45,14 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
       <form action={completePublicSignupAction} className="grid gap-4">
         <Label>Seu nome<Input name="preferred_name" defaultValue={preferredName} minLength={2} maxLength={120} autoComplete="name" required /></Label>
         {hasProtectedCpf ? (
-          <div className="flex items-start gap-3 rounded-xl border border-success/25 bg-success-soft p-4"><CheckCircle2 className="mt-0.5 shrink-0 text-success" size={20} /><div><p className="font-semibold text-ink">CPF informado e protegido</p><p className="mt-1 text-xs leading-5 text-muted">Por segurança, o número não é exibido novamente. Ele será transferido da área temporária para o cadastro protegido.</p></div></div>
+          <div className="flex items-start gap-3 rounded-xl border border-success/25 bg-success-soft p-4"><CheckCircle2 className="mt-0.5 shrink-0 text-success" size={20} /><div><p className="font-semibold text-ink">{participantCopy.cpf.protectedTitle}</p><p className="mt-1 text-xs leading-5 text-muted">{participantCopy.cpf.protectedDescription}</p></div></div>
         ) : (
-          <Label>CPF<Input name="cpf" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" minLength={11} maxLength={14} pattern="[0-9.\-]{11,14}" required /></Label>
+          <div className="grid gap-1.5"><Label>CPF<Input name="cpf" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" minLength={11} maxLength={14} pattern="[0-9.\-]{11,14}" required /></Label><p className="text-xs leading-5 text-muted">{participantCopy.cpf.inputDescription}</p></div>
         )}
         <Label>Telefone<Input name="telefone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(11) 91234-5678" defaultValue={phone} required /></Label>
         <Label>Nome do negócio <span className="font-normal text-muted">(opcional)</span><Input name="business_name" defaultValue={businessName} maxLength={160} autoComplete="organization" /></Label>
         <Label>CNPJ <span className="font-normal text-muted">(opcional)</span><Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} defaultValue={cnpj} /></Label>
-        <Button size="lg" type="submit">Entrar na plataforma</Button>
+        <PendingSubmitButton pendingLabel="Criando seu perfil…" size="lg">Entrar na plataforma</PendingSubmitButton>
       </form>
     </AuthLayout>
   );

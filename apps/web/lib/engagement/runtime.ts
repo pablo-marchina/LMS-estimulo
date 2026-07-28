@@ -8,6 +8,7 @@ import type {
   ParticipantDiagnosticSummary,
   ParticipantEngagementHub,
   ParticipantPointRules,
+  ParticipantProfileSummary,
   SavedAnnouncement,
 } from "@/lib/engagement/contracts";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
@@ -15,6 +16,10 @@ import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 export const engagementRuntime = {
   participantHub: (actorUserAccountId: string) => invokeServerRpc<ParticipantEngagementHub>(
     "get_participant_engagement_hub",
+    { p_actor_user_account_id: actorUserAccountId },
+  ),
+  participantProfileSummary: (actorUserAccountId: string) => invokeServerRpc<ParticipantProfileSummary>(
+    "get_participant_profile_summary",
     { p_actor_user_account_id: actorUserAccountId },
   ),
   participantPointRules: (actorUserAccountId: string) => invokeServerRpc<ParticipantPointRules>(

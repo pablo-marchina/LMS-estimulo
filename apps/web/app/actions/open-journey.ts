@@ -3,15 +3,14 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getAuthContext } from "@/lib/auth/context";
+import { requireParticipantContext } from "@/lib/auth/participant-context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 const uuid = z.string().uuid();
 const version = z.coerce.number().int().nonnegative();
 
 export async function openJourneyAction(formData: FormData) {
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated") redirect("/entrar");
+  const auth = await requireParticipantContext();
   const journeyInstanceId = uuid.parse(formData.get("journey_instance_id"));
   const submittedVersion = version.parse(formData.get("aggregate_version") ?? 0);
   const key = String(formData.get("idempotency_key") || randomUUID());
