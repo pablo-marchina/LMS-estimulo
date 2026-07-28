@@ -3,9 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const read = (path) => readFile(path, "utf8");
-const [home, journeys, outline, outlineAction, activity, quickCheck, contextNav, adminPage, journeyAction, adminActions, adminRuntime, gateway, motion] = await Promise.all([
+const [home, journeys, copy, outline, outlineAction, activity, quickCheck, contextNav, adminPage, journeyAction, adminActions, adminRuntime, gateway, motion] = await Promise.all([
   read("apps/web/app/empreendedor/page.tsx"),
   read("apps/web/app/empreendedor/jornadas/page.tsx"),
+  read("apps/web/lib/content/participant-copy.ts"),
   read("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx"),
   read("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts"),
   read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx"),
@@ -25,10 +26,11 @@ test("participant home ends with future rewards rather than a achievements recap
   assert.match(home, /pendingRewards/u);
 });
 
-test("journey catalog supports featured, active, open and completed sections", () => {
+test("journey catalog supports featured, active, recommended, open and completed sections", () => {
   assert.match(journeys, /presentation\.featured/u);
   assert.match(journeys, /Em andamento/u);
-  assert.match(journeys, /Para começar/u);
+  assert.match(journeys, /participantCopy\.journeys\.recommendedTitle/u);
+  assert.match(copy, /Recomendadas para você/u);
   assert.match(journeys, /Outras jornadas/u);
   assert.match(journeys, /Concluídas/u);
   assert.doesNotMatch(journeys, /a4ffebde-f7de-4a76-af6a-221a2c398dd6/u);
