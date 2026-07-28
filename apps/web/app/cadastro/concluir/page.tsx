@@ -26,6 +26,7 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
   const { erro } = await searchParams;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar?erro=confirmacao_necessaria");
+  if (auth.identity.access_mode === "administrative") redirect(auth.identity.next_path || "/admin");
   if (auth.identity.entrepreneur_id) redirect("/empreendedor");
 
   const client = await createSessionClient();
