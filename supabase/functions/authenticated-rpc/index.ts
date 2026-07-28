@@ -91,6 +91,56 @@ const allowedRpcs = new Set([
   "set_participant_application_objective",
 ]);
 
+const participantOnlyRpcs = new Set([
+  "abort_external_credential_upload",
+  "abort_practice_upload",
+  "confirm_external_credential_upload",
+  "confirm_practice_upload",
+  "create_activity_comment",
+  "create_external_credential_upload_intent",
+  "create_practice_upload_intent",
+  "e14_acknowledge_section",
+  "e14_complete_diagnostic",
+  "e14_get_participant_experience",
+  "e14_get_participant_state",
+  "e14_list_eligible_journeys",
+  "e14_list_participant_journeys",
+  "e14_record_diagnostic_response",
+  "e14_record_quick_check_answer",
+  "e14_self_enroll",
+  "e14_start_activity",
+  "e14_start_diagnostic",
+  "e14_start_journey",
+  "e14_start_quick_check",
+  "e14_submit_quick_check",
+  "ensure_participant_default_path",
+  "focus_participant_activity",
+  "get_activity_asset_download",
+  "get_activity_utility_rating",
+  "get_business_maturity_draft",
+  "get_certificate_render_payload",
+  "get_external_credential_download",
+  "get_journey_cover_download",
+  "get_library_content",
+  "get_library_file_download",
+  "get_participant_diagnostic_summary",
+  "get_participant_engagement_hub",
+  "get_participant_experience_with_default_diagnostic",
+  "get_participant_journey_outline",
+  "get_practice_download_descriptor",
+  "issue_learning_credentials",
+  "list_activity_comments",
+  "list_library_content",
+  "list_participant_credentials",
+  "list_participant_external_credentials",
+  "list_participant_point_rules",
+  "list_practice_submissions",
+  "rate_activity_utility",
+  "record_activity_asset_progress",
+  "record_library_content_access",
+  "set_participant_application_objective",
+]);
+
 const legacyActorArgument = new Set([
   "e14_acknowledge_section",
   "e14_complete_diagnostic",
@@ -106,6 +156,8 @@ const userAccountActorArgument = new Set([
   "provision_public_signup_participant_v3",
 ]);
 
+type AccessMode = "participant" | "administrative" | "onboarding_required";
+
 function json(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 }
@@ -113,6 +165,22 @@ function json(status: number, body: Record<string, unknown>) {
 async function fingerprint(value: unknown): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value)));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function resolveAccessMode(identity: Record<string, unknown>, email: string, provider: string): AccessMode {
+  if (typeof identity.entrepreneur_id === "string" && identity.entrepreneur_id) return "participant";
+  if (identity.access_mode === "administrative" || identity.access_mode === "onboarding_required") {
+    return identity.access_mode;
+  }
+  const organizations = Array.isArray(identity.organizations) ? identity.organizations : [];
+  if ((provider === "google" && email.endsWith("@estimulo.org")) || organizations.length > 0) return "administrative";
+  return "onboarding_required";
+}
+
+function nextPath(accessMode: AccessMode) {
+  if (accessMode === "participant") return "/empreendedor";
+  if (accessMode === "administrative") return "/admin";
+  return "/cadastro/concluir?retorno=perfil_incompleto";
 }
 
 Deno.serve(async (request: Request) => {
@@ -142,18 +210,20 @@ Deno.serve(async (request: Request) => {
   const issuer = `${supabaseUrl.replace(/\/$/, "")}/auth/v1`;
   const claimsFingerprint = await fingerprint({ issuer, subject: user.id, email, provider, audience: user.aud, appMetadata: user.app_metadata });
   const admin = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
-  const { data: identity, error: identityError } = await admin.rpc("e14_resolve_identity", { p_provider: provider, p_issuer: issuer, p_subject: user.id, p_email_normalized: email, p_email_verified: true, p_claims_fingerprint: claimsFingerprint });
+  const { data: identityData, error: identityError } = await admin.rpc("e14_resolve_identity", { p_provider: provider, p_issuer: issuer, p_subject: user.id, p_email_normalized: email, p_email_verified: true, p_claims_fingerprint: claimsFingerprint });
+  const identity = identityData && typeof identityData === "object" && !Array.isArray(identityData) ? identityData as Record<string, unknown> : null;
   if (identityError || !identity?.user_account_id) return json(403, { ok: false, code: identityError?.code ?? "IDENTITY_RESOLUTION_FAILED", message: identityError?.message ?? "Internal identity unavailable" });
-  if (name === currentIdentityOperation) {
-    return json(200, {
-      ok: true,
-      data: {
-        ...identity,
-        authenticated_email: email,
-        authenticated_provider: provider,
-      },
-    });
-  }
+
+  const accessMode = resolveAccessMode(identity, email, provider);
+  const resolvedIdentity = {
+    ...identity,
+    authenticated_email: email,
+    authenticated_provider: provider,
+    access_mode: accessMode,
+    next_path: nextPath(accessMode),
+  };
+
+  if (name === currentIdentityOperation) return json(200, { ok: true, data: resolvedIdentity });
 
   const actorArgument = legacyActorArgument.has(name)
     ? "a"
@@ -161,6 +231,24 @@ Deno.serve(async (request: Request) => {
       ? "p_user_account_id"
       : "p_actor_user_account_id";
   if (args[actorArgument] !== identity.user_account_id) return json(403, { ok: false, code: "ACTOR_MISMATCH", message: "RPC actor does not match the authenticated identity" });
+
+  if (participantOnlyRpcs.has(name) && accessMode !== "participant") {
+    console.warn(JSON.stringify({
+      event: "participant_profile_required",
+      operation: name,
+      user_account_id: identity.user_account_id,
+      access_mode: accessMode,
+    }));
+    return json(409, {
+      ok: false,
+      code: accessMode === "administrative" ? "ADMINISTRATIVE_ACCESS_REQUIRED" : "PARTICIPANT_PROFILE_REQUIRED",
+      message: accessMode === "administrative"
+        ? "This identity belongs to the administrative area."
+        : "Participant profile completion is required.",
+      next_path: nextPath(accessMode),
+    });
+  }
+
   const { data, error } = await admin.rpc(name, args);
   if (error) return json(400, { ok: false, code: error.code ?? "RPC_ERROR", message: error.message });
   return json(200, { ok: true, data });
