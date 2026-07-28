@@ -3,14 +3,13 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { BROWSER_E2E_COOKIE, browserE2EEnabled, browserE2EToken } from "@/lib/browser-e2e/config";
 import { syntheticIdentity } from "@/lib/browser-e2e/synthetic-runtime";
-import { CurrentIdentityError, resolveCurrentIdentity } from "@/lib/auth/current-identity";
+import { CurrentIdentityError, resolveCurrentIdentity, type CurrentIdentityContext } from "@/lib/auth/current-identity";
 import { createSessionClient } from "@/lib/supabase/server";
-import type { IdentityContext } from "@/lib/journey-runtime/contracts";
 
 export type AuthContext =
   | { status: "anonymous" }
   | { status: "identity_error"; reason: string }
-  | { status: "authenticated"; identity: IdentityContext; email: string; provider: string };
+  | { status: "authenticated"; identity: CurrentIdentityContext; email: string; provider: string };
 
 export const getAuthContext = cache(async (): Promise<AuthContext> => {
   if (browserE2EEnabled()) {
@@ -18,7 +17,13 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
     if (cookieStore.get(BROWSER_E2E_COOKIE)?.value === browserE2EToken()) {
       return {
         status: "authenticated",
-        identity: syntheticIdentity(),
+        identity: {
+          ...syntheticIdentity(),
+          authenticated_email: "e2e@estimulo.org",
+          authenticated_provider: "google",
+          access_mode: "participant",
+          next_path: "/empreendedor",
+        },
         email: "e2e@estimulo.org",
         provider: "google",
       };
