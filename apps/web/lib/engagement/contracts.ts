@@ -59,6 +59,7 @@ export type ArchetypeSummary = {
 } | null;
 
 export type ParticipantEngagementHub = {
+  participant_status?: "ready" | "profile_required";
   entrepreneur_id: string;
   preferred_name: string | null;
   email: string;
@@ -68,6 +69,13 @@ export type ParticipantEngagementHub = {
   point_history: PointHistoryEntry[];
   rewards: AvailableReward[];
   archetype: ArchetypeSummary;
+};
+
+export type ParticipantProfileSummary = {
+  status: "ready" | "profile_required";
+  entrepreneur_id: string | null;
+  application_objective: string | null;
+  updated_at: string | null;
 };
 
 export type DiagnosticDimensionSummary = {
