@@ -6,9 +6,13 @@ import {
   invokeAuthenticatedGateway,
 } from "@/lib/rpc/authenticated-gateway";
 
+export type AccessMode = "participant" | "administrative" | "onboarding_required";
+
 export type CurrentIdentityContext = IdentityContext & {
   authenticated_email: string;
   authenticated_provider: "email" | "google";
+  access_mode: AccessMode;
+  next_path: string;
 };
 
 export class CurrentIdentityError extends Error {
@@ -30,6 +34,8 @@ export async function resolveCurrentIdentity(client: SupabaseClient): Promise<Cu
       || !Array.isArray(data.organizations)
       || typeof data.authenticated_email !== "string"
       || !["email", "google"].includes(data.authenticated_provider)
+      || !["participant", "administrative", "onboarding_required"].includes(data.access_mode)
+      || typeof data.next_path !== "string"
     ) {
       throw new CurrentIdentityError(
         "CURRENT_IDENTITY_INVALID",
