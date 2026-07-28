@@ -48,6 +48,7 @@ function logCpfProtectionFailure(stage: "legacy_recovery" | "final_protection", 
 export async function completePublicSignupAction(formData: FormData) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar?erro=confirmacao_necessaria");
+  if (auth.identity.access_mode === "administrative") redirect(auth.identity.next_path || "/admin");
   if (auth.identity.entrepreneur_id) redirect("/empreendedor");
 
   const session = await createSessionClient();
