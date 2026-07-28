@@ -10,10 +10,30 @@ export type ExternalCredential = {
   expires_on: string | null;
   verification_url: string | null;
   status: string;
-  original_filename: string;
-  content_type: string;
-  size_bytes: number;
+  original_filename: string | null;
+  content_type: string | null;
+  size_bytes: number | null;
   created_at: string;
+  storage_status: string;
+  download_available: boolean;
+};
+
+export type ExternalCredentialWallet = {
+  status: "ready" | "profile_required";
+  entrepreneur_id: string | null;
+  count: number;
+  items: ExternalCredential[];
+};
+
+export type ExternalCredentialIssuer = {
+  code: string;
+  name: string;
+  display_order: number;
+};
+
+export type ExternalCredentialIssuers = {
+  status: "ready" | "profile_required";
+  items: ExternalCredentialIssuer[];
 };
 
 export type CertificateRenderPayload = {
@@ -38,7 +58,8 @@ type UploadIntent = {
 };
 
 export const extendedCredentialRuntime = {
-  listExternal: (actorUserAccountId: string) => invokeServerRpc<{ entrepreneur_id?: string; items: ExternalCredential[] }>("list_participant_external_credentials", { p_actor_user_account_id: actorUserAccountId }),
+  listExternal: (actorUserAccountId: string) => invokeServerRpc<ExternalCredentialWallet>("list_participant_external_credentials", { p_actor_user_account_id: actorUserAccountId }),
+  listIssuers: (actorUserAccountId: string) => invokeServerRpc<ExternalCredentialIssuers>("list_external_credential_issuers", { p_actor_user_account_id: actorUserAccountId }),
   createExternalIntent: (input: { actorUserAccountId: string; originalFilename: string; expectedContentType: string; storageProvider: string; bucket: string; idempotencyKey: string }) => invokeServerRpc<RpcEnvelope<UploadIntent>>("create_external_credential_upload_intent", {
     p_actor_user_account_id: input.actorUserAccountId,
     p_original_filename: input.originalFilename,
@@ -47,7 +68,7 @@ export const extendedCredentialRuntime = {
     p_bucket: input.bucket,
     p_idempotency_key: input.idempotencyKey,
   }),
-  confirmExternal: (input: { actorUserAccountId: string; uploadIntentId: string; title: string; issuer: string; issuedOn: string | null; expiresOn: string | null; verificationUrl: string | null; actualContentType: string; actualSizeBytes: number; sha256: string; providerObjectVersion: string | null; etag: string | null; idempotencyKey: string }) => invokeServerRpc<RpcEnvelope<Record<string, unknown>>>("confirm_external_credential_upload", {
+  confirmExternal: (input: { actorUserAccountId: string; uploadIntentId: string; title: string; issuer: string; issuedOn: string | null; expiresOn: string | null; verificationUrl: string | null; actualContentType: string; actualSizeBytes: number; sha256: string; providerObjectVersion: string | null; etag: string | null; idempotencyKey: string }) => invokeServerRpc<RpcEnvelope<{ external_credential_id: string; file_object_id: string; title: string; issuer: string; original_filename: string; status: string }>>("confirm_external_credential_upload", {
     p_actor_user_account_id: input.actorUserAccountId,
     p_upload_intent_id: input.uploadIntentId,
     p_title: input.title,
