@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthContext } from "@/lib/auth/context";
+import { requireParticipantContext } from "@/lib/auth/participant-context";
 import { extendedCredentialRuntime } from "@/lib/credentials/extended-runtime";
 import { externalCredentialBucket, removeCredentialFile, uploadCredentialFile, validateExternalCredentialFile } from "@/lib/storage/credential-files";
 
@@ -28,22 +28,32 @@ function redirectTo(request: NextRequest, params: Record<string, string>) {
 
 export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) return new NextResponse("Forbidden", { status: 403 });
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
+  const auth = await requireParticipantContext();
 
   const key = randomUUID();
   let intentId: string | null = null;
   let bucket: string | null = null;
   let objectKey: string | null = null;
   let objectCreated = false;
+  let credentialConfirmed = false;
+
   try {
     const formData = await request.formData();
     const title = String(formData.get("title") ?? "").trim();
-    const issuer = String(formData.get("issuer") ?? "").trim();
+    const issuerCode = String(formData.get("issuer_code") ?? "").trim();
+    const otherIssuer = String(formData.get("issuer_other") ?? "").trim();
     const issuedOn = String(formData.get("issued_on") ?? "").trim() || null;
     const expiresOn = String(formData.get("expires_on") ?? "").trim() || null;
     const verificationUrl = String(formData.get("verification_url") ?? "").trim() || null;
     const file = formData.get("file");
+
+    if (!issuerCode) throw new Error("EXTERNAL_CREDENTIAL_ISSUER_REQUIRED");
+    const issuerCatalog = await extendedCredentialRuntime.listIssuers(auth.identity.user_account_id);
+    const selectedIssuer = issuerCatalog.items.find((issuer) => issuer.code === issuerCode);
+    if (!selectedIssuer) throw new Error("EXTERNAL_CREDENTIAL_ISSUER_INVALID");
+    const issuer = issuerCode === "other" ? otherIssuer : selectedIssuer.name;
+    if (issuerCode === "other" && issuer.length < 2) throw new Error("EXTERNAL_CREDENTIAL_OTHER_ISSUER_REQUIRED");
+
     if (!(file instanceof File)) throw new Error("EXTERNAL_CREDENTIAL_FILE_REQUIRED");
     validateExternalCredentialFile(file);
     bucket = externalCredentialBucket();
@@ -52,7 +62,7 @@ export async function POST(request: NextRequest) {
     objectKey = intent.data.object_key;
     const uploaded = await uploadCredentialFile({ bucket, objectKey, file, kind: "external" });
     objectCreated = uploaded.created;
-    await extendedCredentialRuntime.confirmExternal({
+    const confirmation = await extendedCredentialRuntime.confirmExternal({
       actorUserAccountId: auth.identity.user_account_id,
       uploadIntentId: intentId,
       title,
@@ -67,11 +77,20 @@ export async function POST(request: NextRequest) {
       etag: uploaded.etag,
       idempotencyKey: `${key}:confirm`,
     });
+    credentialConfirmed = true;
+
+    const projection = await extendedCredentialRuntime.listExternal(auth.identity.user_account_id);
+    if (!projection.items.some((item) => item.id === confirmation.data.external_credential_id)) {
+      throw new Error("EXTERNAL_CREDENTIAL_PROJECTION_INCONSISTENT");
+    }
+
     return redirectTo(request, { certificadoExterno: "enviado" });
   } catch (error) {
     const code = errorCode(error);
-    if (intentId) await extendedCredentialRuntime.abortExternal(auth.identity.user_account_id, intentId, code, `${key}:abort`).catch(() => undefined);
-    if (objectCreated && bucket && objectKey) await removeCredentialFile(bucket, objectKey).catch(() => undefined);
+    if (!credentialConfirmed) {
+      if (intentId) await extendedCredentialRuntime.abortExternal(auth.identity.user_account_id, intentId, code, `${key}:abort`).catch(() => undefined);
+      if (objectCreated && bucket && objectKey) await removeCredentialFile(bucket, objectKey).catch(() => undefined);
+    }
     return redirectTo(request, { certificadoExterno: "erro", codigo: code });
   }
 }
