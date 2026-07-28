@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
-import { redirect } from "next/navigation";
 import { Award, BookOpen, CheckCircle2, Play, Rocket, Sparkles, Trophy } from "lucide-react";
 import { openJourneyAction } from "@/app/actions/open-journey";
 import { startProfileDiagnosticAction } from "@/app/empreendedor/perfil/actions";
@@ -9,7 +8,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusPill } from "@/components/ui/status-pill";
-import { getAuthContext } from "@/lib/auth/context";
+import { requireParticipantContext } from "@/lib/auth/participant-context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { engagementRuntime } from "@/lib/engagement/runtime";
 import { journeyRuntime, type EligibleJourney } from "@/lib/journey-runtime/rpc";
@@ -20,9 +19,7 @@ function rank(journey: EligibleJourney) {
 }
 
 export default async function ParticipantHome() {
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated") redirect("/entrar");
-  if (!auth.identity.entrepreneur_id) redirect("/cadastro/concluir");
+  const auth = await requireParticipantContext();
 
   const [data, credentials, engagement, eligibleJourneys] = await Promise.all([
     journeyRuntime.listParticipantJourneys(auth.identity.user_account_id).catch(() => ({ actor_user_account_id: auth.identity.user_account_id, entrepreneur_id: auth.identity.entrepreneur_id, journeys: [] })),
