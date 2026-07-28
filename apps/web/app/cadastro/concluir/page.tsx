@@ -1,7 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AuthLayout, FormMessage } from "@/components/auth-layout";
-import { Button } from "@/components/ui/button";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Input, Label } from "@/components/ui/input";
 import { getAuthContext } from "@/lib/auth/context";
 import { participantCopy } from "@/lib/content/participant-copy";
@@ -52,7 +52,7 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
         <Label>Telefone<Input name="telefone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(11) 91234-5678" defaultValue={phone} required /></Label>
         <Label>Nome do negócio <span className="font-normal text-muted">(opcional)</span><Input name="business_name" defaultValue={businessName} maxLength={160} autoComplete="organization" /></Label>
         <Label>CNPJ <span className="font-normal text-muted">(opcional)</span><Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} defaultValue={cnpj} /></Label>
-        <Button size="lg" type="submit">Entrar na plataforma</Button>
+        <PendingSubmitButton pendingLabel="Criando seu perfil…" size="lg">Entrar na plataforma</PendingSubmitButton>
       </form>
     </AuthLayout>
   );
