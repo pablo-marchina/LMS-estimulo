@@ -1,20 +1,16 @@
 # Princípios da release inicial de produção
 
-**Versão:** 1.1  
-**Data:** 2026-07-16  
-**Status:** alinhado à hierarquia canônica e à DEC-070
-
-## Autoridade
-
-A release é definida por `premissas-desenvolvimento.md`, pelos documentos do pacote e por decisões posteriores aprovadas conforme [SOURCE_AUTHORITY_HIERARCHY.md](SOURCE_AUTHORITY_HIERARCHY.md).
-
-Capacidades genéricas e testes sintéticos não substituem os requisitos oficiais.
+**Versão:** 1.2  
+**Data:** 2026-07-29  
+**Status:** especificação vigente de release
 
 ## Definição
 
 A primeira release de produção deve entregar a plataforma web LMS solicitada pela Estímulo, com a Jornada OpenAI operando para usuários reais na AWS.
 
-Uma segunda jornada publicada não é requisito da primeira release sem fonte ou issue aprovada.
+Uma segunda jornada publicada não é requisito da primeira release sem decisão formal posterior.
+
+Capacidades genéricas, fixtures e testes estruturais não substituem requisitos aprovados nem prova no ambiente-alvo.
 
 ## Capacidades mínimas
 
@@ -54,7 +50,7 @@ O diagnóstico é opcional. Usuários sem diagnóstico recebem conteúdos sem re
 
 ## Jornada OpenAI
 
-A jornada deve ser carregada a partir dos documentos editoriais do pacote, não de fixtures.
+A jornada deve ser carregada a partir dos materiais editoriais aprovados, não de fixtures.
 
 A publicação exige:
 
@@ -120,7 +116,7 @@ Não será permitido em produção:
 
 - dados fictícios apresentados como reais;
 - conteúdo ou diagnóstico sintético apresentado como oficial;
-- autenticação apenas visual;
+- autenticação apenas visual ou bypass de teste no runtime;
 - cadastro de teste habilitado;
 - segredos em código, documentos ou logs;
 - alteração manual de banco sem migration;
@@ -129,7 +125,7 @@ Não será permitido em produção:
 - sinal educacional influenciando crédito sem validação;
 - upload liberado sem verificação de segurança;
 - deploy sem backup, restauração e rollback;
-- Browser E2E sintético como única prova full-stack;
+- teste estrutural como única prova full-stack;
 - promoção direta do Supabase para produção.
 
 ## Gate de produção
@@ -144,9 +140,9 @@ A publicação exige evidência de:
 6. eventos para ações relevantes;
 7. sincronização HubSpot da DEC-070 e reconciliação;
 8. segurança, privacidade e tratamento de arquivos;
-9. browser E2E real e acessibilidade;
+9. verificação autenticada em navegador e acessibilidade;
 10. AWS staging, backup, restore e rollback;
 11. observabilidade e operação;
-12. must-haves das issues aplicáveis.
+12. requisitos obrigatórios ainda aplicáveis.
 
 Dívida técnica contida pode permanecer somente quando não afeta esses critérios.
