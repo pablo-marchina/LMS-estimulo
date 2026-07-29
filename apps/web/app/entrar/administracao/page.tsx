@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
-import { Button } from "@/components/ui/button";
-import { signInWithGoogleAction } from "./actions";
+import { ButtonLink } from "@/components/ui/button";
 
 const errorMessages: Record<string, string> = {
   oauth_indisponivel: "Não foi possível iniciar o acesso com Google.",
@@ -30,11 +29,9 @@ export default async function AdministrativeSignInPage({
       }
     >
       {erro ? <FormMessage tone="error">{errorMessages[erro] ?? "Não foi possível entrar na administração."}</FormMessage> : null}
-      <form action={signInWithGoogleAction}>
-        <Button size="lg" type="submit" className="w-full">
-          Continuar com Google
-        </Button>
-      </form>
+      <ButtonLink href="/auth/admin/start" size="lg" className="w-full">
+        Continuar com Google
+      </ButtonLink>
       <AuthFooter>
         <Link href="/entrar" className="font-semibold text-primary hover:underline">
           Voltar para a entrada de participantes
