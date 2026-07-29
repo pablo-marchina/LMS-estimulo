@@ -17,17 +17,16 @@ A ativação depende do inventário da AWS corporativa, DNS/Route 53, edge/Cloud
 
 Supabase Auth e Vercel podem ser usados somente para desenvolvimento/teste e previews controlados.
 
-Redirects atuais de validação incluem:
+Redirects versionados no `supabase/config.toml`:
 
 ```text
 http://localhost:3000/**
 http://127.0.0.1:3000/**
 https://lms-estimulo-web.vercel.app/**
 https://*-pablo-marchinas-projects.vercel.app/**
-https://plataforma.estimulo.org/**
 ```
 
-A entrada do domínio final no `supabase/config.toml` é uma reserva para validar callbacks. Ela não comprova DNS, autorização institucional ou produção Supabase.
+O domínio final da AWS não é callback Supabase. Isso impede que a configuração de teste seja promovida ou confundida com a identidade de produção.
 
 Rotas atuais do adapter Supabase:
 
@@ -64,6 +63,8 @@ O Cognito deve configurar URLs específicas por ambiente para:
 - confirmação/verificação quando aplicável.
 
 Wildcards de preview não são permitidos nos callbacks de produção.
+
+A origem pública em staging/produção é obrigatória, HTTPS e não pode fazer fallback para Vercel ou localhost.
 
 ## Administração federada
 
