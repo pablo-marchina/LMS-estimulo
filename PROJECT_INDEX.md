@@ -50,8 +50,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 
 - [Inventário necessário da AWS corporativa](infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md)
 - [Runtime web em AWS Lambda](infra/aws/lambda/README.md)
-- [Terraform ECS anterior — não aplicar](infra/aws/terraform/README.md)
-- [Configuração atual de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
+- [Configuração de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
 
 ## Regra de leitura
 
@@ -60,4 +59,4 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - documentos de implementação descrevem somente o código versionado;
 - bloqueadores descrevem o que ainda falta;
 - Supabase é evidência de desenvolvimento/teste, não de produção;
-- Dockerfiles, Terraform, mocks, fixtures e smoke tests não constituem prova de produção.
+- `Dockerfile.lambda`, mocks, fixtures e smoke tests não constituem prova de produção.
