@@ -2,7 +2,6 @@ import "server-only";
 import {
   assertPlatformRuntimePolicyFor,
   normalizeApplicationEnvironment,
-  parsePlatformRuntimeProvider,
 } from "./runtime-provider-core.mjs";
 
 export type PlatformRuntimeProvider = "supabase" | "aws";
@@ -12,14 +11,14 @@ export function applicationEnvironment(): string {
 }
 
 export function platformRuntimeProvider(): PlatformRuntimeProvider {
-  return parsePlatformRuntimeProvider(process.env.PLATFORM_RUNTIME_PROVIDER) as PlatformRuntimeProvider;
-}
-
-export function assertPlatformRuntimePolicy(): PlatformRuntimeProvider {
   return assertPlatformRuntimePolicyFor(
     process.env.APP_ENV,
     process.env.PLATFORM_RUNTIME_PROVIDER,
   ) as PlatformRuntimeProvider;
+}
+
+export function assertPlatformRuntimePolicy(): PlatformRuntimeProvider {
+  return platformRuntimeProvider();
 }
 
 export const awsRuntimeRequiredEnvironment = [
