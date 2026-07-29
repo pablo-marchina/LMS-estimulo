@@ -55,9 +55,7 @@ function entryMatchesRoute(entry: AdminInterfaceContentEntry, route: string) {
 }
 
 function previewUrl(route: string) {
-  const url = new URL(route, window.location.origin);
-  url.searchParams.set("interface_preview", "1");
-  return `${url.pathname}${url.search}`;
+  return `${route}${route.includes("?") ? "&" : "?"}interface_preview=1`;
 }
 
 export function VisualInterfaceSelector({
@@ -108,11 +106,14 @@ export function VisualInterfaceSelector({
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || event.source !== iframeRef.current?.contentWindow) return;
       if (event.data?.type !== SELECT_MESSAGE || typeof event.data.contentKey !== "string") return;
-      selectEntry(event.data.contentKey);
+      const params = new URLSearchParams(window.location.search);
+      params.set("edit", event.data.contentKey);
+      params.set("preview_route", route);
+      router.replace(`/admin/experiencia?${params.toString()}`, { scroll: false });
     };
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  });
+  }, [route, router]);
 
   function selectEntry(contentKey: string) {
     const params = new URLSearchParams(window.location.search);
