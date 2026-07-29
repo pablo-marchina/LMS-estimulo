@@ -29,8 +29,9 @@ jobs:
         run: |
           set -euo pipefail
           standard='^(feat|fix|docs|refactor|test|ci|chore|security|hotfix|perf|build)/[a-z0-9]+(-[a-z0-9]+)*$'
+          release='^release/[0-9]{4}-[0-9]{2}-[a-z0-9]+(-[a-z0-9]+)*$'
           dependabot='^dependabot/(npm_and_yarn|github_actions)/[A-Za-z0-9._/-]+$'
-          if [[ ! "$BRANCH_NAME" =~ $standard && ! "$BRANCH_NAME" =~ $dependabot ]]; then
+          if [[ ! "$BRANCH_NAME" =~ $standard && ! "$BRANCH_NAME" =~ $release && ! "$BRANCH_NAME" =~ $dependabot ]]; then
             echo "Invalid branch name: $BRANCH_NAME"
             exit 1
           fi
@@ -41,7 +42,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          pattern='^(feat|fix|docs|refactor|test|ci|chore|security|perf|build)(\([a-z0-9-]+\))?(!)?: .{10,}$'
+          pattern='^(feat|fix|docs|refactor|test|ci|chore|security|perf|build|release)(\([a-z0-9-]+\))?(!)?: .{10,}$'
           if [[ ! "$PR_TITLE" =~ $pattern ]]; then
             echo "Invalid pull request title: $PR_TITLE"
             exit 1
@@ -104,7 +105,7 @@ jobs:
         run: npm run scan:secrets
 
       - name: Preserve safe secret-scan metadata
-        if: always()
+        if: always() && steps.secret-scan.outcome != 'skipped'
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: gitleaks-safe-${{ github.run_id }}-${{ github.run_attempt }}
