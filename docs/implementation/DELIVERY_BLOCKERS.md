@@ -9,7 +9,7 @@ Este arquivo registra somente lacunas que impedem staging, produção, escala se
 
 - `P0`: bloqueia usuários reais ou release oficial;
 - `P1`: bloqueia staging, produção ou escala;
-- decisão, código, Dockerfile ou Terraform isolado não equivalem a ambiente operável;
+- decisão, código ou Dockerfile isolado não equivalem a ambiente operável;
 - fixture, mock, smoke test read-only e teste estrutural não equivalem a E2E transacional;
 - encerramento exige evidência reproduzível e aprovação institucional quando aplicável.
 
@@ -30,14 +30,15 @@ Este arquivo registra somente lacunas que impedem staging, produção, escala se
 
 | ID | Estado | Lacuna | Encerramento |
 |---|---|---|---|
-| `GITHUB-ACTIONS-AVAILABILITY` | workflows e comandos definidos | jobs encerram antes dos steps e sem logs | instalação, testes, typecheck, build e gates verdes |
+| `GITHUB-ACTIONS-AVAILABILITY` | workflows e comandos definidos | jobs encerram antes dos steps e sem logs | instalação, testes, typecheck, builds e gates verdes |
 | `BRANCH-PROTECTION-AND-REVIEW` | branches e PRs usados | proteção da `main`, review e política de merge não comprovados | configuração verificada |
+| `SUPABASE-REAL-VERIFICATION` | `npm run verify:supabase` verifica Auth, banco e Edge Function sem mutação | execução atual com secrets autorizados ainda não apresentada | comando concluído no ambiente de teste |
 | `CORPORATE-AWS-INVENTORY` | contrato de informações versionado | contas, VPC, edge, IdP, RDS, S3, filas, secrets, observabilidade e pipeline desconhecidos | inventário e owners aprovados |
-| `LAMBDA-IMAGE-VERIFICATION` | `Dockerfile.lambda` fail-closed e build CI definido | imagem ainda não foi construída, iniciada e invocada com sucesso | build por digest e teste do adapter |
+| `LAMBDA-IMAGE-VERIFICATION` | único `Dockerfile.lambda`, sem Supabase, e smoke test CI definidos | imagem ainda não foi construída e iniciada com evidência | build por digest, liveness e inspeção da imagem aprovados |
 | `LAMBDA-INFRASTRUCTURE` | Lambda + API Gateway HTTP API são o alvo | função, alias, API, domínio, TLS, WAF, throttling e deploy corporativo ausentes | staging aplicado e testado |
-| `AWS-RUNTIME-ADAPTERS` | selector e fronteira RPC criados | Cognito, RDS e S3 ainda falham fechados | adapters ativos e probes verdes |
-| `DIRECT-UPLOADS` | intents e confirmação existem | arquivos de 4–10 MiB ainda atravessam Next.js no adapter Supabase | presigned PUT, checksum, HEAD e reconciliação no S3 |
-| `RDS-PORTABILITY` | PostgreSQL e migrations versionados | replay RDS, extensões, roles, grants, RDS Proxy e equivalência não comprovados | replay e carga em RDS Multi-AZ |
+| `AWS-RUNTIME-ADAPTERS` | selector, identity boundary, RPC e storage são fail-closed | Cognito, RDS e S3 ainda não implementados | adapters ativos e probes verdes |
+| `DIRECT-UPLOADS` | contrato de intent, checksum e inspeção existe | arquivos ainda atravessam Next.js no provider Supabase | presigned PUT, checksum, HEAD e reconciliação no S3 |
+| `RDS-PORTABILITY` | PostgreSQL, migrations e replay canônico versionados | replay RDS, extensões, roles, grants, RDS Proxy e equivalência não comprovados | replay e carga em RDS Multi-AZ |
 | `ASYNC-WORKERS` | outbox e contratos existem | dispatcher, SQS, Lambdas, retry, DLQ e reconciliação não ativos | consumidores implantados e monitorados |
 | `STATELESSNESS-AND-CACHE` | `/tmp` limitado a cache descartável | ISR/cache/locks e concorrência Lambda não exercitados | teste de múltiplos execution environments |
 | `CAPACITY-AND-SLO` | arquitetura de escala definida | sem perfil de carga, reserved concurrency, cold-start budget e limites por dependência | load/soak tests e SLOs aprovados |
@@ -50,12 +51,15 @@ Este arquivo registra somente lacunas que impedem staging, produção, escala se
 ```text
 aws_architecture_decided = true
 production_compute = lambda
+second_dockerfile_present = false
+ecs_terraform_present = false
 production_front_door = api_gateway_http_api
 production_identity = cognito_or_corporate_oidc_broker
 production_database = rds_postgresql_via_rds_proxy
 production_storage = s3_direct_upload
 production_async = sqs_lambda_workers
-supabase_allowed_in_production = false
+supabase_allowed_in_staging_or_production = false
+supabase_config_in_lambda_image = false
 synthetic_application_backend = absent
 admin_password_login = forbidden
 malware_scanner_subsystem = absent
@@ -66,7 +70,9 @@ malware_scanner_subsystem = absent
 ```text
 runtime_provider_development = supabase
 runtime_provider_production = aws_required
-production_runtime_guard = implemented
+provider_policy_on_every_lookup = implemented
+supabase_adapters_reject_aws = implemented
+supabase_verification_command = present
 aws_readiness_probe = fail_closed_until_adapters
 corporate_aws_inventory_complete = false
 lambda_dockerfile_present = true
