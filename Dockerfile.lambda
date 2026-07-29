@@ -1,0 +1,42 @@
+# syntax=docker/dockerfile:1.7
+FROM node:22.16.0-bookworm-slim AS dependencies
+WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/package.json
+RUN npm ci --ignore-scripts --no-audit --no-fund
+
+FROM dependencies AS builder
+WORKDIR /app
+COPY . .
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} \
+    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+RUN node -e "for (const name of ['NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY']) { if (!process.env[name]?.trim()) throw new Error('missing build argument: '+name); } for (const name of ['NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SUPABASE_URL']) { const url = new URL(process.env[name]); if (url.protocol !== 'https:') throw new Error(name+' must use https'); }"
+RUN npm run build:web
+
+FROM node:22.16.0-bookworm-slim AS runner
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 /lambda-adapter /opt/extensions/lambda-adapter
+WORKDIR /var/task
+ENV NODE_ENV=production \
+    APP_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000 \
+    AWS_LWA_PORT=3000 \
+    AWS_LWA_READINESS_CHECK_PATH=/api/health/live \
+    AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200 \
+    AWS_LWA_ENABLE_COMPRESSION=true \
+    HOME=/tmp \
+    TMPDIR=/tmp \
+    XDG_CACHE_HOME=/tmp/.cache
+COPY --from=builder /app/apps/web/.next/standalone ./
+COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /app/apps/web/public ./apps/web/public
+RUN rm -rf /var/task/apps/web/.next/cache \
+    && ln -s /tmp/next-cache /var/task/apps/web/.next/cache
+EXPOSE 3000
+CMD ["sh", "-c", "mkdir -p /tmp/next-cache /tmp/.cache && exec node apps/web/server.js"]
