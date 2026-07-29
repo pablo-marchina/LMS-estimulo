@@ -35,6 +35,7 @@ const [
   runtimeProvider,
   buildConfiguration,
   publicOrigin,
+  publicOriginCore,
   readiness,
   rpcGateway,
   authContext,
@@ -56,6 +57,7 @@ const [
   read("apps/web/lib/platform/runtime-provider.ts"),
   read("scripts/runtime/validate-production-config.mjs"),
   read("apps/web/lib/http-public-origin.ts"),
+  read("apps/web/lib/http-public-origin-core.mjs"),
   read("apps/web/app/api/health/ready/route.ts"),
   read("apps/web/lib/rpc/authenticated-gateway.ts"),
   read("apps/web/lib/auth/context.ts"),
@@ -114,8 +116,9 @@ assert.match(environmentExample, /# Production requires PLATFORM_RUNTIME_PROVIDE
 assert.match(environmentExample, /# Staging also requires PLATFORM_RUNTIME_PROVIDER=aws/, "Environment example must document AWS staging");
 assert.match(buildConfiguration, /provider === "supabase"/, "Build validation must be provider-aware");
 assert.doesNotMatch(buildConfiguration, /fetch\(/, "Build validation must remain offline and reproducible");
-assert.match(publicOrigin, /DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED/, "Deployed origin must fail closed");
-assert.doesNotMatch(publicOrigin, /CANONICAL_VERCEL_ORIGIN/, "AWS production must not fall back to Vercel");
+assert.match(publicOrigin, /resolvePublicApplicationOrigin/, "Public origin wrapper must use the central resolver");
+assert.match(publicOriginCore, /DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED/, "Deployed origin must fail closed");
+assert.doesNotMatch(`${publicOrigin}\n${publicOriginCore}`, /CANONICAL_VERCEL_ORIGIN/, "AWS production must not fall back to Vercel");
 
 assert.match(supabaseConfig, /lms-estimulo-web\.vercel\.app/, "Supabase must retain the controlled test preview callback");
 assert.doesNotMatch(supabaseConfig, /plataforma\.estimulo\.org/, "Supabase must not claim the AWS production domain");
