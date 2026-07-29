@@ -35,7 +35,14 @@ jobs:
       - name: Validate public administration routes
         shell: bash
         run: |
-          npm run start:web > /tmp/estimulo-web.log 2>&1 &
+          server_path=$(find apps/web/.next/standalone -type f -name server.js | head -n 1)
+          test -n "$server_path"
+          server_dir=$(dirname "$server_path")
+          mkdir -p "$server_dir/.next"
+          cp -R apps/web/.next/static "$server_dir/.next/static"
+          if [ -d apps/web/public ]; then cp -R apps/web/public "$server_dir/public"; fi
+
+          (cd "$server_dir" && HOSTNAME=127.0.0.1 PORT=3000 node server.js) > /tmp/estimulo-web.log 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" || true; cat /tmp/estimulo-web.log' EXIT
           for attempt in {1..30}; do
