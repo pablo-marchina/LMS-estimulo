@@ -2,8 +2,13 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { publicSupabaseEnv } from "@/lib/env";
+import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
 
 export async function createSessionClient() {
+  if (platformRuntimeProvider() !== "supabase") {
+    throw new Error("SUPABASE_SESSION_ADAPTER_FORBIDDEN_IN_AWS_RUNTIME");
+  }
+
   const cookieStore = await cookies();
   const { url, anonKey } = publicSupabaseEnv();
 
@@ -16,7 +21,7 @@ export async function createSessionClient() {
         } catch {
           // Server Components cannot always mutate cookies; proxy.ts refreshes them.
         }
-      }
-    }
+      },
+    },
   });
 }
