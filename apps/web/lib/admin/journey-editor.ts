@@ -111,3 +111,21 @@ export async function clearAdminActivityParts(input: {
     p_idempotency_key: input.idempotencyKey,
   });
 }
+
+export async function saveAdminPathBadge(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  pathTemplateId: string;
+  title: string;
+  description: string;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<Record<string, unknown>>("save_admin_path_badge", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_path_template_id: input.pathTemplateId,
+    p_title: input.title,
+    p_description: input.description,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
