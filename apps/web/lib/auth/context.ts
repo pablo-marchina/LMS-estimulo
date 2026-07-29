@@ -1,8 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import { cookies } from "next/headers";
-import { BROWSER_E2E_COOKIE, browserE2EEnabled, browserE2EToken } from "@/lib/browser-e2e/config";
-import { syntheticIdentity } from "@/lib/browser-e2e/synthetic-runtime";
 import { CurrentIdentityError, resolveCurrentIdentity, type CurrentIdentityContext } from "@/lib/auth/current-identity";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -12,25 +9,6 @@ export type AuthContext =
   | { status: "authenticated"; identity: CurrentIdentityContext; email: string; provider: string };
 
 export const getAuthContext = cache(async (): Promise<AuthContext> => {
-  if (browserE2EEnabled()) {
-    const cookieStore = await cookies();
-    if (cookieStore.get(BROWSER_E2E_COOKIE)?.value === browserE2EToken()) {
-      return {
-        status: "authenticated",
-        identity: {
-          ...syntheticIdentity(),
-          authenticated_email: "e2e@estimulo.org",
-          authenticated_provider: "google",
-          access_mode: "participant",
-          next_path: "/empreendedor",
-        },
-        email: "e2e@estimulo.org",
-        provider: "google",
-      };
-    }
-    return { status: "anonymous" };
-  }
-
   const session = await createSessionClient();
   try {
     const identity = await resolveCurrentIdentity(session);
