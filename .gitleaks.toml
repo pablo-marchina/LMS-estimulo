@@ -6,9 +6,7 @@ useDefault = true
 [[allowlists]]
 description = "Synthetic CI-only Supabase placeholders verified in historical workflows"
 targetRules = ["generic-api-key"]
-regexTarget = "secret"
+regexTarget = "line"
 regexes = [
-  '''^ci-placeholder-(?:key|anon-key|public-key|service-key)$''',
-  '''^browser-e2e-(?:anon-key|service-role-key)$''',
-  '''^test-(?:anon-key|service-role-key)$''',
+  '''^\s*(?:NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)\s*[:=]\s*(?:ci-placeholder-(?:key|anon-key|public-key|service-key)|browser-e2e-(?:anon-key|service-role-key)|test-(?:anon-key|service-role-key))\s*$''',
 ]
