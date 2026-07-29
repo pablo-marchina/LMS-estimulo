@@ -1,13 +1,11 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { loadEnvFile } from "node:process";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+import {
+  loadRepositoryEnvironment,
+  repositoryRoot,
+} from "./load-root-env.mjs";
 
-const scriptDirectory = dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = resolve(scriptDirectory, "../..");
 const webRoot = resolve(repositoryRoot, "apps/web");
-const envPath = resolve(repositoryRoot, ".env");
 const nextBinary = resolve(repositoryRoot, "node_modules/next/dist/bin/next");
 
 const command = process.argv[2];
@@ -18,9 +16,7 @@ if (!allowedCommands.has(command)) {
   process.exit(2);
 }
 
-if (existsSync(envPath)) {
-  loadEnvFile(envPath);
-}
+loadRepositoryEnvironment();
 
 const nextArguments = command === "build" ? ["build", "--webpack"] : [command];
 const child = spawn(process.execPath, [nextBinary, ...nextArguments], {

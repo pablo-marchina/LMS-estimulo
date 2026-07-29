@@ -2,6 +2,9 @@ import {
   assertPlatformRuntimePolicyFor,
   normalizeApplicationEnvironment,
 } from "../../apps/web/lib/platform/runtime-provider-core.mjs";
+import { loadRepositoryEnvironment } from "./load-root-env.mjs";
+
+loadRepositoryEnvironment();
 
 const environment = normalizeApplicationEnvironment(process.env.APP_ENV);
 const provider = assertPlatformRuntimePolicyFor(
