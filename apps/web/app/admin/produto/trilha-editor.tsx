@@ -3,7 +3,8 @@ import { Input, Select, Textarea } from "@/components/ui/input";
 import type { Trilha } from "@/lib/admin/product-management";
 import { saveTrilhaAction } from "./actions";
 
-export type EditableTrilha = Trilha & {
+export type EditableTrilha = Omit<Trilha, "aulas"> & {
+  aulas: Array<unknown>;
   is_default?: boolean;
 };
 
