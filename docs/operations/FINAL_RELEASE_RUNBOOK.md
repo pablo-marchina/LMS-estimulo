@@ -4,6 +4,15 @@
 
 O release só pode ser promovido a partir de um único commit da branch `release/2026-07-final`. O manifesto, as migrations, a função Edge, o deployment e os resultados dos testes devem registrar esse mesmo SHA.
 
+## Baseline de dependências críticas
+
+- Next.js `16.2.12`;
+- Sharp `0.35.3` por override de segurança;
+- PostCSS `8.5.23` por override de segurança;
+- lockfile v3 regenerado do zero com npm `10.9.8` e aprovado por `npm audit --omit=dev`.
+
+Qualquer alteração nesses componentes exige novo lockfile, audit e repetição integral dos gates.
+
 ## Ordem de promoção
 
 1. executar `npm ci --ignore-scripts --no-audit --no-fund` com Node.js 22.23.1 e npm 10.9.8;
