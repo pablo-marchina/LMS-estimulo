@@ -9,12 +9,35 @@ async function read(relativePath) {
   return readFile(path.join(root, relativePath), "utf8");
 }
 
-const [lambdaDockerfile, environmentExample, decision, targetArchitecture, runtimeProvider] = await Promise.all([
+const storageModules = [
+  "apps/web/lib/storage/practice-evidence.ts",
+  "apps/web/lib/storage/library-content.ts",
+  "apps/web/lib/storage/credential-files.ts",
+  "apps/web/lib/storage/announcement-banners.ts",
+];
+
+const [
+  lambdaDockerfile,
+  environmentExample,
+  decision,
+  targetArchitecture,
+  runtimeProvider,
+  readiness,
+  rpcGateway,
+  objectStorage,
+  terraformReadme,
+  ...featureStorageSources
+] = await Promise.all([
   read("Dockerfile.lambda"),
   read(".env.example"),
   read("docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md"),
   read("docs/architecture/AWS_TARGET_ARCHITECTURE.md"),
   read("apps/web/lib/platform/runtime-provider.ts"),
+  read("apps/web/app/api/health/ready/route.ts"),
+  read("apps/web/lib/rpc/authenticated-gateway.ts"),
+  read("apps/web/lib/platform/object-storage.ts"),
+  read("infra/aws/terraform/README.md"),
+  ...storageModules.map(read),
 ]);
 
 assert.match(lambdaDockerfile, /PLATFORM_RUNTIME_PROVIDER=aws/, "Lambda image must select the AWS runtime provider");
@@ -34,5 +57,18 @@ assert.doesNotMatch(targetArchitecture, /opções de compute/i, "Target architec
 
 assert.match(runtimeProvider, /PRODUCTION_REQUIRES_AWS_RUNTIME/, "Runtime must reject Supabase in production");
 assert.match(runtimeProvider, /PLATFORM_RUNTIME_PROVIDER_INVALID/, "Runtime provider must fail closed on invalid values");
+assert.match(readiness, /aws_runtime_adapters_unavailable/, "AWS readiness must remain closed until adapters exist");
+assert.match(rpcGateway, /AWS_RPC_GATEWAY_NOT_IMPLEMENTED/, "AWS PostgreSQL gateway must fail closed until implemented");
+
+assert.match(objectStorage, /AWS_BUCKETS_MUST_BE_PROVISIONED_BY_INFRASTRUCTURE/, "AWS buckets must never be created by application requests");
+assert.match(objectStorage, /AWS_DIRECT_UPLOAD_REQUIRED/, "AWS buffered uploads must be forbidden");
+assert.match(objectStorage, /AWS_DIRECT_UPLOAD_ADAPTER_NOT_IMPLEMENTED/, "Direct S3 adapter must fail closed until implemented");
+for (const [index, source] of featureStorageSources.entries()) {
+  assert.doesNotMatch(source, /@\/lib\/supabase\/admin/, `${storageModules[index]} must use the platform storage boundary`);
+  assert.match(source, /@\/lib\/platform\/object-storage/, `${storageModules[index]} must use the platform storage boundary`);
+}
+
+assert.match(terraformReadme, /não aplicar/i, "Superseded ECS Terraform must remain explicitly blocked");
+assert.match(terraformReadme, /terraform_apply_allowed = false/, "Superseded ECS Terraform must fail the operational approval rule");
 
 process.stdout.write("[platform-contract] AWS production architecture is internally consistent\n");
