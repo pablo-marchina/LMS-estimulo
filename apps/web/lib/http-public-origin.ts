@@ -1,6 +1,5 @@
 import "server-only";
-
-const CANONICAL_VERCEL_ORIGIN = "https://lms-estimulo-web.vercel.app";
+import { applicationEnvironment } from "@/lib/platform/runtime-provider";
 
 function normalizeOrigin(value: string | undefined): string | null {
   const candidate = value?.trim();
@@ -8,7 +7,7 @@ function normalizeOrigin(value: string | undefined): string | null {
   const withScheme = candidate.includes("://") ? candidate : `https://${candidate}`;
   try {
     const url = new URL(withScheme);
-    const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const local = ["localhost", "127.0.0.1", "::1"].includes(url.hostname);
     if (local && url.protocol !== "http:" && url.protocol !== "https:") return null;
     if (!local && url.protocol !== "https:") return null;
     return url.origin;
@@ -19,8 +18,7 @@ function normalizeOrigin(value: string | undefined): string | null {
 
 function isLocalOrigin(value: string): boolean {
   try {
-    const hostname = new URL(value).hostname;
-    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+    return ["localhost", "127.0.0.1", "::1"].includes(new URL(value).hostname);
   } catch {
     return false;
   }
@@ -35,28 +33,28 @@ function firstOrigin(...values: Array<string | undefined>): string | null {
 }
 
 export function publicApplicationOrigin(): string {
+  const environment = applicationEnvironment();
   const configured = firstOrigin(
     process.env.NEXT_PUBLIC_APP_URL,
     process.env.NEXT_PUBLIC_SITE_URL,
   );
 
+  if (environment === "staging" || environment === "production") {
+    if (!configured || isLocalOrigin(configured)) {
+      throw new Error("DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED");
+    }
+    return configured;
+  }
+
   if (process.env.VERCEL_ENV === "preview") {
-    return firstOrigin(
+    const previewOrigin = firstOrigin(
       process.env.VERCEL_BRANCH_URL,
       process.env.VERCEL_URL,
       process.env.NEXT_PUBLIC_VERCEL_URL,
       configured ?? undefined,
-    ) ?? CANONICAL_VERCEL_ORIGIN;
-  }
-
-  if (process.env.VERCEL_ENV === "production") {
-    const configuredProductionOrigin = configured && !isLocalOrigin(configured) ? configured : null;
-    return firstOrigin(
-      configuredProductionOrigin ?? undefined,
-      process.env.VERCEL_PROJECT_PRODUCTION_URL,
-      process.env.VERCEL_URL,
-      process.env.NEXT_PUBLIC_VERCEL_URL,
-    ) ?? CANONICAL_VERCEL_ORIGIN;
+    );
+    if (!previewOrigin) throw new Error("PREVIEW_PUBLIC_APPLICATION_ORIGIN_REQUIRED");
+    return previewOrigin;
   }
 
   if (configured) return configured;
