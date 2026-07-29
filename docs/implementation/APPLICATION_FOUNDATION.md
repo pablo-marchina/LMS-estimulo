@@ -1,54 +1,82 @@
 # Fundação atual da aplicação
 
 **Revisado em:** 2026-07-29  
-**Status:** implementada no repositório; liberação de produção bloqueada
+**Status:** desenvolvimento/teste funcional; migração AWS estruturada e produção bloqueada
 
 ## Forma do sistema
 
-O repositório contém um monorepo npm com um workspace de aplicação:
+O repositório contém um monorepo npm com um workspace `apps/web/`. A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Server Components, route handlers, server actions e módulos server-only compõem os casos de uso; não existe backend de domínio paralelo.
+
+## Providers de plataforma
+
+A aplicação possui um selector server-only:
 
 ```text
-apps/web/
+PLATFORM_RUNTIME_PROVIDER=supabase
+PLATFORM_RUNTIME_PROVIDER=aws
 ```
 
-A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Não existe um backend paralelo separado: server actions, route handlers e módulos server-only compõem os casos de uso.
+- `supabase` mantém o ambiente atual de desenvolvimento/teste;
+- `aws` é obrigatório para staging e produção;
+- `APP_ENV=production` com provider Supabase é rejeitado;
+- um provider inválido falha fechado.
 
-## Runtime ativo
+A política está em `apps/web/lib/platform/runtime-provider.ts` e é verificada por `npm run validate:platform-contract`.
 
-O runtime versionado usa:
+## Runtime Supabase atual
 
-- Supabase Auth para participantes e administração;
-- Supabase Storage para arquivos privados;
-- Supabase RPC/PostgREST e Edge Function `authenticated-rpc`;
-- PostgreSQL como estado operacional, event store e outbox;
-- adapters server-only para HubSpot, ainda sem inventário ou sandbox real;
-- configuração de ambiente a partir do `.env` da raiz.
+O caminho funcional de desenvolvimento/teste usa:
 
-Supabase permanece desenvolvimento/teste. O runtime ainda não usa RDS, S3 ou um provedor de identidade AWS.
+- Supabase Auth e cookies SSR;
+- Supabase Storage;
+- Edge Function `authenticated-rpc`;
+- RPC/PostgREST;
+- Supabase PostgreSQL como estado operacional, event store e outbox;
+- adapter HTTP HubSpot, ainda sem inventário, worker ou sandbox real.
 
-Não existem no runtime rotas de login de teste, identidade sintética, banco falso, storage local alternativo ou desvio de RPC para testes de navegador.
+O gateway RPC possui timeout controlado e uma fronteira única. A implementação Supabase continua ativa; o caminho AWS falha explicitamente até o adapter RDS existir.
 
-## Superfícies
+Não existem rotas de login de teste, identidade sintética, banco falso, storage local alternativo ou bypass de RPC.
+
+## Arquitetura AWS aprovada
+
+A produção seguirá a [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md):
+
+```text
+CloudFront/edge + WAF
+→ API Gateway HTTP API
+→ Lambda alias
+→ Next.js + Lambda Web Adapter
+→ Cognito/OIDC
+→ RDS Proxy + RDS PostgreSQL
+→ S3 privado e upload direto
+→ SQS + Lambdas consumidoras + DLQ
+```
+
+O `Dockerfile.lambda` seleciona o provider AWS e usa `/api/health/ready`. A readiness AWS permanece `503` até probes reais de Cognito/IdP, RDS Proxy/PostgreSQL e S3 serem implementados; portanto, a imagem não pode aceitar tráfego produtivo por engano.
+
+## Superfícies funcionais
 
 ### Participante
 
-- cadastro público, confirmação de e-mail e login por senha;
-- conclusão de cadastro com CPF protegido;
+- cadastro, confirmação e login no adapter Supabase;
+- conclusão com CPF protegido;
 - home, jornadas, atividades, diagnóstico, perfil, biblioteca e conquistas;
 - progresso, avaliações, práticas, comentários, arquivos, pontos e credenciais.
 
 ### Administração
 
-- entrada separada por Google OAuth;
-- validação de e-mail confirmado `@estimulo.org`;
-- autorização RBAC;
-- gestão de produto, diagnóstico, gamificação, engajamento, biblioteca, usuários, relatórios e operação.
+- entrada separada por Google OAuth no adapter Supabase;
+- e-mail confirmado `@estimulo.org`;
+- organização interna e RBAC;
+- produto, diagnóstico, gamificação, engajamento, biblioteca, usuários, relatórios e operação.
 
-A existência das telas não aprova conteúdo, regras, identidade institucional ou integrações externas para usuários reais.
+A existência das telas não aprova conteúdo, metodologia, identidade institucional ou integração externa para usuários reais.
 
 ## Módulos principais
 
 ```text
+apps/web/lib/platform/
 apps/web/lib/auth/
 apps/web/lib/identity/
 apps/web/lib/admin/
@@ -66,28 +94,37 @@ apps/web/lib/configurable-product/
 
 - `supabase/migrations/` é o histórico executável e imutável;
 - `supabase/canonical-migrations/` contém baselines recuperadas e manifests;
-- migrations posteriores corrigem o estado final sem alterar migrations aplicadas;
-- contratos públicos versionados permanecem em `docs/implementation/public-rpc-contracts-v1.json`.
+- migrations posteriores corrigem o estado sem editar migrations aplicadas;
+- contratos públicos permanecem em `docs/implementation/public-rpc-contracts-v1.json`.
 
-A quantidade de migrations não é mantida manualmente na documentação. O estado é verificado por `npm run validate:migration-history` e `npm run test:database`.
+Os gates atuais usam Supabase PostgreSQL. A prova em RDS, incluindo extensões, roles, grants, RLS, funções, índices, RDS Proxy, PITR e restore, ainda não existe.
 
 ## Build e container
 
-- Node.js 22 e npm 10.9.2;
-- Next.js `output: "standalone"`;
-- Docker multi-stage;
-- execução como UID/GID 1001;
-- liveness em `/api/health/live`;
-- readiness fail-closed em `/api/health/ready`;
-- nenhum secret server-only incorporado à imagem.
+### Desenvolvimento/ECS anterior
 
-O Dockerfile constrói uma imagem executável, mas a imagem ainda precisa ser construída, escaneada e implantada no ambiente AWS aprovado.
+O `Dockerfile` standalone permanece versionado, mas o Terraform ECS correspondente não é mais arquitetura-alvo.
+
+### Lambda
+
+`Dockerfile.lambda`:
+
+- usa Node.js 22 e Next.js standalone;
+- inclui AWS Lambda Web Adapter;
+- configura `PLATFORM_RUNTIME_PROVIDER=aws`;
+- usa readiness fail-closed;
+- expõe erros `500-599` como falha;
+- usa `/tmp` apenas para cache descartável;
+- não incorpora secrets server-only.
+
+O workflow tenta construir a imagem com `docker buildx`, arquitetura explícita e provenance desativada para compatibilidade Lambda. Os runners ainda encerram antes dos steps, portanto o build não está comprovado.
 
 ## Validações permanentes
 
 ```bash
 npm run validate:repository
 npm run validate:dependency-lock
+npm run validate:platform-contract
 npm run validate:migration-history
 npm run test:repository-tooling
 npm run test:application
@@ -98,27 +135,24 @@ npm run typecheck:web
 npm run build:web
 ```
 
-A verificação autenticada de um ambiente implantado é separada:
+`npm run verify:deployment` é atualmente um smoke test autenticado read-only. Ele verifica health, login, navegação, páginas administrativas, responsividade e identidade real do ambiente informado. Ele não comprova criação transacional, upload, outbox, SQS ou HubSpot e não deve ser descrito como E2E full-stack completo.
 
-```bash
-npm run verify:deployment
-```
+## Limites atuais
 
-Ela usa identidade, aplicação, banco e storage reais do ambiente informado. Não altera o runtime da aplicação para facilitar o teste.
+Não estão implementados ou comprovados:
 
-Os quatro workflows permanentes cobrem governança, dependências, aplicação web e banco. No estado observado em 29 de julho de 2026, os jobs do GitHub Actions encerravam antes do primeiro step e sem logs; portanto, não constituem validação atual da branch.
-
-## Limites
-
-Não estão comprovados:
-
-- AWS staging ou produção;
-- adapters ativos para RDS, S3 e identidade de produção;
-- conteúdo oficial integral da Jornada OpenAI;
-- diagnóstico e regras oficiais aprovados;
+- inventário da AWS corporativa;
+- adapter Cognito/OIDC;
+- adapter PostgreSQL via RDS Proxy;
+- replay/equivalência em RDS;
+- S3 e uploads diretos;
+- SQS, workers, DLQ e reconciliação;
+- infraestrutura Lambda/front door aplicada;
+- build e execução da imagem Lambda;
+- observabilidade, SLOs, backup, restore e rollback;
+- E2E transacional AWS;
+- conteúdo e diagnóstico oficiais;
 - HubSpot sandbox;
-- verificação autenticada completa no ambiente-alvo;
-- backup, restore, rollback e observabilidade operacional;
-- aprovação jurídica, de privacidade, segurança e acessibilidade.
+- aprovações de segurança, privacidade e acessibilidade.
 
-O estado de liberação é mantido em [`DELIVERY_BLOCKERS.md`](DELIVERY_BLOCKERS.md).
+O estado de liberação está em [`DELIVERY_BLOCKERS.md`](DELIVERY_BLOCKERS.md).
