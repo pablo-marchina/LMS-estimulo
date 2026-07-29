@@ -31,17 +31,19 @@ jobs:
         with:
           node-version: "22.23.1"
 
-      - name: Generate and verify lockfile
+      - name: Generate lockfile from clean resolver state
         shell: bash
         run: |
           set -euo pipefail
           test "$(npm --version)" = "10.9.8"
+          rm -f package-lock.json
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci --ignore-scripts --no-audit --no-fund
           npm ls --all
           npm audit --omit=dev
 
       - name: Upload generated lockfile
+        if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: generated-package-lock-${{ github.event.pull_request.head.sha }}
