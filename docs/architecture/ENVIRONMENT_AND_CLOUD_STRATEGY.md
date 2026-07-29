@@ -1,87 +1,96 @@
 # Estratégia de ambientes
 
 **Revisado em:** 2026-07-29  
-**Status:** política vigente; AWS ainda não implantada
+**Status:** política vigente; AWS corporativa ainda não inventariada
 
 ## Ambientes
 
-| Ambiente | Estado real | Finalidade | Dados |
+| Ambiente | Provider obrigatório | Finalidade | Dados |
 |---|---|---|---|
-| `local` | suportado | desenvolvimento e testes rápidos | sintéticos |
-| `development/test` | runtime Supabase ativo | integração, QA e revisão | sintéticos ou anonimizados aprovados |
-| `preview` | hospedagem temporária pode usar Vercel | revisão de interface e fluxos | somente dados de teste |
-| `staging` | Terraform presente, recursos não aplicados | prova de paridade e operação AWS | sintéticos/anonimizados |
-| `production` | inexistente | operação oficial na AWS | reais após gates |
+| `local` | `supabase` | desenvolvimento e testes rápidos | sintéticos |
+| `development/test` | `supabase` | integração, QA e validação temporária | sintéticos ou anonimizados aprovados |
+| `preview` | `supabase` | revisão controlada de interface e fluxos | somente teste |
+| `aws-staging` | `aws` | paridade, operação, carga, segurança e migração | sintéticos/anonimizados |
+| `aws-production` | `aws` | operação oficial | reais após gates |
 
-Vercel e Supabase não são ambientes oficiais de produção.
+Supabase e Vercel não são ambientes oficiais de produção.
 
 ## Promoção
 
 ```text
 mudança revisada
-→ validações locais/CI
+→ validações locais
+→ CI funcional
 → Supabase development/test
-→ AWS staging
-→ gates de produção
-→ AWS production
+→ build imutável da imagem Lambda
+→ AWS staging com adapters AWS
+→ E2E transacional, carga, restore e rollback
+→ aprovação de produção
+→ alias Lambda de produção
 ```
 
-No estado atual, a cadeia para no ambiente de desenvolvimento/teste porque AWS staging e GitHub Actions funcionais ainda não foram comprovados.
+Não existe promoção direta de Supabase para produção. Dados, configuração e evidência de desenvolvimento não são tratados como prova AWS.
 
-## Fonte de verdade
+## Provider policy
 
-O Git contém:
+```text
+APP_ENV=development|test + PLATFORM_RUNTIME_PROVIDER=supabase  permitido
+APP_ENV=staging|production + PLATFORM_RUNTIME_PROVIDER=aws     obrigatório
+APP_ENV=production + PLATFORM_RUNTIME_PROVIDER=supabase        rejeitado
+```
 
-- aplicação e configuração sem segredos;
-- migrations e contratos;
-- testes;
-- Dockerfile;
-- Terraform bloqueado por padrão;
-- documentação operacional vigente.
+A readiness de um ambiente AWS só pode ficar verde após probes reais de Cognito/IdP, RDS Proxy/PostgreSQL, S3 e configuração de segurança.
 
-Uma mudança manual remota precisa ser materializada em código ou migration antes de ser considerada parte do sistema.
+## Paridade
 
-## Paridade esperada
+Devem permanecer iguais entre os adapters:
 
-Devem ser preservados entre Supabase e AWS:
+- modelo de domínio;
+- identidade interna, organizações e RBAC;
+- migrations e funções PostgreSQL aplicáveis;
+- eventos, outbox e idempotência;
+- regras de diagnóstico, jornada e credenciais;
+- metadados e autorização de arquivos;
+- contratos HubSpot.
 
-- modelo de domínio e regras de negócio;
-- histórico de migrations;
-- contratos de eventos e idempotência;
-- autorização interna;
-- semântica de arquivos privados;
-- código da aplicação.
+A implementação física muda:
 
-Ainda não existe paridade comprovada para:
+| Capacidade | Desenvolvimento/teste | AWS staging/produção |
+|---|---|---|
+| identidade | Supabase Auth | Cognito/OIDC corporativo |
+| gateway de operações | Edge Function + RPC/PostgREST | adapter server-only + RDS Proxy |
+| PostgreSQL | Supabase PostgreSQL | RDS PostgreSQL Multi-AZ |
+| arquivos | Supabase Storage | S3 privado e upload direto |
+| assíncrono | contratos/outbox sem worker final | SQS, Lambdas consumidoras e DLQ |
+| secrets | ambiente gerenciado de teste | Secrets Manager/KMS corporativo |
+| observabilidade | logs da plataforma de teste | CloudWatch/tracing e SLOs corporativos |
 
-- autenticação;
-- RPC/PostgREST versus acesso ao RDS;
-- Supabase Storage versus S3;
-- extensões PostgreSQL;
-- operação de outbox e integrações;
-- observabilidade.
+## Infraestrutura corporativa
 
-## AWS staging
+Antes de criar ou aplicar recursos, o inventário de [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](../../infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md) precisa identificar contas, rede, edge, identidade, RDS, S3, filas, secrets, observabilidade e pipeline existentes.
 
-O baseline atual declara ECR, ECS/Fargate, ALB, RDS PostgreSQL, S3, KMS, CloudWatch, SNS, VPC e rede. Não declara nem comprova Cognito, SQS, SES, CloudFront, WAF ou OpenTelemetry.
+O Terraform ECS anterior permanece bloqueado e não representa o caminho de promoção.
 
-Staging exige:
+## Dados, secrets e isolamento
 
-1. conta, região, domínio, certificado e rede aprovados;
-2. imagem construída com configuração pública do ambiente e digest imutável;
-3. secrets por ARN;
-4. adapters ativos para identidade, RDS e S3;
-5. migrations em banco limpo;
-6. testes de autorização, arquivos e integrações;
-7. backup, restore e rollback;
-8. logs, métricas e alarmes;
-9. E2E real da Jornada OpenAI;
-10. segurança, privacidade e acessibilidade aprovadas.
+- desenvolvimento usa dados sintéticos por padrão;
+- cópias de produção exigem processo de anonimização e aprovação;
+- contas e recursos de staging/produção devem ser separados conforme a política corporativa;
+- secrets nunca entram em Git, build arguments, imagens ou logs;
+- callbacks, domínios e buckets são específicos por ambiente;
+- integrações externas usam sandbox antes de produção;
+- migrations são executadas por identidade operacional separada da aplicação.
 
-## Dados e segredos
+## Evidência mínima de staging
 
-- dados sintéticos por padrão fora de produção;
-- nenhuma cópia integral de produção em desenvolvimento;
-- secrets somente em configuração protegida;
-- arquivos `.env`, cookies e dados pessoais permanecem fora do Git;
-- integrações externas usam sandbox antes de produção.
+1. imagem por digest e alias de staging;
+2. identidade real de teste e RBAC;
+3. replay e equivalência em RDS;
+4. upload/download direto em S3;
+5. outbox, SQS, retry e DLQ;
+6. HubSpot em sandbox;
+7. logs, métricas e alarmes;
+8. teste transacional em navegador;
+9. teste de carga e concorrência;
+10. backup, PITR, restore e rollback;
+11. segurança, privacidade e acessibilidade aprovadas.
