@@ -24,7 +24,7 @@
     "test:database": "node scripts/database/run-gates.mjs",
     "test:integrations": "node scripts/integrations/hubspot-contracts/run-tests.mjs && node scripts/integrations/hubspot-match/run-tests.mjs",
     "test:product": "node scripts/product/configurable-product/run-tests.mjs && node --test scripts/product/official-diagnostic/*.test.mjs",
-    "test:repository-tooling": "node --test scripts/database/migration-history/*.test.mjs && node --test scripts/database/public-rpc-contracts/*.test.mjs",
+    "test:repository-tooling": "node --test scripts/database/migration-history/*.test.mjs && node --test scripts/database/public-rpc-contracts/*.test.mjs && node --test scripts/runtime/*.test.mjs",
     "verify:supabase": "node scripts/verification/verify-supabase.mjs",
     "verify:deployment": "node scripts/verification/verify-deployment.mjs",
     "scan:secrets": "node scripts/security/run-gitleaks.mjs",
