@@ -8,6 +8,7 @@ import { createPrivilegedClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
+const requestIdPattern = /^[A-Za-z0-9._:-]{1,128}$/u;
 const requiredSupabaseEnvironment = [
   "NEXT_PUBLIC_APP_URL",
   "NEXT_PUBLIC_SUPABASE_URL",
@@ -17,10 +18,27 @@ const requiredSupabaseEnvironment = [
   "CPF_LOOKUP_HMAC_KEY",
 ] as const;
 
-function response(reason: string, status = 503) {
+function resolveRequestId(request: Request): string {
+  const candidate = request.headers.get("x-request-id") ?? request.headers.get("x-vercel-id") ?? "";
+  return requestIdPattern.test(candidate) ? candidate : crypto.randomUUID();
+}
+
+function readinessTimeoutMs(): number {
+  const value = Number(process.env.READINESS_DATABASE_TIMEOUT_MS ?? 5_000);
+  return Number.isInteger(value) && value >= 500 && value <= 30_000 ? value : 5_000;
+}
+
+function response(reason: string, requestId: string, startedAt: number, status = 503) {
   return NextResponse.json(
     { status: status === 200 ? "ready" : "not_ready", reason: status === 200 ? undefined : reason },
-    { status, headers: { "cache-control": "no-store" } },
+    {
+      status,
+      headers: {
+        "cache-control": "no-store",
+        "x-request-id": requestId,
+        "server-timing": `ready;dur=${Math.max(0, performance.now() - startedAt).toFixed(1)}`,
+      },
+    },
   );
 }
 
@@ -52,75 +70,111 @@ function classifyPrivilegedKey() {
   return { type: "unknown", role: "unknown", wrapped };
 }
 
-function logReadinessFailure(error: unknown) {
+function logReadiness(level: "info" | "error", event: string, fields: Record<string, unknown>) {
+  const payload = JSON.stringify({ level, event, component: "application_readiness", ...fields });
+  if (level === "error") console.error(payload);
+  else console.log(payload);
+}
+
+function logReadinessFailure(error: unknown, requestId: string) {
   const record = error && typeof error === "object" ? (error as Record<string, unknown>) : null;
-  console.error("APPLICATION_READINESS_DATABASE_UNAVAILABLE", {
-    privilegedKey: classifyPrivilegedKey(),
-    errorCode: record?.code ?? null,
-    errorMessage: record?.message ?? (error instanceof Error ? error.message : null),
+  logReadiness("error", "database_unavailable", {
+    request_id: requestId,
+    privileged_key: classifyPrivilegedKey(),
+    error_code: record?.code ?? null,
+    error_name: error instanceof Error ? error.name : null,
   });
 }
 
-function assertCpfReadiness() {
+function assertCpfReadiness(requestId: string, startedAt: number) {
   try {
     assertCpfProtectionReady();
     return null;
   } catch (error) {
-    console.error("APPLICATION_READINESS_CPF_PROTECTION_UNAVAILABLE", {
-      errorMessage: error instanceof Error ? error.message : null,
+    logReadiness("error", "cpf_protection_unavailable", {
+      request_id: requestId,
+      error_name: error instanceof Error ? error.name : null,
     });
-    return response("security_configuration_unavailable");
+    return response("security_configuration_unavailable", requestId, startedAt);
   }
 }
 
-async function supabaseReadiness() {
+async function supabaseReadiness(requestId: string, startedAt: number) {
   const missing = requiredSupabaseEnvironment.filter((name) => !process.env[name]?.trim());
   if (missing.length > 0) {
-    console.error("APPLICATION_READINESS_CONFIGURATION_UNAVAILABLE", { provider: "supabase", missing });
-    return response("configuration_unavailable");
+    logReadiness("error", "configuration_unavailable", {
+      request_id: requestId,
+      provider: "supabase",
+      missing,
+    });
+    return response("configuration_unavailable", requestId, startedAt);
   }
 
-  const cpfFailure = assertCpfReadiness();
+  const cpfFailure = assertCpfReadiness(requestId, startedAt);
   if (cpfFailure) return cpfFailure;
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), readinessTimeoutMs());
   try {
     const client = createPrivilegedClient();
-    const { data, error } = await client.rpc("get_application_readiness");
+    const { data, error } = await client
+      .rpc("get_application_readiness")
+      .abortSignal(controller.signal);
     const result = Array.isArray(data) ? data[0] : data;
     if (error || !result || result.status !== "ready") {
-      logReadinessFailure(error ?? new Error("Unexpected readiness payload"));
-      return response("database_unavailable");
+      logReadinessFailure(error ?? new Error("Unexpected readiness payload"), requestId);
+      return response("database_unavailable", requestId, startedAt);
     }
-    return response("ready", 200);
+    logReadiness("info", "ready", {
+      request_id: requestId,
+      provider: "supabase",
+      duration_ms: Number(Math.max(0, performance.now() - startedAt).toFixed(1)),
+    });
+    return response("ready", requestId, startedAt, 200);
   } catch (error) {
-    logReadinessFailure(error);
-    return response("database_unavailable");
+    logReadinessFailure(error, requestId);
+    return response(
+      error instanceof Error && error.name === "AbortError" ? "database_timeout" : "database_unavailable",
+      requestId,
+      startedAt,
+    );
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
-function awsReadiness() {
+function awsReadiness(requestId: string, startedAt: number) {
   const missing = missingAwsRuntimeEnvironment();
   if (missing.length > 0) {
-    console.error("APPLICATION_READINESS_CONFIGURATION_UNAVAILABLE", { provider: "aws", missing });
-    return response("configuration_unavailable");
+    logReadiness("error", "configuration_unavailable", {
+      request_id: requestId,
+      provider: "aws",
+      missing,
+    });
+    return response("configuration_unavailable", requestId, startedAt);
   }
 
-  const cpfFailure = assertCpfReadiness();
+  const cpfFailure = assertCpfReadiness(requestId, startedAt);
   if (cpfFailure) return cpfFailure;
 
   // Do not return a false positive before Cognito, RDS Proxy and S3 probes are implemented.
-  console.error("APPLICATION_READINESS_AWS_ADAPTERS_UNAVAILABLE");
-  return response("aws_runtime_adapters_unavailable");
+  logReadiness("error", "aws_adapters_unavailable", { request_id: requestId });
+  return response("aws_runtime_adapters_unavailable", requestId, startedAt);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const startedAt = performance.now();
+  const requestId = resolveRequestId(request);
   try {
     const provider = assertPlatformRuntimePolicy();
-    return provider === "aws" ? awsReadiness() : supabaseReadiness();
+    return provider === "aws"
+      ? awsReadiness(requestId, startedAt)
+      : supabaseReadiness(requestId, startedAt);
   } catch (error) {
-    console.error("APPLICATION_READINESS_RUNTIME_POLICY_REJECTED", {
-      errorMessage: error instanceof Error ? error.message : null,
+    logReadiness("error", "runtime_policy_rejected", {
+      request_id: requestId,
+      error_name: error instanceof Error ? error.name : null,
     });
-    return response("runtime_policy_rejected");
+    return response("runtime_policy_rejected", requestId, startedAt);
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "plataforma-estimulo",
   "private": true,
-  "packageManager": "npm@10.9.2",
+  "packageManager": "npm@10.9.8",
   "workspaces": [
     "apps/*"
   ],
@@ -14,6 +14,7 @@
     "validate:dependency-lock": "node scripts/repository/validate-package-lock.mjs",
     "validate:application-foundation": "node scripts/application/validate-foundation.mjs",
     "validate:platform-contract": "node scripts/runtime/validate-platform-contract.mjs",
+    "validate:runtime-hardening": "node scripts/runtime/validate-hardening.mjs",
     "validate:official-diagnostic": "node scripts/product/official-diagnostic/validate-configuration.mjs",
     "validate:migration-history": "node scripts/database/migration-history/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260708220357_m00_m12_runtime_canonical.sql && node scripts/database/migration-history/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M13_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709051056_m13_e14_runtime_canonical.sql && node scripts/database/migration-history/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M14_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260709183504_m14_application_canonical.sql && node scripts/database/migration-history/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M15_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260710165530_m15_semantic_helper_canonical.sql && node scripts/database/migration-history/validate-recovered-history.mjs --manifest supabase/canonical-migrations/M16_RUNTIME_MANIFEST.json --migrations-dir supabase/migrations --canonical-file supabase/canonical-migrations/20260714161338_m16_configurable_product_persistence_canonical.sql && node scripts/database/migration-history/validate-active-migrations.mjs",
     "validate:schema-equivalence": "node scripts/database/equivalence/validate-equivalence.mjs",
@@ -25,8 +26,11 @@
     "test:integrations": "node scripts/integrations/hubspot-contracts/run-tests.mjs && node scripts/integrations/hubspot-match/run-tests.mjs",
     "test:product": "node scripts/product/configurable-product/run-tests.mjs && node --test scripts/product/official-diagnostic/*.test.mjs",
     "test:repository-tooling": "node --test scripts/database/migration-history/*.test.mjs && node --test scripts/database/public-rpc-contracts/*.test.mjs && node --test scripts/runtime/*.test.mjs",
+    "test:capacity": "node scripts/performance/load-test.mjs",
     "verify:supabase": "node scripts/verification/verify-supabase.mjs",
     "verify:deployment": "node scripts/verification/verify-deployment.mjs",
+    "verify:http-hardening": "node scripts/security/verify-http-hardening.mjs",
+    "build:release-manifest": "node scripts/repository/generate-release-manifest.mjs",
     "scan:secrets": "node scripts/security/run-gitleaks.mjs",
     "test:secret-scanning": "node scripts/security/test-gitleaks.mjs",
     "bootstrap:role-manager": "node scripts/operations/bootstrap-role-manager.mjs"
