@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertPlatformRuntimePolicyFor } from "../../apps/web/lib/platform/runtime-provider-core.mjs";
@@ -8,6 +8,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 
 async function read(relativePath) {
   return readFile(path.join(root, relativePath), "utf8");
+}
+
+async function exists(relativePath) {
+  try {
+    await access(path.join(root, relativePath));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const storageModules = [
@@ -23,13 +32,18 @@ const [
   decision,
   targetArchitecture,
   runtimeProvider,
+  buildConfiguration,
+  publicOrigin,
   readiness,
   rpcGateway,
   authContext,
   proxy,
   objectStorage,
-  terraformReadme,
+  supabaseServer,
+  supabaseAdmin,
+  supabaseVerification,
   databaseGates,
+  packageSource,
   productionContractSource,
   ...featureStorageSources
 ] = await Promise.all([
@@ -38,18 +52,24 @@ const [
   read("docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md"),
   read("docs/architecture/AWS_TARGET_ARCHITECTURE.md"),
   read("apps/web/lib/platform/runtime-provider.ts"),
+  read("scripts/runtime/validate-production-config.mjs"),
+  read("apps/web/lib/http-public-origin.ts"),
   read("apps/web/app/api/health/ready/route.ts"),
   read("apps/web/lib/rpc/authenticated-gateway.ts"),
   read("apps/web/lib/auth/context.ts"),
   read("apps/web/proxy.ts"),
   read("apps/web/lib/platform/object-storage.ts"),
-  read("infra/aws/terraform/README.md"),
+  read("apps/web/lib/supabase/server.ts"),
+  read("apps/web/lib/supabase/admin.ts"),
+  read("scripts/verification/verify-supabase.mjs"),
   read("scripts/database/run-gates.mjs"),
+  read("package.json"),
   read("config/platform/aws-production.json"),
   ...storageModules.map(read),
 ]);
 
 const productionContract = JSON.parse(productionContractSource);
+const packageJson = JSON.parse(packageSource);
 assert.equal(productionContract.schema_version, "1.0");
 assert.equal(productionContract.environment_class, "production");
 assert.equal(productionContract.runtime_provider, "aws");
@@ -81,29 +101,36 @@ assert.throws(
   /PLATFORM_RUNTIME_PROVIDER_INVALID/,
 );
 
-assert.match(lambdaDockerfile, /PLATFORM_RUNTIME_PROVIDER=aws/, "Lambda image must select the AWS runtime provider");
-assert.match(lambdaDockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/ready/, "Lambda startup must use fail-closed readiness");
-assert.doesNotMatch(lambdaDockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/live/, "Lambda must not treat liveness as readiness");
-assert.match(lambdaDockerfile, /AWS_LWA_ERROR_STATUS_CODES=500-599/, "Lambda Web Adapter must surface server failures");
+assert.match(lambdaDockerfile, /PLATFORM_RUNTIME_PROVIDER=aws/, "Lambda image must select AWS");
+assert.match(lambdaDockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/live/, "Web Adapter must wait only for the HTTP process");
+assert.doesNotMatch(lambdaDockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/ready/, "Dependency readiness must not block Lambda initialization");
+assert.doesNotMatch(lambdaDockerfile, /AWS_LWA_ERROR_STATUS_CODES/, "HTTP errors must preserve their response semantics");
+assert.doesNotMatch(lambdaDockerfile, /NEXT_PUBLIC_SUPABASE/, "AWS image must not contain Supabase build configuration");
 
-assert.match(environmentExample, /PLATFORM_RUNTIME_PROVIDER=supabase/, "Development example must explicitly select Supabase");
-assert.match(environmentExample, /# Production requires PLATFORM_RUNTIME_PROVIDER=aws/, "Environment example must document the production policy");
+assert.match(environmentExample, /PLATFORM_RUNTIME_PROVIDER=supabase/, "Development example must select Supabase");
+assert.match(environmentExample, /# Production requires PLATFORM_RUNTIME_PROVIDER=aws/, "Environment example must document AWS production");
+assert.match(buildConfiguration, /provider === "supabase"/, "Build validation must be provider-aware");
+assert.doesNotMatch(buildConfiguration, /fetch\(/, "Build validation must remain offline and reproducible");
+assert.match(publicOrigin, /DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED/, "Deployed origin must fail closed");
+assert.doesNotMatch(publicOrigin, /CANONICAL_VERCEL_ORIGIN/, "AWS production must not fall back to Vercel");
 
-assert.match(decision, /Supabase permanece autorizado somente para desenvolvimento/, "AWS production decision must keep Supabase outside production");
-assert.match(decision, /RDS Proxy/, "AWS production decision must include RDS Proxy");
-assert.match(decision, /Amazon S3/, "AWS production decision must include S3");
-assert.match(decision, /Amazon SQS/, "AWS production decision must include SQS workers");
-assert.match(targetArchitecture, /Arquitetura canônica/, "Target architecture must declare one canonical architecture");
-assert.doesNotMatch(targetArchitecture, /opções de compute/i, "Target architecture must not present competing production compute options");
+assert.match(decision, /Supabase permanece autorizado somente para desenvolvimento/, "AWS decision must keep Supabase outside production");
+assert.match(decision, /RDS Proxy/, "AWS decision must include RDS Proxy");
+assert.match(decision, /Amazon S3/, "AWS decision must include S3");
+assert.match(decision, /Amazon SQS/, "AWS decision must include SQS workers");
+assert.match(targetArchitecture, /Arquitetura canônica/, "Target architecture must be singular");
+assert.doesNotMatch(targetArchitecture, /opções de compute/i, "Target architecture must not present competing compute options");
 
-assert.match(runtimeProvider, /runtime-provider-core\.mjs/, "Runtime provider wrapper must use the tested policy core");
-assert.match(readiness, /aws_runtime_adapters_unavailable/, "AWS readiness must remain closed until adapters exist");
+assert.match(runtimeProvider, /return assertPlatformRuntimePolicyFor\(/, "Every provider lookup must enforce the environment policy");
+assert.match(readiness, /aws_runtime_adapters_unavailable/, "AWS dependency readiness must remain closed until adapters exist");
 assert.match(rpcGateway, /AWS_RPC_GATEWAY_NOT_IMPLEMENTED/, "AWS PostgreSQL gateway must fail closed until implemented");
-assert.match(authContext, /AWS_IDENTITY_ADAPTER_NOT_IMPLEMENTED/, "AWS auth context must fail closed until implemented");
-assert.match(proxy, /aws_identity_adapter_unavailable/, "AWS proxy must reject traffic until Cognito integration exists");
+assert.match(authContext, /AWS_IDENTITY_ADAPTER_NOT_IMPLEMENTED/, "AWS identity must fail closed until implemented");
+assert.match(proxy, /aws_identity_adapter_unavailable/, "AWS proxy must reject protected traffic until identity exists");
 assert.match(proxy, /assertPlatformRuntimePolicy/, "Proxy must enforce the central provider policy");
+assert.match(supabaseServer, /SUPABASE_SESSION_ADAPTER_FORBIDDEN_IN_AWS_RUNTIME/, "Supabase session adapter must be test-only");
+assert.match(supabaseAdmin, /SUPABASE_PRIVILEGED_ADAPTER_FORBIDDEN_IN_AWS_RUNTIME/, "Supabase privileged adapter must be test-only");
 
-assert.match(objectStorage, /AWS_BUCKETS_MUST_BE_PROVISIONED_BY_INFRASTRUCTURE/, "AWS buckets must never be created by application requests");
+assert.match(objectStorage, /AWS_BUCKETS_MUST_BE_PROVISIONED_BY_INFRASTRUCTURE/, "AWS buckets must not be created by requests");
 assert.match(objectStorage, /AWS_DIRECT_UPLOAD_REQUIRED/, "AWS buffered uploads must be forbidden");
 assert.match(objectStorage, /AWS_DIRECT_UPLOAD_ADAPTER_NOT_IMPLEMENTED/, "Direct S3 adapter must fail closed until implemented");
 for (const [index, source] of featureStorageSources.entries()) {
@@ -111,13 +138,18 @@ for (const [index, source] of featureStorageSources.entries()) {
   assert.match(source, /@\/lib\/platform\/object-storage/, `${storageModules[index]} must use the platform storage boundary`);
 }
 
+assert.equal(packageJson.scripts?.["verify:supabase"], "node scripts/verification/verify-supabase.mjs");
+assert.match(supabaseVerification, /\/auth\/v1\/settings/, "Supabase verification must check Auth");
+assert.match(supabaseVerification, /get_application_readiness/, "Supabase verification must check database readiness");
+assert.match(supabaseVerification, /reachable_and_protected/, "Supabase verification must check the authenticated gateway boundary");
+
 assert.match(databaseGates, /DATABASE_GATE_NON_TEST_SQL_FORBIDDEN/, "Database gates must reject non-test SQL after canonical replay");
 assert.match(databaseGates, /runSqlTestSuite/, "Database gates must use assertion-only suites");
 assert.doesNotMatch(databaseGates, /supabase\/migrations\//, "Database gates must not reapply migrations after canonical replay");
 assert.doesNotMatch(databaseGates, /operational-persistence\.sql/, "Database gates must not apply duplicate implementation SQL");
 assert.doesNotMatch(databaseGates, /content-library\/(schema|api|event-versioning|hardening)\.sql/, "Database gates must not apply duplicate library SQL");
 
-assert.match(terraformReadme, /não aplicar/i, "Superseded ECS Terraform must remain explicitly blocked");
-assert.match(terraformReadme, /terraform_apply_allowed = false/, "Superseded ECS Terraform must fail the operational approval rule");
+assert.equal(await exists("Dockerfile"), false, "Only Dockerfile.lambda may remain");
+assert.equal(await exists("infra/aws/terraform"), false, "Obsolete ECS Terraform must be removed");
 
-process.stdout.write("[platform-contract] AWS production architecture is internally consistent\n");
+process.stdout.write("[platform-contract] Supabase test and AWS Lambda production boundaries are consistent\n");
