@@ -2,13 +2,13 @@
 
 <!-- Qual problema este PR resolve? -->
 
-## Fonte e autoridade
+## Requisito ou decisão afetada
 
-<!-- Cite premissas-desenvolvimento, documento do pacote, decisão aprovada ou issue. -->
+<!-- Cite a especificação, decisão vigente ou bloqueador permanente afetado. -->
 
-- Fonte superior afetada:
-- Requisito preservado ou alterado:
-- Aprovação da alteração, quando aplicável:
+- Documento afetado:
+- Comportamento preservado ou alterado:
+- Aprovação necessária, quando aplicável:
 
 ## Escopo
 
@@ -16,21 +16,20 @@
 
 ## Decisões e alternativas
 
-<!-- Decisão técnica não pode reduzir requisito superior silenciosamente. -->
+<!-- Explique escolhas relevantes e por que não reduzem requisitos vigentes. -->
 
 ## Evidências
 
-<!-- Diferencie prova sintética de prova real. Não inclua segredos ou dados pessoais reais. -->
+<!-- Diferencie código, teste local, CI e verificação no ambiente. Não inclua segredos ou dados pessoais reais. -->
 
 ### Qualidade
 
 - [ ] Instalação executada com o método canônico
-- [ ] Lint aprovado ou bloqueio documentado
 - [ ] Typecheck aprovado
 - [ ] Testes relevantes aprovados
 - [ ] Build de produção concluído
-- [ ] Documentação sincronizada com fonte e runtime
-- [ ] Nenhuma capacidade sintética foi apresentada como oficial
+- [ ] Documentação sincronizada com o runtime
+- [ ] Nenhum mock, fixture ou teste foi apresentado como prova de produção
 
 ### Banco e eventos
 
@@ -61,7 +60,7 @@
 - [ ] O gate de AWS staging permanece explícito
 - [ ] Segredos não foram incluídos
 - [ ] Secret scanning relevante foi executado
-- [ ] Recursos exclusivos de teste falham fechados em produção
+- [ ] Nenhum bypass ou backend de teste foi incluído no runtime
 
 ### Interface e acessibilidade
 
@@ -69,7 +68,6 @@
 - [ ] Desktop e mobile foram verificados
 - [ ] Teclado, foco, labels e erros foram revisados
 - [ ] Conteúdo multimídia considera legenda/transcrição
-- [ ] Guia visual e mockups foram usados como referência subordinada
 
 ## Riscos e rollback
 
@@ -77,4 +75,4 @@
 
 ## Fora do escopo
 
-<!-- Liste itens adiados sem removê-los do requisito superior. -->
+<!-- Liste itens adiados sem apagar requisitos ou bloqueadores vigentes. -->
