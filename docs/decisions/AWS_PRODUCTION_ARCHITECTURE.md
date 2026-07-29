@@ -59,7 +59,7 @@ Exemplos:
 - uma distribuição CloudFront, WAF, hosted zone, VPC, subnets, KMS key, cluster de observabilidade ou pipeline corporativo pode ser reutilizado;
 - uma solução corporativa de secrets, filas ou tracing pode substituir o serviço padrão somente mediante equivalência documentada.
 
-Não será criada infraestrutura paralela antes do inventário corporativo.
+Não será criada infraestrutura paralela antes do inventário corporativo. O scaffolding ECS/Fargate e o Dockerfile genérico foram removidos da árvore ativa.
 
 ## Fronteiras obrigatórias da aplicação
 
@@ -72,7 +72,7 @@ O domínio não pode depender diretamente de APIs Supabase ou AWS. Dependências
 5. secrets e configuração;
 6. telemetria.
 
-A implementação Supabase atual é um adapter temporário. A implementação AWS será a única permitida quando `APP_ENV=production`.
+A implementação Supabase atual é um adapter temporário. `APP_ENV=staging` e `APP_ENV=production` exigem `PLATFORM_RUNTIME_PROVIDER=aws` em qualquer acesso à fronteira de plataforma.
 
 ## Banco
 
@@ -120,12 +120,25 @@ O Lambda HTTP não executa worker permanente. Eventos elegíveis permanecem na o
 - readback e reconciliação;
 - alarmes de backlog e idade.
 
+## Artefatos versionados
+
+A arquitetura mantém somente:
+
+- `Dockerfile.lambda` como container da aplicação;
+- contratos de provider e adapters em `apps/web/lib/platform/`;
+- contrato legível por máquina em `config/platform/aws-production.json`;
+- guia operacional em `infra/aws/lambda/`;
+- inventário de integração corporativa em `infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`.
+
+A infraestrutura física será definida depois do inventário da AWS corporativa, utilizando os módulos e pipelines oficiais da empresa.
+
 ## Consequências
 
-- Supabase não pode ser promovido para produção;
-- o Terraform ECS existente deixa de ser arquitetura-alvo e permanece bloqueado até decisão explícita de remoção ou reaproveitamento;
-- o `Dockerfile.lambda` é o artefato de compute escolhido, mas não prova que a plataforma esteja implantada;
-- qualquer deploy marcado como produção deve falhar se `PLATFORM_RUNTIME_PROVIDER` não for `aws`;
+- Supabase não pode ser promovido para staging ou produção;
+- não existe stack ECS/Fargate ou segundo Dockerfile na árvore ativa;
+- `Dockerfile.lambda` é o único artefato de compute, mas não prova que a plataforma esteja implantada;
+- a imagem Lambda não incorpora configuração Supabase;
+- qualquer deploy de staging ou produção falha se o provider não for `aws`;
 - nenhuma infraestrutura AWS será aplicada antes do inventário da conta corporativa;
 - staging precisa reproduzir os adapters e serviços de produção, com dados sintéticos ou anonimizados aprovados.
 
