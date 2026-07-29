@@ -25,5 +25,3 @@ coverage
 *.tgz
 *.log
 ref
-infra/aws/terraform/*.tfstate*
-infra/aws/terraform/.terraform
