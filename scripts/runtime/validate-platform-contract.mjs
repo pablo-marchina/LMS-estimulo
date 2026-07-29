@@ -28,6 +28,7 @@ const [
   proxy,
   objectStorage,
   terraformReadme,
+  productionContractSource,
   ...featureStorageSources
 ] = await Promise.all([
   read("Dockerfile.lambda"),
@@ -41,8 +42,24 @@ const [
   read("apps/web/proxy.ts"),
   read("apps/web/lib/platform/object-storage.ts"),
   read("infra/aws/terraform/README.md"),
+  read("config/platform/aws-production.json"),
   ...storageModules.map(read),
 ]);
+
+const productionContract = JSON.parse(productionContractSource);
+assert.equal(productionContract.schema_version, "1.0");
+assert.equal(productionContract.environment_class, "production");
+assert.equal(productionContract.runtime_provider, "aws");
+assert.equal(productionContract.compute, "lambda_container");
+assert.equal(productionContract.front_door, "api_gateway_http_api");
+assert.equal(productionContract.identity, "cognito_or_corporate_oidc_broker");
+assert.equal(productionContract.database, "rds_postgresql_multi_az");
+assert.equal(productionContract.database_access, "rds_proxy");
+assert.equal(productionContract.storage, "s3_private_direct_upload");
+assert.equal(productionContract.async_delivery, "postgres_outbox_sqs_lambda_dlq");
+assert.equal(productionContract.supabase_allowed, false);
+assert.equal(productionContract.corporate_resource_inventory_required, true);
+assert.equal(productionContract.implementation.production_ready, false);
 
 assert.match(lambdaDockerfile, /PLATFORM_RUNTIME_PROVIDER=aws/, "Lambda image must select the AWS runtime provider");
 assert.match(lambdaDockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/ready/, "Lambda startup must use fail-closed readiness");
