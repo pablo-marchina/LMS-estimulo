@@ -35,7 +35,7 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 ## Arquitetura e ambientes
 
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
-- [Baseline AWS](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
+- [Arquitetura-alvo AWS e opções de compute](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
 - [Lacunas de portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
 - [Identidade, acesso e vínculo externo](docs/architecture/IDENTITY_BRIDGE.md)
 
@@ -48,7 +48,8 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 ## Operação
 
 - [Configuração atual de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
-- [Terraform de staging](infra/aws/terraform/README.md)
+- [Terraform ECS/Fargate de staging](infra/aws/terraform/README.md)
+- [Preparação do runtime AWS Lambda](infra/aws/lambda/README.md)
 
 ## Regra de leitura
 
@@ -56,4 +57,4 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 - decisões registram escolhas vigentes;
 - documentos de implementação descrevem somente o código versionado;
 - bloqueadores descrevem o que ainda falta;
-- Terraform, mocks, fixtures e testes estruturais não constituem prova de produção.
+- Dockerfiles, Terraform, mocks, fixtures e testes estruturais não constituem prova de produção.
