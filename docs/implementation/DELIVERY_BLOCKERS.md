@@ -3,89 +3,82 @@
 **Revisado em:** 2026-07-29  
 **Status:** produção bloqueada
 
-Este arquivo registra somente lacunas que impedem staging, produção, escala segura ou usuários reais. A implementação atual está descrita em [`APPLICATION_FOUNDATION.md`](APPLICATION_FOUNDATION.md).
+Este arquivo registra somente lacunas que impedem staging, produção, escala segura ou usuários reais. A implementação atual está em [`APPLICATION_FOUNDATION.md`](APPLICATION_FOUNDATION.md).
 
-## Regras de evidência
+## Evidência
 
-- `P0`: bloqueia usuários reais ou liberação oficial;
-- `P1`: bloqueia produção ou escala, embora desenvolvimento controlado possa continuar;
-- código presente não equivale a ambiente implantado;
-- imagem construída não equivale a infraestrutura operável;
-- fixture, mock e teste estrutural não equivalem a prova real;
-- Terraform não aplicado não equivale a infraestrutura existente;
-- configuração de desenvolvimento não equivale a conteúdo ou metodologia aprovados;
-- encerramento exige evidência reproduzível e aprovação quando aplicável.
+- `P0`: bloqueia usuários reais ou release oficial;
+- `P1`: bloqueia staging, produção ou escala;
+- decisão, código, Dockerfile ou Terraform isolado não equivalem a ambiente operável;
+- fixture, mock, smoke test read-only e teste estrutural não equivalem a E2E transacional;
+- encerramento exige evidência reproduzível e aprovação institucional quando aplicável.
 
-## P0 — usuários reais e integridade
+## P0 — produto, identidade e dados reais
 
-| ID | Estado no repositório | Lacuna | Encerramento |
+| ID | Estado | Lacuna | Encerramento |
 |---|---|---|---|
 | `EXPOSED-CREDENTIAL-ROTATION` | arquivos sanitizados e secret scanning versionado | rotação, revogação e análise de uso não confirmadas | confirmação institucional e revisão de logs |
-| `OFFICIAL-DIAGNOSTIC` | motor, persistência, editor, resolução e fluxo do participante implementados | perguntas, alternativas, scoring, empate, textos e casos oficiais não aprovados | pacote metodológico versionado e E2E real |
-| `OPENAI-JOURNEY-RELEASE` | runtime de jornada, administração, atividades, avaliações, práticas, gamificação e credenciais implementados | conteúdo, mídias, regras, acessibilidade e revisão editorial oficiais incompletos | versão publicável aprovada e E2E real |
-| `IDENTITY-SITE-INTEGRATION` | cadastro, confirmação, login, CPF protegido e acesso administrativo Google/RBAC implementados | site/SSO oficial, recuperação, merge e identidade de produção não definidos | fluxo novo/existente sem duplicidade no ambiente-alvo |
-| `CPF-KEY-OPERATIONS` | AES-256-GCM, HMAC e gates server-only implementados | chaves institucionais, rotação, recuperação e suporte não exercitados | secret manager, rotação e runbook aprovados |
-| `HUBSPOT-PRODUCTION-INTEGRATION` | política seletiva, contrato e adapter HTTP fail-closed implementados | inventário, propriedades, scopes, token, sandbox, worker e reconciliação ausentes | escrita/readback, retry e reconciliação em sandbox |
-| `REAL-FULLSTACK-E2E` | testes de banco e verificador autenticado de deployment existem | não há prova navegador → identidade → aplicação → banco → storage → HubSpot no ambiente-alvo | execução integral com contas e dados de teste controlados |
-| `SECURITY-PRIVACY-REAL-USERS` | RLS, RBAC, auditoria, idempotência, validação de arquivos e secret scanning implementados | bases legais, retenção, direitos, incidentes, rate limiting, abuse protection e aprovações incompletos | controles técnicos e jurídicos aprovados |
+| `OFFICIAL-DIAGNOSTIC` | motor, persistência, editor e fluxo implementados | perguntas, scoring, empate, textos e casos oficiais não aprovados | pacote metodológico e E2E oficial |
+| `OPENAI-JOURNEY-RELEASE` | runtime e administração implementados | conteúdo, mídias, regras, credenciais e acessibilidade incompletos | versão editorial aprovada e E2E |
+| `AWS-IDENTITY-MIGRATION` | Cognito/broker OIDC definido; identidade interna e RBAC implementados no adapter Supabase | adapter Cognito, federação, linking, recuperação, usuários existentes e site/SSO pendentes | fluxo novo/existente em AWS sem duplicidade |
+| `CPF-KEY-OPERATIONS` | AES-256-GCM, HMAC e self-test implementados | keys institucionais, rotação, recuperação e suporte não exercitados | Secrets Manager/KMS e runbook aprovados |
+| `HUBSPOT-PRODUCTION-INTEGRATION` | política e adapter HTTP implementados | inventário, propriedades, scopes, sandbox, SQS worker e reconciliação ausentes | escrita/readback, retry, DLQ e reconciliação comprovados |
+| `REAL-TRANSACTIONAL-E2E` | smoke autenticado read-only e testes de banco existem | não há prova navegador → Cognito → Lambda → RDS → S3 → SQS → HubSpot | execução integral com contas e dados controlados |
+| `SECURITY-PRIVACY-REAL-USERS` | RLS, RBAC, auditoria, idempotência e validação básica de arquivos existem | bases legais, retenção, direitos, incidentes, abuse protection e segurança de conteúdo incompletos | controles técnicos e jurídicos aprovados |
 
-## P1 — infraestrutura, escala e operação
+## P1 — AWS corporativa, migração e escala
 
-| ID | Estado no repositório | Lacuna | Encerramento |
+| ID | Estado | Lacuna | Encerramento |
 |---|---|---|---|
-| `GITHUB-ACTIONS-AVAILABILITY` | quatro workflows permanentes e comandos locais definidos | runs atuais encerram antes dos steps e não fornecem logs | instalação, testes, typecheck e build executam em CI |
-| `BRANCH-PROTECTION-AND-REVIEW` | branches e PRs são usados | proteção da `main`, review obrigatório e política de merge não comprovados | configuração verificada e merge controlado |
-| `AWS-ACCOUNT-AND-STAGING` | Docker, probes e Terraform ECS presentes; imagem Lambda preparada | conta, domínio, certificado, secrets, plan/apply e ambiente de staging ausentes | staging implantado por digest e exercitado |
-| `PRODUCTION-COMPUTE-SELECTION` | ECS/Fargate e imagem Lambda são opções | não há decisão por carga, latência, custo, cache e operação | ADR e benchmark aprovados |
-| `LAMBDA-FRONT-DOOR` | Lambda Web Adapter incluído na imagem | API Gateway, Function URL ou ALB, domínio, TLS, forwarded headers, throttling e WAF não escolhidos | front door implantado e testado |
-| `DIRECT-UPLOADS` | intents, checksum e confirmação existem; arquivos ainda atravessam o Next.js | payloads multipart de 4–10 MiB são incompatíveis com Lambda e ineficientes para escala | upload pré-assinado direto e reconciliação implementados |
-| `LAMBDA-STATELESSNESS` | cache local é direcionado para `/tmp` | não há prova de que ISR, incremental cache, locks ou trabalho em memória sejam descartáveis | teste de concorrência e cache compartilhado/eliminação definidos |
-| `CAPACITY-AND-CONCURRENCY` | ECS possui autoscaling básico; Lambda não possui configuração | sem SLO, perfil de carga, reserved concurrency, cold-start budget ou limite por dependência | load/soak tests e limites aprovados |
-| `DATABASE-SCALE` | Supabase é o runtime atual; RDS está apenas declarado | RDS adapter e RDS Proxy ausentes; RDS baseline não é Multi-AZ | adapter, proxy/pooling, Multi-AZ e carga exercitados |
-| `STORAGE-PORTABILITY` | Supabase Storage é ativo; bucket S3 privado está declarado | S3 adapter, URLs pré-assinadas, retenção e reconciliação ausentes | fluxo S3 real e falhas exercitados |
-| `ASYNC-WORKERS` | outbox e contratos existem | workers de HubSpot, reconciliação, retry e DLQ não estão ativos | consumidores event-driven implantados e monitorados |
-| `OBSERVABILITY-AND-SLO` | logs e dois alarmes Terraform existem | métricas de latência, erros, throttles, concorrência, cold starts, filas, auth e negócio ausentes | dashboards, alarmes, tracing policy e on-call aprovados |
-| `HIGH-AVAILABILITY` | rede em duas AZs | um NAT Gateway, RDS single-AZ e nenhum teste de failover | desenho HA, failover e recuperação exercitados |
-| `BACKUP-RESTORE-ROLLBACK` | backups RDS declarados e imagens imutáveis previstas | restore, migração, rollback de app/banco e DR não ensaiados | exercícios documentados e aprovados |
-| `PARTICIPANT-PASSWORD-PROTECTION` | autenticação por senha e sessão Supabase implementadas | política final e proteção contra senhas comprometidas não comprovadas | configuração e testes no provedor aprovado |
-| `ACCESSIBILITY` | semântica básica, foco, skip link, responsividade e reduced motion presentes | WCAG, leitor de tela, teclado, legendas e transcrições sem auditoria final | auditoria assistiva dos fluxos reais |
+| `GITHUB-ACTIONS-AVAILABILITY` | workflows e comandos definidos | jobs encerram antes dos steps e sem logs | instalação, testes, typecheck, build e gates verdes |
+| `BRANCH-PROTECTION-AND-REVIEW` | branches e PRs usados | proteção da `main`, review e política de merge não comprovados | configuração verificada |
+| `CORPORATE-AWS-INVENTORY` | contrato de informações versionado | contas, VPC, edge, IdP, RDS, S3, filas, secrets, observabilidade e pipeline desconhecidos | inventário e owners aprovados |
+| `LAMBDA-IMAGE-VERIFICATION` | `Dockerfile.lambda` fail-closed e build CI definido | imagem ainda não foi construída, iniciada e invocada com sucesso | build por digest e teste do adapter |
+| `LAMBDA-INFRASTRUCTURE` | Lambda + API Gateway HTTP API são o alvo | função, alias, API, domínio, TLS, WAF, throttling e deploy corporativo ausentes | staging aplicado e testado |
+| `AWS-RUNTIME-ADAPTERS` | selector e fronteira RPC criados | Cognito, RDS e S3 ainda falham fechados | adapters ativos e probes verdes |
+| `DIRECT-UPLOADS` | intents e confirmação existem | arquivos de 4–10 MiB ainda atravessam Next.js no adapter Supabase | presigned PUT, checksum, HEAD e reconciliação no S3 |
+| `RDS-PORTABILITY` | PostgreSQL e migrations versionados | replay RDS, extensões, roles, grants, RDS Proxy e equivalência não comprovados | replay e carga em RDS Multi-AZ |
+| `ASYNC-WORKERS` | outbox e contratos existem | dispatcher, SQS, Lambdas, retry, DLQ e reconciliação não ativos | consumidores implantados e monitorados |
+| `STATELESSNESS-AND-CACHE` | `/tmp` limitado a cache descartável | ISR/cache/locks e concorrência Lambda não exercitados | teste de múltiplos execution environments |
+| `CAPACITY-AND-SLO` | arquitetura de escala definida | sem perfil de carga, reserved concurrency, cold-start budget e limites por dependência | load/soak tests e SLOs aprovados |
+| `OBSERVABILITY` | CloudWatch é o alvo | logs, tracing, dashboards e alarmes de app, auth, banco, S3, filas e HubSpot ausentes | operação e on-call exercitados |
+| `BACKUP-RESTORE-ROLLBACK` | RDS/PITR e aliases definidos como requisitos | restore, migrations, canary e rollback não ensaiados | exercícios aprovados |
+| `ACCESSIBILITY` | semântica básica e responsividade presentes | WCAG, leitor de tela, teclado, legendas e transcrições sem auditoria final | auditoria assistiva real |
 
-## Decisões já concluídas
+## Decisões encerradas
 
 ```text
-public_signup_test_route = absent
-test_authentication_bypass = absent
+aws_architecture_decided = true
+production_compute = lambda
+production_front_door = api_gateway_http_api
+production_identity = cognito_or_corporate_oidc_broker
+production_database = rds_postgresql_via_rds_proxy
+production_storage = s3_direct_upload
+production_async = sqs_lambda_workers
+supabase_allowed_in_production = false
 synthetic_application_backend = absent
-malware_scanner_subsystem = absent
-private_file_controls = authorization,mime,extension,size,sha256
 admin_password_login = forbidden
-admin_google_oauth_domain_and_rbac_gate = implemented
-supabase_is_production = false
-lambda_image_is_production = false
+malware_scanner_subsystem = absent
 ```
 
-A decisão de remover o scanner de malware é vigente. Novos controles de conteúdo só entram mediante threat model e decisão explícita.
-
-## Estado técnico verificável
+## Estado verificável
 
 ```text
-runtime_provider = supabase_development_test
-ci_steps_executed = false
-aws_resources_applied = false
-ecs_staging_applied = false
-lambda_container_image_prepared = true
+runtime_provider_development = supabase
+runtime_provider_production = aws_required
+production_runtime_guard = implemented
+aws_readiness_probe = fail_closed_until_adapters
+corporate_aws_inventory_complete = false
+lambda_dockerfile_present = true
+lambda_image_build_verified = false
 lambda_function_deployed = false
-lambda_front_door_selected = false
-direct_uploads_implemented = false
-load_test_passed = false
+cognito_adapter_active = false
 rds_adapter_active = false
-rds_proxy_declared = false
+rds_proxy_active = false
 s3_adapter_active = false
-production_identity_provider_selected = false
+direct_uploads_implemented = false
+sqs_workers_active = false
 hubspot_sandbox_proven = false
-hubspot_worker_active = false
-real_authenticated_browser_verification_passed = false
+transactional_aws_e2e_passed = false
 production_ready = false
 ```
-
-Números de migrations, RPCs, scripts e testes não são copiados manualmente para este documento. Eles são derivados pelos comandos e contratos versionados do repositório.
