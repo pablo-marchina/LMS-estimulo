@@ -2,23 +2,31 @@
 
 LMS web para desenvolvimento de empreendedores, operação de jornadas de capacitação e geração governada de dados educacionais e operacionais.
 
-O mapa vigente está em [`PROJECT_INDEX.md`](PROJECT_INDEX.md). A arquitetura de produção integral na AWS foi aprovada pela [`DEC-075`](docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md).
+O mapa vigente está em [`PROJECT_INDEX.md`](PROJECT_INDEX.md). A arquitetura de produção integral na AWS segue a [`DEC-075`](docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md).
+
+## Dois runtimes suportados
+
+```text
+local, test e preview      Supabase
+staging e production       AWS
+```
+
+- Supabase mantém autenticação, PostgreSQL, Storage e `authenticated-rpc` para desenvolvimento e validação.
+- AWS Lambda é o único artefato de compute de produção.
+- staging e produção rejeitam qualquer tentativa de usar o provider Supabase.
+- adapters AWS ainda incompletos permanecem fail-closed.
 
 ## Estado atual
 
 ```text
 aplicação e administração       implementadas no repositório
-runtime de validação            Supabase development/test
-arquitetura de produção         AWS Lambda + Cognito/OIDC + RDS Proxy/RDS + S3 + SQS
-provider guard                  produção rejeita Supabase
-Dockerfile Lambda               presente; build e execução não comprovados
-adapters AWS                    pendentes e fail-closed
+Supabase de teste               funcional por configuração; verificação real explícita
+Dockerfile Lambda               único container versionado
+provider guard                  Supabase proibido em staging/produção
+adapters Cognito/RDS/S3         pendentes e fail-closed
 infraestrutura corporativa      ainda não inventariada
-HubSpot                         política/adapter; sandbox e worker pendentes
 produção                        bloqueada
 ```
-
-Supabase continua funcional para desenvolvimento e validação enquanto os adapters AWS são construídos. Ele não é um ambiente nem um provider permitido em produção.
 
 O estado detalhado está em [`APPLICATION_FOUNDATION.md`](docs/implementation/APPLICATION_FOUNDATION.md), e os bloqueadores em [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md).
 
@@ -26,33 +34,28 @@ O estado detalhado está em [`APPLICATION_FOUNDATION.md`](docs/implementation/AP
 
 ```text
 apps/web/                              aplicação Next.js
-apps/web/lib/platform/                 selector e contratos de provider
-config/                                configuração versionada
+apps/web/lib/platform/                 seleção e contratos de provider
+apps/web/lib/supabase/                 adapter de desenvolvimento/teste
+config/platform/                       contrato de produção legível por máquina
 supabase/migrations/                   histórico PostgreSQL executável
-supabase/functions/                    adapters temporários de desenvolvimento/teste
+supabase/functions/                    Edge Functions de teste
+Dockerfile.lambda                      único container da aplicação
+infra/aws/lambda/                      contrato operacional do runtime Lambda
 infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md
-                                        inventário necessário da AWS corporativa
-infra/aws/lambda/                      contrato e operação do runtime Lambda
-infra/aws/terraform/                   scaffolding ECS anterior; não aplicar
-scripts/application/                   testes de lógica e contratos
-scripts/database/                      replay e gates PostgreSQL
-scripts/integrations/                  contratos de integração
-scripts/operations/                    utilitários operacionais controlados
-scripts/repository/                    governança e higiene
-scripts/runtime/                       inicialização e contratos de plataforma
-scripts/verification/                  smoke tests de ambientes implantados
-docs/                                  produto, decisões, arquitetura e operação
+                                       inventário da AWS corporativa
+scripts/runtime/                       gates de configuração e arquitetura
+scripts/verification/                  verificações explícitas de ambientes reais
 ```
 
-Ferramentas pessoais de agentes, relatórios de execução, referências externas, estados locais, backends sintéticos e gatilhos manuais de deploy não pertencem ao repositório.
+Não existe stack ECS/Fargate nem segundo Dockerfile na árvore ativa.
 
-## Desenvolvimento com Supabase
+## Desenvolvimento e testes com Supabase
 
 Pré-requisitos:
 
 - Node.js 22;
 - npm 10.9.2;
-- projeto Supabase autorizado para desenvolvimento/teste;
+- projeto Supabase autorizado;
 - duas chaves independentes de 32 bytes em base64 para proteção do CPF;
 - Google OAuth de teste para validar a administração.
 
@@ -75,12 +78,20 @@ PowerShell:
 Copy-Item .env.example .env
 ```
 
-O `.env.example` usa:
+O `.env` de teste deve usar:
 
 ```text
 APP_ENV=development
 PLATFORM_RUNTIME_PROVIDER=supabase
 ```
+
+A verificação read-only do ambiente Supabase real é separada:
+
+```bash
+npm run verify:supabase
+```
+
+Ela verifica Auth, o contrato `get_application_readiness` do PostgreSQL e se a Edge Function autenticada está acessível e protegida. O comando não cria usuários nem altera dados.
 
 ## Validações permanentes
 
@@ -98,7 +109,7 @@ npm run typecheck:web
 npm run build:web
 ```
 
-`npm run verify:deployment` é um smoke test autenticado read-only. Ele não substitui o E2E transacional AWS que ainda precisa exercitar Cognito, Lambda, RDS, S3, SQS e HubSpot.
+`npm run verify:deployment` é um smoke test autenticado read-only de um ambiente implantado. Ele não substitui o E2E transacional AWS.
 
 ## Arquitetura AWS
 
@@ -122,15 +133,17 @@ PostgreSQL outbox
 → HubSpot e DLQ
 ```
 
-A AWS existente da empresa deve ser inventariada antes de declarar recursos. Use [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md). Não criar VPC, Cognito, RDS, buckets, filas, WAF ou pipelines paralelos sem saber quais componentes corporativos já existem.
+A AWS existente da empresa deve ser inventariada antes de declarar recursos. Use [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md). Não criar infraestrutura paralela sem identificar os componentes corporativos existentes.
 
 ## Container Lambda
 
 O [`Dockerfile.lambda`](Dockerfile.lambda):
 
 - define `APP_ENV=production` e `PLATFORM_RUNTIME_PROVIDER=aws`;
+- não recebe nem incorpora configuração Supabase;
 - usa AWS Lambda Web Adapter;
-- usa `/api/health/ready` e falha enquanto os adapters AWS não existem;
+- usa `/api/health/live` apenas para o adapter detectar que o servidor HTTP iniciou;
+- mantém `/api/health/ready` como gate externo fail-closed das dependências AWS;
 - direciona cache descartável para `/tmp`;
 - mantém secrets fora da imagem.
 
@@ -143,13 +156,11 @@ docker buildx build \
   --platform linux/amd64 \
   --file Dockerfile.lambda \
   --build-arg NEXT_PUBLIC_APP_URL=https://staging.example.org \
-  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://temporary-build.example.supabase.co \
-  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=temporary-public-build-key \
   --tag lms-estimulo-lambda:<commit> \
   .
 ```
 
-Os argumentos públicos Supabase ainda existem temporariamente porque o cliente web AWS não foi implementado. Eles não são configuração de produção e deverão ser removidos quando o adapter Cognito estiver ativo.
+O Web CI também inicia o container, exige liveness `200` e confirma que readiness continua `503` sem os adapters AWS reais.
 
 O guia completo está em [`infra/aws/lambda/README.md`](infra/aws/lambda/README.md).
 
@@ -169,4 +180,4 @@ A release continua bloqueada até, no mínimo:
 - E2E transacional;
 - conteúdo, diagnóstico, segurança, privacidade e acessibilidade aprovados.
 
-Nenhuma afirmação de produção deve ser feita com base apenas em código, Dockerfile, Terraform, fixture, mock ou teste estrutural.
+Nenhuma afirmação de produção deve ser feita com base apenas em código, Dockerfile, fixture, mock ou teste estrutural.
