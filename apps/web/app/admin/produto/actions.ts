@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { clearAdminActivityParts, saveAdminPathBadge } from "@/lib/admin/journey-editor";
 import { attachLibraryContentToActivity, configureAdminPathTemplate, saveAdminProductResource } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
@@ -24,6 +25,16 @@ function secureExternalUrl(value: string): string | null {
 function selectedFile(formData: FormData, name: string) {
   const entry = formData.get(name);
   return entry instanceof File && entry.size > 0 ? entry : null;
+}
+function objectSnapshot(formData: FormData, name: string): Record<string, unknown> {
+  const raw = text(formData, name);
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
 }
 
 const questionTypes = new Set(["single_choice", "multiple_choice", "true_false", "open_text"]);
@@ -175,30 +186,54 @@ async function createInlineLibraryContent(input: {
 export async function saveTrilhaAction(formData: FormData) {
   const { auth, organizationId } = await authorize();
   const journeyVersionId = text(formData, "journey_version_id");
+  const pathTemplateId = nullable(formData, "path_template_id");
   const name = text(formData, "name");
+  const badgeTitle = text(formData, "badge_title");
+  const back = `/admin/produto?etapa=trilhas&versao=${journeyVersionId}`;
+
   try {
     const result = await saveAdminProductResource({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId,
       resourceType: "path_template",
-      payload: { journey_version_id: journeyVersionId, name, description: nullable(formData, "description"), position: positiveInteger(text(formData, "position")), code: deriveCode(name, "trilha") },
+      payload: {
+        journey_version_id: journeyVersionId,
+        path_template_id: pathTemplateId,
+        name,
+        description: nullable(formData, "description"),
+        position: positiveInteger(text(formData, "position")),
+        code: text(formData, "code") || deriveCode(name, "trilha"),
+        is_default: checked(formData, "is_default"),
+      },
       idempotencyKey: randomUUID(),
     });
-    const pathTemplateId = String(result.path_template_id ?? "");
-    if (!pathTemplateId) throw new Error("PATH_TEMPLATE_MISSING");
+    const savedPathTemplateId = String(result.path_template_id ?? pathTemplateId ?? "");
+    if (!savedPathTemplateId) throw new Error("PATH_TEMPLATE_MISSING");
+
     await configureAdminPathTemplate({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId,
-      pathTemplateId,
+      pathTemplateId: savedPathTemplateId,
       isRequired: checked(formData, "is_required"),
       presentation: { tone: text(formData, "tone") || "cyan", icon: text(formData, "icon") || "sparkles" },
       idempotencyKey: randomUUID(),
     });
+
+    if (badgeTitle) {
+      await saveAdminPathBadge({
+        actorUserAccountId: auth.identity.user_account_id,
+        organizationId,
+        pathTemplateId: savedPathTemplateId,
+        title: badgeTitle,
+        description: text(formData, "badge_description"),
+        idempotencyKey: randomUUID(),
+      });
+    }
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
-    redirect(`/admin/produto?etapa=trilhas&versao=${journeyVersionId}&erro=${reason}`);
+    redirect(`${back}&erro=${reason}`);
   }
-  redirect(`/admin/produto?etapa=trilhas&versao=${journeyVersionId}&sucesso=trilha_salva`);
+  redirect(`${back}&sucesso=trilha_salva`);
 }
 
 export async function saveAulaAction(formData: FormData) {
@@ -206,6 +241,9 @@ export async function saveAulaAction(formData: FormData) {
   const actor = auth.identity.user_account_id;
   const journeyVersionId = text(formData, "journey_version_id");
   const pathTemplateId = text(formData, "path_template_id");
+  const activityDefinitionId = nullable(formData, "activity_definition_id");
+  const activityVersionId = nullable(formData, "activity_version_id");
+  const stepId = nullable(formData, "step_id");
   const title = text(formData, "title");
   const position = positiveInteger(text(formData, "position"));
   const isClosing = checked(formData, "is_closing");
@@ -213,7 +251,16 @@ export async function saveAulaAction(formData: FormData) {
   const sections = contentSectionsFromForm(formData);
   const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
   const questions = quizQuestionsFromForm(formData);
-  const contentSource = text(formData, "content_source");
+  const contentSource = text(formData, "content_source") || (activityVersionId ? "current" : "none");
+  const previousConfiguration = objectSnapshot(formData, "configuration_snapshot");
+  const previousMetadata = objectSnapshot(formData, "metadata_snapshot");
+  const { content_sections: _oldSections, prompts: _oldPrompts, practice_checklist: _oldChecklist, ...preservedConfiguration } = previousConfiguration;
+  const configuration = {
+    ...preservedConfiguration,
+    ...(sections.length ? { content_sections: sections } : {}),
+    ...(prompts.length ? { prompts } : {}),
+    ...(checklist.length ? { practice_checklist: checklist } : {}),
+  };
   const back = `/admin/produto?etapa=aulas&versao=${journeyVersionId}&trilha=${pathTemplateId}`;
   if (!title || !pathTemplateId || (isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
 
@@ -229,30 +276,38 @@ export async function saveAulaAction(formData: FormData) {
       organizationId,
       resourceType: "activity",
       payload: {
-        code: deriveCode(`${title}_${randomUUID().slice(0, 8)}`, "aula"),
+        definition_id: activityDefinitionId,
+        version_id: activityVersionId,
+        code: text(formData, "activity_definition_code") || deriveCode(`${title}_${randomUUID().slice(0, 8)}`, "aula"),
         name: title,
         title,
         description: nullable(formData, "description"),
         activity_type: isClosing ? "practice" : "content",
         estimated_minutes: positiveInteger(text(formData, "estimated_minutes"), 10),
-        configuration: {
-          ...(sections.length ? { content_sections: sections } : {}),
-          ...(prompts.length ? { prompts } : {}),
-          ...(checklist.length ? { practice_checklist: checklist } : {}),
-        },
+        configuration,
         ...(questions.length ? { assessment: { questions, passing_score: positiveInteger(text(formData, "quiz_passing_score"), 70), max_attempts: positiveInteger(text(formData, "quiz_max_attempts"), 3) } } : {}),
-        ...(isClosing ? { practice: { submission_mode: "file", allowed_evidence_types: ["file", "text"], review_required: true } } : {}),
+        ...(isClosing ? { practice: { submission_mode: text(formData, "submission_mode") || "file", allowed_evidence_types: ["file", "text"], review_required: checked(formData, "review_required") } } : {}),
       },
       idempotencyKey: randomUUID(),
     });
-    const activityVersionId = String(activityResult.version_id ?? "");
-    if (!activityVersionId) throw new Error("ACTIVITY_VERSION_MISSING");
-    const stepCode = `passo_${position}`;
+    const savedActivityVersionId = String(activityResult.version_id ?? activityVersionId ?? "");
+    if (!savedActivityVersionId) throw new Error("ACTIVITY_VERSION_MISSING");
+
+    const stepCode = text(formData, "step_code") || `passo_${position}`;
     await saveAdminProductResource({
       actorUserAccountId: actor,
       organizationId,
       resourceType: "path_step",
-      payload: { code: deriveCode(stepCode, "passo"), path_template_id: pathTemplateId, step_code: stepCode, activity_version_id: activityVersionId, position, is_required: true, metadata: { always_available: true } },
+      payload: {
+        code: deriveCode(stepCode, "passo"),
+        path_template_id: pathTemplateId,
+        step_id: stepId,
+        step_code: deriveCode(stepCode, "passo"),
+        activity_version_id: savedActivityVersionId,
+        position,
+        is_required: checked(formData, "is_required"),
+        metadata: { ...previousMetadata, always_available: previousMetadata.always_available ?? true },
+      },
       idempotencyKey: randomUUID(),
     });
 
@@ -261,9 +316,25 @@ export async function saveAulaAction(formData: FormData) {
         actorUserAccountId: actor,
         organizationId,
         journeyVersionId,
-        activityVersionId,
+        activityVersionId: savedActivityVersionId,
         libraryItemVersionId,
         isRequired: checked(formData, "content_required"),
+        idempotencyKey: randomUUID(),
+      });
+    }
+
+    const clearContent = contentSource === "none";
+    const clearAssessment = questions.length === 0;
+    const clearPractice = !isClosing;
+    if (clearContent || clearAssessment || clearPractice) {
+      await clearAdminActivityParts({
+        actorUserAccountId: actor,
+        organizationId,
+        journeyVersionId,
+        activityVersionId: savedActivityVersionId,
+        clearContent,
+        clearAssessment,
+        clearPractice,
         idempotencyKey: randomUUID(),
       });
     }
