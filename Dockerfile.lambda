@@ -10,12 +10,9 @@ FROM dependencies AS builder
 WORKDIR /app
 COPY . .
 ARG NEXT_PUBLIC_APP_URL
-ARG NEXT_PUBLIC_SUPABASE_URL
-ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
-ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL} \
-    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
-    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-RUN node -e "for (const name of ['NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY']) { if (!process.env[name]?.trim()) throw new Error('missing build argument: '+name); } for (const name of ['NEXT_PUBLIC_APP_URL','NEXT_PUBLIC_SUPABASE_URL']) { const url = new URL(process.env[name]); if (url.protocol !== 'https:') throw new Error(name+' must use https'); }"
+ENV APP_ENV=production \
+    PLATFORM_RUNTIME_PROVIDER=aws \
+    NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 RUN npm run build:web
 
 FROM node:22.16.0-bookworm-slim AS runner
@@ -28,9 +25,8 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     PORT=3000 \
     AWS_LWA_PORT=3000 \
-    AWS_LWA_READINESS_CHECK_PATH=/api/health/ready \
+    AWS_LWA_READINESS_CHECK_PATH=/api/health/live \
     AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200 \
-    AWS_LWA_ERROR_STATUS_CODES=500-599 \
     AWS_LWA_ENABLE_COMPRESSION=true \
     HOME=/tmp \
     TMPDIR=/tmp \
