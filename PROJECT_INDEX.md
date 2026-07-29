@@ -51,6 +51,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - [Inventário necessário da AWS corporativa](infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md)
 - [Runtime web em AWS Lambda](infra/aws/lambda/README.md)
 - [Configuração de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
+- [Baseline de qualidade para produção](docs/operations/PRODUCTION_QUALITY_BASELINE.md)
 
 ## Regra de leitura
 
