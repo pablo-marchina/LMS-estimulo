@@ -11,16 +11,30 @@ const workspace = await mkdtemp(join(tmpdir(), "estimulo-gitleaks-"));
 function run(target, exitCode) {
   return spawnSync(
     command,
-    ["dir", "--no-banner", "--redact", "--exit-code", String(exitCode), target],
+    [
+      "dir",
+      "--no-banner",
+      "--redact",
+      "--config=.gitleaks.toml",
+      "--exit-code",
+      String(exitCode),
+      target,
+    ],
     { encoding: "utf8" },
   );
 }
 
 try {
   const cleanPath = join(workspace, "clean.txt");
+  const placeholderPath = join(workspace, "synthetic-placeholder.txt");
   const leakPath = join(workspace, "synthetic-leak.txt");
 
   await writeFile(cleanPath, "synthetic fixture without credentials\n", "utf8");
+  await writeFile(
+    placeholderPath,
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-placeholder-key\nSUPABASE_SERVICE_ROLE_KEY=ci-placeholder-service-key\n",
+    "utf8",
+  );
 
   // Construct the entirely fake, high-entropy token only at runtime so this source is never a finding.
   const syntheticBody = createHash("sha256")
@@ -37,6 +51,13 @@ try {
     `clean fixture must pass; status=${clean.status}; stderr=${clean.stderr}`,
   );
 
+  const placeholder = run(placeholderPath, 17);
+  assert.equal(
+    placeholder.status,
+    0,
+    `reviewed synthetic placeholders must pass; status=${placeholder.status}; stderr=${placeholder.stderr}`,
+  );
+
   const detected = run(leakPath, 17);
   assert.equal(
     detected.status,
@@ -50,7 +71,7 @@ try {
     "scanner output must redact the synthetic token",
   );
 
-  console.log(JSON.stringify({ status: "PASS", clean_exit: 0, leak_exit: 17 }));
+  console.log(JSON.stringify({ status: "PASS", clean_exit: 0, placeholder_exit: 0, leak_exit: 17 }));
 } finally {
   await rm(workspace, { recursive: true, force: true });
 }
