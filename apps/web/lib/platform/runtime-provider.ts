@@ -1,30 +1,25 @@
 import "server-only";
+import {
+  assertPlatformRuntimePolicyFor,
+  normalizeApplicationEnvironment,
+  parsePlatformRuntimeProvider,
+} from "./runtime-provider-core.mjs";
 
 export type PlatformRuntimeProvider = "supabase" | "aws";
 
-const supportedProviders = new Set<PlatformRuntimeProvider>(["supabase", "aws"]);
-
 export function applicationEnvironment(): string {
-  return (process.env.APP_ENV ?? "development").trim().toLowerCase();
+  return normalizeApplicationEnvironment(process.env.APP_ENV);
 }
 
 export function platformRuntimeProvider(): PlatformRuntimeProvider {
-  const value = (process.env.PLATFORM_RUNTIME_PROVIDER ?? "supabase").trim().toLowerCase();
-  if (!supportedProviders.has(value as PlatformRuntimeProvider)) {
-    throw new Error(`PLATFORM_RUNTIME_PROVIDER_INVALID:${value || "empty"}`);
-  }
-  return value as PlatformRuntimeProvider;
+  return parsePlatformRuntimeProvider(process.env.PLATFORM_RUNTIME_PROVIDER) as PlatformRuntimeProvider;
 }
 
 export function assertPlatformRuntimePolicy(): PlatformRuntimeProvider {
-  const environment = applicationEnvironment();
-  const provider = platformRuntimeProvider();
-
-  if (environment === "production" && provider !== "aws") {
-    throw new Error("PRODUCTION_REQUIRES_AWS_RUNTIME");
-  }
-
-  return provider;
+  return assertPlatformRuntimePolicyFor(
+    process.env.APP_ENV,
+    process.env.PLATFORM_RUNTIME_PROVIDER,
+  ) as PlatformRuntimeProvider;
 }
 
 export const awsRuntimeRequiredEnvironment = [
