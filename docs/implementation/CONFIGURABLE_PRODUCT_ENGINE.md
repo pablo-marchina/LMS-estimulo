@@ -58,12 +58,12 @@ A classificação semântica segue a DEC-070. O motor pode produzir candidatos d
 ## Validação
 
 ```bash
-npm run test:configurable-product
-npm run test:configurable-product-persistence
-npm run validate:official-diagnostic
-npm run test:official-diagnostic
-npm run test:application-foundation
+npm run test:product
+npm run test:database
+npm run test:application
 ```
+
+A prova no ambiente implantado usa `npm run verify:deployment` e não altera o runtime com dados ou serviços falsos.
 
 ## Gate oficial
 
@@ -76,6 +76,6 @@ development_configuration_present = true
 official_wording_approved = false
 official_scoring_approved = false
 official_activation_matrix_approved = false
-official_browser_e2e_passed = false
+real_browser_verification_passed = false
 hubspot_destination_approved = false
 ```
