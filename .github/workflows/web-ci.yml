@@ -10,7 +10,10 @@ on:
       - "Dockerfile.lambda"
       - "apps/web/**"
       - "config/official-diagnostic/**"
-      - "infra/aws/lambda/**"
+      - "docs/architecture/**"
+      - "docs/decisions/**"
+      - "docs/implementation/**"
+      - "infra/aws/**"
       - "package.json"
       - "package-lock.json"
       - "scripts/application/**"
@@ -18,7 +21,6 @@ on:
       - "scripts/product/**"
       - "scripts/repository/validate-package-lock.mjs"
       - "scripts/runtime/**"
-      - "docs/implementation/public-rpc-contracts-v1.json"
       - "supabase/migrations/*_m14*_step5_*.sql"
 
 permissions:
@@ -30,6 +32,7 @@ concurrency:
 
 env:
   APP_ENV: test
+  PLATFORM_RUNTIME_PROVIDER: supabase
   NEXT_PUBLIC_APP_URL: http://localhost:3000
   NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
@@ -43,7 +46,7 @@ jobs:
   validate:
     name: Validate web application
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Checkout repository
@@ -74,6 +77,9 @@ jobs:
       - name: Validate application foundation
         run: npm run validate:application-foundation
 
+      - name: Validate AWS platform contract
+        run: npm run validate:platform-contract
+
       - name: Test application behavior
         run: npm run test:application
 
@@ -91,7 +97,9 @@ jobs:
 
       - name: Build AWS Lambda container image
         run: |
-          docker build \
+          docker buildx build \
+            --load \
+            --provenance=false \
             --platform linux/amd64 \
             --file Dockerfile.lambda \
             --build-arg NEXT_PUBLIC_APP_URL=https://ci.example.org \
@@ -99,3 +107,9 @@ jobs:
             --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-placeholder-key \
             --tag lms-estimulo-lambda:ci \
             .
+
+      - name: Inspect AWS Lambda image contract
+        run: |
+          docker image inspect lms-estimulo-lambda:ci \
+            --format '{{json .Config.Env}}' \
+            | grep 'PLATFORM_RUNTIME_PROVIDER=aws'
