@@ -1,68 +1,23 @@
 # Fluxo lógico de integração com HubSpot
 
-**Versão:** 1.2  
+**Versão:** 1.3  
 **Data:** 2026-07-29  
-**Status:** escopo aprovado pela DEC-070; adapter real pendente
+**Status:** política e adapter HTTP implementados; inventário, SQS worker, sandbox e reconciliação pendentes
 
 ## Objetivo
 
-Este fluxo implementa a [`DEC-070`](../decisions/HUBSPOT_SCOPE_DECISION.md).
+Este fluxo implementa a [`DEC-070`](../decisions/HUBSPOT_SCOPE_DECISION.md). O PostgreSQL é o banco operacional e detalhado. O HubSpot recebe somente dados minimizados e aprovados para vínculo, engajamento ou cálculos autorizados.
 
-O PostgreSQL é o banco operacional e detalhado. O HubSpot recebe apenas identificadores mínimos de vínculo, sinais de engajamento e informações úteis para cálculos aprovados.
-
-## Categorias sincronizadas
-
-### Identificadores mínimos
-
-- ID interno do usuário;
-- ID do contato HubSpot;
-- ID da empresa quando necessário;
-- ID da operação de crédito quando necessário;
-- chaves de associação aprovadas.
-
-CPF, CNPJ, e-mail e telefone podem ser consultados para resolução de identidade, mas a integração do LMS não deve duplicá-los em payloads de engajamento além do necessário.
-
-### Engajamento
-
-- acesso, frequência e retorno;
-- início, progresso e conclusão;
-- atividade, trilha e jornada;
-- participação e avaliação de utilidade;
-- tentativas e resultados agregados;
-- práticas e uploads por estado;
-- pontos, conquistas, recompensas e credenciais;
-- abandono, retomada e sequência de marcos.
-
-### Dados úteis para cálculo
-
-- respostas selecionadas e resultados do diagnóstico;
-- dimensões, arquétipo e maturidade;
-- features derivadas de comportamento;
-- contexto autorizado;
-- classificações, recomendações e ativações;
-- desfechos de pesquisa ou avaliação.
-
-Cada variável precisa de finalidade, versão e governança.
-
-## Fluxo de saída
+## Classificação
 
 ```text
-participante ou operador executa ação
-→ LMS valida identidade, autorização e estado
-→ PostgreSQL persiste estado detalhado
-→ evento e outbox são gravados atomicamente
-→ transformer consulta a matriz HubSpot
-→ item é agregado, minimizado ou descartado conforme classificação
-→ adapter escreve no HubSpot com idempotência
-→ receipt é registrado
-→ falha segue retry ou reconciliação
+linking_identifier
+engagement_signal
+calculation_input_or_result
+not_synced
 ```
 
-A experiência do participante não depende por padrão da confirmação síncrona do HubSpot.
-
-## Matriz de sincronização
-
-Cada item deve declarar:
+Cada projeção precisa declarar:
 
 ```text
 source_entity_or_event
@@ -80,102 +35,124 @@ retention
 reconciliation_rule
 ```
 
-Valores de `sync_classification`:
+Sem inventário e destino físico aprovado, o item permanece `not_synced`.
+
+## Fluxo canônico AWS
 
 ```text
-linking_identifier
-engagement_signal
-calculation_input_or_result
-not_synced
+participante ou operador executa ação
+→ LMS valida identidade, autorização e estado
+→ RDS PostgreSQL persiste estado, evento e outbox atomicamente
+→ dispatcher seleciona itens elegíveis
+→ transformer aplica matriz, minimização e agregação
+→ mensagem é publicada em SQS
+→ Lambda consumidora chama o adapter HTTP HubSpot
+→ readback e receipt são persistidos
+→ sucesso, retry, DLQ ou reconciliação
 ```
 
-## Granularidade
+A experiência do participante não depende da confirmação síncrona do HubSpot.
 
-A representação pode usar:
+## Adapter HTTP implementado
 
-- propriedades de contato ou empresa;
-- custom behavioral events;
-- objetos personalizados;
-- atividades de timeline;
-- snapshots ou agregados temporais;
-- resultados calculados e versionados.
+O adapter real já existe e:
 
-Não é obrigatório enviar cada evento bruto. A granularidade escolhida deve preservar a utilidade aprovada para engajamento ou cálculo.
+- usa API CRM v3;
+- exige object type e ID interno explícitos;
+- aceita somente propriedades allowlisted;
+- faz PATCH parcial e GET/readback;
+- compara hashes e versão física;
+- classifica falhas transitórias e permanentes;
+- respeita `retry-after` quando disponível;
+- redige detalhes de erro;
+- falha fechado sem token ou portal;
+- não cria registros, associações ou deduplicação sem inventário aprovado.
 
-## Escritas com readback
+O adapter em memória permanece apenas como double de contrato. Idempotência em memória não é garantia distribuída e não substitui outbox, receipts e consumidor persistente.
 
-Readback é usado quando a próxima ação depende da confirmação, incluindo:
+## Itens pendentes
 
-- resolução ou criação de contato;
-- deduplicação;
-- associação com empresa ou crédito;
-- escrita crítica consumida por workflow externo;
-- atualização com expectativa de versão.
+- inventário real de objetos, propriedades, events e association types;
+- private app, scopes mínimos e sandbox;
+- matriz de sincronização aprovada;
+- resolução, criação, associação e deduplicação de identidade;
+- dispatcher de outbox;
+- filas SQS e DLQ;
+- Lambda consumidora com reserved concurrency;
+- batch, retry, backoff e jitter operacionais;
+- receipts persistentes e reconciliação;
+- webhooks de entrada com assinatura e replay protection;
+- dashboards e alarmes de backlog, idade, erros e rate limit;
+- testes de escrita/readback e recuperação no sandbox.
 
-## Fluxo de entrada
+## Dados elegíveis
 
-```text
-webhook ou leitura programada
-→ validação de origem, assinatura e replay
-→ receipt e idempotência
-→ resolução de identidade
-→ validação da versão/atualidade
-→ atualização de snapshot autorizado no LMS
-→ evento de integração
-```
+Após aprovação de destino:
 
-Somente dados autorizados do HubSpot podem influenciar o LMS.
+- identificadores canônicos mínimos;
+- marcos agregados de início, progresso e conclusão;
+- conclusões agregadas de atividade;
+- pontos, conquistas ou credenciais quando aprovados;
+- inputs, features e resultados de cálculo com finalidade e versão aprovadas.
 
-## Dados não sincronizados
+## Dados bloqueados por padrão
 
-- configurações editoriais completas;
-- conteúdo integral de aulas;
-- banco de questões como catálogo;
-- respostas abertas e comentários integrais sem finalidade específica;
-- arquivos binários;
-- URLs assinadas;
-- logs, traces, filas e retries;
-- segredos e tokens;
-- dados temporários sem uso de engajamento ou cálculo.
+- CPF bruto e outros identificadores sem necessidade específica;
+- respostas brutas de diagnóstico;
+- comentários e textos abertos;
+- arquivos binários e URLs assinadas;
+- conteúdo e configuração editorial;
+- logs, traces, filas, retries e secrets;
+- sinais sem destino, finalidade ou classificação aprovados.
+
+## Readback
+
+Readback é obrigatório quando a próxima ação depende da confirmação, incluindo:
+
+- resolução ou criação de registro;
+- deduplicação e associação;
+- escrita consumida por workflow externo;
+- atualização com expectativa de versão;
+- projeção crítica para cálculo aprovado.
 
 ## Indisponibilidade
 
 Quando o HubSpot estiver indisponível:
 
-- ações continuam no PostgreSQL;
-- itens elegíveis permanecem na outbox;
-- retries usam backoff, jitter e idempotência;
-- `429` respeita limites aplicáveis;
-- falhas permanentes seguem para reconciliação;
-- backlog e idade geram alertas;
-- recuperação deve provar ausência de perda dos itens sincronizáveis.
+- o LMS continua persistindo no PostgreSQL;
+- itens elegíveis permanecem na outbox/SQS;
+- retries usam backoff, jitter e idempotência persistente;
+- `429` respeita limites e `retry-after`;
+- falhas permanentes seguem para DLQ/reconciliação;
+- backlog e idade geram alarmes;
+- recuperação precisa provar ausência de perda ou duplicação divergente.
 
-## Requisitos do adapter real
-
-- autenticação e scopes mínimos;
-- inventário de objetos e propriedades;
-- busca e deduplicação;
-- propriedades, objetos e eventos adequados;
-- batch;
-- idempotência;
-- tratamento de `429`, `4xx` e `5xx`;
-- webhooks;
-- readback;
-- observabilidade sem payload sensível;
-- reconciliação;
-- testes no sandbox.
-
-## Critério de conclusão
+## Entrada a partir do HubSpot
 
 ```text
-hubspot_inventory_complete = true
-hubspot_sync_matrix_approved = true
-real_adapter_implemented = true
-identity_linking_tested = true
-engagement_signal_sync_tested = true
-calculation_variable_sync_tested = true
-not_synced_rules_tested = true
-idempotency_retry_rate_limit_tested = true
-reconciliation_tested = true
-critical_readback_tested = true
+webhook ou leitura programada
+→ validação de origem, assinatura, timestamp e replay
+→ receipt/idempotência
+→ resolução da identidade interna
+→ validação de versão e atualidade
+→ atualização de snapshot autorizado
+→ evento de integração
+```
+
+Somente dados autorizados podem influenciar o LMS. Webhooks ainda não estão implementados.
+
+## Gate
+
+```text
+hubspot_policy_implemented = true
+hubspot_http_adapter_implemented = true
+hubspot_inventory_complete = false
+hubspot_sync_matrix_approved = false
+hubspot_sandbox_proven = false
+sqs_worker_active = false
+persistent_receipts_active = false
+identity_linking_tested = false
+engagement_signal_sync_tested = false
+calculation_variable_sync_tested = false
+reconciliation_tested = false
 ```
