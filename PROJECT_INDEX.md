@@ -1,10 +1,10 @@
 # Plataforma Estímulo — índice canônico
 
-Este índice aponta para toda a documentação permanente do repositório. Requisitos aprovados, decisões vigentes, estado implementado e bloqueadores são mantidos diretamente nos documentos correspondentes; materiais de referência e processo de desenvolvimento ficam fora da árvore ativa.
+Este índice aponta para a documentação permanente. Requisitos, decisões, estado implementado e bloqueadores são mantidos diretamente nos documentos correspondentes.
 
 ## Entrada
 
-- [README](README.md) — execução, estrutura e estado geral.
+- [README](README.md) — execução, estado e arquitetura resumida.
 - [Guia de contribuição](CONTRIBUTING.md) — fluxo de mudanças e padrões.
 
 ## Produto
@@ -24,6 +24,7 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 
 - [Registro de decisões ativas](docs/decisions/DECISION_LOG.md)
 - [DEC-070 — escopo HubSpot](docs/decisions/HUBSPOT_SCOPE_DECISION.md)
+- [DEC-075 — produção integral na AWS](docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md)
 
 ## Estado da implementação
 
@@ -34,10 +35,10 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 
 ## Arquitetura e ambientes
 
+- [Arquitetura-alvo AWS](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
-- [Arquitetura-alvo AWS e opções de compute](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
-- [Lacunas de portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
-- [Identidade, acesso e vínculo externo](docs/architecture/IDENTITY_BRIDGE.md)
+- [Migração dos adapters Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
+- [Identidade, Cognito/OIDC e vínculo interno](docs/architecture/IDENTITY_BRIDGE.md)
 
 ## Integrações
 
@@ -45,16 +46,18 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Solicitação de inventário HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 
-## Operação
+## AWS e operação
 
+- [Inventário necessário da AWS corporativa](infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md)
+- [Runtime web em AWS Lambda](infra/aws/lambda/README.md)
+- [Terraform ECS anterior — não aplicar](infra/aws/terraform/README.md)
 - [Configuração atual de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
-- [Terraform ECS/Fargate de staging](infra/aws/terraform/README.md)
-- [Preparação do runtime AWS Lambda](infra/aws/lambda/README.md)
 
 ## Regra de leitura
 
-- especificações de produto descrevem requisitos aprovados ou propostas explicitamente identificadas;
+- especificações de produto descrevem requisitos aprovados ou propostas identificadas;
 - decisões registram escolhas vigentes;
 - documentos de implementação descrevem somente o código versionado;
 - bloqueadores descrevem o que ainda falta;
-- Dockerfiles, Terraform, mocks, fixtures e testes estruturais não constituem prova de produção.
+- Supabase é evidência de desenvolvimento/teste, não de produção;
+- Dockerfiles, Terraform, mocks, fixtures e smoke tests não constituem prova de produção.
