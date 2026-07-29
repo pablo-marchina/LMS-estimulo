@@ -1,8 +1,5 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { browserE2EEnabled, browserE2EStorageDir } from "@/lib/browser-e2e/config";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 
 export const ANNOUNCEMENT_BANNER_MAX_BYTES = 4 * 1024 * 1024;
@@ -32,17 +29,7 @@ export function validateAnnouncementBanner(file: File): void {
   }
 }
 
-function localObjectPath(bucket: string, objectKey: string): string {
-  const safeBucket = bucket.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const safeSegments = objectKey.split("/").filter(Boolean).map((segment) => segment.replace(/[^a-zA-Z0-9._-]/g, "_"));
-  return join(browserE2EStorageDir(), safeBucket, ...safeSegments);
-}
-
 async function ensurePrivateBucket(bucket: string): Promise<void> {
-  if (browserE2EEnabled()) {
-    await mkdir(join(browserE2EStorageDir(), bucket.replace(/[^a-zA-Z0-9._-]/g, "_")), { recursive: true });
-    return;
-  }
   const client = createPrivilegedClient();
   const { data } = await client.storage.getBucket(bucket);
   if (data) return;
@@ -65,14 +52,6 @@ export async function uploadAnnouncementBanner(input: {
   await ensurePrivateBucket(input.bucket);
   const bytes = Buffer.from(await input.file.arrayBuffer());
   const sha256 = createHash("sha256").update(bytes).digest("hex");
-
-  if (browserE2EEnabled()) {
-    const destination = localObjectPath(input.bucket, input.objectKey);
-    await mkdir(dirname(destination), { recursive: true });
-    await writeFile(destination, bytes, { flag: "wx" });
-    return { sha256, etag: sha256, providerObjectVersion: "synthetic-e2e", created: true };
-  }
-
   const client = createPrivilegedClient();
   const { error } = await client.storage.from(input.bucket).upload(input.objectKey, bytes, {
     contentType: input.file.type,
@@ -86,19 +65,12 @@ export async function uploadAnnouncementBanner(input: {
 }
 
 export async function removeAnnouncementBanner(bucket: string, objectKey: string): Promise<void> {
-  if (browserE2EEnabled()) {
-    await unlink(localObjectPath(bucket, objectKey)).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== "ENOENT") throw error;
-    });
-    return;
-  }
   const client = createPrivilegedClient();
   const { error } = await client.storage.from(bucket).remove([objectKey]);
   if (error) throw new Error(`ANNOUNCEMENT_STORAGE_REMOVE_FAILED:${error.message}`);
 }
 
 export async function createAnnouncementBannerUrl(input: { bucket: string; objectKey: string }): Promise<string> {
-  if (browserE2EEnabled()) throw new Error("ANNOUNCEMENT_IMAGE_NOT_RELEASED_IN_BROWSER_E2E");
   const client = createPrivilegedClient();
   const { data, error } = await client.storage.from(input.bucket).createSignedUrl(input.objectKey, 300);
   if (error || !data?.signedUrl) {
