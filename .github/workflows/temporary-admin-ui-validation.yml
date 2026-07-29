@@ -1,0 +1,56 @@
+name: Temporary Admin UI Validation
+
+on:
+  push:
+    branches:
+      - agent/simplify-journey-tracks
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      APP_ENV: test
+      PLATFORM_RUNTIME_PROVIDER: supabase
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-public-key
+      SUPABASE_URL: https://example.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+      AUTHENTICATED_RPC_FUNCTION_URL: https://example.supabase.co/functions/v1/authenticated-rpc
+      CPF_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      CPF_LOOKUP_HMAC_KEY: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck:web
+      - run: npm run build:web
+      - name: Validate public administration routes
+        shell: bash
+        run: |
+          npm run start:web > /tmp/estimulo-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true; cat /tmp/estimulo-web.log' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/entrar/administracao > /tmp/admin-login.html; then
+              break
+            fi
+            sleep 1
+          done
+          grep -q 'Entrar com Google' /tmp/admin-login.html
+
+          oauth_status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/auth/admin/start)
+          case "$oauth_status" in
+            302|303|307|308) ;;
+            *) echo "Unexpected OAuth start status: $oauth_status"; exit 1 ;;
+          esac
+
+          maturity_status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/admin/maturidade)
+          test "$maturity_status" = "404"
