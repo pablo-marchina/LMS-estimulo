@@ -22,6 +22,7 @@ on:
       - "scripts/product/**"
       - "scripts/repository/validate-package-lock.mjs"
       - "scripts/runtime/**"
+      - "scripts/verification/**"
       - "supabase/migrations/*_m14*_step5_*.sql"
 
 permissions:
@@ -36,7 +37,7 @@ env:
   PLATFORM_RUNTIME_PROVIDER: supabase
   NEXT_PUBLIC_APP_URL: http://localhost:3000
   NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-public-key
   SUPABASE_URL: https://example.supabase.co
   SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
   AUTHENTICATED_RPC_FUNCTION_URL: https://example.supabase.co/functions/v1/authenticated-rpc
@@ -78,7 +79,7 @@ jobs:
       - name: Validate application foundation
         run: npm run validate:application-foundation
 
-      - name: Validate AWS platform contract
+      - name: Validate platform contract
         run: npm run validate:platform-contract
 
       - name: Test application behavior
@@ -93,7 +94,7 @@ jobs:
       - name: Typecheck web application
         run: npm run typecheck:web
 
-      - name: Build web application
+      - name: Build Supabase test application
         run: npm run build:web
 
       - name: Build AWS Lambda container image
@@ -104,13 +105,40 @@ jobs:
             --platform linux/amd64 \
             --file Dockerfile.lambda \
             --build-arg NEXT_PUBLIC_APP_URL=https://ci.example.org \
-            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co \
-            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-placeholder-key \
             --tag lms-estimulo-lambda:ci \
             .
 
       - name: Inspect AWS Lambda image contract
+        shell: bash
         run: |
-          docker image inspect lms-estimulo-lambda:ci \
-            --format '{{json .Config.Env}}' \
-            | grep 'PLATFORM_RUNTIME_PROVIDER=aws'
+          set -euo pipefail
+          image_env="$(docker image inspect lms-estimulo-lambda:ci --format '{{json .Config.Env}}')"
+          grep -q 'PLATFORM_RUNTIME_PROVIDER=aws' <<<"$image_env"
+          if grep -q 'NEXT_PUBLIC_SUPABASE' <<<"$image_env"; then
+            echo "Lambda runtime image contains Supabase public configuration"
+            exit 1
+          fi
+
+      - name: Smoke test AWS Lambda web container
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --name lms-estimulo-lambda-ci \
+            --publish 3000:3000 \
+            --env NEXT_PUBLIC_APP_URL=https://ci.example.org \
+            lms-estimulo-lambda:ci
+          trap 'docker logs lms-estimulo-lambda-ci || true; docker rm --force lms-estimulo-lambda-ci >/dev/null 2>&1 || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/api/health/live >/dev/null; then
+              break
+            fi
+            if [[ "$attempt" -eq 30 ]]; then
+              echo "Lambda container did not become live"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          readiness_status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/api/health/ready)"
+          test "$readiness_status" = "503"
