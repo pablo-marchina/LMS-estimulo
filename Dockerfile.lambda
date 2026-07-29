@@ -23,12 +23,14 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 /lambda-adapter /opt
 WORKDIR /var/task
 ENV NODE_ENV=production \
     APP_ENV=production \
+    PLATFORM_RUNTIME_PROVIDER=aws \
     NEXT_TELEMETRY_DISABLED=1 \
     HOSTNAME=0.0.0.0 \
     PORT=3000 \
     AWS_LWA_PORT=3000 \
-    AWS_LWA_READINESS_CHECK_PATH=/api/health/live \
+    AWS_LWA_READINESS_CHECK_PATH=/api/health/ready \
     AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200 \
+    AWS_LWA_ERROR_STATUS_CODES=500-599 \
     AWS_LWA_ENABLE_COMPRESSION=true \
     HOME=/tmp \
     TMPDIR=/tmp \
