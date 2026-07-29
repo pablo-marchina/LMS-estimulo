@@ -4,10 +4,13 @@ on:
   pull_request:
     paths:
       - ".github/workflows/web-ci.yml"
+      - ".dockerignore"
       - ".env.example"
       - ".npmrc"
+      - "Dockerfile.lambda"
       - "apps/web/**"
       - "config/official-diagnostic/**"
+      - "infra/aws/lambda/**"
       - "package.json"
       - "package-lock.json"
       - "scripts/application/**"
@@ -40,7 +43,7 @@ jobs:
   validate:
     name: Validate web application
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -85,3 +88,14 @@ jobs:
 
       - name: Build web application
         run: npm run build:web
+
+      - name: Build AWS Lambda container image
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --file Dockerfile.lambda \
+            --build-arg NEXT_PUBLIC_APP_URL=https://ci.example.org \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=ci-placeholder-key \
+            --tag lms-estimulo-lambda:ci \
+            .
