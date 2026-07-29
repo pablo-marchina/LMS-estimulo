@@ -1,22 +1,40 @@
+# Environment and secrets
 .env
 .env.*
 !.env.example
-**/*.local.json
-**/*.local.jsonl
-**/*.local.txt
-**/database-migration-report.local.txt
-.artifacts/
+.secrets/
+**/.secrets/
+
+# Dependencies and build outputs
 node_modules/
 **/node_modules/
 .next/
 **/.next/
+coverage/
+**/coverage/
 **/*.tsbuildinfo
 
-# Local archives and generated packages do not belong in Git.
+# Runtime and generated artifacts
+.artifacts/
+.tmp/
+**/.tmp/
+*.log
+**/*.local.json
+**/*.local.jsonl
+**/*.local.txt
+**/database-migration-report.local.txt
+
+# Local archives and packages
 *.zip
 *.tar
 *.tar.gz
 *.tgz
 
-# Local reference material (design/product research, third-party repo clones).
+# Local reference material and development-agent state
 /ref/
+.claude/
+.superpowers/
+.deployment-triggers/
+.github/skills/
+.github/hooks/
+docs/superpowers/

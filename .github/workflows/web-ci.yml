@@ -4,15 +4,17 @@ on:
   pull_request:
     paths:
       - ".github/workflows/web-ci.yml"
+      - ".env.example"
       - ".npmrc"
       - "apps/web/**"
       - "config/official-diagnostic/**"
       - "package.json"
       - "package-lock.json"
-      - "scripts/repository/validate-package-lock.mjs"
-      - "scripts/application/validate-foundation*"
+      - "scripts/application/**"
       - "scripts/product/configurable-product/**"
       - "scripts/product/official-diagnostic/**"
+      - "scripts/repository/validate-package-lock.mjs"
+      - "scripts/runtime/**"
       - "docs/implementation/public-rpc-contracts-v1.json"
       - "supabase/migrations/*_m14*_step5_*.sql"
 
@@ -23,16 +25,29 @@ concurrency:
   group: web-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+env:
+  APP_ENV: test
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-key
+  SUPABASE_URL: https://example.supabase.co
+  SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+  AUTHENTICATED_RPC_FUNCTION_URL: https://example.supabase.co/functions/v1/authenticated-rpc
+  CPF_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  CPF_LOOKUP_HMAC_KEY: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
+
 jobs:
   validate:
     name: Validate web application
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: npm
@@ -56,7 +71,7 @@ jobs:
       - name: Validate application foundation
         run: npm run validate:application-foundation
 
-      - name: Run application foundation tests
+      - name: Run application tests
         run: npm run test:application-foundation
 
       - name: Test configurable product behavior
@@ -73,7 +88,3 @@ jobs:
 
       - name: Build web application
         run: npm run build:web
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
-          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key

@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - ".github/workflows/browser-e2e.yml"
+      - ".env.example"
       - "apps/web/**"
       - "scripts/browser-e2e/**"
+      - "scripts/runtime/**"
       - "package.json"
       - "package-lock.json"
 
@@ -22,14 +24,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
+      APP_ENV: test
       BROWSER_E2E_MODE: synthetic
       BROWSER_E2E_TOKEN: local-browser-e2e-token-2026-only
       BROWSER_E2E_STATE_FILE: /tmp/estimulo-browser-e2e-state.json
       BROWSER_E2E_STORAGE_DIR: /tmp/estimulo-browser-e2e-storage
       BROWSER_E2E_BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
       NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       NEXT_PUBLIC_SUPABASE_ANON_KEY: browser-e2e-anon-key
+      SUPABASE_URL: http://127.0.0.1:54321
       SUPABASE_SERVICE_ROLE_KEY: browser-e2e-service-role-key
+      AUTHENTICATED_RPC_FUNCTION_URL: http://127.0.0.1:54321/functions/v1/authenticated-rpc
+      CPF_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+      CPF_LOOKUP_HMAC_KEY: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
 
     steps:
       - name: Checkout repository

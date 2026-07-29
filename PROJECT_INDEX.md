@@ -1,70 +1,25 @@
 # Plataforma Estímulo — índice do projeto
 
-## Objetivo
-
-Entregar uma plataforma LMS interna e operada pela Estímulo, publicada na AWS, com:
-
-- Jornada OpenAI;
-- diagnóstico e quatro arquétipos configuráveis;
-- personalização por perfil;
-- eventos estruturados;
-- trilhas, conteúdos, comentários, avaliações, uploads e credenciais;
-- pontos, conquistas, recompensas e ranking;
-- interfaces completas de participante e administração;
-- identidade, site e HubSpot integrados;
-- segurança, acessibilidade e operação comprovadas.
-
-Os requisitos ativos estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md).
-
-## Decisões vigentes
-
-### HubSpot
-
-```text
-linking_identifier
-engagement_signal
-calculation_input_or_result
-not_synced
-```
-
-O PostgreSQL é o banco operacional. Só candidatos das três primeiras classes podem ser sincronizados, sempre com destino e finalidade aprovados. Todo o restante permanece `not_synced`.
-
-### Identidade
-
-- participante: cadastro público, senha e e-mail confirmado;
-- CPF: obrigatório, validado, cifrado e deduplicado por HMAC;
-- administração: entrada separada por Google OAuth, e-mail verificado no domínio exato `@estimulo.org` e RBAC ativo;
-- autenticação administrativa por senha não é aceita;
-- o domínio e o parâmetro Google `hd` não concedem permissões automaticamente;
-- o cadastro público de teste e a função privilegiada associada foram removidos.
-
-### Ambientes
-
-- Supabase: desenvolvimento e testes;
-- AWS: staging e produção;
-- GitHub: código, issues, revisão e release controlada.
+Este arquivo é o mapa de navegação da documentação e da estrutura ativa. Requisitos do produto permanecem em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md); o estado de release permanece em [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md).
 
 ## Estrutura principal
 
 ```text
-apps/web/                       aplicação Next.js
-apps/web/lib/auth/              autenticação e acesso
-apps/web/lib/identity/          proteção de CPF e identificadores
-apps/web/lib/engagement/        anúncios, ranking, recompensas e histórico
-apps/web/lib/hubspot/           política seletiva e adapter
-apps/web/lib/journey-runtime/   jornadas e execução
-apps/web/lib/configurable-product/ formulários e personalização
-supabase/migrations/            banco executável
-supabase/functions/             workers de desenvolvimento
-docs/                           produto, decisões, arquitetura e operação
-infra/aws/terraform/            baseline de staging
-scripts/                        validação, replay e E2E
+apps/web/                    aplicação Next.js
+config/                      configuração versionada do produto
+docs/                        documentação canônica
+infra/aws/terraform/         infraestrutura AWS declarativa
+scripts/                     validações, testes e operação
+supabase/canonical-migrations/ baselines canônicas do histórico
+supabase/functions/          adapters do ambiente Supabase
+supabase/migrations/         migrations executáveis e imutáveis
 ```
 
 ## Produto
 
-- [Requisitos](premissas-desenvolvimento.md)
-- [Escopo da primeira jornada](docs/product/MULTI_JOURNEY_PRODUCT_SCOPE.md)
+- [Requisitos ativos](premissas-desenvolvimento.md)
+- [Hierarquia das fontes](docs/product/SOURCE_AUTHORITY_HIERARCHY.md)
+- [Escopo multi-jornada](docs/product/MULTI_JOURNEY_PRODUCT_SCOPE.md)
 - [Princípios da primeira release](docs/product/INITIAL_PRODUCTION_RELEASE_PRINCIPLES.md)
 - [Solicitações de informação](docs/product/INFORMATION_REQUESTS.md)
 
@@ -75,22 +30,32 @@ scripts/                        validação, replay e E2E
 - [Avaliações e práticas](docs/journeys/OPENAI_ASSESSMENT_AND_PRACTICE.md)
 - [Gamificação e credenciais](docs/journeys/OPENAI_GAMIFICATION_CREDENTIALS.md)
 
-## Decisões e implementação
+## Arquitetura
+
+- [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
+- [Arquitetura-alvo AWS](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
+- [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
+- [Bridge de identidade](docs/architecture/IDENTITY_BRIDGE.md)
+- [Baseline Terraform](infra/aws/terraform/README.md)
+
+## Decisões e contratos
 
 - [Registro de decisões](docs/decisions/DECISION_LOG.md)
 - [Escopo HubSpot](docs/decisions/HUBSPOT_SCOPE_DECISION.md)
-- [Bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md)
-- [Motor configurável](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
-- [Fundação da aplicação](docs/implementation/APPLICATION_FOUNDATION.md)
-
-## Integrações e ambientes
-
 - [Contrato HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
-- [Bridge de identidade](docs/architecture/IDENTITY_BRIDGE.md)
-- [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
-- [Portabilidade Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
-- [Arquitetura-alvo AWS](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
+- [Contratos públicos de RPC](docs/implementation/public-rpc-contracts-v1.json)
 
-## Gates de release
+## Implementação e release
 
-O estado de release é mantido em [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md). Código genérico, fixture, mock, adapter sem credenciais ou Terraform não aplicado não encerram requisitos de produção.
+- [Fundação da aplicação](docs/implementation/APPLICATION_FOUNDATION.md)
+- [Motor configurável](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
+- [Bloqueadores de entrega](docs/implementation/DELIVERY_BLOCKERS.md)
+
+## Operação
+
+- [Configuração atual de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
+- [Guia de contribuição](CONTRIBUTING.md)
+
+## Regra de permanência
+
+Somente código, configuração, contratos, infraestrutura, documentação canônica e testes reproduzíveis são versionados. Planos de agentes, relatórios de execução, estados locais, arquivos temporários, clones de ferramentas e gatilhos manuais ficam fora do Git.
