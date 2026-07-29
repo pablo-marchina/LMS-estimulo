@@ -1,12 +1,10 @@
 # Plataforma Estímulo — índice canônico
 
-Este índice aponta para toda a documentação permanente do repositório. Requisitos e estado de implementação são mantidos separados.
+Este índice aponta para toda a documentação permanente do repositório. Requisitos aprovados, decisões vigentes, estado implementado e bloqueadores são mantidos diretamente nos documentos correspondentes; materiais de referência e processo de desenvolvimento ficam fora da árvore ativa.
 
 ## Entrada
 
 - [README](README.md) — execução, estrutura e estado geral.
-- [Premissas de desenvolvimento](premissas-desenvolvimento.md) — requisitos superiores.
-- [Hierarquia de autoridade](docs/product/SOURCE_AUTHORITY_HIERARCHY.md) — resolução de divergências.
 - [Guia de contribuição](CONTRIBUTING.md) — fluxo de mudanças e padrões.
 
 ## Produto
@@ -53,7 +51,8 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 
 ## Regra de leitura
 
-- documentos de produto descrevem requisitos ou propostas;
+- especificações de produto descrevem requisitos aprovados ou propostas explicitamente identificadas;
+- decisões registram escolhas vigentes;
 - documentos de implementação descrevem somente o código versionado;
 - bloqueadores descrevem o que ainda falta;
-- Terraform, mocks e testes sintéticos não constituem prova de produção.
+- Terraform, mocks, fixtures e testes estruturais não constituem prova de produção.
