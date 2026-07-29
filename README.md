@@ -2,7 +2,7 @@
 
 LMS web para desenvolvimento de empreendedores, operação de jornadas de capacitação e geração governada de dados educacionais e operacionais.
 
-Os requisitos ativos estão em [`premissas-desenvolvimento.md`](premissas-desenvolvimento.md). A separação entre requisito, decisão, implementação e evidência segue [`SOURCE_AUTHORITY_HIERARCHY.md`](docs/product/SOURCE_AUTHORITY_HIERARCHY.md).
+O escopo vigente, as decisões ativas, o estado implementado e os bloqueadores estão listados em [`PROJECT_INDEX.md`](PROJECT_INDEX.md). Materiais de referência, análises de desenvolvimento e histórico de decisões permanecem fora da árvore ativa; o histórico Git e os pull requests preservam sua rastreabilidade.
 
 ## Estado atual
 
@@ -27,17 +27,17 @@ config/                      configuração versionada
 supabase/migrations/         histórico executável e imutável
 supabase/functions/          adapters Supabase
 infra/aws/terraform/         baseline bloqueado de staging
-scripts/application/         testes da aplicação
-scripts/database/            replay, contratos e E2E de banco
-scripts/browser-e2e/         testes sintéticos e reais
+scripts/application/         testes de lógica e contratos da aplicação
+scripts/database/            replay, contratos e testes de banco
 scripts/integrations/        contratos de integração
-scripts/operations/          utilitários controlados
+scripts/operations/          utilitários operacionais controlados
 scripts/repository/          governança e higiene
-scripts/runtime/             inicialização e gates
-docs/                        documentação canônica
+scripts/runtime/             inicialização e gates de configuração
+scripts/verification/        verificações explícitas de ambiente implantado
+docs/                        especificações, decisões e operação vigentes
 ```
 
-Ferramentas pessoais de agentes, planos, relatórios de execução, estados locais e gatilhos manuais de deploy não pertencem ao repositório.
+Ferramentas pessoais de agentes, planos, relatórios de execução, referências externas, estados locais, backends sintéticos e gatilhos manuais de deploy não pertencem ao repositório.
 
 ## Execução local
 
@@ -53,7 +53,9 @@ Pré-requisitos:
 cp .env.example .env
 npm ci --ignore-scripts
 npm run validate:repository
-npm run test:application-foundation
+npm run test:application
+npm run test:product
+npm run test:integrations
 npm run typecheck:web
 npm run build:web
 npm run dev:web
@@ -71,16 +73,16 @@ Copy-Item .env.example .env
 npm run validate:repository
 npm run validate:dependency-lock
 npm run validate:migration-history
-npm run test:application-foundation
-npm run test:database-gates
-npm run test:configurable-product
-npm run test:hubspot-contracts
+npm run test:repository-tooling
+npm run test:application
+npm run test:product
+npm run test:integrations
+npm run test:database
 npm run typecheck:web
 npm run build:web
-npm run test:browser-e2e
 ```
 
-O E2E real exige ambiente implantado, contas próprias de teste e sessão administrativa efêmera obtida por Google OAuth real. Cookies, credenciais e dados pessoais permanecem fora do Git.
+A verificação autenticada de um ambiente implantado é executada separadamente por `npm run verify:deployment`. Ela exige URL real, contas próprias de teste e sessão administrativa efêmera obtida por Google OAuth. Cookies, credenciais e dados pessoais permanecem fora do Git.
 
 ## Build e AWS
 
@@ -90,4 +92,4 @@ O Terraform em [`infra/aws/terraform`](infra/aws/terraform/README.md) declara EC
 
 ## Documentação
 
-O mapa completo está em [`PROJECT_INDEX.md`](PROJECT_INDEX.md). Nenhuma afirmação de produção deve ser feita com base apenas em código, fixture, mock, teste sintético ou scaffolding.
+O mapa completo está em [`PROJECT_INDEX.md`](PROJECT_INDEX.md). Nenhuma afirmação de produção deve ser feita com base apenas em código, fixture, mock, teste estrutural ou scaffolding.
