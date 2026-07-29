@@ -25,6 +25,7 @@ export async function createEditableJourneyVersionAction(formData: FormData) {
   const sourceJourneyVersionId = text(formData, "source_journey_version_id");
   if (!sourceJourneyVersionId) redirect("/admin/produto?etapa=jornada&erro=versao_obrigatoria");
 
+  let editableVersionId = "";
   try {
     const result = await createAdminJourneyDraftFromVersion({
       actorUserAccountId: auth.identity.user_account_id,
@@ -32,9 +33,11 @@ export async function createEditableJourneyVersionAction(formData: FormData) {
       sourceJourneyVersionId,
       idempotencyKey: randomUUID(),
     });
-    redirect(`/admin/produto?etapa=jornada&versao=${result.journey_version_id}&sucesso=versao_editavel_criada`);
+    editableVersionId = result.journey_version_id;
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha_clone";
     redirect(`/admin/produto?etapa=jornada&versao=${sourceJourneyVersionId}&erro=${reason}`);
   }
+
+  redirect(`/admin/produto?etapa=jornada&versao=${editableVersionId}&sucesso=versao_editavel_criada`);
 }
