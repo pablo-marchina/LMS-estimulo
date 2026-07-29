@@ -1,10 +1,12 @@
-"use server";
-
-import { redirect } from "next/navigation";
+import { NextResponse, type NextRequest } from "next/server";
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
 
-export async function signInWithGoogleAction() {
+function signInError(request: NextRequest) {
+  return NextResponse.redirect(new URL("/entrar/administracao?erro=oauth_indisponivel", request.url));
+}
+
+export async function GET(request: NextRequest) {
   const client = await createSessionClient();
   await client.auth.signOut();
 
@@ -21,6 +23,6 @@ export async function signInWithGoogleAction() {
     },
   });
 
-  if (error || !data.url) redirect("/entrar/administracao?erro=oauth_indisponivel");
-  redirect(data.url);
+  if (error || !data.url) return signInError(request);
+  return NextResponse.redirect(data.url);
 }
