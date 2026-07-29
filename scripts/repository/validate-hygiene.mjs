@@ -26,6 +26,10 @@ const forbiddenExactFiles = new Set([
   "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
   "premissas-desenvolvimento.md",
 ]);
+const allowedEnvironmentExamples = new Set([
+  ".env.example",
+  "config/supabase-test/.env.example",
+]);
 const forbiddenReferences = [
   "premissas-desenvolvimento.md",
   "SOURCE_AUTHORITY_HIERARCHY.md",
@@ -107,8 +111,8 @@ function validatePaths() {
     if (/\.local(?:\.|$)/i.test(file)) errors.push(`local artifact tracked: ${file}`);
 
     const basename = path.posix.basename(file);
-    if (basename.startsWith(".env") && file !== ".env.example") {
-      errors.push(`environment file tracked outside the canonical root example: ${file}`);
+    if (basename.startsWith(".env") && !allowedEnvironmentExamples.has(file)) {
+      errors.push(`environment file tracked outside the approved examples: ${file}`);
     }
 
     if (file.startsWith("docs/") && file.endsWith(".md")) {
