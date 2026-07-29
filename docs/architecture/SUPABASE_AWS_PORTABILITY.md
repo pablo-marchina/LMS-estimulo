@@ -1,39 +1,59 @@
 # Portabilidade de Supabase para AWS
 
 **Revisado em:** 2026-07-29  
-**Status:** fronteiras iniciadas; adapters AWS ainda não implementados
+**Status:** fronteiras implementadas; adapters AWS ainda não implementados
 
 ## Direção aprovada
 
-Supabase é uma implementação temporária para desenvolvimento/teste. AWS é a implementação obrigatória de staging e produção conforme [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md).
+Supabase é a implementação de desenvolvimento/teste. AWS é a implementação obrigatória de staging e produção conforme [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md).
 
-A migração deve trocar adapters de plataforma sem reescrever regras de domínio, migrations, eventos ou experiência do produto.
+A migração troca adapters de plataforma sem reescrever regras de domínio, migrations, eventos ou experiência do produto.
 
 ## Matriz canônica
 
-| Capacidade | Adapter temporário | Adapter AWS obrigatório | Estado |
+| Capacidade | Adapter de teste | Adapter AWS obrigatório | Estado |
 |---|---|---|---|
-| compute | Vercel/dev server | Lambda container + Web Adapter | Dockerfile presente; execução não comprovada |
-| identidade | Supabase Auth/SSR | Cognito User Pool ou broker corporativo equivalente | contrato decidido; implementação pendente |
-| operações PostgreSQL | Edge Function + RPC/PostgREST | adapter server-only via RDS Proxy | selector criado; adapter pendente |
+| compute | dev server/Vercel preview | Lambda container + Web Adapter | único Dockerfile presente; execução não comprovada |
+| identidade | Supabase Auth/SSR | Cognito User Pool ou broker corporativo equivalente | fronteira fail-closed; adapter pendente |
+| operações PostgreSQL | Edge Function + RPC/PostgREST | adapter server-only via RDS Proxy | fronteira fail-closed; adapter pendente |
 | banco | Supabase PostgreSQL | RDS PostgreSQL Multi-AZ | replay/equivalência pendentes |
-| arquivos | Supabase Storage | S3 privado com URL pré-assinada | adapter e fluxo direto pendentes |
+| arquivos | Supabase Storage | S3 privado com URL pré-assinada | contrato criado; adapter e fluxo direto pendentes |
 | assíncrono | outbox sem worker final | SQS + Lambdas + DLQ | pendente |
-| secrets | ambiente Supabase/Vercel | Secrets Manager/KMS corporativo | integração pendente |
-| observabilidade | logs das plataformas de teste | CloudWatch/tracing/SLO corporativo | pendente |
+| secrets | ambiente de teste | Secrets Manager/KMS corporativo | integração pendente |
+| observabilidade | logs da plataforma de teste | CloudWatch/tracing/SLO corporativo | pendente |
 
-## Fronteiras introduzidas
-
-`PLATFORM_RUNTIME_PROVIDER` escolhe o adapter:
+## Fronteiras implementadas
 
 ```text
-supabase → permitido em desenvolvimento/teste
-aws      → obrigatório em staging/produção
+supabase → permitido em local, test e preview
+aws      → obrigatório em staging e production
 ```
 
-O runtime rejeita `supabase` quando `APP_ENV=production`. A readiness AWS retorna `not_ready` até probes reais dos adapters existirem, evitando uma promoção falsa.
+A política é aplicada em toda resolução do provider. Os clientes Supabase de sessão e acesso privilegiado também rejeitam o provider AWS, evitando acesso acidental por um módulo que importe o adapter diretamente.
 
-O gateway autenticado já possui uma fronteira única. A implementação Supabase permanece ativa; o caminho AWS falha fechado com código explícito até o adapter RDS ser implementado.
+A readiness AWS retorna `not_ready` até probes reais dos adapters existirem.
+
+O gateway autenticado possui uma fronteira única. A implementação Supabase permanece ativa em teste; o caminho AWS falha fechado até o adapter RDS ser implementado.
+
+Os módulos de storage usam uma fronteira comum. Em AWS:
+
+- criação de bucket durante requisição é proibida;
+- upload usando buffer pelo Lambda web é proibido;
+- presigned upload e inspeção de objeto permanecem fail-closed até o adapter S3 existir.
+
+## Verificação Supabase
+
+```bash
+npm run verify:supabase
+```
+
+A verificação read-only comprova:
+
+- Supabase Auth acessível;
+- `get_application_readiness` pronto no PostgreSQL;
+- Edge Function `authenticated-rpc` acessível e protegida contra chamada sem sessão.
+
+O build não faz chamadas remotas. Verificação de ambiente e compilação são responsabilidades separadas.
 
 ## Migração de identidade
 
@@ -46,7 +66,7 @@ O adapter AWS deve:
 5. manter participant/admin/onboarding como estados internos;
 6. não usar claims editáveis como autorização de domínio.
 
-A migração de usuários exige estratégia de linking, recuperação e conflito. Senhas não serão exportadas do Supabase como texto ou hash reutilizável; usuários podem exigir fluxo de reset ou migração suportada pelo provedor aprovado.
+A migração de usuários exige estratégia de linking, recuperação e conflito. Senhas não serão exportadas do Supabase como texto ou hash reutilizável; usuários podem exigir reset ou migração suportada pelo provedor aprovado.
 
 ## Migração PostgreSQL
 
@@ -63,9 +83,9 @@ Trabalho obrigatório:
 - testar pooling, concorrência, timeouts e falhas;
 - exercitar PITR, restore e rollback.
 
-## Migração de arquivos
+`supabase/migrations/` é a única fonte de implementação do schema. Após o replay, as suítes executam somente SQLs `test-*`.
 
-A semântica de domínio permanece:
+## Migração de arquivos
 
 ```text
 intent
@@ -77,9 +97,9 @@ intent
 → retenção/revogação
 ```
 
-A implementação AWS altera o transporte:
+A implementação AWS usa:
 
-- bucket provisionado por IaC;
+- bucket provisionado pela infraestrutura corporativa;
 - presigned PUT direto do navegador;
 - checksum obrigatório;
 - HEAD antes da confirmação;
@@ -106,7 +126,7 @@ Enquanto `PLATFORM_RUNTIME_PROVIDER=supabase`, permanecem autorizados:
 - Edge Function `authenticated-rpc`;
 - Supabase PostgreSQL.
 
-Essas dependências não podem ser necessárias no bundle/runtime AWS final. A remoção ocorrerá após adapters AWS e paridade de staging, não antes, para manter o ambiente de validação funcional.
+A imagem Lambda não recebe configuração Supabase. A remoção completa das bibliotecas do artefato AWS será realizada após os adapters Cognito, RDS e S3 substituírem todas as importações de plataforma.
 
 ## Critério de conclusão
 
