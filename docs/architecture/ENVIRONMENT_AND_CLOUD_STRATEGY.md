@@ -22,6 +22,7 @@ mudança revisada
 → validações locais
 → CI funcional
 → Supabase development/test
+→ npm run verify:supabase
 → build imutável da imagem Lambda
 → AWS staging com adapters AWS
 → E2E transacional, carga, restore e rollback
@@ -36,8 +37,10 @@ Não existe promoção direta de Supabase para produção. Dados, configuração
 ```text
 APP_ENV=development|test + PLATFORM_RUNTIME_PROVIDER=supabase  permitido
 APP_ENV=staging|production + PLATFORM_RUNTIME_PROVIDER=aws     obrigatório
-APP_ENV=production + PLATFORM_RUNTIME_PROVIDER=supabase        rejeitado
+APP_ENV=staging|production + PLATFORM_RUNTIME_PROVIDER=supabase rejeitado
 ```
+
+A política é aplicada em toda consulta ao provider e pelos próprios adapters Supabase.
 
 A readiness de um ambiente AWS só pode ficar verde após probes reais de Cognito/IdP, RDS Proxy/PostgreSQL, S3 e configuração de segurança.
 
@@ -69,7 +72,7 @@ A implementação física muda:
 
 Antes de criar ou aplicar recursos, o inventário de [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](../../infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md) precisa identificar contas, rede, edge, identidade, RDS, S3, filas, secrets, observabilidade e pipeline existentes.
 
-O Terraform ECS anterior permanece bloqueado e não representa o caminho de promoção.
+A árvore ativa não contém stack genérica de infraestrutura. A implementação física usará os recursos, módulos e pipelines oficiais da empresa.
 
 ## Dados, secrets e isolamento
 
