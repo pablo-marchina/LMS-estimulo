@@ -18,6 +18,15 @@ const forbiddenExactFiles = new Set([
   ".github/workflows/experience-validation.yml",
   "apps/web/.env.example",
 ]);
+const requiredFiles = [
+  "README.md",
+  "PROJECT_INDEX.md",
+  "CONTRIBUTING.md",
+  ".env.example",
+  "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
+  "docs/implementation/APPLICATION_FOUNDATION.md",
+  "docs/implementation/DELIVERY_BLOCKERS.md",
+];
 const errors = [];
 const files = [];
 
@@ -99,8 +108,8 @@ async function validateLocalLinks(file) {
 }
 
 async function validateRequiredFiles() {
-  for (const file of ["README.md", "PROJECT_INDEX.md", "CONTRIBUTING.md", ".env.example"]) {
-    if (!files.includes(file)) errors.push(`required root file missing: ${file}`);
+  for (const file of requiredFiles) {
+    if (!files.includes(file)) errors.push(`required file missing: ${file}`);
   }
 
   const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
@@ -113,14 +122,17 @@ async function validateRequiredFiles() {
     errors.push("apps/web prebuild must only validate production configuration");
   }
 
+  const readme = await readFile(path.join(root, "README.md"), "utf8");
+  if (readme.includes("apps/web/.env.local")) errors.push("README.md references obsolete workspace env location");
+
   const index = await readFile(path.join(root, "PROJECT_INDEX.md"), "utf8");
-  if (index.includes("supabase/migrations/MIGRATION_MANIFEST.json")) {
-    errors.push("PROJECT_INDEX.md references the wrong migration manifest path");
-  }
   if (/#[0-9]+/.test(index)) errors.push("PROJECT_INDEX.md must not depend on transient issue or PR numbers");
 
   const blockers = await readFile(path.join(root, "docs/implementation/DELIVERY_BLOCKERS.md"), "utf8");
   if (/#[0-9]+/.test(blockers)) errors.push("DELIVERY_BLOCKERS.md must not depend on transient issue or PR numbers");
+  if (/total_migration_count|active_migration_count|recovered_migration_count/.test(blockers)) {
+    errors.push("DELIVERY_BLOCKERS.md must not maintain migration counts manually");
+  }
 }
 
 async function validateEdgeFunctionSources() {
@@ -175,9 +187,10 @@ function collectIndexTargets(indexSource) {
 await walk(root);
 validatePaths();
 await validateRequiredFiles();
-await validateLocalLinks("README.md");
-await validateLocalLinks("PROJECT_INDEX.md");
 await validateEdgeFunctionSources();
+
+const markdownFiles = files.filter((file) => file.endsWith(".md"));
+for (const file of markdownFiles) await validateLocalLinks(file);
 
 const textEntries = await readTextFiles();
 const indexSource = await readFile(path.join(root, "PROJECT_INDEX.md"), "utf8");
@@ -187,6 +200,8 @@ const unindexedMarkdown = files
   .filter((file) => file.startsWith("docs/") && file.endsWith(".md"))
   .filter((file) => !indexTargets.has(file))
   .sort();
+
+for (const file of unindexedMarkdown) errors.push(`canonical document missing from PROJECT_INDEX.md: ${file}`);
 
 const unreferencedDocumentationArtifacts = files
   .filter((file) => file.startsWith("docs/"))
@@ -204,10 +219,9 @@ const unreferencedScripts = files
 const result = {
   status: errors.length === 0 ? "ok" : "failed",
   files_scanned: files.length,
-  markdown_files: files.filter((file) => file.endsWith(".md")).length,
+  markdown_files: markdownFiles.length,
   errors,
   candidates: {
-    unindexed_markdown: unindexedMarkdown,
     unreferenced_documentation_artifacts: unreferencedDocumentationArtifacts,
     unreferenced_scripts: unreferencedScripts,
   },
