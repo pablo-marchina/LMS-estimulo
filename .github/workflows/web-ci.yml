@@ -10,6 +10,7 @@ on:
       - "Dockerfile.lambda"
       - "apps/web/**"
       - "config/official-diagnostic/**"
+      - "config/platform/**"
       - "docs/architecture/**"
       - "docs/decisions/**"
       - "docs/implementation/**"
