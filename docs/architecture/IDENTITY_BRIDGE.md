@@ -1,19 +1,43 @@
 # Identidade, acesso e vínculo externo
 
 **Revisado em:** 2026-07-29  
-**Status:** identidade da aplicação implementada em Supabase; integração institucional pendente
+**Status:** identidade interna implementada; adapter Cognito/AWS pendente
 
-## Estado implementado
+## Modelo invariável
+
+A aplicação distingue:
+
+- identidade externa;
+- conta interna;
+- participante/empreendedor;
+- negócio;
+- organização operadora;
+- memberships, capacidades e validade;
+- contato/empresa HubSpot;
+- operação de crédito.
+
+A autorização pertence ao LMS. Um subject externo, domínio de e-mail, grupo do IdP ou claim isolada nunca concede permissão de domínio diretamente.
+
+## Desenvolvimento/teste
+
+Supabase Auth continua ativo quando:
+
+```text
+PLATFORM_RUNTIME_PROVIDER=supabase
+```
+
+Capacidades atuais:
 
 ### Participantes
 
 - cadastro público;
 - confirmação de e-mail;
 - login por senha;
-- captura de UTM de primeiro contato;
-- conclusão do cadastro com CPF obrigatório;
-- CPF validado, cifrado por AES-256-GCM e indexado por HMAC independente;
-- resolução de contexto interno para acessar áreas protegidas.
+- recuperação pelo provedor de teste;
+- captura de UTM;
+- conclusão de cadastro com CPF obrigatório;
+- CPF protegido por AES-256-GCM e HMAC independente;
+- resolução da identidade interna.
 
 ### Administração
 
@@ -23,64 +47,90 @@
 - vínculo organizacional e RBAC;
 - login administrativo por senha proibido.
 
-O domínio do e-mail e o parâmetro Google `hd` não concedem permissões sozinhos.
+O runtime não contém identidade sintética, login de teste ou bypass.
 
-## Entidades
+## Produção AWS
 
-A aplicação distingue:
+Amazon Cognito User Pool será o broker OIDC padrão, conforme [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md). Se a empresa já possuir um broker corporativo aprovado, ele pode federar pelo Cognito ou substituí-lo mediante equivalência do contrato OIDC.
 
-- identidade externa;
-- conta interna;
-- participante/empreendedor;
-- negócio;
-- organização operadora;
-- contato e empresa no HubSpot;
-- operação de crédito.
+Fluxo canônico:
 
-Não existe vínculo automático por simples coincidência de e-mail.
+```text
+participante: Cognito local ou método corporativo aprovado
+administrador: Google/OIDC/SAML federado
+                    ↓
+token OIDC verificado
+                    ↓
+provider + issuer + subject + e-mail verificado
+                    ↓
+external identity
+                    ↓
+internal user account
+                    ↓
+participant / organization memberships / RBAC
+```
 
-## Runtime atual
+O Cognito não substitui a conta interna. O identificador externo pode mudar, ser vinculado ou ser revogado sem alterar o histórico de domínio.
 
-Supabase Auth é o provedor ativo de desenvolvimento/teste. Cookies e tokens são gerenciados pelo adapter SSR e não são persistidos como dados de domínio.
+## Requisitos do adapter AWS
 
-O provedor de produção na AWS ainda não foi selecionado. Cognito é uma alternativa possível, não uma implementação vigente.
+O adapter precisa:
 
-O runtime não contém rota de login de teste, identidade sintética nem bypass de autenticação. Verificações de navegador usam contas próprias do ambiente implantado e ficam fora do runtime.
+1. validar assinatura, issuer, audience, expiração e token use;
+2. aceitar somente providers e app clients aprovados;
+3. exigir e-mail verificado onde aplicável;
+4. normalizar o contexto de identidade;
+5. resolver a conta interna de forma idempotente;
+6. impedir linking por coincidência simples de e-mail;
+7. carregar memberships e capacidades do PostgreSQL;
+8. suportar revogação, encerramento de sessão e recuperação;
+9. registrar eventos sem tokens ou dados sensíveis;
+10. funcionar atrás do domínio e front door oficiais.
 
-## Lacunas institucionais
+## Migração de usuários
 
-Ainda precisam ser definidos e comprovados:
+A estratégia precisa ser aprovada com a infraestrutura corporativa:
 
-- entrada integrada ao site Estímulo ou SSO;
-- tratamento de usuários já existentes;
-- telefone;
-- CNPJ opcional e vínculo com negócio;
-- recuperação e suporte de conta;
-- merge e conflitos;
-- provedor de identidade de produção;
-- configuração oficial dos redirects e domínios;
-- vínculo e deduplicação no HubSpot;
-- relação com operações de crédito.
+- usuários novos entram diretamente pelo Cognito;
+- contas Supabase existentes são ligadas à mesma conta interna após prova de controle;
+- senhas não são copiadas como texto nem presumidas portáveis;
+- pode ser necessário reset de senha ou migração suportada;
+- conflitos, duplicidades e merges passam por fluxo auditável;
+- sessões Supabase não são válidas em produção AWS.
 
-## HubSpot
+## Administração federada
 
-O código possui política, adapter HTTP e fila de resolução administrativa, mas não possui inventário físico, sandbox ou regras aprovadas para criar, associar ou mesclar registros reais.
+O Google Workspace pode ser configurado como IdP do Cognito. O domínio `@estimulo.org` continua sendo uma condição, não uma autorização completa. A entrada administrativa exige também:
 
-Somente identificadores mínimos e dados autorizados pela DEC-070 podem sair do LMS. CPF bruto não é enviado em eventos de engajamento.
+- provider federado aprovado;
+- e-mail confirmado;
+- vínculo com organização interna;
+- capacidade RBAC ativa;
+- validade temporal e finalidade quando aplicável.
+
+## Integração com site e HubSpot
+
+Ainda precisam ser definidos:
+
+- entrada/SSO a partir do site Estímulo;
+- comportamento para usuários existentes;
+- telefone e CNPJ opcional;
+- vínculo com negócio e operação de crédito;
+- inventário e deduplicação HubSpot;
+- suporte, recuperação e merge institucional.
+
+Somente dados autorizados pela DEC-070 podem sair do LMS. CPF bruto não é enviado em eventos de engajamento.
 
 ## Gate
 
 ```text
-participant_signup = implemented
-participant_email_confirmation = implemented
-participant_password_login = implemented
-cpf_protection = implemented
-admin_google_oauth = implemented
-admin_domain_and_rbac_gate = implemented
-test_authentication_bypass = absent
+internal_identity_model = implemented
+supabase_development_adapter = active
+production_identity_target = cognito_or_corporate_oidc
+aws_identity_adapter = pending
+participant_migration_policy = pending
+admin_federation_configuration = pending
 official_site_entry = pending
-phone_and_optional_cnpj = pending
-production_identity_provider = pending
 hubspot_identity_resolution = pending
 aws_identity_e2e = pending
 ```
