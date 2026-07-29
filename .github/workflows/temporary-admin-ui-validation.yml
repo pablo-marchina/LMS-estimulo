@@ -32,6 +32,11 @@ jobs:
       - run: npm ci
       - run: npm run typecheck:web
       - run: npm run build:web
+      - name: Confirm maturity screen is absent
+        shell: bash
+        run: |
+          test ! -e apps/web/app/admin/maturidade/page.tsx
+          ! grep -R --fixed-strings '/admin/maturidade' apps/web/.next/server/app-paths-manifest.json
       - name: Validate public administration routes
         shell: bash
         run: |
@@ -46,18 +51,17 @@ jobs:
           server_pid=$!
           trap 'kill "$server_pid" || true; cat /tmp/estimulo-web.log' EXIT
           for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:3000/entrar/administracao > /tmp/admin-login.html; then
-              break
-            fi
+            login_status=$(curl --silent --output /tmp/admin-login.html --write-out '%{http_code}' http://127.0.0.1:3000/entrar/administracao || true)
+            if [ "$login_status" = "200" ]; then break; fi
             sleep 1
           done
+          echo "Admin login status: $login_status"
+          test "$login_status" = "200"
           grep -q 'Entrar com Google' /tmp/admin-login.html
 
           oauth_status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/auth/admin/start)
+          echo "OAuth start status: $oauth_status"
           case "$oauth_status" in
             302|303|307|308) ;;
             *) echo "Unexpected OAuth start status: $oauth_status"; exit 1 ;;
           esac
-
-          maturity_status=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/admin/maturidade)
-          test "$maturity_status" = "404"
