@@ -1,8 +1,5 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { browserE2EEnabled, browserE2EStorageDir } from "@/lib/browser-e2e/config";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 
 export const EXTERNAL_CREDENTIAL_MAX_BYTES = 8 * 1024 * 1024;
@@ -38,17 +35,7 @@ function validate(file: File, kind: "external" | "template") {
 export const validateExternalCredentialFile = (file: File) => validate(file, "external");
 export const validateCertificateTemplateFile = (file: File) => validate(file, "template");
 
-function localObjectPath(bucket: string, objectKey: string) {
-  const safeBucket = bucket.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const safeSegments = objectKey.split("/").filter(Boolean).map((segment) => segment.replace(/[^a-zA-Z0-9._-]/g, "_"));
-  return join(browserE2EStorageDir(), safeBucket, ...safeSegments);
-}
-
 async function ensurePrivateBucket(bucket: string, limit: number, mimeTypes: readonly string[]) {
-  if (browserE2EEnabled()) {
-    await mkdir(join(browserE2EStorageDir(), bucket.replace(/[^a-zA-Z0-9._-]/g, "_")), { recursive: true });
-    return;
-  }
   const client = createPrivilegedClient();
   const { data } = await client.storage.getBucket(bucket);
   if (data) return;
@@ -63,12 +50,6 @@ export async function uploadCredentialFile(input: { bucket: string; objectKey: s
   await ensurePrivateBucket(input.bucket, max, types);
   const bytes = Buffer.from(await input.file.arrayBuffer());
   const sha256 = createHash("sha256").update(bytes).digest("hex");
-  if (browserE2EEnabled()) {
-    const destination = localObjectPath(input.bucket, input.objectKey);
-    await mkdir(dirname(destination), { recursive: true });
-    await writeFile(destination, bytes, { flag: "wx" });
-    return { sha256, etag: sha256, providerObjectVersion: "synthetic-e2e", created: true };
-  }
   const client = createPrivilegedClient();
   const { error } = await client.storage.from(input.bucket).upload(input.objectKey, bytes, { contentType: input.file.type, cacheControl: "3600", upsert: false });
   if (error && !/already exists|asset already exists/i.test(error.message)) throw new Error(`CREDENTIAL_STORAGE_UPLOAD_FAILED:${error.message}`);
@@ -76,23 +57,17 @@ export async function uploadCredentialFile(input: { bucket: string; objectKey: s
 }
 
 export async function removeCredentialFile(bucket: string, objectKey: string) {
-  if (browserE2EEnabled()) {
-    await unlink(localObjectPath(bucket, objectKey)).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; });
-    return;
-  }
   const { error } = await createPrivilegedClient().storage.from(bucket).remove([objectKey]);
   if (error) throw new Error(`CREDENTIAL_STORAGE_REMOVE_FAILED:${error.message}`);
 }
 
 export async function createCredentialDownloadUrl(input: { bucket: string; objectKey: string; filename: string }) {
-  if (browserE2EEnabled()) throw new Error("CREDENTIAL_DOWNLOAD_NOT_AVAILABLE_IN_BROWSER_E2E");
   const { data, error } = await createPrivilegedClient().storage.from(input.bucket).createSignedUrl(input.objectKey, 60, { download: input.filename });
   if (error || !data?.signedUrl) throw new Error(`CREDENTIAL_SIGNED_URL_FAILED:${error?.message ?? "missing_url"}`);
   return data.signedUrl;
 }
 
 export async function downloadCredentialObject(bucket: string, objectKey: string): Promise<Buffer> {
-  if (browserE2EEnabled()) throw new Error("CREDENTIAL_OBJECT_NOT_AVAILABLE_IN_BROWSER_E2E");
   const { data, error } = await createPrivilegedClient().storage.from(bucket).download(objectKey);
   if (error || !data) throw new Error(`CREDENTIAL_OBJECT_DOWNLOAD_FAILED:${error?.message ?? "missing_data"}`);
   return Buffer.from(await data.arrayBuffer());
