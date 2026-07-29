@@ -75,7 +75,9 @@ for (const header of [
   "Cross-Origin-Opener-Policy",
   "Cross-Origin-Resource-Policy",
 ]) assert.ok(nextConfig.includes(header), `security header missing: ${header}`);
-assert.match(nextConfig, /frame-ancestors 'none'/);
+assert.match(nextConfig, /frame-ancestors 'self'/);
+assert.match(nextConfig, /frame-src 'self'/);
+assert.match(nextConfig, /X-Frame-Options", value: "SAMEORIGIN/);
 assert.match(nextConfig, /object-src 'none'/);
 
 assert.match(proxy, /if \(!protectedPath\)/, "public routes must avoid unnecessary Auth calls");
@@ -159,6 +161,7 @@ for (const file of [
 ]) assert.ok(migrationInventory.includes(file), `final release migration missing from inventory: ${file}`);
 
 for (const name of [
+  "ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN",
   "READINESS_DATABASE_TIMEOUT_MS",
   "RPC_GATEWAY_MAX_PAYLOAD_BYTES",
   "RPC_GATEWAY_MAX_CONCURRENCY",
