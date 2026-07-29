@@ -6,12 +6,12 @@
 
 ## 1. Autoridade e objetivo
 
-Este documento interpreta as referências oficiais sem substituí-las. Em caso de conflito, prevalecem:
+Este documento interpreta as referências aprovadas sem substituí-las. Em caso de conflito, prevalecem:
 
-1. `premissas-desenvolvimento.md`;
-2. `trabalho.md`;
-3. `arquetipos_estimulo.md`;
-4. alterações posteriores explicitamente aprovadas pela Estímulo;
+1. alterações e aprovações posteriores formalmente registradas pela Estímulo;
+2. o inventário de informação e as decisões canônicas versionadas neste repositório;
+3. a especificação e o modelo de dimensões do diagnóstico;
+4. os documentos de arquétipos e instrumentos preservados como fontes controladas;
 5. protótipos, código e documentos técnicos somente como evidência secundária.
 
 A operação inicial deve aplicar um formulário versionado que atribua um dos quatro arquétipos oficiais:
@@ -25,7 +25,7 @@ O diagnóstico serve inicialmente para personalização, relacionamento, ativaç
 
 ## 2. Instrumento oficial identificado
 
-A referência `arquetipos_estimulo.md` descreve a versão 3 do formulário com:
+A referência de arquétipos descreve a versão 3 do formulário com:
 
 - 12 perguntas;
 - 5 dimensões;
