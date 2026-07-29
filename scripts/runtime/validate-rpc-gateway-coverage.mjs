@@ -26,10 +26,13 @@ const allowed = new Set(allowlistMatch[1].trim().split(/\s+/u));
 const required = new Set([
   "clear_admin_activity_parts",
   "create_admin_journey_draft_from_version",
+  "get_admin_interface_content",
   "get_admin_journey_editor_details",
+  "publish_admin_interface_content",
+  "save_admin_interface_content",
   "save_admin_path_badge",
 ]);
-const directCallPattern = /invokeServerRpc(?:<[^;]*?>)?\s*\(\s*["']([a-z0-9_]+)["']/gu;
+const directCallPattern = /invokeServerRpc(?:<[\s\S]*?>)?\s*\(\s*["']([a-z0-9_]+)["']/gu;
 for (const file of await sourceFiles(applicationRoot)) {
   const source = await readFile(file, "utf8");
   for (const match of source.matchAll(directCallPattern)) required.add(match[1]);

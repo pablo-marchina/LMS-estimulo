@@ -62,6 +62,7 @@ const expectedActiveMigrations = Object.freeze([
   '20260729192423_generic_journey_path_badge_removal.sql',
   '20260729193313_generic_journey_path_presentation_event_schema.sql',
   '20260729203000_m17_runtime_hardening.sql',
+  '20260729204500_interface_content_cms.sql',
 ]);
 
 export async function validateActiveMigrations() {
@@ -92,8 +93,7 @@ export async function validateActiveMigrations() {
   };
 }
 
-const isDirectExecution =
-  process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
+const isDirectExecution = process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]);
 
 if (isDirectExecution) {
   validateActiveMigrations()
