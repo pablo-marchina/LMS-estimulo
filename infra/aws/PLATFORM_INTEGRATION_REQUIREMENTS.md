@@ -106,10 +106,13 @@ Valores secretos, tokens, senhas, cookies, chaves privadas e payloads reais não
 
 ## Regra de implementação
 
+A árvore ativa contém somente o contrato e o container Lambda; não contém uma stack genérica de infraestrutura.
+
 Até o inventário ser concluído:
 
 - não criar VPC, Cognito, RDS, buckets, filas, WAF ou observabilidade paralelos;
-- não aplicar o Terraform ECS existente;
+- não adicionar IaC que presuma contas, redes ou padrões ainda desconhecidos;
 - não declarar a plataforma pronta para staging;
-- implementar apenas contratos, adapters e testes locais que não dependam de identificadores corporativos;
-- manter Supabase restrito a desenvolvimento e validação temporária.
+- implementar apenas contratos, adapters e testes que não dependam de identificadores corporativos;
+- manter Supabase restrito a desenvolvimento e validação temporária;
+- usar os módulos e pipelines oficiais da empresa quando a implementação física for iniciada.
