@@ -1,0 +1,140 @@
+name: Reproducibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reproducibility-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ENV: test
+  PLATFORM_RUNTIME_PROVIDER: supabase
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-public-key
+  SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+  CPF_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+  CPF_LOOKUP_HMAC_KEY: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
+
+jobs:
+  clean-install:
+    name: Clean install and build (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up exact Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.23.1"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Validate toolchain and lock
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v22.23.1"
+          test "$(npm --version)" = "10.9.8"
+          npm run validate:dependency-lock
+
+      - name: Install from lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Validate installed dependency graph
+        run: npm ls --all
+
+      - name: Confirm source tree remains unchanged
+        run: git diff --exit-code
+
+      - name: Validate runtime hardening
+        run: npm run validate:runtime-hardening
+
+      - name: Typecheck
+        run: npm run typecheck:web
+
+      - name: Build
+        run: npm run build:web
+
+      - name: Record toolchain evidence
+        shell: bash
+        run: |
+          mkdir -p .artifacts
+          node -e "const fs=require('node:fs'); fs.writeFileSync('.artifacts/toolchain-${{ matrix.os }}.json', JSON.stringify({commit:process.env.GITHUB_SHA,node:process.version,npm:require('node:child_process').execFileSync('npm',['--version'],{encoding:'utf8'}).trim(),platform:process.platform,arch:process.arch},null,2)+'\n')"
+
+      - name: Upload toolchain evidence
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: reproducibility-${{ matrix.os }}-${{ github.sha }}
+          path: .artifacts/toolchain-${{ matrix.os }}.json
+          if-no-files-found: error
+          retention-days: 14
+
+  database-replay:
+    name: Replay database from zero
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      postgres:
+        image: supabase/postgres:17.6.1.141
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_replay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lms_replay"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/lms_replay
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up exact Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.23.1"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+
+      - name: Install from lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Validate migration inventory
+        run: npm run validate:migration-history
+
+      - name: Replay all migrations
+        run: npm run replay:database-clean
+
+      - name: Validate schema and behavioral gates
+        run: |
+          npm run validate:schema-equivalence
+          npm run validate:public-rpc-contracts
+          npm run test:database
