@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertPlatformRuntimePolicyFor } from "../../apps/web/lib/platform/runtime-provider-core.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -61,6 +62,23 @@ assert.equal(productionContract.supabase_allowed, false);
 assert.equal(productionContract.corporate_resource_inventory_required, true);
 assert.equal(productionContract.implementation.production_ready, false);
 
+assert.equal(assertPlatformRuntimePolicyFor("development", "supabase"), "supabase");
+assert.equal(assertPlatformRuntimePolicyFor("test", "supabase"), "supabase");
+assert.equal(assertPlatformRuntimePolicyFor("staging", "aws"), "aws");
+assert.equal(assertPlatformRuntimePolicyFor("production", "aws"), "aws");
+assert.throws(
+  () => assertPlatformRuntimePolicyFor("staging", "supabase"),
+  /DEPLOYED_ENVIRONMENT_REQUIRES_AWS_RUNTIME/,
+);
+assert.throws(
+  () => assertPlatformRuntimePolicyFor("production", "supabase"),
+  /DEPLOYED_ENVIRONMENT_REQUIRES_AWS_RUNTIME/,
+);
+assert.throws(
+  () => assertPlatformRuntimePolicyFor("production", "invalid"),
+  /PLATFORM_RUNTIME_PROVIDER_INVALID/,
+);
+
 assert.match(lambdaDockerfile, /PLATFORM_RUNTIME_PROVIDER=aws/, "Lambda image must select the AWS runtime provider");
 assert.match(lambdaDockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/ready/, "Lambda startup must use fail-closed readiness");
 assert.doesNotMatch(lambdaDockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/live/, "Lambda must not treat liveness as readiness");
@@ -76,8 +94,7 @@ assert.match(decision, /Amazon SQS/, "AWS production decision must include SQS w
 assert.match(targetArchitecture, /Arquitetura canônica/, "Target architecture must declare one canonical architecture");
 assert.doesNotMatch(targetArchitecture, /opções de compute/i, "Target architecture must not present competing production compute options");
 
-assert.match(runtimeProvider, /PRODUCTION_REQUIRES_AWS_RUNTIME/, "Runtime must reject Supabase in production");
-assert.match(runtimeProvider, /PLATFORM_RUNTIME_PROVIDER_INVALID/, "Runtime provider must fail closed on invalid values");
+assert.match(runtimeProvider, /runtime-provider-core\.mjs/, "Runtime provider wrapper must use the tested policy core");
 assert.match(readiness, /aws_runtime_adapters_unavailable/, "AWS readiness must remain closed until adapters exist");
 assert.match(rpcGateway, /AWS_RPC_GATEWAY_NOT_IMPLEMENTED/, "AWS PostgreSQL gateway must fail closed until implemented");
 assert.match(authContext, /AWS_IDENTITY_ADAPTER_NOT_IMPLEMENTED/, "AWS auth context must fail closed until implemented");
