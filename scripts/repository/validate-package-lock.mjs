@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import process from "node:process";
 
 const repositoryRoot = process.cwd();
+const expectedPackageManager = "npm@10.9.8";
+const expectedNodeVersion = "22.23.1";
 
 function readJson(path) {
   return JSON.parse(readFileSync(resolve(repositoryRoot, path), "utf8"));
@@ -24,9 +26,14 @@ function equalRecord(left, right) {
 const rootManifest = readJson("package.json");
 const webManifest = readJson("apps/web/package.json");
 const lockfile = readJson("package-lock.json");
+const nodeVersion = readFileSync(resolve(repositoryRoot, ".node-version"), "utf8").trim();
+const nvmVersion = readFileSync(resolve(repositoryRoot, ".nvmrc"), "utf8").trim();
 
-if (rootManifest.packageManager !== "npm@10.9.2") {
-  fail(`packageManager must be npm@10.9.2, received ${String(rootManifest.packageManager)}`);
+if (rootManifest.packageManager !== expectedPackageManager) {
+  fail(`packageManager must be ${expectedPackageManager}, received ${String(rootManifest.packageManager)}`);
+}
+if (nodeVersion !== expectedNodeVersion || nvmVersion !== expectedNodeVersion) {
+  fail(`Node toolchain files must both be ${expectedNodeVersion}`);
 }
 
 if (lockfile.lockfileVersion !== 3) {
@@ -40,9 +47,7 @@ if (!rootLock) fail("root package entry is missing");
 if (!webLock) fail("apps/web workspace entry is missing");
 
 if (rootLock) {
-  if (rootLock.name !== rootManifest.name) {
-    fail("root package name differs from package.json");
-  }
+  if (rootLock.name !== rootManifest.name) fail("root package name differs from package.json");
   if (JSON.stringify(rootLock.workspaces) !== JSON.stringify(rootManifest.workspaces)) {
     fail("workspace configuration differs from package.json");
   }
