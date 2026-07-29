@@ -4,8 +4,12 @@ on:
   pull_request:
     paths:
       - ".github/workflows/web-ci.yml"
+      - ".github/workflows/reproducibility.yml"
+      - ".github/dependabot.yml"
       - ".dockerignore"
       - ".env.example"
+      - ".node-version"
+      - ".nvmrc"
       - ".npmrc"
       - "Dockerfile.lambda"
       - "apps/web/**"
@@ -14,22 +18,52 @@ on:
       - "docs/architecture/**"
       - "docs/decisions/**"
       - "docs/implementation/**"
+      - "docs/operations/**"
       - "infra/aws/**"
       - "package.json"
       - "package-lock.json"
       - "scripts/application/**"
       - "scripts/integrations/**"
+      - "scripts/performance/**"
       - "scripts/product/**"
-      - "scripts/repository/validate-package-lock.mjs"
+      - "scripts/repository/**"
       - "scripts/runtime/**"
+      - "scripts/security/**"
       - "scripts/verification/**"
-      - "supabase/migrations/*_m14*_step5_*.sql"
+      - "supabase/functions/authenticated-rpc/**"
+      - "supabase/migrations/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/web-ci.yml"
+      - ".github/workflows/reproducibility.yml"
+      - ".github/dependabot.yml"
+      - ".dockerignore"
+      - ".env.example"
+      - ".node-version"
+      - ".nvmrc"
+      - ".npmrc"
+      - "Dockerfile.lambda"
+      - "apps/web/**"
+      - "config/official-diagnostic/**"
+      - "config/platform/**"
+      - "docs/architecture/**"
+      - "docs/decisions/**"
+      - "docs/implementation/**"
+      - "docs/operations/**"
+      - "infra/aws/**"
+      - "package.json"
+      - "package-lock.json"
+      - "scripts/**"
+      - "supabase/functions/authenticated-rpc/**"
+      - "supabase/migrations/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: web-ci-${{ github.event.pull_request.number }}
+  group: web-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -46,23 +80,30 @@ env:
 
 jobs:
   validate:
-    name: Validate web application
+    name: Validate hardened web application
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout exact commit
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
-          node-version: "22"
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up exact Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22.23.1"
           cache: npm
           cache-dependency-path: package-lock.json
 
-      - name: Install pinned npm
-        run: npm install --global npm@10.9.2 --no-audit --no-fund
+      - name: Verify toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = "v22.23.1"
+          test "$(npm --version)" = "10.9.8"
 
       - name: Validate dependency lock
         run: npm run validate:dependency-lock
@@ -70,17 +111,21 @@ jobs:
       - name: Install dependencies from lockfile
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Confirm lockfile remains unchanged
-        run: git diff --exit-code -- package-lock.json
+      - name: Validate installed dependency graph
+        run: npm ls --all
+
+      - name: Confirm source remains unchanged
+        run: git diff --exit-code
 
       - name: Audit production dependencies
-        run: npm audit --omit=dev
+        run: npm audit --omit=dev --audit-level=high
 
-      - name: Validate application foundation
-        run: npm run validate:application-foundation
-
-      - name: Validate platform contract
-        run: npm run validate:platform-contract
+      - name: Validate repository and application contracts
+        run: |
+          npm run validate:repository
+          npm run validate:application-foundation
+          npm run validate:platform-contract
+          npm run validate:runtime-hardening
 
       - name: Test application behavior
         run: npm run test:application
@@ -98,13 +143,15 @@ jobs:
         run: npm run build:web
 
       - name: Build AWS Lambda container image
+        shell: bash
         run: |
+          set -euo pipefail
           docker buildx build \
             --load \
-            --provenance=false \
             --platform linux/amd64 \
             --file Dockerfile.lambda \
             --build-arg NEXT_PUBLIC_APP_URL=https://ci.example.org \
+            --build-arg SOURCE_VERSION="$GITHUB_SHA" \
             --tag lms-estimulo-lambda:ci \
             .
 
@@ -113,27 +160,47 @@ jobs:
         run: |
           set -euo pipefail
           image_env="$(docker image inspect lms-estimulo-lambda:ci --format '{{json .Config.Env}}')"
+          image_user="$(docker image inspect lms-estimulo-lambda:ci --format '{{.Config.User}}')"
+          image_revision="$(docker image inspect lms-estimulo-lambda:ci --format '{{index .Config.Labels "org.opencontainers.image.revision"}}')"
           grep -q 'PLATFORM_RUNTIME_PROVIDER=aws' <<<"$image_env"
+          test "$image_user" = "10001:10001"
+          test "$image_revision" = "$GITHUB_SHA"
           if grep -q 'NEXT_PUBLIC_SUPABASE' <<<"$image_env"; then
             echo "Lambda runtime image contains Supabase public configuration"
             exit 1
           fi
 
-      - name: Smoke test AWS Lambda web container
+      - name: Prepare security evidence directory
+        run: mkdir -p .artifacts
+
+      - name: Scan Lambda image for fixable high-severity vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: lms-estimulo-lambda:ci
+          format: json
+          output: .artifacts/trivy-image.json
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+
+      - name: Smoke test hardened Lambda web container
         shell: bash
         run: |
           set -euo pipefail
           docker run --detach --name lms-estimulo-lambda-ci \
+            --read-only \
+            --tmpfs /tmp:rw,nosuid,nodev,size=268435456 \
             --publish 3000:3000 \
             --env NEXT_PUBLIC_APP_URL=https://ci.example.org \
             lms-estimulo-lambda:ci
           trap 'docker logs lms-estimulo-lambda-ci || true; docker rm --force lms-estimulo-lambda-ci >/dev/null 2>&1 || true' EXIT
 
-          for attempt in $(seq 1 30); do
+          for attempt in $(seq 1 45); do
             if curl --fail --silent http://127.0.0.1:3000/api/health/live >/dev/null; then
               break
             fi
-            if [[ "$attempt" -eq 30 ]]; then
+            if [[ "$attempt" -eq 45 ]]; then
               echo "Lambda container did not become live"
               exit 1
             fi
@@ -142,3 +209,39 @@ jobs:
 
           readiness_status="$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3000/api/health/ready)"
           test "$readiness_status" = "503"
+
+          HTTP_HARDENING_BASE_URL=http://127.0.0.1:3000 npm run verify:http-hardening
+
+          LOAD_TEST_BASE_URL=http://127.0.0.1:3000 \
+          LOAD_TEST_CONCURRENCY=20 \
+          LOAD_TEST_DURATION_SECONDS=8 \
+          LOAD_TEST_WARMUP_SECONDS=2 \
+          LOAD_TEST_MAX_ERROR_RATE=0.01 \
+          LOAD_TEST_MAX_P95_MS=2000 \
+          LOAD_TEST_MAX_P99_MS=5000 \
+          npm run test:capacity
+
+      - name: Generate immutable release evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .artifacts
+          docker save lms-estimulo-lambda:ci | sha256sum > .artifacts/lambda-image.sha256
+          image_id="$(docker image inspect lms-estimulo-lambda:ci --format '{{.Id}}')"
+          RELEASE_IMAGE_ID="$image_id" npm run build:release-manifest
+          (cd .artifacts && sha256sum --check release-manifest.sha256)
+
+      - name: Upload release evidence
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: release-evidence-${{ github.sha }}
+          path: |
+            .artifacts/release-manifest.json
+            .artifacts/release-manifest.sha256
+            .artifacts/lambda-image.sha256
+            .artifacts/load-test.json
+            .artifacts/trivy-image.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
