@@ -42,6 +42,7 @@ Este índice aponta para toda a documentação permanente do repositório. Requi
 ## Integrações
 
 - [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
+- [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Solicitação de inventário HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 
 ## Operação
