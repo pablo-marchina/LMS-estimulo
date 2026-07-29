@@ -1,7 +1,7 @@
 # Fundação atual da aplicação
 
 **Revisado em:** 2026-07-29  
-**Status:** desenvolvimento/teste funcional; migração AWS estruturada e produção bloqueada
+**Status:** desenvolvimento/teste funcional; produção AWS bloqueada
 
 ## Forma do sistema
 
@@ -9,21 +9,20 @@ O repositório contém um monorepo npm com um workspace `apps/web/`. A aplicaç�
 
 ## Providers de plataforma
 
-A aplicação possui um selector server-only:
-
 ```text
 PLATFORM_RUNTIME_PROVIDER=supabase
 PLATFORM_RUNTIME_PROVIDER=aws
 ```
 
-- `supabase` mantém o ambiente atual de desenvolvimento/teste;
-- `aws` é obrigatório para staging e produção;
-- `APP_ENV=production` com provider Supabase é rejeitado;
-- um provider inválido falha fechado.
+- `supabase` é permitido em local, test e preview;
+- `aws` é obrigatório em staging e produção;
+- qualquer consulta ao provider aplica a política de ambiente;
+- os próprios clientes Supabase rejeitam execução no provider AWS;
+- provider inválido ou combinação proibida falha fechado.
 
 A política está em `apps/web/lib/platform/runtime-provider.ts` e é verificada por `npm run validate:platform-contract`.
 
-## Runtime Supabase atual
+## Runtime Supabase de teste
 
 O caminho funcional de desenvolvimento/teste usa:
 
@@ -34,9 +33,15 @@ O caminho funcional de desenvolvimento/teste usa:
 - Supabase PostgreSQL como estado operacional, event store e outbox;
 - adapter HTTP HubSpot, ainda sem inventário, worker ou sandbox real.
 
-O gateway RPC possui timeout controlado e uma fronteira única. A implementação Supabase continua ativa; o caminho AWS falha explicitamente até o adapter RDS existir.
+O gateway RPC possui timeout controlado e uma fronteira única. Não existem rotas de login de teste, identidade sintética, banco falso, storage local alternativo ou bypass de RPC.
 
-Não existem rotas de login de teste, identidade sintética, banco falso, storage local alternativo ou bypass de RPC.
+O ambiente real pode ser verificado, sem mutações, por:
+
+```bash
+npm run verify:supabase
+```
+
+O comando verifica Auth, readiness do PostgreSQL e proteção da Edge Function autenticada.
 
 ## Arquitetura AWS aprovada
 
@@ -53,7 +58,7 @@ CloudFront/edge + WAF
 → SQS + Lambdas consumidoras + DLQ
 ```
 
-O `Dockerfile.lambda` seleciona o provider AWS e usa `/api/health/ready`. A readiness AWS permanece `503` até probes reais de Cognito/IdP, RDS Proxy/PostgreSQL e S3 serem implementados; portanto, a imagem não pode aceitar tráfego produtivo por engano.
+No provider AWS, identidade, gateway PostgreSQL e storage permanecem fail-closed até os adapters reais existirem.
 
 ## Superfícies funcionais
 
@@ -77,6 +82,7 @@ A existência das telas não aprova conteúdo, metodologia, identidade instituci
 
 ```text
 apps/web/lib/platform/
+apps/web/lib/supabase/
 apps/web/lib/auth/
 apps/web/lib/identity/
 apps/web/lib/admin/
@@ -92,32 +98,32 @@ apps/web/lib/configurable-product/
 
 ## Banco
 
-- `supabase/migrations/` é o histórico executável e imutável;
+- `supabase/migrations/` é o único histórico executável e imutável;
 - `supabase/canonical-migrations/` contém baselines recuperadas e manifests;
 - migrations posteriores corrigem o estado sem editar migrations aplicadas;
-- contratos públicos permanecem em `docs/implementation/public-rpc-contracts-v1.json`.
+- contratos públicos permanecem em `docs/implementation/public-rpc-contracts-v1.json`;
+- após o replay, os gates aceitam somente arquivos SQL `test-*`.
 
-Os gates atuais usam Supabase PostgreSQL. A prova em RDS, incluindo extensões, roles, grants, RLS, funções, índices, RDS Proxy, PITR e restore, ainda não existe.
+A prova em RDS, incluindo extensões, roles, grants, RLS, funções, índices, RDS Proxy, PITR e restore, ainda não existe.
 
-## Build e container
+## Container
 
-### Desenvolvimento/ECS anterior
+Existe somente `Dockerfile.lambda`.
 
-O `Dockerfile` standalone permanece versionado, mas o Terraform ECS correspondente não é mais arquitetura-alvo.
-
-### Lambda
-
-`Dockerfile.lambda`:
+Ele:
 
 - usa Node.js 22 e Next.js standalone;
 - inclui AWS Lambda Web Adapter;
-- configura `PLATFORM_RUNTIME_PROVIDER=aws`;
-- usa readiness fail-closed;
-- expõe erros `500-599` como falha;
-- usa `/tmp` apenas para cache descartável;
-- não incorpora secrets server-only.
+- configura `APP_ENV=production` e `PLATFORM_RUNTIME_PROVIDER=aws`;
+- incorpora somente `NEXT_PUBLIC_APP_URL` como configuração pública;
+- não incorpora configuração Supabase ou secrets;
+- usa `/api/health/live` para inicialização do servidor;
+- mantém `/api/health/ready` como gate externo fail-closed;
+- usa `/tmp` apenas para cache descartável.
 
-O workflow tenta construir a imagem com `docker buildx`, arquitetura explícita e provenance desativada para compatibilidade Lambda. Os runners ainda encerram antes dos steps, portanto o build não está comprovado.
+A stack Terraform ECS/Fargate e o Dockerfile genérico foram removidos.
+
+O Web CI deve construir a aplicação Supabase de teste e, separadamente, construir, inspecionar e iniciar o container Lambda. Os runners ainda precisam executar os steps para que essa evidência exista.
 
 ## Validações permanentes
 
@@ -133,9 +139,10 @@ npm run test:integrations
 npm run test:database
 npm run typecheck:web
 npm run build:web
+npm run verify:supabase
 ```
 
-`npm run verify:deployment` é atualmente um smoke test autenticado read-only. Ele verifica health, login, navegação, páginas administrativas, responsividade e identidade real do ambiente informado. Ele não comprova criação transacional, upload, outbox, SQS ou HubSpot e não deve ser descrito como E2E full-stack completo.
+`npm run verify:deployment` é um smoke test autenticado read-only. Ele não comprova criação transacional, upload, outbox, SQS ou HubSpot.
 
 ## Limites atuais
 
@@ -148,7 +155,7 @@ Não estão implementados ou comprovados:
 - S3 e uploads diretos;
 - SQS, workers, DLQ e reconciliação;
 - infraestrutura Lambda/front door aplicada;
-- build e execução da imagem Lambda;
+- build e execução da imagem Lambda em CI;
 - observabilidade, SLOs, backup, restore e rollback;
 - E2E transacional AWS;
 - conteúdo e diagnóstico oficiais;
