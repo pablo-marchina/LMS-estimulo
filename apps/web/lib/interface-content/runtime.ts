@@ -67,3 +67,33 @@ export function publishAdminInterfaceContent(input: {
     p_idempotency_key: input.idempotencyKey,
   });
 }
+
+export function registerAdminInterfaceContent(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  entry: Record<string, unknown>;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<{ entry_id: string; content_key: string; replayed: boolean }>("register_admin_interface_content", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_entry: input.entry,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
+export function archiveAdminInterfaceContent(input: {
+  actorUserAccountId: string;
+  organizationId: string;
+  contentKey: string;
+  locale?: string;
+  idempotencyKey: string;
+}) {
+  return invokeServerRpc<{ content_key: string; archived: boolean; replayed: boolean }>("archive_admin_interface_content", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_content_key: input.contentKey,
+    p_locale: input.locale ?? "pt-BR",
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
