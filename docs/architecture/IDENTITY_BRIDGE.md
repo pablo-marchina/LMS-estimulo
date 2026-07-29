@@ -45,6 +45,8 @@ Supabase Auth é o provedor ativo de desenvolvimento/teste. Cookies e tokens sã
 
 O provedor de produção na AWS ainda não foi selecionado. Cognito é uma alternativa possível, não uma implementação vigente.
 
+O runtime não contém rota de login de teste, identidade sintética nem bypass de autenticação. Verificações de navegador usam contas próprias do ambiente implantado e ficam fora do runtime.
+
 ## Lacunas institucionais
 
 Ainda precisam ser definidos e comprovados:
@@ -66,10 +68,6 @@ O código possui política, adapter HTTP e fila de resolução administrativa, m
 
 Somente identificadores mínimos e dados autorizados pela DEC-070 podem sair do LMS. CPF bruto não é enviado em eventos de engajamento.
 
-## Testes sintéticos
-
-O Browser E2E possui modo sintético restrito a host local, token longo e cookie específico. Não existe rota pública de cadastro de teste e não há bypass produtivo.
-
 ## Gate
 
 ```text
@@ -79,6 +77,7 @@ participant_password_login = implemented
 cpf_protection = implemented
 admin_google_oauth = implemented
 admin_domain_and_rbac_gate = implemented
+test_authentication_bypass = absent
 official_site_entry = pending
 phone_and_optional_cnpj = pending
 production_identity_provider = pending
