@@ -21,7 +21,7 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const interfaceContent = await getPublishedInterfaceContent();
+  const interfaceContent = await getPublishedInterfaceContent().catch(() => ({}));
   return (
     <html lang="pt-BR">
       <body className="antialiased">
