@@ -12,20 +12,34 @@ const forbiddenPrefixes = [
   ".github/hooks/",
   ".github/skills/",
   ".superpowers/",
+  "apps/web/lib/browser-e2e/",
   "docs/superpowers/",
+  "scripts/browser-e2e/",
 ];
 const forbiddenExactFiles = new Set([
+  ".github/workflows/browser-e2e.yml",
   ".github/workflows/experience-validation.yml",
   "apps/web/.env.example",
+  "apps/web/app/api/e2e/session/route.ts",
+  "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
+  "premissas-desenvolvimento.md",
 ]);
+const forbiddenReferences = [
+  "premissas-desenvolvimento.md",
+  "SOURCE_AUTHORITY_HIERARCHY.md",
+  "BROWSER_E2E_MODE",
+  "@/lib/browser-e2e/",
+  "run-synthetic-vertical.mjs",
+];
 const requiredFiles = [
   "README.md",
   "PROJECT_INDEX.md",
   "CONTRIBUTING.md",
   ".env.example",
-  "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
   "docs/implementation/APPLICATION_FOUNDATION.md",
   "docs/implementation/DELIVERY_BLOCKERS.md",
+  "scripts/database/run-gates.mjs",
+  "scripts/verification/verify-deployment.mjs",
 ];
 const errors = [];
 const files = [];
@@ -66,7 +80,13 @@ function validatePaths() {
     if (forbiddenPrefixes.some((prefix) => file.startsWith(prefix))) {
       errors.push(`development-only path tracked: ${file}`);
     }
-    if (forbiddenExactFiles.has(file)) errors.push(`obsolete duplicate tracked: ${file}`);
+    if (forbiddenExactFiles.has(file)) errors.push(`obsolete or development-only file tracked: ${file}`);
+    if (/^scripts\/database\/[^/]+\/run\.mjs$/u.test(file)) {
+      errors.push(`duplicate database wrapper tracked; use scripts/database/run-gates.mjs: ${file}`);
+    }
+    if (file.startsWith("scripts/application/") && /(?:regression|homolog|frente|round)/iu.test(path.posix.basename(file))) {
+      errors.push(`process-bound application test name tracked: ${file}`);
+    }
     if (file === ".tmp" || file.startsWith(".tmp/") || file.includes("/.tmp/")) {
       errors.push(`temporary runtime state tracked: ${file}`);
     }
@@ -113,8 +133,14 @@ async function validateRequiredFiles() {
   }
 
   const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
-  if (packageJson.scripts?.["validate:repository"] !== "node scripts/repository/validate-hygiene.mjs") {
-    errors.push("package.json does not expose validate:repository");
+  const expectedScripts = {
+    "validate:repository": "node scripts/repository/validate-hygiene.mjs",
+    "test:application": "node --test scripts/application/*.test.mjs",
+    "test:database": "node scripts/database/run-gates.mjs",
+    "verify:deployment": "node scripts/verification/verify-deployment.mjs",
+  };
+  for (const [name, command] of Object.entries(expectedScripts)) {
+    if (packageJson.scripts?.[name] !== command) errors.push(`package.json must expose ${name} as ${command}`);
   }
 
   const webPackageJson = JSON.parse(await readFile(path.join(root, "apps/web/package.json"), "utf8"));
@@ -193,14 +219,18 @@ const markdownFiles = files.filter((file) => file.endsWith(".md"));
 for (const file of markdownFiles) await validateLocalLinks(file);
 
 const textEntries = await readTextFiles();
+for (const { file, content } of textEntries) {
+  for (const reference of forbiddenReferences) {
+    if (content.includes(reference)) errors.push(`development-only reference in ${file}: ${reference}`);
+  }
+}
+
 const indexSource = await readFile(path.join(root, "PROJECT_INDEX.md"), "utf8");
 const indexTargets = collectIndexTargets(indexSource);
-
 const unindexedMarkdown = files
   .filter((file) => file.startsWith("docs/") && file.endsWith(".md"))
   .filter((file) => !indexTargets.has(file))
   .sort();
-
 for (const file of unindexedMarkdown) errors.push(`canonical document missing from PROJECT_INDEX.md: ${file}`);
 
 const unreferencedDocumentationArtifacts = files
@@ -208,6 +238,7 @@ const unreferencedDocumentationArtifacts = files
   .filter((file) => [".json", ".yaml", ".yml", ".csv", ".sql", ".txt"].includes(path.posix.extname(file)))
   .filter((file) => !referencedByAnotherFile(file, textEntries))
   .sort();
+for (const file of unreferencedDocumentationArtifacts) errors.push(`unreferenced documentation artifact: ${file}`);
 
 const unreferencedScripts = files
   .filter((file) => file.startsWith("scripts/"))
@@ -215,16 +246,13 @@ const unreferencedScripts = files
   .filter((file) => !isKnownGlobEntrypoint(file))
   .filter((file) => !referencedByAnotherFile(file, textEntries))
   .sort();
+for (const file of unreferencedScripts) errors.push(`unreferenced script: ${file}`);
 
 const result = {
   status: errors.length === 0 ? "ok" : "failed",
   files_scanned: files.length,
   markdown_files: markdownFiles.length,
   errors,
-  candidates: {
-    unreferenced_documentation_artifacts: unreferencedDocumentationArtifacts,
-    unreferenced_scripts: unreferencedScripts,
-  },
 };
 
 process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
