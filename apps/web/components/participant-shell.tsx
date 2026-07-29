@@ -5,6 +5,7 @@ import { Award, BookOpen, Compass, FileUp, Home, Menu, Trophy, User, X } from "l
 import { signOutAction } from "@/app/entrar/actions";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
+import { InterfacePreviewBridge } from "@/components/interface-preview-bridge";
 import { InterfaceSlot } from "@/components/interface-slot";
 import { Button } from "@/components/ui/button";
 import { NavItem } from "@/components/ui/nav-item";
@@ -31,20 +32,21 @@ export function ParticipantShell({ email, children }: { email: string; children:
     .map((link) => ({ ...link, href: interfaceHref(content, link.contentKey, link.href), label: interfaceText(content, link.contentKey, link.label) }));
   const nav = links.map((link) => {
     const Icon = link.icon;
-    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={16} aria-hidden="true" />}>{link.label}</NavItem>;
+    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={16} aria-hidden="true" />} interfaceContentKey={link.contentKey}>{link.label}</NavItem>;
   });
 
   return (
     <div className="participant-stage min-h-screen bg-background">
-      <a className="skip-link" href="#conteudo-principal">{skipLabel}</a>
+      <InterfacePreviewBridge />
+      <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
       <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
         <div className="mx-auto flex min-h-16 w-full max-w-[1400px] items-center gap-3 px-5 lg:px-9">
           <div className="brand-logo-capsule shrink-0 scale-[.96]"><EstimuloBrand href="/empreendedor" compact /></div>
           <nav className="hidden flex-1 items-center justify-center gap-0.5 overflow-x-auto xl:flex" aria-label="Navegação principal">{nav}</nav>
-          <div className="ml-auto hidden items-center gap-2 xl:flex"><span className="max-w-44 truncate text-xs text-white/70" title={email}>{email}</span><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div>
+          <div className="ml-auto hidden items-center gap-2 xl:flex"><span className="max-w-44 truncate text-xs text-white/70" title={email}>{email}</span><form action={signOutAction} data-interface-content-key="shared.sign_out"><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div>
           <button type="button" className="ml-auto grid size-10 place-items-center rounded-xl text-white hover:bg-white/10 xl:hidden" aria-expanded={mobileOpen} aria-controls="participant-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={19} /> : <Menu size={19} />}</button>
         </div>
-        {mobileOpen ? <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 xl:hidden"><nav className="grid gap-1 pt-3 sm:grid-cols-2">{nav}</nav><div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3"><span className="truncate text-xs text-white/70">{email}</span><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}
+        {mobileOpen ? <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 xl:hidden"><nav className="grid gap-1 pt-3 sm:grid-cols-2">{nav}</nav><div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3"><span className="truncate text-xs text-white/70">{email}</span><form action={signOutAction} data-interface-content-key="shared.sign_out"><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}
       </header>
       <InterfaceSlot area="participant" placement="before_content" />
       <main id="conteudo-principal" className="mx-auto w-full max-w-[1400px]" tabIndex={-1}>{children}</main>
