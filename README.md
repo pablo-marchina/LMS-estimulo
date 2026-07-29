@@ -2,117 +2,111 @@
 
 LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdos e atividades e produzir dados educacionais e operacionais com governança.
 
-> **Status do projeto:** o fluxo de desenvolvimento e testes com Supabase está implementado. Staging e produção na AWS permanecem bloqueados até a conclusão e a comprovação dos adapters e da infraestrutura descritos em [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md).
+> **Estado:** o produto, o banco reproduzível e o runtime de desenvolvimento/teste usam Supabase e Vercel. A AWS permanece como ambiente definitivo de produção, mas sua arquitetura ainda não foi decidida. O único artefato AWS aprovado é [`Dockerfile.lambda`](Dockerfile.lambda). Até a aprovação e implementação da arquitetura, o runtime AWS permanece *fail-closed* e não pode receber usuários reais.
 
-[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Estado da implementação](docs/implementation/APPLICATION_FOUNDATION.md)
+[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Bloqueadores da entrega](docs/implementation/DELIVERY_BLOCKERS.md)
 
-## Sobre o projeto
+## Produto
 
 A Plataforma Estímulo reúne, em uma aplicação web, as experiências de participantes e as ferramentas administrativas necessárias para publicar e operar jornadas de capacitação.
 
-A primeira release tem como prioridade a **Jornada OpenAI**. O núcleo do produto, porém, foi estruturado para que jornadas, trilhas, conteúdos, avaliações e credenciais possam ser configurados e versionados sem criar um runtime separado para cada programa.
-
-## Funcionalidades
+A primeira release prioriza a Jornada OpenAI. O núcleo do produto permite configurar e versionar jornadas, trilhas, conteúdos, avaliações, práticas, gamificação e credenciais sem criar um runtime separado para cada programa.
 
 ### Participantes
 
-- cadastro, confirmação de conta e autenticação;
+- cadastro, confirmação e autenticação;
 - home, jornadas, atividades, diagnóstico, perfil, biblioteca e conquistas;
-- acompanhamento de progresso e conclusão;
-- avaliações, práticas, comentários e envio de evidências;
+- progresso e conclusão;
+- avaliações, práticas, comentários e evidências;
 - pontos, recompensas, selos e certificados.
 
 ### Administração
 
-- acesso administrativo separado com identidade interna e RBAC;
-- configuração de produto, jornadas e diagnóstico;
+- acesso administrativo separado, identidade interna e RBAC;
+- configuração de produto, jornadas, trilhas, aulas e diagnóstico;
+- CMS da experiência;
 - gestão de gamificação, engajamento, biblioteca e usuários;
 - relatórios e ferramentas operacionais;
-- contratos para integração com HubSpot.
+- contratos lógicos para integrações externas.
 
-### Fundação da plataforma
+### Fundação
 
-- motor de produto configurável e versionado;
+- monólito modular em Next.js;
+- motor configurável e versionado;
 - histórico PostgreSQL reproduzível por migrations;
-- fronteiras explícitas para identidade, banco, arquivos e processamento assíncrono;
+- RLS, RBAC, idempotência, auditoria e contratos públicos de RPC;
+- fronteiras explícitas para identidade, dados, arquivos e processamento assíncrono;
 - seleção de provider por ambiente com comportamento *fail-closed*;
-- contratos públicos de RPC e verificações permanentes do repositório.
+- gates de qualidade, segurança, integridade e reprodutibilidade.
 
-A existência de uma tela, fluxo ou adapter no código não equivale à aprovação de conteúdo, metodologia, segurança, privacidade, acessibilidade ou operação em produção.
+A existência de uma tela, fluxo, contrato ou Dockerfile não equivale à aprovação de conteúdo, metodologia, segurança, privacidade, acessibilidade ou operação em produção.
 
-## Ambientes e providers
+## Ambientes
 
-| Ambiente | Provider obrigatório | Estado |
+| Ambiente | Provider | Uso permitido |
 |---|---|---|
-| local, test e preview | `supabase` | suportado para desenvolvimento e validação |
-| staging e production | `aws` | arquitetura aprovada; adapters e infraestrutura ainda incompletos |
+| `development` | `supabase` | desenvolvimento local |
+| `test` | `supabase` | CI e testes automatizados |
+| `preview` | `supabase` em Vercel | homologação controlada com dados sintéticos |
+| `staging` | `aws` | bloqueado até decisão e implementação da arquitetura |
+| `production` | `aws` | bloqueado até todos os gates de produção |
 
-As regras são aplicadas por `APP_ENV` e `PLATFORM_RUNTIME_PROVIDER`. Supabase é rejeitado em staging e produção, e adapters AWS incompletos não fazem fallback.
+Supabase e Vercel não podem ser promovidos, renomeados ou tratados como produção oficial.
 
-## Arquitetura
+## Estado da AWS
 
-O repositório é um monorepo npm. A aplicação principal é um monólito modular em Next.js, com os serviços de plataforma acessados por contratos independentes do provider.
+Decisões aprovadas:
 
-```mermaid
-flowchart LR
-    WEB["Next.js application"] --> PLATFORM["Platform contracts"]
+1. AWS será o ambiente definitivo de produção;
+2. a aplicação será empacotada por `Dockerfile.lambda`;
+3. o runtime de produção não pode depender de Supabase ou Vercel.
 
-    PLATFORM --> SUPABASE["Supabase adapter<br/>local, test and preview"]
-    SUPABASE --> SUPA_SERVICES["Auth · PostgreSQL · Storage · authenticated RPC"]
+Ainda não foram decididos os serviços e a topologia de entrada pública, identidade, banco, armazenamento, processamento assíncrono, rede, segredos, observabilidade, deploy, backup e recuperação.
 
-    PLATFORM --> AWS["AWS adapter<br/>staging and production"]
-    AWS --> AWS_SERVICES["Cognito/OIDC · RDS Proxy · S3 · SQS"]
-```
+Consulte [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md). O endpoint `/api/health/ready` retorna `503` com `aws_architecture_pending` enquanto essa decisão estiver aberta.
 
-A arquitetura de produção aprovada utiliza CloudFront/edge corporativo, WAF, API Gateway HTTP API, AWS Lambda com Lambda Web Adapter, Cognito ou broker OIDC, RDS PostgreSQL via RDS Proxy, S3 privado e processamento assíncrono com SQS e Lambdas consumidoras.
-
-## Stack principal
+## Stack atual
 
 | Camada | Tecnologias |
 |---|---|
 | aplicação | Next.js 16, React 19 e TypeScript 6 |
 | interface | Tailwind CSS 4, Framer Motion e Lucide |
-| desenvolvimento e testes | Supabase Auth, PostgreSQL, Storage e Edge Functions |
-| produção planejada | AWS Lambda, API Gateway, Cognito/OIDC, RDS Proxy, RDS PostgreSQL, S3 e SQS |
+| desenvolvimento/teste | Supabase Auth, PostgreSQL, Storage e Edge Functions |
+| preview | Vercel com provider Supabase |
+| empacotamento AWS aprovado | container Lambda definido em `Dockerfile.lambda` |
 | validação | Node Test Runner, scripts de contrato, gates de banco, typecheck e build |
-| workspace | Node.js 22, npm 10 e npm workspaces |
+| workspace | Node.js 22.23.1, npm 10.9.8 e npm workspaces |
 
-## Começando
+## Desenvolvimento local
 
 ### Pré-requisitos
 
 - Git;
-- Node.js 22 ou superior;
-- npm 10.9.2;
-- acesso a um projeto Supabase autorizado;
+- Node.js `22.23.1`;
+- npm `10.9.8`;
+- projeto Supabase autorizado para teste;
 - Google OAuth configurado no ambiente de teste para validar a administração;
 - duas chaves independentes de 32 bytes, codificadas em Base64, para proteção do CPF.
 
-Docker com Buildx é necessário somente para validar a imagem de produção em Lambda.
-
-### 1. Clone e instale as dependências
+### Instalação
 
 ```bash
-git clone https://github.com/pablo-marchina/LMS-estimulo.git
-cd LMS-estimulo
-npm ci --ignore-scripts
+npm ci --ignore-scripts --no-audit --no-fund
 ```
 
-### 2. Crie o arquivo de ambiente
-
-Linux ou macOS:
+Crie o arquivo de ambiente:
 
 ```bash
 cp .env.example .env
 ```
 
-PowerShell:
+No PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Para desenvolvimento local, mantenha:
+Para desenvolvimento:
 
 ```dotenv
 APP_ENV=development
@@ -120,48 +114,35 @@ PLATFORM_RUNTIME_PROVIDER=supabase
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Preencha também as credenciais Supabase e as duas chaves de proteção do CPF indicadas em [`.env.example`](.env.example). Para gerar cada chave com Node.js, execute o comando abaixo duas vezes e use valores diferentes:
+Preencha as credenciais de teste e gere duas chaves distintas:
 
 ```bash
 node -e "const { randomBytes } = require('node:crypto'); console.log(randomBytes(32).toString('base64'))"
 ```
 
-Nunca versione o arquivo `.env` nem credenciais reais.
+Execute o comando duas vezes e nunca versione `.env` ou credenciais reais.
 
-### 3. Valide a configuração local
-
-```bash
-npm run validate:repository
-npm run validate:dependency-lock
-npm run validate:platform-contract
-```
-
-### 4. Inicie a aplicação
+### Execução
 
 ```bash
+npm run validate:release-candidate
 npm run dev:web
 ```
 
 A aplicação ficará disponível em `http://localhost:3000`.
 
-### 5. Verifique o Supabase real
+### Verificação do ambiente Supabase de teste
 
 ```bash
 npm run verify:supabase
 ```
 
-Essa verificação é *read-only*: ela consulta Auth, o readiness do PostgreSQL e a proteção da Edge Function `authenticated-rpc`, sem criar usuários nem alterar dados.
+A verificação é *read-only*: consulta Auth, readiness do PostgreSQL e proteção da Edge Function `authenticated-rpc`.
 
-## Qualidade e testes
-
-Validações principais:
+## Gates do candidato de software
 
 ```bash
-npm run validate:repository
-npm run validate:dependency-lock
-npm run validate:application-foundation
-npm run validate:platform-contract
-npm run validate:migration-history
+npm run validate:release-candidate
 npm run test:repository-tooling
 npm run test:application
 npm run test:product
@@ -169,72 +150,58 @@ npm run test:integrations
 npm run test:database
 npm run typecheck:web
 npm run build:web
-```
-
-Verificações adicionais:
-
-```bash
 npm run scan:secrets
 npm run test:secret-scanning
-npm run verify:deployment
 ```
 
-`verify:deployment` é um smoke test autenticado e *read-only* de um ambiente implantado. Ele não substitui o E2E transacional da arquitetura AWS.
+O banco deve ser reconstruído desde zero e passar por equivalência de schema e testes comportamentais. Nenhum gate obrigatório pode ficar ausente, cancelado, ignorado ou vermelho.
 
-## Estrutura do repositório
+## Capacidade e performance
+
+O repositório possui harness parametrizável de carga:
+
+```bash
+LOAD_TEST_BASE_URL=http://localhost:3000 \
+LOAD_TEST_PATH=/api/health/live \
+LOAD_TEST_CONCURRENCY=20 \
+LOAD_TEST_DURATION_SECONDS=8 \
+npm run test:capacity
+```
+
+O cenário curto de liveness é apenas uma verificação do harness. Aprovação para múltiplos usuários exige cenários autenticados e transacionais, ramp, spike e soak no ambiente de produção escolhido, com métricas de aplicação, banco, armazenamento, processamento assíncrono e integrações.
+
+## Produção
+
+Existem dois gates distintos:
+
+1. **release do software:** fonte, dependências, migrations, testes, typecheck, build, imagem, scans e manifestos reproduzíveis;
+2. **release de produção:** arquitetura AWS aprovada e implementada, E2E transacional, capacidade, segurança, LGPD, observabilidade, backup, restore e rollback.
+
+O primeiro gate não autoriza o segundo. Consulte [`FINAL_RELEASE_RUNBOOK.md`](docs/operations/FINAL_RELEASE_RUNBOOK.md) e [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md).
+
+## Estrutura
 
 ```text
 apps/web/                       aplicação Next.js
 apps/web/lib/platform/          contratos e seleção do provider
 apps/web/lib/supabase/          adapter de desenvolvimento e testes
-config/platform/                contrato de produção legível por máquina
-docs/                           produto, decisões, arquitetura e implementação
-infra/aws/                      contratos e runbooks da arquitetura AWS
+config/platform/                estado legível por máquina da fronteira de produção
+docs/                           produto, arquitetura lógica, segurança e operação
 scripts/                        validação, testes, segurança e operação
-supabase/migrations/            histórico PostgreSQL executável e imutável
-supabase/functions/             Edge Functions de desenvolvimento e testes
-Dockerfile.lambda               imagem única da aplicação para AWS Lambda
+supabase/migrations/            histórico PostgreSQL executável
+supabase/functions/             funções exclusivas do ambiente de teste
+Dockerfile.lambda               único artefato AWS atualmente aprovado
 ```
 
-Não existe uma stack ativa de ECS/Fargate nem um segundo Dockerfile para a aplicação.
+Não existe uma segunda imagem de aplicação nem infraestrutura AWS aprovada no repositório.
 
-## Produção
-
-A produção deve usar exclusivamente o provider AWS. O container Lambda, a política de providers e os contratos de arquitetura estão versionados, mas a release continua bloqueada, entre outros pontos, por:
-
-- inventário e aprovação da AWS corporativa;
-- adapters Cognito/OIDC, RDS Proxy/PostgreSQL e S3;
-- uploads diretos e processamento assíncrono com SQS;
-- integração HubSpot validada em sandbox;
-- observabilidade, capacidade, backup, restore e rollback;
-- E2E transacional;
-- aprovações de conteúdo, segurança, privacidade e acessibilidade.
-
-Consulte o inventário completo em [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md). Nenhuma afirmação de prontidão para produção deve se basear apenas em código, Dockerfile, fixture, mock ou teste estrutural.
-
-## Documentação
-
-- [`PROJECT_INDEX.md`](PROJECT_INDEX.md) — índice canônico da documentação;
-- [`MULTI_JOURNEY_PRODUCT_SCOPE.md`](docs/product/MULTI_JOURNEY_PRODUCT_SCOPE.md) — escopo das jornadas e da primeira release;
-- [`APPLICATION_FOUNDATION.md`](docs/implementation/APPLICATION_FOUNDATION.md) — estado implementado;
-- [`AWS_PRODUCTION_ARCHITECTURE.md`](docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md) — decisão vigente de produção;
-- [`AWS_TARGET_ARCHITECTURE.md`](docs/architecture/AWS_TARGET_ARCHITECTURE.md) — arquitetura-alvo detalhada;
-- [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md) — lacunas para staging, produção e usuários reais;
-- [`infra/aws/lambda/README.md`](infra/aws/lambda/README.md) — build e operação do runtime Lambda;
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — fluxo de mudanças e padrões do repositório.
-
-## Contribuindo
+## Contribuição
 
 Não faça commits diretamente em `main`.
 
-1. Crie uma branch no formato `<tipo>/<escopo>-<descricao>`.
-2. Mantenha código, migrations, contratos, testes e documentação sincronizados.
-3. Execute as validações proporcionais ao risco da mudança.
-4. Abra um pull request com título no padrão Conventional Commits.
-5. Descreva evidências, limitações, riscos e estratégia de rollback.
-
-As regras completas estão em [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Suporte
-
-Para dúvidas técnicas, defeitos ou propostas de melhoria, abra uma issue no repositório com contexto reproduzível e indique o ambiente e o provider afetados.
+1. crie uma branch aceita pela política do repositório;
+2. mantenha código, migrations, contratos, testes e documentação sincronizados;
+3. execute os gates proporcionais ao risco;
+4. abra um pull request com título no padrão Conventional Commits;
+5. registre evidências, limitações, riscos e rollback;
+6. exija revisão independente para mudanças de segurança, identidade, dados, migrations ou produção.
