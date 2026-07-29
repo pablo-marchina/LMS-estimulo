@@ -2,6 +2,24 @@ import "server-only";
 
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
+export type JourneyEditorQuestion = {
+  id: string;
+  code: string;
+  prompt: string;
+  question_type: string;
+  points: number;
+  position: number;
+  configuration: Record<string, unknown>;
+  options: Array<{
+    id: string;
+    code: string;
+    label: string;
+    value: Record<string, unknown>;
+    is_correct: boolean;
+    position: number;
+  }>;
+};
+
 export type JourneyEditorActivityDetails = {
   activity_version_id: string;
   activity_definition_id: string;
@@ -21,6 +39,18 @@ export type JourneyEditorActivityDetails = {
     is_required: boolean;
     accessibility_metadata: Record<string, unknown>;
   }>;
+  assessment: {
+    passing_score: number | null;
+    max_attempts: number | null;
+    questions: JourneyEditorQuestion[];
+  } | null;
+  practice: {
+    submission_mode: string;
+    allowed_evidence_types: string[];
+    max_submissions: number | null;
+    review_required: boolean;
+    terms_version: string | null;
+  } | null;
 };
 
 export type JourneyEditorDetails = {
