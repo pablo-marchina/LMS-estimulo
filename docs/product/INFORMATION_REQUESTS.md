@@ -3,9 +3,7 @@
 **Revisado em:** 2026-07-29  
 **Status:** ativo
 
-Este arquivo registra somente informações externas ou aprovações ainda necessárias. A autoridade documental segue [`SOURCE_AUTHORITY_HIERARCHY.md`](SOURCE_AUTHORITY_HIERARCHY.md).
-
-Nunca registrar tokens, chaves, cookies, senhas ou dados pessoais reais no Git, issues, PRs ou chat.
+Este arquivo registra somente informações externas ou aprovações ainda necessárias para liberar o produto. Nunca registrar tokens, chaves, cookies, senhas ou dados pessoais reais no Git, issues, PRs ou chat.
 
 ## P0
 
