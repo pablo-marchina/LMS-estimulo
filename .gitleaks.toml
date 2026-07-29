@@ -4,9 +4,11 @@ title = "Plataforma Estímulo secret scanning"
 useDefault = true
 
 [[allowlists]]
-description = "Synthetic CI-only Supabase placeholders verified in historical workflows"
+description = "Synthetic CI-only placeholders verified in historical workflows"
 targetRules = ["generic-api-key"]
 regexTarget = "line"
 regexes = [
   '''^\s*(?:NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)\s*[:=]\s*(?:ci-placeholder-(?:key|anon-key|public-key|service-key)|browser-e2e-(?:anon-key|service-role-key)|test-(?:anon-key|service-role-key))\s*$''',
+  '''^\s*CPF_ENCRYPTION_KEY\s*[:=]\s*MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=\s*$''',
+  '''^\s*CPF_LOOKUP_HMAC_KEY\s*[:=]\s*ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=\s*$''',
 ]
