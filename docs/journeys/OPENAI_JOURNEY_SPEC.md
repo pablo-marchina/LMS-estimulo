@@ -3,9 +3,9 @@
 **Revisado em:** 2026-07-29  
 **Status:** capacidade técnica e configuração de desenvolvimento presentes; release editorial bloqueada
 
-## Autoridade
+## Fonte editorial
 
-A hierarquia está em [`SOURCE_AUTHORITY_HIERARCHY.md`](../product/SOURCE_AUTHORITY_HIERARCHY.md). Os materiais editoriais institucionais permanecem fora do Git e são a fonte para conteúdo final. Código, migrations, fixtures e seeds não substituem aprovação editorial.
+Os materiais editoriais institucionais aprovados permanecem fora do Git e são a fonte para conteúdo final. Este documento registra apenas a especificação vigente necessária para implementar e liberar a jornada. Código, migrations, fixtures e seeds não substituem aprovação editorial.
 
 ## Identidade
 
