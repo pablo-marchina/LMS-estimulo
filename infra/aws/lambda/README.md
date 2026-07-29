@@ -2,7 +2,7 @@
 
 **Estado:** Dockerfile e contrato versionados; build, adapters e infraestrutura ainda não comprovados
 
-Este diretório descreve o caminho canônico para executar o Next.js da Plataforma Estímulo em AWS Lambda, conforme a [`DEC-075`](../../../docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md).
+Este diretório descreve o único caminho de container da Plataforma Estímulo, conforme a [`DEC-075`](../../../docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md).
 
 ## Papel do container
 
@@ -10,20 +10,21 @@ Este diretório descreve o caminho canônico para executar o Next.js da Platafor
 
 A imagem:
 
-- executa o mesmo monólito modular Next.js;
+- executa o monólito modular Next.js;
 - define `APP_ENV=production`;
 - define `PLATFORM_RUNTIME_PROVIDER=aws`;
-- usa `/api/health/ready` como readiness fail-closed;
-- trata respostas `500-599` como falha da invocação;
+- não recebe nem incorpora configuração Supabase;
+- usa `/api/health/live` para o Web Adapter detectar que o processo HTTP iniciou;
+- mantém `/api/health/ready` como gate externo das dependências AWS;
 - usa `/tmp` somente para cache local descartável;
 - não incorpora secrets;
 - não contém identidade, banco, storage ou RPC sintéticos.
 
-A readiness AWS permanece `503` até os adapters reais de identidade, RDS Proxy/PostgreSQL e S3 estarem implementados. Assim, a presença da imagem não permite um deploy produtivo incompleto.
+A readiness AWS permanece `503` até os adapters reais de identidade, RDS Proxy/PostgreSQL e S3 estarem implementados. O Lambda pode iniciar sem que um deploy incompleto seja considerado pronto para tráfego.
 
 ## Build
 
-A arquitetura da imagem precisa coincidir com a arquitetura da função Lambda. O build de CI usa:
+A arquitetura da imagem precisa coincidir com a arquitetura da função Lambda:
 
 ```bash
 docker buildx build \
@@ -32,13 +33,11 @@ docker buildx build \
   --platform linux/amd64 \
   --file Dockerfile.lambda \
   --build-arg NEXT_PUBLIC_APP_URL=https://staging.example.org \
-  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://temporary-build.example.supabase.co \
-  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=temporary-public-build-key \
   --tag lms-estimulo-lambda:<commit> \
   .
 ```
 
-Os argumentos públicos Supabase ainda são necessários temporariamente porque a interface atual possui código cliente do adapter de desenvolvimento/teste. Eles não constituem configuração válida de produção e deverão desaparecer do build AWS quando o adapter Cognito substituir o cliente Supabase no navegador.
+A configuração Supabase não participa do build AWS. O Web CI inspeciona o ambiente da imagem e falha caso encontre `NEXT_PUBLIC_SUPABASE_*`.
 
 A imagem aprovada deve ser:
 
@@ -48,9 +47,18 @@ A imagem aprovada deve ser:
 4. referenciada por digest;
 5. promovida por versão e alias Lambda.
 
-## Front door canônico
+## Smoke test do container
 
-O padrão escolhido é:
+O CI inicia a imagem como servidor HTTP para validar o artefato antes da integração com a função Lambda:
+
+```text
+/api/health/live   → 200
+/api/health/ready  → 503 enquanto adapters/configuração AWS estiverem ausentes
+```
+
+Isso prova inicialização do container sem produzir falso positivo de prontidão.
+
+## Front door canônico
 
 ```text
 CloudFront ou edge corporativo
@@ -59,7 +67,7 @@ CloudFront ou edge corporativo
 → alias Lambda
 ```
 
-Componentes corporativos equivalentes podem ser reutilizados. A integração precisa preservar:
+A integração precisa preservar:
 
 - domínio e TLS aprovados;
 - forwarded headers e origem canônica;
@@ -93,13 +101,13 @@ CPF_ENCRYPTION_KEY
 CPF_LOOKUP_HMAC_KEY
 ```
 
-Secrets e chaves são injetados por Secrets Manager/KMS ou solução corporativa equivalente. Valores não entram em build arguments, imagem, Terraform state, logs ou documentação.
+Secrets e chaves são injetados por Secrets Manager/KMS ou solução corporativa equivalente. Valores não entram em build arguments, imagem, estado de infraestrutura, logs ou documentação.
 
 ## Identidade
 
 A implementação final usa Cognito User Pool ou broker OIDC corporativo equivalente. Participantes e administradores são resolvidos para a conta interna, organização e capacidades do LMS.
 
-O adapter atual Supabase continua funcional somente em desenvolvimento/teste. No provider AWS, o runtime falha fechado até o adapter Cognito ser implementado.
+Os adapters Supabase validam o provider antes de criar sessão ou cliente privilegiado e falham em staging/produção.
 
 ## PostgreSQL
 
@@ -117,9 +125,7 @@ Antes da ativação são obrigatórios:
 
 ## S3 e uploads diretos
 
-O Lambda web não receberá binários de participantes ou administradores em produção. As rotas atuais de multipart permanecem apenas no adapter de desenvolvimento/teste durante a migração.
-
-Fluxo obrigatório:
+O Lambda web não receberá binários de participantes ou administradores em produção. As rotas multipart permanecem somente no provider Supabase de teste durante a migração.
 
 ```text
 browser solicita intent autorizado
@@ -135,14 +141,7 @@ Buckets são provisionados pela infraestrutura corporativa; a aplicação não c
 
 ## Estado, cache e trabalho assíncrono
 
-`/tmp` é local ao execution environment e descartável. Não pode armazenar:
-
-- sessão;
-- locks distribuídos;
-- outbox ou fila;
-- estado de idempotência;
-- arquivos permanentes;
-- cache necessário para correção.
+`/tmp` é local ao execution environment e descartável. Não pode armazenar sessão, locks, outbox, idempotência, arquivos permanentes ou cache necessário para correção.
 
 O Lambda HTTP não é worker. Outbox, HubSpot e reconciliação usam dispatcher, SQS, Lambdas consumidoras, retries, DLQ e idempotência persistente.
 
@@ -150,7 +149,7 @@ O Lambda HTTP não é worker. Outbox, HubSpot e reconciliação usam dispatcher,
 
 Antes de declarar ou aplicar recursos, concluir [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](../PLATFORM_INTEGRATION_REQUIREMENTS.md).
 
-Não criar VPC, Cognito, RDS, buckets, filas, WAF, KMS keys ou pipelines paralelos enquanto não for conhecido o que a empresa já possui.
+A árvore ativa não contém Terraform genérico nem stack ECS. A implementação de infraestrutura deve usar os recursos, módulos e pipelines aprovados da empresa.
 
 ## Gates antes de staging
 
@@ -170,6 +169,8 @@ Não criar VPC, Cognito, RDS, buckets, filas, WAF, KMS keys ou pipelines paralel
 
 ```text
 lambda_dockerfile_present = true
+second_dockerfile_present = false
+supabase_config_in_lambda_image = false
 lambda_image_build_verified = false
 lambda_image_runtime_verified = false
 lambda_function_deployed = false
