@@ -11,8 +11,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - "scripts/application/**"
-      - "scripts/product/configurable-product/**"
-      - "scripts/product/official-diagnostic/**"
+      - "scripts/integrations/**"
+      - "scripts/product/**"
       - "scripts/repository/validate-package-lock.mjs"
       - "scripts/runtime/**"
       - "docs/implementation/public-rpc-contracts-v1.json"
@@ -71,17 +71,14 @@ jobs:
       - name: Validate application foundation
         run: npm run validate:application-foundation
 
-      - name: Run application tests
-        run: npm run test:application-foundation
+      - name: Test application behavior
+        run: npm run test:application
 
-      - name: Test configurable product behavior
-        run: npm run test:configurable-product
+      - name: Test product rules
+        run: npm run test:product
 
-      - name: Validate official diagnostic evidence
-        run: npm run validate:official-diagnostic
-
-      - name: Test official diagnostic guards
-        run: npm run test:official-diagnostic
+      - name: Test integration contracts
+        run: npm run test:integrations
 
       - name: Typecheck web application
         run: npm run typecheck:web
