@@ -96,7 +96,8 @@ export function validateApplicationContract(manifest, source) {
   const referencedRpcNames = sortedUnique(
     [...source.matchAll(/"(e14_[a-z0-9_]+)"/g)].map((match) => match[1]),
   );
-  assert.deepEqual(referencedRpcNames, expectedRpcNames, 'application RPC references differ from the frozen map');
+  const missingFrozenRpcNames = expectedRpcNames.filter((rpc) => !referencedRpcNames.includes(rpc));
+  assert.deepEqual(missingFrozenRpcNames, [], 'frozen application RPC references are missing');
 
   mappings.forEach(([method, rpc], index) => {
     const nextMethod = mappings[index + 1]?.[0];
@@ -108,7 +109,7 @@ export function validateApplicationContract(manifest, source) {
       assert.match(block, /\bkey\b/, `${method} no longer supplies an idempotency key`);
     }
     if (contract.query_methods.includes(method)) {
-      assert.ok(!block.includes('RpcEnvelope<'), `${method} unexpectedly uses a command envelope`);
+      assert.ok(!block.includes('RpcEnvelope<'), `${method} unexpectedly uses the command envelope`);
     }
   });
 

@@ -2,7 +2,7 @@
 
 LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdos e atividades e produzir dados educacionais e operacionais com governança.
 
-> **Status do projeto:** o fluxo de desenvolvimento e testes com Supabase está implementado.
+> **Status do projeto:** o fluxo de desenvolvimento e testes com Supabase está implementado. Staging e produção na AWS permanecem bloqueados até a conclusão e a comprovação dos adapters e da infraestrutura descritos em [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md).
 
 [Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Estado da implementação](docs/implementation/APPLICATION_FOUNDATION.md)
 
@@ -40,14 +40,14 @@ A primeira release tem como prioridade a **Jornada OpenAI**. O núcleo do produt
 
 A existência de uma tela, fluxo ou adapter no código não equivale à aprovação de conteúdo, metodologia, segurança, privacidade, acessibilidade ou operação em produção.
 
-## Ambientes
+## Ambientes e providers
 
-| Ambiente | Provider | Estado |
+| Ambiente | Provider obrigatório | Estado |
 |---|---|---|
 | local, test e preview | `supabase` | suportado para desenvolvimento e validação |
-| produção | `aws` | provider destinado ao ambiente de produção |
+| staging e production | `aws` | arquitetura aprovada; adapters e infraestrutura ainda incompletos |
 
-As regras são aplicadas por `APP_ENV` e `PLATFORM_RUNTIME_PROVIDER`.
+As regras são aplicadas por `APP_ENV` e `PLATFORM_RUNTIME_PROVIDER`. Supabase é rejeitado em staging e produção, e adapters AWS incompletos não fazem fallback.
 
 ## Arquitetura
 
@@ -56,9 +56,15 @@ O repositório é um monorepo npm. A aplicação principal é um monólito modul
 ```mermaid
 flowchart LR
     WEB["Next.js application"] --> PLATFORM["Platform contracts"]
+
     PLATFORM --> SUPABASE["Supabase adapter<br/>local, test and preview"]
     SUPABASE --> SUPA_SERVICES["Auth · PostgreSQL · Storage · authenticated RPC"]
+
+    PLATFORM --> AWS["AWS adapter<br/>staging and production"]
+    AWS --> AWS_SERVICES["Cognito/OIDC · RDS Proxy · S3 · SQS"]
 ```
+
+A arquitetura de produção aprovada utiliza CloudFront/edge corporativo, WAF, API Gateway HTTP API, AWS Lambda com Lambda Web Adapter, Cognito ou broker OIDC, RDS PostgreSQL via RDS Proxy, S3 privado e processamento assíncrono com SQS e Lambdas consumidoras.
 
 ## Stack principal
 
@@ -67,6 +73,7 @@ flowchart LR
 | aplicação | Next.js 16, React 19 e TypeScript 6 |
 | interface | Tailwind CSS 4, Framer Motion e Lucide |
 | desenvolvimento e testes | Supabase Auth, PostgreSQL, Storage e Edge Functions |
+| produção planejada | AWS Lambda, API Gateway, Cognito/OIDC, RDS Proxy, RDS PostgreSQL, S3 e SQS |
 | validação | Node Test Runner, scripts de contrato, gates de banco, typecheck e build |
 | workspace | Node.js 22, npm 10 e npm workspaces |
 
@@ -80,6 +87,8 @@ flowchart LR
 - acesso a um projeto Supabase autorizado;
 - Google OAuth configurado no ambiente de teste para validar a administração;
 - duas chaves independentes de 32 bytes, codificadas em Base64, para proteção do CPF.
+
+Docker com Buildx é necessário somente para validar a imagem de produção em Lambda.
 
 ### 1. Clone e instale as dependências
 
@@ -170,7 +179,7 @@ npm run test:secret-scanning
 npm run verify:deployment
 ```
 
-`verify:deployment` é um smoke test autenticado e *read-only* de um ambiente implantado.
+`verify:deployment` é um smoke test autenticado e *read-only* de um ambiente implantado. Ele não substitui o E2E transacional da arquitetura AWS.
 
 ## Estrutura do repositório
 
@@ -178,20 +187,40 @@ npm run verify:deployment
 apps/web/                       aplicação Next.js
 apps/web/lib/platform/          contratos e seleção do provider
 apps/web/lib/supabase/          adapter de desenvolvimento e testes
-config/platform/                contratos legíveis por máquina
+config/platform/                contrato de produção legível por máquina
 docs/                           produto, decisões, arquitetura e implementação
+infra/aws/                      contratos e runbooks da arquitetura AWS
 scripts/                        validação, testes, segurança e operação
 supabase/migrations/            histórico PostgreSQL executável e imutável
 supabase/functions/             Edge Functions de desenvolvimento e testes
-Dockerfile.lambda               imagem da aplicação para produção em Lambda
+Dockerfile.lambda               imagem única da aplicação para AWS Lambda
 ```
+
+Não existe uma stack ativa de ECS/Fargate nem um segundo Dockerfile para a aplicação.
+
+## Produção
+
+A produção deve usar exclusivamente o provider AWS. O container Lambda, a política de providers e os contratos de arquitetura estão versionados, mas a release continua bloqueada, entre outros pontos, por:
+
+- inventário e aprovação da AWS corporativa;
+- adapters Cognito/OIDC, RDS Proxy/PostgreSQL e S3;
+- uploads diretos e processamento assíncrono com SQS;
+- integração HubSpot validada em sandbox;
+- observabilidade, capacidade, backup, restore e rollback;
+- E2E transacional;
+- aprovações de conteúdo, segurança, privacidade e acessibilidade.
+
+Consulte o inventário completo em [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md). Nenhuma afirmação de prontidão para produção deve se basear apenas em código, Dockerfile, fixture, mock ou teste estrutural.
 
 ## Documentação
 
 - [`PROJECT_INDEX.md`](PROJECT_INDEX.md) — índice canônico da documentação;
 - [`MULTI_JOURNEY_PRODUCT_SCOPE.md`](docs/product/MULTI_JOURNEY_PRODUCT_SCOPE.md) — escopo das jornadas e da primeira release;
 - [`APPLICATION_FOUNDATION.md`](docs/implementation/APPLICATION_FOUNDATION.md) — estado implementado;
+- [`AWS_PRODUCTION_ARCHITECTURE.md`](docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md) — decisão vigente de produção;
+- [`AWS_TARGET_ARCHITECTURE.md`](docs/architecture/AWS_TARGET_ARCHITECTURE.md) — arquitetura-alvo detalhada;
 - [`DELIVERY_BLOCKERS.md`](docs/implementation/DELIVERY_BLOCKERS.md) — lacunas para staging, produção e usuários reais;
+- [`infra/aws/lambda/README.md`](infra/aws/lambda/README.md) — build e operação do runtime Lambda;
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — fluxo de mudanças e padrões do repositório.
 
 ## Contribuindo

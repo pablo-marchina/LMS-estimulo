@@ -146,6 +146,22 @@ function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
+function describeInventoryDelta(expected, actual) {
+  const expectedByKey = new Map(expected.functions.map((entry) => [entry.key, entry]));
+  const actualByKey = new Map(actual.functions.map((entry) => [entry.key, entry]));
+  return {
+    added: [...actualByKey.entries()]
+      .filter(([key]) => !expectedByKey.has(key))
+      .map(([, entry]) => entry),
+    removed: [...expectedByKey.entries()]
+      .filter(([key]) => !actualByKey.has(key))
+      .map(([, entry]) => entry),
+    changed: [...actualByKey.entries()]
+      .filter(([key, entry]) => expectedByKey.has(key) && stableJson(expectedByKey.get(key)) !== stableJson(entry))
+      .map(([key, entry]) => ({ expected: expectedByKey.get(key), actual: entry })),
+  };
+}
+
 function main() {
   const args = process.argv.slice(2);
   const writeIndex = args.indexOf("--write");
@@ -172,6 +188,7 @@ function main() {
   if (actualJson !== expectedJson) {
     console.error("Opaque E14 helper inventory changed.");
     console.error(`Expected ${expected.legacy_function_count} legacy functions; found ${inventory.legacy_function_count}.`);
+    console.error(stableJson(describeInventoryDelta(expected, inventory)).trim());
     console.error("Update the baseline only as part of an explicit semantic replacement or removal.");
     process.exit(1);
   }

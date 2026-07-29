@@ -1,9 +1,13 @@
 import "server-only";
 
-import { cache } from "react";
+import { unstable_cache } from "next/cache";
+import { createClient } from "@supabase/supabase-js";
 import type { AdminInterfaceContentWorkspace, InterfaceContentMap, InterfaceContentValue } from "@/lib/interface-content/contracts";
+import { publicSupabaseEnv } from "@/lib/env";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
-import { createSessionClient } from "@/lib/supabase/server";
+
+export const INTERFACE_CONTENT_CACHE_TAG = "interface-content:published";
+const INTERFACE_CONTENT_REVALIDATE_SECONDS = 300;
 
 function contentMap(value: unknown): InterfaceContentMap {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -15,18 +19,42 @@ function contentMap(value: unknown): InterfaceContentMap {
   );
 }
 
-export const getPublishedInterfaceContent = cache(async (
+const loadPublishedInterfaceContent = unstable_cache(
+  async (organizationSlug: string, locale: string): Promise<InterfaceContentMap> => {
+    const { url, anonKey } = publicSupabaseEnv();
+    const client = createClient(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { "x-client-info": "estimulo-interface-content/1" } },
+    });
+    const { data, error } = await client.rpc("get_published_interface_content", {
+      p_organization_slug: organizationSlug,
+      p_locale: locale,
+    });
+    if (error) throw new Error(`INTERFACE_CONTENT_READ_FAILED:${error.code ?? "UNKNOWN"}`);
+    return contentMap(data);
+  },
+  ["published-interface-content-v1"],
+  { revalidate: INTERFACE_CONTENT_REVALIDATE_SECONDS, tags: [INTERFACE_CONTENT_CACHE_TAG] },
+);
+
+export async function getPublishedInterfaceContent(
   organizationSlug = "estimulo",
   locale = "pt-BR",
-): Promise<InterfaceContentMap> => {
-  const client = await createSessionClient();
-  const { data, error } = await client.rpc("get_published_interface_content", {
-    p_organization_slug: organizationSlug,
-    p_locale: locale,
-  });
-  if (error) throw new Error(`INTERFACE_CONTENT_READ_FAILED:${error.code ?? "UNKNOWN"}`);
-  return contentMap(data);
-});
+): Promise<InterfaceContentMap> {
+  try {
+    return await loadPublishedInterfaceContent(organizationSlug, locale);
+  } catch (error) {
+    console.warn(JSON.stringify({
+      level: "warn",
+      event: "interface_content_fallback",
+      component: "interface_content_runtime",
+      organization_slug: organizationSlug,
+      locale,
+      error_name: error instanceof Error ? error.name : "unknown",
+    }));
+    return {};
+  }
+}
 
 export function getAdminInterfaceContent(input: {
   actorUserAccountId: string;

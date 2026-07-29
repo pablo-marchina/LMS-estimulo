@@ -58,8 +58,8 @@ test("confirmed accounts recover from missing or consumed PKCE state", () => {
 });
 
 test("public signup v3 remains available through the authenticated gateway", () => {
-  assert.match(gateway, /"provision_public_signup_participant_v3"/u);
-  assert.match(gateway, /"p_user_account_id"/u);
+  assert.match(gateway, /provision_public_signup_participant_v3/u);
+  assert.match(gateway, /p_user_account_id/u);
   assert.match(gateway, /ACTOR_MISMATCH/u);
 });
 

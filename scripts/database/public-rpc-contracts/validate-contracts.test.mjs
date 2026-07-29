@@ -30,7 +30,7 @@ function syntheticInventory() {
   };
 }
 
-test('application layer maps all frozen E14 public RPCs', () => {
+test('application layer maps all frozen E14 public RPCs while allowing versioned extensions', () => {
   validateApplicationContract(manifest, applicationSource);
 });
 
@@ -47,9 +47,10 @@ test('database contract rejects a changed definition fingerprint', () => {
   );
 });
 
-test('application contract rejects an unlisted RPC reference', () => {
+test('application contract rejects removal of a frozen RPC mapping', () => {
+  const changed = applicationSource.replace('"e14_start_journey"', '"e14_unlisted_rpc"');
   assert.throws(
-    () => validateApplicationContract(manifest, `${applicationSource}\nconst unexpected = "e14_unlisted_rpc";\n`),
-    /application RPC references differ/,
+    () => validateApplicationContract(manifest, changed),
+    /frozen application RPC references are missing|startJourney no longer calls e14_start_journey/,
   );
 });

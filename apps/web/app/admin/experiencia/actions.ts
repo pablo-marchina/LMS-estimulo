@@ -1,12 +1,18 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
-import { archiveAdminInterfaceContent, publishAdminInterfaceContent, registerAdminInterfaceContent, saveAdminInterfaceContent } from "@/lib/interface-content/runtime";
+import {
+  INTERFACE_CONTENT_CACHE_TAG,
+  archiveAdminInterfaceContent,
+  publishAdminInterfaceContent,
+  registerAdminInterfaceContent,
+  saveAdminInterfaceContent,
+} from "@/lib/interface-content/runtime";
 
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
 function checked(formData: FormData, name: string) { return formData.get(name) === "on" || formData.get(name) === "true"; }
@@ -17,13 +23,14 @@ async function authorize() {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
-  if (!organization?.permissions.includes("journey.definition.manage")) redirect("/admin/experiencia?erro=sem_permissao");
+  if (!organization?.permissions.includes("interface.content.manage")) redirect("/admin/experiencia?erro=sem_permissao");
   return { auth, organization };
 }
 
 export async function saveInterfaceContentAction(formData: FormData) {
   const { auth, organization } = await authorize();
   const contentKey = text(formData, "content_key");
+  const publishNow = checked(formData, "publish_now");
   const value = {
     text: text(formData, "text"),
     title: text(formData, "title"),
@@ -38,15 +45,16 @@ export async function saveInterfaceContentAction(formData: FormData) {
   };
   try {
     await saveAdminInterfaceContent({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, entries: [{ content_key: contentKey, locale: text(formData, "locale") || "pt-BR", value }], idempotencyKey: randomUUID() });
-    if (checked(formData, "publish_now")) {
+    if (publishNow) {
       await publishAdminInterfaceContent({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, contentKeys: [contentKey], idempotencyKey: randomUUID() });
+      updateTag(INTERFACE_CONTENT_CACHE_TAG);
     }
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha_salvar";
     redirect(`/admin/experiencia?edit=${encodeURIComponent(contentKey)}&erro=${reason}`);
   }
   revalidatePath("/", "layout");
-  redirect(`/admin/experiencia?edit=${encodeURIComponent(contentKey)}&sucesso=${checked(formData, "publish_now") ? "interface_publicada" : "rascunho_salvo"}`);
+  redirect(`/admin/experiencia?edit=${encodeURIComponent(contentKey)}&sucesso=${publishNow ? "interface_publicada" : "rascunho_salvo"}`);
 }
 
 export async function registerInterfaceElementAction(formData: FormData) {
@@ -89,6 +97,7 @@ export async function archiveInterfaceElementAction(formData: FormData) {
   const { auth, organization } = await authorize();
   try {
     await archiveAdminInterfaceContent({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, contentKey: text(formData, "content_key"), idempotencyKey: randomUUID() });
+    updateTag(INTERFACE_CONTENT_CACHE_TAG);
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha_remover";
     redirect(`/admin/experiencia?erro=${reason}`);
@@ -101,6 +110,7 @@ export async function publishInterfaceContentAction() {
   const { auth, organization } = await authorize();
   try {
     await publishAdminInterfaceContent({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, contentKeys: null, idempotencyKey: randomUUID() });
+    updateTag(INTERFACE_CONTENT_CACHE_TAG);
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha_publicar";
     redirect(`/admin/experiencia?erro=${reason}`);
