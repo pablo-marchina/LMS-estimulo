@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { encodeFirstTouch, FIRST_TOUCH_COOKIE, firstTouchFromUrl } from "@/lib/auth/first-touch";
+import { assertPlatformRuntimePolicy } from "@/lib/platform/runtime-provider";
 
 function adminOAuthFallback(request: NextRequest): NextResponse | null {
   if (request.nextUrl.pathname !== "/" || !request.nextUrl.searchParams.get("code")) return null;
@@ -25,7 +26,24 @@ function withFirstTouch(response: NextResponse, request: NextRequest): NextRespo
   return response;
 }
 
+function unavailable(reason: string): NextResponse {
+  return NextResponse.json(
+    { status: "not_ready", reason },
+    { status: 503, headers: { "cache-control": "no-store", "retry-after": "60" } },
+  );
+}
+
 export async function proxy(request: NextRequest) {
+  let provider: "supabase" | "aws";
+  try {
+    provider = assertPlatformRuntimePolicy();
+  } catch {
+    return unavailable("runtime_policy_rejected");
+  }
+
+  // The Cognito/OIDC proxy adapter is intentionally fail-closed until implemented.
+  if (provider === "aws") return unavailable("aws_identity_adapter_unavailable");
+
   const oauthFallback = adminOAuthFallback(request);
   if (oauthFallback) return oauthFallback;
 
@@ -38,7 +56,11 @@ export async function proxy(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return withFirstTouch(response, request);
+  if (!url || !anonKey) {
+    return protectedPath
+      ? unavailable("supabase_identity_configuration_unavailable")
+      : withFirstTouch(response, request);
+  }
 
   const client = createServerClient(url, anonKey, {
     cookies: {
@@ -58,4 +80,6 @@ export async function proxy(request: NextRequest) {
   return withFirstTouch(response, request);
 }
 
-export const config = { matcher: ["/", "/entrar/:path*", "/cadastro/:path*", "/auth/:path*", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"] };
+export const config = {
+  matcher: ["/", "/entrar/:path*", "/cadastro/:path*", "/auth/:path*", "/empreendedor/:path*", "/capacitacao/:path*", "/admin/:path*"],
+};
