@@ -29,6 +29,7 @@ const [
   proxy,
   objectStorage,
   terraformReadme,
+  databaseGates,
   productionContractSource,
   ...featureStorageSources
 ] = await Promise.all([
@@ -43,6 +44,7 @@ const [
   read("apps/web/proxy.ts"),
   read("apps/web/lib/platform/object-storage.ts"),
   read("infra/aws/terraform/README.md"),
+  read("scripts/database/run-gates.mjs"),
   read("config/platform/aws-production.json"),
   ...storageModules.map(read),
 ]);
@@ -108,6 +110,12 @@ for (const [index, source] of featureStorageSources.entries()) {
   assert.doesNotMatch(source, /@\/lib\/supabase\/admin/, `${storageModules[index]} must use the platform storage boundary`);
   assert.match(source, /@\/lib\/platform\/object-storage/, `${storageModules[index]} must use the platform storage boundary`);
 }
+
+assert.match(databaseGates, /DATABASE_GATE_NON_TEST_SQL_FORBIDDEN/, "Database gates must reject non-test SQL after canonical replay");
+assert.match(databaseGates, /runSqlTestSuite/, "Database gates must use assertion-only suites");
+assert.doesNotMatch(databaseGates, /supabase\/migrations\//, "Database gates must not reapply migrations after canonical replay");
+assert.doesNotMatch(databaseGates, /operational-persistence\.sql/, "Database gates must not apply duplicate implementation SQL");
+assert.doesNotMatch(databaseGates, /content-library\/(schema|api|event-versioning|hardening)\.sql/, "Database gates must not apply duplicate library SQL");
 
 assert.match(terraformReadme, /não aplicar/i, "Superseded ECS Terraform must remain explicitly blocked");
 assert.match(terraformReadme, /terraform_apply_allowed = false/, "Superseded ECS Terraform must fail the operational approval rule");
