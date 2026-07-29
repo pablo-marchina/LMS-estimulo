@@ -55,7 +55,13 @@ const expectedActiveMigrations = Object.freeze([
   '20260720191510_fix_admin_reporting_relations.sql',
   '20260720191520_complete_integral_admin_role.sql',
   '20260721171000_remove_test_public_signup.sql',
-  '20260729182300_m17_runtime_hardening.sql',
+  '20260729190031_generic_journey_version_editor.sql',
+  '20260729190353_generic_journey_editor_assessment_details.sql',
+  '20260729190547_generic_journey_path_badge_editor.sql',
+  '20260729191801_generic_journey_editor_event_schemas.sql',
+  '20260729192423_generic_journey_path_badge_removal.sql',
+  '20260729193313_generic_journey_path_presentation_event_schema.sql',
+  '20260729203000_m17_runtime_hardening.sql',
 ]);
 
 export async function validateActiveMigrations() {
@@ -67,11 +73,14 @@ export async function validateActiveMigrations() {
   assert.deepEqual(
     files,
     expectedActiveMigrations,
-    'active migration set differs from the applied development/test history',
+    'active migration set differs from the approved final-release inventory',
   );
 
   const versions = files.map((file) => file.slice(0, 14));
   assert.equal(new Set(versions).size, versions.length, 'active migration versions are not unique');
+  for (let index = 1; index < versions.length; index += 1) {
+    assert.ok(versions[index] > versions[index - 1], 'active migration versions must be strictly increasing');
+  }
 
   return {
     status: 'valid',
