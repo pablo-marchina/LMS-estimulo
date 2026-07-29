@@ -1,149 +1,171 @@
 # Arquitetura-alvo na AWS
 
 **Revisado em:** 2026-07-29  
-**Status:** ECS/Fargate versionado; imagem Lambda preparada; nenhum recurso aplicado
+**Status:** arquitetura canônica aprovada; adapters e infraestrutura corporativa pendentes
 
-## Estado atual
+## Regra central
 
-O runtime ativo continua em Supabase development/test. A aplicação ainda depende de:
+Produção será integralmente executada na AWS. Supabase permanece somente como adapter temporário de desenvolvimento, testes de integração e validação.
 
-- Supabase Auth e cookies SSR;
-- Supabase Storage;
-- Edge Function `authenticated-rpc`;
-- RPC/PostgREST para o PostgreSQL operacional.
+A decisão completa está em [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md).
 
-RDS, S3 e identidade AWS não são adapters ativos. Nenhuma opção de compute constitui produção enquanto esses limites, os gates operacionais e a prova em staging estiverem abertos.
-
-## Baseline ECS/Fargate existente
-
-`infra/aws/terraform` declara:
+## Arquitetura canônica
 
 ```text
-Internet
-  ↓ HTTPS
-Application Load Balancer
-  ↓
-ECS/Fargate — aplicação Next.js
+DNS/Route 53 corporativo
+→ CloudFront ou edge corporativo
+→ AWS WAF ou controle equivalente
+→ API Gateway HTTP API
+→ Lambda alias versionado
+→ Next.js standalone + AWS Lambda Web Adapter
 
-VPC
-  ├── subnets públicas: ALB e NAT
-  ├── subnets privadas: ECS
-  └── subnets isoladas: RDS PostgreSQL
+Cognito User Pool
+├── participantes
+├── recuperação e políticas de autenticação
+└── federação Google/OIDC/SAML para administração
+         ↓
+identidade interna, organização e RBAC do LMS
 
-S3 privado
-KMS para RDS, S3 e CloudWatch
-CloudWatch + alarmes
-SNS
-ECR imutável
+Lambda web
+├── RDS Proxy → RDS PostgreSQL Multi-AZ
+├── S3 privado por finalidade
+├── Secrets Manager/KMS
+└── CloudWatch/tracing
+
+PostgreSQL outbox
+→ dispatcher
+→ SQS
+→ Lambdas consumidoras
+→ HubSpot e demais integrações
+→ DLQ e reconciliação
 ```
 
-O baseline não contém CloudFront, WAF, Cognito, SQS, SES, RDS Proxy, blue/green ou tracing distribuído. O RDS declarado não é Multi-AZ e a rede possui um único NAT Gateway, portanto esse baseline não é arquitetura final de alta disponibilidade.
+Componentes corporativos equivalentes podem ser reutilizados, mas precisam cumprir os mesmos contratos. O inventário necessário está em [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](../../infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md).
 
-## Preparação AWS Lambda
+## Runtime atual e transição
 
-`Dockerfile.lambda` empacota o mesmo Next.js standalone com AWS Lambda Web Adapter. A imagem:
+O runtime ativo ainda usa Supabase Auth, Storage, Edge Function `authenticated-rpc` e RPC/PostgREST. Isso é válido apenas em `local`, `development/test` e previews controlados.
 
-- executa o servidor HTTP existente na porta `3000`;
-- usa `/api/health/live` para inicialização do adapter;
-- direciona escrita de cache local para `/tmp`;
-- mantém configuração pública congelada no build;
-- não introduz backend, identidade, banco ou storage sintéticos.
-
-O guia operacional está em [`infra/aws/lambda/README.md`](../../infra/aws/lambda/README.md).
-
-Essa preparação habilita validação técnica da imagem. Ela não escolhe API Gateway, Function URL ou ALB, não declara a função Lambda e não configura domínio, throttling, WAF, aliases, concorrência, alarmes ou secret injection.
-
-## Compatibilidade e limites de Lambda
-
-### Uploads
-
-Rotas atuais recebem multipart dentro do Next.js e aceitam arquivos de até 4, 6, 8 ou 10 MiB. Esse modelo não é compatível com os limites de invocação síncrona e não escala de forma eficiente.
-
-Antes da produção em Lambda, todo upload deve usar:
+O selector versionado é:
 
 ```text
-intent autorizado
-→ URL pré-assinada curta
-→ upload direto ao storage privado
-→ confirmação de checksum, tamanho, MIME e versão
+PLATFORM_RUNTIME_PROVIDER=supabase  → desenvolvimento/teste
+PLATFORM_RUNTIME_PROVIDER=aws       → staging/produção
+```
+
+Quando `APP_ENV=production`, qualquer provider diferente de `aws` é rejeitado. No provider AWS, a readiness permanece fail-closed até existirem probes reais de identidade, banco e storage.
+
+## Compute
+
+AWS Lambda é o compute canônico para o Next.js. `Dockerfile.lambda`:
+
+- produz o Next.js standalone;
+- inclui AWS Lambda Web Adapter;
+- seleciona `PLATFORM_RUNTIME_PROVIDER=aws`;
+- usa `/api/health/ready`, não liveness, para aceitar tráfego;
+- converte status `500-599` em falha da invocação;
+- direciona apenas cache descartável para `/tmp`.
+
+A função será publicada por imagem ECR imutável, versão e alias. Promoção e rollback não usarão tags mutáveis.
+
+O Terraform ECS/Fargate existente é scaffolding anterior e não é a arquitetura-alvo. Ele permanece bloqueado até ser removido ou reaproveitado explicitamente após o inventário corporativo.
+
+## Identidade
+
+Amazon Cognito User Pool será o broker OIDC padrão. Um IdP corporativo existente pode federar por OIDC ou SAML. Google pode ser federado para a administração.
+
+A autorização continua no domínio do LMS:
+
+```text
+claims verificadas
+→ external identity
+→ internal user account
+→ organization membership
+→ capabilities/RBAC
+```
+
+Domínio de e-mail, grupo externo ou claim isolada não concede permissão diretamente.
+
+## PostgreSQL
+
+O destino é RDS PostgreSQL Multi-AZ, acessado pela aplicação por RDS Proxy.
+
+A migração preserva:
+
+- migrations imutáveis;
+- funções PostgreSQL versionadas;
+- transações e optimistic concurrency;
+- event store e outbox;
+- idempotência e auditoria;
+- RLS como defesa em profundidade.
+
+PostgREST e a Edge Function Supabase deixam de ser dependências. O adapter AWS autentica a identidade Cognito, estabelece o contexto interno e executa operações aprovadas no PostgreSQL.
+
+Antes de ativar RDS são obrigatórios replay limpo, inventário de extensões/roles, equivalência de grants e comportamento, teste de conexão via Proxy, PITR, restore e rollback.
+
+## S3 e uploads
+
+Buckets privados são provisionados pela infraestrutura corporativa, nunca criados durante requisições.
+
+Todo upload de produção segue:
+
+```text
+autorização
+→ intent transacional
+→ chave opaca única
+→ URL pré-assinada curta com checksum
+→ upload direto ao S3
+→ HEAD e confirmação de metadata/versão
 → reconciliação assíncrona
 ```
 
-### Estado e cache
+O Lambda web não recebe binários de participantes ou administradores. Downloads usam URLs temporárias após autorização.
 
-`/tmp` é local e descartável. Não pode ser usado para:
+## Assíncrono e HubSpot
 
-- estado de sessão;
-- locks distribuídos;
-- fila ou outbox;
-- cache compartilhado de correção;
-- arquivos persistentes;
-- coordenação entre invocações.
+A outbox do PostgreSQL continua sendo a fonte persistente. Um dispatcher publica itens em SQS. Consumidores Lambda processam integrações com concorrência limitada, retry, backoff, idempotência, DLQ, readback e reconciliação.
 
-Qualquer dependência de ISR ou incremental cache precisa de estratégia compartilhada ou ser eliminada da superfície dinâmica antes do release.
+O request Lambda não executa trabalho permanente após devolver a resposta.
 
-### Banco
+## Segurança e operação
 
-Enquanto o runtime usa Supabase remoto, Lambda não abre conexões diretas ao RDS. Se o adapter RDS for ativado, a arquitetura precisa de RDS Proxy, limites de pool e concorrência dimensionados por teste de carga para evitar tempestade de conexões.
+A plataforma exige:
 
-### Trabalho assíncrono
-
-O Lambda HTTP não substitui worker. Outbox, HubSpot, reconciliação e tarefas demoradas precisam de consumidores event-driven separados, com retry, DLQ, idempotência e concorrência limitada.
-
-## Comparação de compute
-
-| Critério | ECS/Fargate | Lambda preparada |
-|---|---|---|
-| Artefato | `Dockerfile` | `Dockerfile.lambda` |
-| Infraestrutura | Terraform parcial | não declarada |
-| Processo | contínuo | efêmero e concorrente |
-| Cache local | compartilhado apenas dentro da task | isolado por execution environment |
-| Upload atual | tecnicamente possível, mas pouco eficiente | bloqueado pelos limites de payload |
-| Escala | autoscaling de 2 a 6 tasks no baseline | concorrência ainda não dimensionada |
-| Rollback | task definition por digest | versão e alias ainda ausentes |
-| Estado de produção | bloqueado | bloqueado |
-
-A escolha final deve ser feita por carga, latência, custo, perfil de tráfego, necessidades de cache e operação — não apenas pela existência do container.
-
-## Guardas comuns
-
-- imagem por digest, nunca `latest`;
-- secrets fora do build e do Git;
-- configuração `NEXT_PUBLIC_*` correspondente ao ambiente;
-- domínio HTTPS aprovado;
-- privilégio mínimo;
-- liveness e readiness fail-closed;
+- Secrets Manager e KMS;
+- least privilege por função;
 - logs sem payload sensível;
-- backup, restore e rollback exercitados;
-- teste de carga, soak e falhas;
-- E2E autenticado real.
+- WAF, throttling e proteção contra abuso;
+- CloudWatch logs, métricas, alarmes e tracing aprovado;
+- métricas de Lambda, RDS Proxy, banco, S3, filas, autenticação e HubSpot;
+- SLOs, on-call e runbooks;
+- backup, PITR, restore, canary e rollback exercitados;
+- SBOM, scanning e imagem por digest.
 
-## Bloqueadores para staging
-
-1. CI funcional e build comprovado;
-2. conta, região, domínio, certificado e responsável operacional;
-3. decisão explícita de compute e front door;
-4. identidade de produção e integração com o site;
-5. fluxo de upload direto;
-6. decisão de manter Supabase ou ativar adapters RDS/S3;
-7. secret injection e rotação;
-8. worker de HubSpot/outbox e sandbox;
-9. rate limiting, WAF e proteção contra abuso;
-10. observabilidade, SLOs e alarmes completos;
-11. carga, capacidade, cold starts e concorrência testados;
-12. backup, restore, rollback e incident response;
-13. conteúdo, diagnóstico, privacidade e acessibilidade aprovados;
-14. E2E real no ambiente-alvo.
-
-## Disposição
+## Ambientes
 
 ```text
-ecs_staging_applied = false
-lambda_container_image_prepared = true
-lambda_infrastructure_applied = false
-production_compute_selected = false
-direct_uploads_implemented = false
-rds_adapter_active = false
-s3_adapter_active = false
+local              Supabase local/teste
+ development/test   Supabase hospedado autorizado
+ preview            Supabase e dados de teste
+ AWS staging        adapters AWS e serviços equivalentes à produção
+ AWS production     adapters AWS exclusivamente
+```
+
+Nenhum artefato de Supabase pode ser promovido como prova de produção.
+
+## Estado verificável
+
+```text
+aws_architecture_decided = true
+production_compute = lambda
+production_identity = cognito_or_corporate_federation
+production_database = rds_postgresql_via_rds_proxy
+production_storage = s3_direct_upload
+production_async = sqs_and_lambda_workers
+supabase_allowed_in_production = false
+corporate_aws_inventory_complete = false
+aws_runtime_adapters_active = false
+lambda_image_build_verified = false
+aws_staging_deployed = false
 production_ready = false
 ```
