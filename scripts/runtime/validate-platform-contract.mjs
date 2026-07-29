@@ -24,6 +24,8 @@ const [
   runtimeProvider,
   readiness,
   rpcGateway,
+  authContext,
+  proxy,
   objectStorage,
   terraformReadme,
   ...featureStorageSources
@@ -35,6 +37,8 @@ const [
   read("apps/web/lib/platform/runtime-provider.ts"),
   read("apps/web/app/api/health/ready/route.ts"),
   read("apps/web/lib/rpc/authenticated-gateway.ts"),
+  read("apps/web/lib/auth/context.ts"),
+  read("apps/web/proxy.ts"),
   read("apps/web/lib/platform/object-storage.ts"),
   read("infra/aws/terraform/README.md"),
   ...storageModules.map(read),
@@ -59,6 +63,9 @@ assert.match(runtimeProvider, /PRODUCTION_REQUIRES_AWS_RUNTIME/, "Runtime must r
 assert.match(runtimeProvider, /PLATFORM_RUNTIME_PROVIDER_INVALID/, "Runtime provider must fail closed on invalid values");
 assert.match(readiness, /aws_runtime_adapters_unavailable/, "AWS readiness must remain closed until adapters exist");
 assert.match(rpcGateway, /AWS_RPC_GATEWAY_NOT_IMPLEMENTED/, "AWS PostgreSQL gateway must fail closed until implemented");
+assert.match(authContext, /AWS_IDENTITY_ADAPTER_NOT_IMPLEMENTED/, "AWS auth context must fail closed until implemented");
+assert.match(proxy, /aws_identity_adapter_unavailable/, "AWS proxy must reject traffic until Cognito integration exists");
+assert.match(proxy, /assertPlatformRuntimePolicy/, "Proxy must enforce the central provider policy");
 
 assert.match(objectStorage, /AWS_BUCKETS_MUST_BE_PROVISIONED_BY_INFRASTRUCTURE/, "AWS buckets must never be created by application requests");
 assert.match(objectStorage, /AWS_DIRECT_UPLOAD_REQUIRED/, "AWS buffered uploads must be forbidden");
