@@ -26,6 +26,8 @@ O runtime versionado usa:
 
 Supabase permanece desenvolvimento/teste. O runtime ainda não usa RDS, S3 ou um provedor de identidade AWS.
 
+Não existem no runtime rotas de login de teste, identidade sintética, banco falso, storage local alternativo ou desvio de RPC para testes de navegador.
+
 ## Superfícies
 
 ### Participante
@@ -67,7 +69,7 @@ apps/web/lib/configurable-product/
 - migrations posteriores corrigem o estado final sem alterar migrations aplicadas;
 - contratos públicos versionados permanecem em `docs/implementation/public-rpc-contracts-v1.json`.
 
-A quantidade de migrations não é mantida manualmente na documentação. O estado é verificado por `npm run validate:migration-history` e `npm run test:database-gates`.
+A quantidade de migrations não é mantida manualmente na documentação. O estado é verificado por `npm run validate:migration-history` e `npm run test:database`.
 
 ## Build e container
 
@@ -81,23 +83,30 @@ A quantidade de migrations não é mantida manualmente na documentação. O esta
 
 O Dockerfile constrói uma imagem executável, mas a imagem ainda precisa ser construída, escaneada e implantada no ambiente AWS aprovado.
 
-## Testes e CI
-
-O repositório expõe:
+## Validações permanentes
 
 ```bash
 npm run validate:repository
-npm run test:application-foundation
-npm run test:database-gates
-npm run test:configurable-product
-npm run test:hubspot-contracts
-npm run test:browser-e2e
-npm run test:browser-e2e-real
+npm run validate:dependency-lock
+npm run validate:migration-history
+npm run test:repository-tooling
+npm run test:application
+npm run test:product
+npm run test:integrations
+npm run test:database
 npm run typecheck:web
 npm run build:web
 ```
 
-Os workflows permanentes cobrem governança, dependências, aplicação web, banco e Browser E2E. No estado observado em 29 de julho de 2026, os jobs do GitHub Actions encerravam antes do primeiro step e sem logs; portanto, não constituem validação atual da branch.
+A verificação autenticada de um ambiente implantado é separada:
+
+```bash
+npm run verify:deployment
+```
+
+Ela usa identidade, aplicação, banco e storage reais do ambiente informado. Não altera o runtime da aplicação para facilitar o teste.
+
+Os quatro workflows permanentes cobrem governança, dependências, aplicação web e banco. No estado observado em 29 de julho de 2026, os jobs do GitHub Actions encerravam antes do primeiro step e sem logs; portanto, não constituem validação atual da branch.
 
 ## Limites
 
@@ -108,7 +117,7 @@ Não estão comprovados:
 - conteúdo oficial integral da Jornada OpenAI;
 - diagnóstico e regras oficiais aprovados;
 - HubSpot sandbox;
-- E2E real no ambiente-alvo;
+- verificação autenticada completa no ambiente-alvo;
 - backup, restore, rollback e observabilidade operacional;
 - aprovação jurídica, de privacidade, segurança e acessibilidade.
 
