@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, BarChart3, BookOpen, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Gauge, LayoutDashboard, Megaphone, Menu, SlidersHorizontal, Trophy, Users, X } from "lucide-react";
+import { BarChart3, BookOpen, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Gauge, LayoutDashboard, Megaphone, Menu, SlidersHorizontal, Trophy, Users, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
@@ -24,7 +24,6 @@ const advancedDefinitions = [
   { href: "/admin/diagnostico", label: "Diagnósticos", contentKey: "admin.nav.diagnostics", icon: ClipboardList, order: 80 },
   { href: "/admin/gamificacao", label: "Pontuação", contentKey: "admin.nav.points", icon: Trophy, order: 90 },
   { href: "/admin/engajamento", label: "Anúncios", contentKey: "admin.nav.announcements", icon: Megaphone, order: 100 },
-  { href: "/admin/maturidade", label: "Maturidade", contentKey: "admin.nav.maturity", icon: Award, order: 110 },
 ];
 
 type ShellLink = (typeof primaryDefinitions)[number];
