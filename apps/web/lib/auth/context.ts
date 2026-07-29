@@ -18,7 +18,7 @@ export const getAuthContext = cache(async (): Promise<AuthContext> => {
   }
 
   if (provider === "aws") {
-    return { status: "identity_error", reason: "AWS_IDENTITY_ADAPTER_NOT_IMPLEMENTED" };
+    return { status: "identity_error", reason: "AWS_IDENTITY_ARCHITECTURE_PENDING" };
   }
 
   const session = await createSessionClient();
