@@ -16,12 +16,31 @@ export type PrivateBucketPolicy = {
   allowedMimeTypes: readonly string[];
 };
 
+export type DirectUploadRequest = {
+  bucket: string;
+  objectKey: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  expiresInSeconds: number;
+  metadata?: Record<string, string>;
+};
+
 export type DirectUploadGrant = {
   method: "PUT";
   url: string;
   headers: Record<string, string>;
   expiresAt: string;
   objectKey: string;
+  checksumAlgorithm: "SHA256";
+};
+
+export type ObjectInspectionRequest = {
+  bucket: string;
+  objectKey: string;
+  expectedContentType: string;
+  expectedSizeBytes: number;
+  expectedSha256: string;
 };
 
 export type InspectedObject = {
@@ -31,6 +50,41 @@ export type InspectedObject = {
   etag: string | null;
   providerObjectVersion: string | null;
 };
+
+const sha256Pattern = /^[a-f0-9]{64}$/;
+
+function assertObjectReference(bucket: string, objectKey: string): void {
+  if (!bucket.trim()) throw new Error("STORAGE_BUCKET_REQUIRED");
+  if (!objectKey.trim() || objectKey.startsWith("/") || objectKey.includes("..") || objectKey.length > 1024) {
+    throw new Error("STORAGE_OBJECT_KEY_INVALID");
+  }
+}
+
+export function assertDirectUploadRequest(input: DirectUploadRequest): void {
+  assertObjectReference(input.bucket, input.objectKey);
+  if (!input.contentType.trim()) throw new Error("DIRECT_UPLOAD_CONTENT_TYPE_REQUIRED");
+  if (!Number.isSafeInteger(input.sizeBytes) || input.sizeBytes < 1) {
+    throw new Error("DIRECT_UPLOAD_SIZE_INVALID");
+  }
+  if (!sha256Pattern.test(input.sha256)) throw new Error("DIRECT_UPLOAD_SHA256_INVALID");
+  if (!Number.isInteger(input.expiresInSeconds) || input.expiresInSeconds < 30 || input.expiresInSeconds > 900) {
+    throw new Error("DIRECT_UPLOAD_EXPIRATION_INVALID");
+  }
+  for (const [name, value] of Object.entries(input.metadata ?? {})) {
+    if (!/^[a-z0-9][a-z0-9-]{0,62}$/u.test(name) || value.length > 1024) {
+      throw new Error("DIRECT_UPLOAD_METADATA_INVALID");
+    }
+  }
+}
+
+export function assertObjectInspectionRequest(input: ObjectInspectionRequest): void {
+  assertObjectReference(input.bucket, input.objectKey);
+  if (!input.expectedContentType.trim()) throw new Error("OBJECT_INSPECTION_CONTENT_TYPE_REQUIRED");
+  if (!Number.isSafeInteger(input.expectedSizeBytes) || input.expectedSizeBytes < 1) {
+    throw new Error("OBJECT_INSPECTION_SIZE_INVALID");
+  }
+  if (!sha256Pattern.test(input.expectedSha256)) throw new Error("OBJECT_INSPECTION_SHA256_INVALID");
+}
 
 export async function ensurePrivateBucket(policy: PrivateBucketPolicy): Promise<void> {
   if (platformRuntimeProvider() === "aws") {
@@ -117,14 +171,16 @@ export async function downloadPrivateObject(bucket: string, objectKey: string): 
   return Buffer.from(await data.arrayBuffer());
 }
 
-export async function createDirectUploadGrant(): Promise<DirectUploadGrant> {
+export async function createDirectUploadGrant(input: DirectUploadRequest): Promise<DirectUploadGrant> {
+  assertDirectUploadRequest(input);
   if (platformRuntimeProvider() !== "aws") {
     throw new Error("DIRECT_UPLOAD_GRANT_REQUIRES_AWS_RUNTIME");
   }
   throw new Error("AWS_DIRECT_UPLOAD_ADAPTER_NOT_IMPLEMENTED");
 }
 
-export async function inspectDirectUploadObject(): Promise<InspectedObject> {
+export async function inspectDirectUploadObject(input: ObjectInspectionRequest): Promise<InspectedObject> {
+  assertObjectInspectionRequest(input);
   if (platformRuntimeProvider() !== "aws") {
     throw new Error("DIRECT_UPLOAD_INSPECTION_REQUIRES_AWS_RUNTIME");
   }
