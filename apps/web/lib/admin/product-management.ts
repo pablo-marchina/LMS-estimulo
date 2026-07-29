@@ -146,6 +146,33 @@ export async function saveAdminProductResource(input: {
   });
 }
 
+export function saveAdminJourney(input: { actorUserAccountId: string; organizationId: string; payload: Record<string, unknown>; idempotencyKey: string }) {
+  return invokeServerRpc<{ definition_id: string; version_id: string; status: string; live_update: boolean; replayed: boolean }>("save_admin_journey", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_payload: input.payload,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
+export function saveAdminTrack(input: { actorUserAccountId: string; organizationId: string; payload: Record<string, unknown>; idempotencyKey: string }) {
+  return invokeServerRpc<{ path_template_id: string; journey_version_id: string; status: string; live_update: boolean; replayed: boolean }>("save_admin_track", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_payload: input.payload,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
+export function saveAdminLesson(input: { actorUserAccountId: string; organizationId: string; payload: Record<string, unknown>; idempotencyKey: string }) {
+  return invokeServerRpc<{ step_id: string; activity_version_id: string; status: string; live_update: boolean; replayed: boolean }>("save_admin_lesson", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_payload: input.payload,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
 export async function configureAdminPathTemplate(input: {
   actorUserAccountId: string;
   organizationId: string;

@@ -1,12 +1,13 @@
 import { spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
 import {
   loadRepositoryEnvironment,
   repositoryRoot,
 } from "./load-root-env.mjs";
 
 const webRoot = resolve(repositoryRoot, "apps/web");
-const nextBinary = resolve(repositoryRoot, "node_modules/next/dist/bin/next");
 
 const command = process.argv[2];
 const allowedCommands = new Set(["dev", "build", "start"]);
@@ -17,6 +18,34 @@ if (!allowedCommands.has(command)) {
 }
 
 loadRepositoryEnvironment();
+
+function resolveNextBinary() {
+  try {
+    const requireFromWebWorkspace = createRequire(resolve(webRoot, "package.json"));
+    const nextPackageJson = requireFromWebWorkspace.resolve("next/package.json");
+    const nextBinary = resolve(dirname(nextPackageJson), "dist/bin/next");
+
+    if (!existsSync(nextBinary)) {
+      throw new Error(`Next.js executable not found at ${nextBinary}`);
+    }
+
+    return nextBinary;
+  } catch (error) {
+    const details = error instanceof Error ? error.message : String(error);
+    process.stderr.write(
+      [
+        "WEB_RUNTIME_DEPENDENCY_MISSING: Next.js is not installed for @estimulo/web.",
+        "Run `npm ci` from the repository root and try again.",
+        `Workspace: ${webRoot}`,
+        `Details: ${details}`,
+      ].join("\n") + "\n",
+    );
+    return null;
+  }
+}
+
+const nextBinary = resolveNextBinary();
+if (!nextBinary) process.exit(1);
 
 const nextArguments = command === "build" ? ["build", "--webpack"] : [command];
 const child = spawn(process.execPath, [nextBinary, ...nextArguments], {
