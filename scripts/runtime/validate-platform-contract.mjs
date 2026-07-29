@@ -29,6 +29,7 @@ const storageModules = [
 const [
   lambdaDockerfile,
   environmentExample,
+  supabaseConfig,
   decision,
   targetArchitecture,
   runtimeProvider,
@@ -49,6 +50,7 @@ const [
 ] = await Promise.all([
   read("Dockerfile.lambda"),
   read(".env.example"),
+  read("supabase/config.toml"),
   read("docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md"),
   read("docs/architecture/AWS_TARGET_ARCHITECTURE.md"),
   read("apps/web/lib/platform/runtime-provider.ts"),
@@ -109,10 +111,14 @@ assert.doesNotMatch(lambdaDockerfile, /NEXT_PUBLIC_SUPABASE/, "AWS image must no
 
 assert.match(environmentExample, /PLATFORM_RUNTIME_PROVIDER=supabase/, "Development example must select Supabase");
 assert.match(environmentExample, /# Production requires PLATFORM_RUNTIME_PROVIDER=aws/, "Environment example must document AWS production");
+assert.match(environmentExample, /# Staging also requires PLATFORM_RUNTIME_PROVIDER=aws/, "Environment example must document AWS staging");
 assert.match(buildConfiguration, /provider === "supabase"/, "Build validation must be provider-aware");
 assert.doesNotMatch(buildConfiguration, /fetch\(/, "Build validation must remain offline and reproducible");
 assert.match(publicOrigin, /DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED/, "Deployed origin must fail closed");
 assert.doesNotMatch(publicOrigin, /CANONICAL_VERCEL_ORIGIN/, "AWS production must not fall back to Vercel");
+
+assert.match(supabaseConfig, /lms-estimulo-web\.vercel\.app/, "Supabase must retain the controlled test preview callback");
+assert.doesNotMatch(supabaseConfig, /plataforma\.estimulo\.org/, "Supabase must not claim the AWS production domain");
 
 assert.match(decision, /Supabase permanece autorizado somente para desenvolvimento/, "AWS decision must keep Supabase outside production");
 assert.match(decision, /RDS Proxy/, "AWS decision must include RDS Proxy");
@@ -151,5 +157,7 @@ assert.doesNotMatch(databaseGates, /content-library\/(schema|api|event-versionin
 
 assert.equal(await exists("Dockerfile"), false, "Only Dockerfile.lambda may remain");
 assert.equal(await exists("infra/aws/terraform"), false, "Obsolete ECS Terraform must be removed");
+assert.equal(await exists("supabase/functions/file-storage"), false, "Unused parallel file-storage function must remain removed");
+assert.equal(await exists("supabase/functions/authenticated-rpc/index.ts"), true, "Authenticated RPC must remain as the Supabase test gateway");
 
 process.stdout.write("[platform-contract] Supabase test and AWS Lambda production boundaries are consistent\n");
