@@ -34,7 +34,7 @@ export type JourneyEditorActivityDetails = {
     title: string;
     external_url: string | null;
     file_object_id: string | null;
-    library_item_version_id: string | null;
+    library_item_version_id?: string | null;
     position: number;
     is_required: boolean;
     accessibility_metadata: Record<string, unknown>;
@@ -47,9 +47,9 @@ export type JourneyEditorActivityDetails = {
   practice: {
     submission_mode: string;
     allowed_evidence_types: string[];
-    max_submissions: number | null;
+    max_submissions?: number | null;
     review_required: boolean;
-    terms_version: string | null;
+    terms_version?: string | null;
   } | null;
 };
 
