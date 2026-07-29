@@ -1,121 +1,184 @@
-# AWS Lambda web runtime preparation
+# Runtime web em AWS Lambda
 
-This directory documents the container-image path for running the Next.js standalone server on AWS Lambda. It is migration preparation, not evidence of a production deployment.
+**Estado:** Dockerfile e contrato versionados; build, adapters e infraestrutura ainda não comprovados
 
-## Image
+Este diretório descreve o caminho canônico para executar o Next.js da Plataforma Estímulo em AWS Lambda, conforme a [`DEC-075`](../../../docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md).
 
-`Dockerfile.lambda` uses the AWS Lambda Web Adapter to translate Lambda HTTP events into requests for the existing Next.js server. The application remains a normal HTTP server on port `3000` and does not include a Lambda-specific application handler.
+## Papel do container
 
-The image:
+`Dockerfile.lambda` usa o AWS Lambda Web Adapter para encaminhar eventos HTTP ao servidor Next.js standalone na porta `3000`.
 
-- builds the same Next.js standalone output as the ECS image;
-- uses the Lambda Web Adapter extension;
-- runs with `APP_ENV=production`;
-- uses `/api/health/live` for adapter startup readiness;
-- redirects Next.js runtime cache writes to `/tmp` because the Lambda filesystem is read-only outside `/tmp`;
-- keeps secrets out of image layers;
-- does not add a synthetic authentication, database, storage or RPC path.
+A imagem:
+
+- executa o mesmo monólito modular Next.js;
+- define `APP_ENV=production`;
+- define `PLATFORM_RUNTIME_PROVIDER=aws`;
+- usa `/api/health/ready` como readiness fail-closed;
+- trata respostas `500-599` como falha da invocação;
+- usa `/tmp` somente para cache local descartável;
+- não incorpora secrets;
+- não contém identidade, banco, storage ou RPC sintéticos.
+
+A readiness AWS permanece `503` até os adapters reais de identidade, RDS Proxy/PostgreSQL e S3 estarem implementados. Assim, a presença da imagem não permite um deploy produtivo incompleto.
 
 ## Build
 
-Build one architecture at a time. The Lambda function architecture must match the image architecture.
+A arquitetura da imagem precisa coincidir com a arquitetura da função Lambda. O build de CI usa:
 
 ```bash
-docker build \
+docker buildx build \
+  --load \
+  --provenance=false \
   --platform linux/amd64 \
   --file Dockerfile.lambda \
   --build-arg NEXT_PUBLIC_APP_URL=https://staging.example.org \
-  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://replace.supabase.co \
-  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=replace-with-public-key \
-  --tag lms-estimulo-lambda:<commit> .
+  --build-arg NEXT_PUBLIC_SUPABASE_URL=https://temporary-build.example.supabase.co \
+  --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=temporary-public-build-key \
+  --tag lms-estimulo-lambda:<commit> \
+  .
 ```
 
-Push the immutable image to an ECR repository in the same AWS Region as the Lambda function. Deploy by digest, not by a mutable tag.
+Os argumentos públicos Supabase ainda são necessários temporariamente porque a interface atual possui código cliente do adapter de desenvolvimento/teste. Eles não constituem configuração válida de produção e deverão desaparecer do build AWS quando o adapter Cognito substituir o cliente Supabase no navegador.
 
-## Required runtime configuration
+A imagem aprovada deve ser:
 
-Public configuration must match the values frozen into the image at build time:
+1. construída uma vez para o ambiente;
+2. escaneada;
+3. publicada no ECR da mesma região;
+4. referenciada por digest;
+5. promovida por versão e alias Lambda.
+
+## Front door canônico
+
+O padrão escolhido é:
 
 ```text
+CloudFront ou edge corporativo
+→ AWS WAF ou controle equivalente
+→ API Gateway HTTP API
+→ alias Lambda
+```
+
+Componentes corporativos equivalentes podem ser reutilizados. A integração precisa preservar:
+
+- domínio e TLS aprovados;
+- forwarded headers e origem canônica;
+- cookies seguros e redirects OIDC;
+- throttling e limites por rota;
+- access logs sem payload sensível;
+- proteção contra abuso;
+- promoção canary e rollback por alias.
+
+Lambda Function URL não é o front door padrão de produção. Pode ser usada somente para teste controlado quando a política corporativa permitir.
+
+## Configuração de runtime AWS
+
+A função precisa, no mínimo:
+
+```text
+APP_ENV=production
+PLATFORM_RUNTIME_PROVIDER=aws
+AWS_REGION
 NEXT_PUBLIC_APP_URL
-NEXT_PUBLIC_SUPABASE_URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-```
-
-Server-only configuration must be injected by the Lambda function configuration or a secret-management integration:
-
-```text
-SUPABASE_SERVICE_ROLE_KEY
+COGNITO_USER_POOL_ID
+COGNITO_APP_CLIENT_ID
+DATABASE_PROXY_ENDPOINT
+DATABASE_NAME
+PRACTICE_EVIDENCE_BUCKET
+LIBRARY_CONTENT_BUCKET
+CREDENTIAL_FILES_BUCKET
+CERTIFICATE_TEMPLATE_BUCKET
+ANNOUNCEMENT_BANNER_BUCKET
 CPF_ENCRYPTION_KEY
 CPF_LOOKUP_HMAC_KEY
 ```
 
-Additional integration and bucket variables remain required when the corresponding feature is enabled. Secret values must not enter Terraform state, image metadata, logs or build arguments.
+Secrets e chaves são injetados por Secrets Manager/KMS ou solução corporativa equivalente. Valores não entram em build arguments, imagem, Terraform state, logs ou documentação.
 
-## HTTP front door
+## Identidade
 
-The Lambda Web Adapter supports API Gateway, Lambda Function URLs and ALB integrations. The production front door is not selected by this preparation. The final choice must include:
+A implementação final usa Cognito User Pool ou broker OIDC corporativo equivalente. Participantes e administradores são resolvidos para a conta interna, organização e capacidades do LMS.
 
-- approved custom domain and TLS certificate;
-- request throttling and abuse controls;
-- WAF or an equivalent edge policy where supported;
-- maximum request and response sizes;
-- cookie, redirect and forwarded-header behavior;
-- access logging without sensitive payloads;
-- rollback between immutable Lambda versions and aliases.
+O adapter atual Supabase continua funcional somente em desenvolvimento/teste. No provider AWS, o runtime falha fechado até o adapter Cognito ser implementado.
 
-## Blocking application changes
+## PostgreSQL
 
-The existing upload endpoints parse multipart files inside Next.js and currently accept files up to 4, 6, 8 or 10 MiB depending on the feature. Lambda synchronous invocation payloads are limited, and multipart encoding adds overhead. Before Lambda production, uploads must become a direct-to-storage flow:
+O destino é RDS PostgreSQL Multi-AZ acessado por RDS Proxy. O adapter server-only substituirá Edge Function, PostgREST e RPC Supabase no caminho de produção.
+
+A função web não deve abrir pools ilimitados. Concorrência Lambda, tamanho do pool e limites do RDS Proxy serão definidos por testes de carga.
+
+Antes da ativação são obrigatórios:
+
+- replay das migrations em RDS limpo;
+- equivalência de schema, roles, grants, funções e comportamento;
+- timeouts e cancelamento;
+- PITR, restore e rollback de migrations;
+- probes reais na readiness.
+
+## S3 e uploads diretos
+
+O Lambda web não receberá binários de participantes ou administradores em produção. As rotas atuais de multipart permanecem apenas no adapter de desenvolvimento/teste durante a migração.
+
+Fluxo obrigatório:
 
 ```text
-browser requests authorized upload intent
-→ server returns short-lived pre-signed destination
-→ browser uploads directly to private storage
-→ server confirms size, type, checksum and object version
-→ asynchronous validation/reconciliation completes the state transition
+browser solicita intent autorizado
+→ aplicação persiste intent e chave opaca
+→ aplicação retorna URL pré-assinada curta com checksum
+→ browser faz PUT direto no S3 privado
+→ aplicação executa HEAD e valida metadata/versão
+→ confirmação transacional
+→ reconciliação assíncrona de expirados e órfãos
 ```
 
-The Next.js function must not proxy participant or administrative file bodies in production.
+Buckets são provisionados pela infraestrutura corporativa; a aplicação não cria buckets durante requisições.
 
-## Statelessness and cache
+## Estado, cache e trabalho assíncrono
 
-`/tmp` is execution-environment-local and disposable. The symlink in `Dockerfile.lambda` only prevents writes to the read-only image. It does not provide a shared Next.js cache across concurrent Lambda environments.
+`/tmp` é local ao execution environment e descartável. Não pode armazenar:
 
-Before release, verify that no correctness requirement depends on local ISR, local incremental cache, in-memory locks, local files or process-lifetime background work. Shared state, locks, queues and caches must use approved external services.
+- sessão;
+- locks distribuídos;
+- outbox ou fila;
+- estado de idempotência;
+- arquivos permanentes;
+- cache necessário para correção.
 
-## Background work
+O Lambda HTTP não é worker. Outbox, HubSpot e reconciliação usam dispatcher, SQS, Lambdas consumidoras, retries, DLQ e idempotência persistente.
 
-A request-serving Lambda must not be used as a permanent outbox or HubSpot worker. Production requires separate event-driven workers with bounded concurrency, idempotency, retries, dead-letter handling and reconciliation. The current HubSpot worker and sandbox proof remain blockers.
+## Integração com a AWS existente
 
-## Required infrastructure before production
+Antes de declarar ou aplicar recursos, concluir [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](../PLATFORM_INTEGRATION_REQUIREMENTS.md).
 
-- Lambda function deployed from an immutable ECR digest;
-- version and alias based promotion/rollback;
-- reserved concurrency selected from load tests;
-- provisioned concurrency only if latency objectives require it;
-- CloudWatch logs, metrics, alarms and tracing policy;
-- alarms for errors, throttles, duration, concurrency and cold-start impact;
-- API/front-door access logs and rate limits;
-- Secrets Manager or approved equivalent with rotation procedures;
-- deployment role with least privilege;
-- VPC design only when private AWS resources require it;
-- RDS Proxy before direct high-concurrency Lambda-to-RDS access;
-- direct S3 upload adapter before replacing Supabase Storage;
-- load, soak, failure, restore and rollback tests;
-- real authenticated end-to-end verification.
+Não criar VPC, Cognito, RDS, buckets, filas, WAF, KMS keys ou pipelines paralelos enquanto não for conhecido o que a empresa já possui.
 
-## Current disposition
+## Gates antes de staging
+
+- inventário corporativo aprovado;
+- imagem construída e invocada localmente/CI;
+- Cognito/OIDC adapter ativo;
+- RDS Proxy e adapter PostgreSQL ativos;
+- S3 e uploads diretos ativos;
+- API Gateway, edge, WAF, domínio e TLS configurados;
+- SQS, workers e DLQ ativos;
+- CloudWatch/tracing, dashboards e alarmes;
+- carga, soak, cold starts e concorrência;
+- backup, restore, canary e rollback;
+- E2E transacional autenticado.
+
+## Estado atual
 
 ```text
-lambda_container_image = prepared
-lambda_infrastructure = not_implemented
-lambda_load_test = not_executed
-direct_upload_flow = not_implemented
-shared_next_cache = not_implemented
-rds_adapter = not_active
-rds_proxy = not_declared
-s3_adapter = not_active
-hubspot_worker = not_implemented
+lambda_dockerfile_present = true
+lambda_image_build_verified = false
+lambda_image_runtime_verified = false
+lambda_function_deployed = false
+api_gateway_deployed = false
+aws_identity_adapter = pending
+aws_postgres_adapter = pending
+aws_s3_adapter = pending
+direct_uploads = pending
+sqs_workers = pending
+corporate_aws_inventory = pending
 production_release = blocked
 ```
