@@ -40,11 +40,12 @@ A primeira release tem como prioridade a **Jornada OpenAI**. O núcleo do produt
 
 A existência de uma tela, fluxo ou adapter no código não equivale à aprovação de conteúdo, metodologia, segurança, privacidade, acessibilidade ou operação em produção.
 
-## Ambiente de desenvolvimento
+## Ambientes
 
 | Ambiente | Provider | Estado |
 |---|---|---|
 | local, test e preview | `supabase` | suportado para desenvolvimento e validação |
+| produção | `aws` | provider destinado ao ambiente de produção |
 
 As regras são aplicadas por `APP_ENV` e `PLATFORM_RUNTIME_PROVIDER`.
 
@@ -182,6 +183,7 @@ docs/                           produto, decisões, arquitetura e implementaçã
 scripts/                        validação, testes, segurança e operação
 supabase/migrations/            histórico PostgreSQL executável e imutável
 supabase/functions/             Edge Functions de desenvolvimento e testes
+Dockerfile.lambda               imagem da aplicação para produção em Lambda
 ```
 
 ## Documentação
