@@ -1,9 +1,9 @@
 name: Temporary Admin UI Validation
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/simplify-journey-tracks
+      - main
 
 permissions:
   contents: read
