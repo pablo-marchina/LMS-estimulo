@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertCpfProtectionReady } from "@/lib/identity/cpf";
 import {
   assertPlatformRuntimePolicy,
+  awsArchitectureStatus,
   missingAwsRuntimeEnvironment,
 } from "@/lib/platform/runtime-provider";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
@@ -157,9 +158,14 @@ function awsReadiness(requestId: string, startedAt: number) {
   const cpfFailure = assertCpfReadiness(requestId, startedAt);
   if (cpfFailure) return cpfFailure;
 
-  // Do not return a false positive before Cognito, RDS Proxy and S3 probes are implemented.
-  logReadiness("error", "aws_adapters_unavailable", { request_id: requestId });
-  return response("aws_runtime_adapters_unavailable", requestId, startedAt);
+  // Production must never report ready until identity, data, storage, network,
+  // asynchronous processing, observability and operations are selected and
+  // implemented through an approved AWS architecture decision.
+  logReadiness("error", "aws_architecture_pending", {
+    request_id: requestId,
+    architecture_status: awsArchitectureStatus,
+  });
+  return response("aws_architecture_pending", requestId, startedAt);
 }
 
 export async function GET(request: Request) {
