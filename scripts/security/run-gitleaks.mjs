@@ -73,6 +73,7 @@ async function main() {
         "git",
         "--no-banner",
         "--redact",
+        "--config=.gitleaks.toml",
         "--max-decode-depth=2",
         "--max-archive-depth=1",
         "--report-format=json",
