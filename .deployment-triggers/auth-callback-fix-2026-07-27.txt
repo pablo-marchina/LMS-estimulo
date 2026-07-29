@@ -1,4 +1,0 @@
-Deploy the consolidated authentication fixes from main:
-- participant password login accepts @estimulo.org accounts;
-- root OAuth code fallback forwards to the administrative callback;
-- /confirm is the canonical email confirmation route while /auth/confirm remains compatible.

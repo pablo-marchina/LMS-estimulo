@@ -1,231 +1,138 @@
-# Solicitações de informação
+# Solicitações de informação para produção
 
-**Versão:** 1.1  
-**Data:** 2026-07-16  
+**Revisado em:** 2026-07-29  
 **Status:** ativo
 
-A hierarquia está em [SOURCE_AUTHORITY_HIERARCHY.md](SOURCE_AUTHORITY_HIERARCHY.md), e o escopo HubSpot está na [DEC-070](../decisions/HUBSPOT_SCOPE_DECISION.md).
+Este arquivo registra somente informações externas ou aprovações ainda necessárias para liberar o produto. Nunca registrar tokens, chaves, cookies, senhas ou dados pessoais reais no Git, issues, PRs ou chat.
 
-Não incluir tokens, chaves, senhas, cookies ou dados pessoais reais em documentos, issues, PRs ou chat.
+## P0
 
-## IR-001 — Pacote de referências e proveniência
+### IR-001 — Credencial historicamente exposta
 
-**Estado:** pacote recebido; preservação formal pendente.
+- confirmar rotação e revogação;
+- revisar logs e uso indevido;
+- registrar responsável e data em sistema institucional seguro.
 
-Registrar:
+### IR-002 — Diagnóstico oficial
 
-- nomes originais dos arquivos;
-- data de recebimento;
-- hashes;
-- responsável pela aprovação;
-- versões ou substituições posteriores;
-- local institucional seguro;
-- relação com documentos canônicos.
+Entregar e aprovar:
 
-## IR-002 — Inventário do HubSpot sandbox
+- versão, texto e instruções das 12 perguntas;
+- alternativas, condicionais e randomização;
+- vínculo com cinco dimensões;
+- pesos, normalização, cortes e empate;
+- política de resposta ausente ou inconclusiva;
+- quatro textos de resultado;
+- ativações e casos oficiais de teste;
+- evidência metodológica, linguagem e privacidade;
+- decisão formal sobre qualquer questão adicional.
 
-Fornecer as informações descritas em [HUBSPOT_INVENTORY_REQUEST.md](../integrations/HUBSPOT_INVENTORY_REQUEST.md), incluindo:
+A configuração de desenvolvimento não é fonte oficial.
 
-- portal, licença e sandbox;
-- objetos, propriedades e associações;
-- custom objects e behavioral events;
-- regras de identidade e deduplicação;
-- objetos e estados de crédito;
-- workflows, webhooks e automações;
-- limites de API e batch;
-- catálogo de sinais de engajamento;
-- catálogo de variáveis e resultados úteis para cálculo;
-- catálogo de dados `not_synced`;
-- reconciliação, acesso e privacidade.
-
-## IR-003 — Fluxo e dados de crédito
-
-Obter:
-
-- estados da solicitação;
-- transições e motivos;
-- dados criados em cada estado;
-- códigos de reprovação;
-- significado de “quase aprovado”;
-- desembolso, parcelas, atraso e regularização;
-- identificadores de pessoa, empresa e operação;
-- frequência e latência;
-- fonte da verdade por campo;
-- momentos de capacitação e intervenção;
-- desfechos para pesquisa futura.
-
-## IR-004 — Dados históricos
-
-Confirmar existência, formato, qualidade e identificadores de:
-
-- cursos, mentorias e WhatsApp;
-- presença, conclusão, pesquisas e avaliações;
-- aplicação de aprendizados;
-- aprovação, reprovação e inadimplência;
-- contatos, empresas e operações;
-- vínculos legítimos entre capacitação e crédito;
-- cobertura, consentimentos e viés de seleção.
-
-## IR-005 — Conteúdo final da Jornada OpenAI
-
-Confirmar e entregar:
+### IR-003 — Conteúdo final da Jornada OpenAI
 
 - vídeos, slides, transcrições e legendas;
-- prompts, templates, mapas e materiais;
-- URLs e direitos de uso;
+- prompts, templates e materiais;
+- URLs, direitos de uso e status editorial;
 - ordem, pré-requisitos e durações;
-- quick checks e avaliações finais;
-- respostas, justificativas e nota mínima;
-- práticas e rubricas;
-- tentativas e feedback;
+- quick checks, provas, respostas e justificativas;
+- práticas, rubricas, tentativas e feedback;
 - critérios de conclusão;
-- pontos, selos e certificados;
+- pontos, selos, certificados e validade;
 - equivalências acessíveis;
-- status editorial.
+- termos de upload e autorização.
 
-## IR-006 — Regras internas de dados e segurança
+### IR-004 — Identidade, site e dados de entrada
 
-Obter:
+- origem do login ou SSO;
+- tratamento de usuários existentes;
+- nome, e-mail, CPF, telefone, CNPJ opcional e UTM;
+- recuperação, merge, conflitos e suporte;
+- provedor de identidade de produção;
+- configuração de domínio e callbacks;
+- vínculo com contato, empresa e operação de crédito.
 
-- política de privacidade;
-- inventário de tratamentos;
-- classificação dos dados;
-- bases legais;
-- textos de consentimento quando aplicáveis;
-- retenção e legal hold;
-- regras de acesso;
-- direitos dos titulares;
-- processo de incidentes;
-- restrições para dados comportamentais e score;
-- exigências de fornecedores e localização.
+### IR-005 — HubSpot sandbox e inventário
 
-## IR-007 — Evidências para usuários reais
+Usar [`HUBSPOT_INVENTORY_REQUEST.md`](../integrations/HUBSPOT_INVENTORY_REQUEST.md) para obter:
 
-Obter e aprovar:
+- portal, licença, sandbox e scopes;
+- objetos, propriedades e associações;
+- identidade e deduplicação;
+- limites, workflows e integrações existentes;
+- catálogo `linking_identifier`;
+- catálogo `engagement_signal`;
+- catálogo `calculation_input_or_result`;
+- catálogo `not_synced`;
+- retry, readback e reconciliação;
+- acesso, retenção e privacidade.
 
-- controlador e responsabilidades;
-- encarregado e canal;
-- bases por atividade;
+### IR-006 — Segurança, privacidade e operação
+
+- controlador, encarregado e responsabilidades;
+- inventário de tratamentos e bases legais;
 - aviso de privacidade;
-- retenção, anonimização e exclusão;
-- procedimento de direitos;
+- direitos, retenção, anonimização, exclusão e legal hold;
 - playbook de incidente;
+- rate limiting e proteção de autenticação;
+- threat model e política de arquivos;
 - contratos, DPAs, regiões e subprocessadores;
-- conta, região, rede, domínios, KMS, IAM e secrets AWS;
-- RPO/RTO e teste de restauração;
-- inventário HubSpot e fluxo de crédito;
-- governança para uso futuro de sinais em crédito;
-- RIPD quando aplicável;
-- scanner real de arquivos;
-- rate limiting;
-- secret scanning e rotação de credenciais.
+- RPO/RTO, backup, restore e rollback;
+- aprovações jurídica, de segurança e acessibilidade.
 
-## IR-008 — Pacote oficial do diagnóstico
+O scanner de malware foi removido por decisão vigente e não é uma solicitação aberta. Qualquer novo controle precisa de threat model e decisão própria.
 
-**Prioridade:** P0.
+### IR-007 — AWS staging
 
-Entregar ou aprovar:
+- conta, região e responsáveis;
+- rede, domínio, Route 53 e ACM;
+- secrets e KMS;
+- decisão de identidade, RDS e S3;
+- capacidade e custos;
+- logs, métricas e alarmes;
+- processo de plan/apply e rollback;
+- restore e continuidade.
 
-1. versão vigente;
-2. texto das 12 perguntas;
-3. instruções e períodos de referência;
-4. alternativas e chaves;
-5. condicionais;
-6. randomização;
-7. obrigatoriedade;
-8. vínculo com cinco dimensões;
-9. pesos e contribuições;
-10. normalização e cortes;
-11. empate ou inconclusivo;
-12. resposta ausente;
-13. casos oficiais de entrada e saída;
-14. textos dos quatro resultados;
-15. plano de ação e ativações;
-16. planilha de iteração e revisão;
-17. evidência metodológica;
-18. decisão sobre Q13;
-19. aprovação de linguagem e privacidade;
-20. estratégia Typeform e versionamento.
+## P1
 
-Estado reconciliado:
+### IR-008 — Gamificação e participação
 
-- 12 perguntas;
-- 5 dimensões;
-- 4 arquétipos;
-- maturidade separada;
-- Q13 não oficial sem aprovação;
-- scoring do protótipo não oficial.
-
-## IR-009 — Identidade e integração com o site
-
-Definir:
-
-- origem do login;
-- SSO ou credenciais;
-- nome, e-mail, CPF, telefone e CNPJ opcional;
-- UTM;
-- validação e consentimento;
-- associação com contato HubSpot;
-- criação de novo contato;
-- merge e conflito;
-- recuperação de conta;
-- usuários administrativos;
-- clientes com e sem crédito;
-- identificadores mínimos usados pelo LMS;
-- testes em Supabase e AWS.
-
-## IR-010 — Catálogo de dados HubSpot
-
-Aprovar quatro catálogos:
-
-### `linking_identifier`
-
-Somente IDs e chaves mínimos necessários para localizar ou associar o usuário.
-
-### `engagement_signal`
-
-Eventos e agregados de acesso, progresso, participação, avaliação, práticas, gamificação, credenciais, abandono e retorno.
-
-### `calculation_input_or_result`
-
-Entradas, features e resultados úteis para diagnóstico, classificação, personalização, análise ou pesquisa, com origem, versão, qualidade e governança.
-
-### `not_synced`
-
-Estado transacional detalhado, configuração e conteúdo editorial, payloads brutos sem finalidade, binários, logs, filas, retries e segredos.
-
-## IR-011 — Regras de gamificação e participação
-
-Aprovar:
-
-- pontos e proteção contra abuso;
-- conquistas;
-- recompensas e resgate;
+- pontos e recorrência;
+- proteção contra abuso;
+- conquistas e recompensas;
 - ranking e privacidade;
-- emissão e revogação de credenciais;
-- avaliação em cinco estrelas;
-- moderação e denúncia;
-- SLA de revisão de práticas.
+- avaliação de utilidade;
+- moderação;
+- emissão, validade, revogação e reemissão de credenciais.
 
-## IR-012 — Guia visual e assets
+### IR-009 — Guia visual e acessibilidade
 
-Obter:
+- guia de marca e assets aprovados;
+- tipografia, cores, ícones e componentes;
+- mobile e responsividade;
+- critérios WCAG;
+- teclado e leitores de tela;
+- legendas, transcrições e equivalências;
+- aprovação visual final.
 
-- guia de marca;
-- logos;
-- tipografia e cores;
-- ícones e componentes;
-- critérios de uso dos mockups;
-- requisitos mobile;
-- aprovação visual.
+### IR-010 — Dados históricos e pesquisa
 
-## Critério geral de encerramento
+Quando houver finalidade aprovada:
 
-Uma solicitação é encerrada somente quando:
+- cursos, mentorias, presença, conclusão e avaliações;
+- aplicação de aprendizados;
+- crédito e desfechos;
+- identificadores legítimos;
+- cobertura, consentimento, qualidade e viés;
+- protocolo de análise e restrições para uso em crédito.
 
-- o artefato foi recebido ou a decisão aprovada;
-- versão e origem foram registradas;
-- documentação e backlog foram atualizados;
-- implementação correspondente pode ser reproduzida;
-- testes proporcionais existem;
-- nenhuma lacuna foi preenchida por heurística silenciosa.
+## Encerramento
+
+Uma solicitação só é encerrada quando:
+
+- o artefato ou decisão foi recebido;
+- origem, versão e responsável foram registrados;
+- privacidade e acesso foram definidos;
+- implementação e documentação foram atualizadas;
+- existe teste proporcional;
+- a evidência é reproduzível.

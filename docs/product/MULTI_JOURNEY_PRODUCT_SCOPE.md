@@ -1,14 +1,8 @@
 # Escopo de jornadas da Plataforma Estímulo
 
-**Versão:** 1.0  
-**Data:** 2026-07-16  
-**Status:** alinhado às fontes; extensibilidade técnica sem ampliar a primeira entrega
-
-## Autoridade
-
-`premissas-desenvolvimento.md` e os documentos da Jornada OpenAI são as fontes superiores de produto.
-
-O pacote fornecido exige a Jornada OpenAI e uma plataforma configurável de trilhas, conteúdos e administração. Ele não exige que uma segunda jornada completa seja criada ou publicada antes da primeira entrega.
+**Versão:** 1.1  
+**Data:** 2026-07-29  
+**Status:** especificação vigente; extensibilidade técnica sem ampliar a primeira entrega
 
 ## Regra central
 
@@ -18,7 +12,7 @@ A Jornada OpenAI é:
 - a jornada que deve ser publicada na primeira release;
 - o primeiro fluxo real usado para validar a plataforma ponta a ponta.
 
-A arquitetura deve evitar acoplamento desnecessário que impeça futuras jornadas, mas a extensibilidade é uma decisão técnica subordinada à entrega oficial.
+Uma segunda jornada completa não é requisito da primeira entrega. A arquitetura deve evitar acoplamento desnecessário que impeça futuras jornadas, mas a extensibilidade é subordinada à entrega oficial.
 
 ## Requisitos da primeira release
 
@@ -52,41 +46,18 @@ Formulários, jornadas, trilhas, conteúdos, avaliações e credenciais devem se
 
 ## O que não é gate da primeira release
 
-Sem nova fonte ou issue aprovada, não bloqueiam a primeira produção:
+Sem decisão formal posterior, não bloqueiam a primeira produção:
 
 - criação editorial de uma segunda jornada;
 - publicação de uma segunda jornada para usuários reais;
 - administração avançada de programas não previstos;
-- prova completa com conteúdo de outro parceiro;
-- marketplace multi-programa;
-- abstrações genéricas sem consumidor real.
+- prova completa com conteúdo de outro parceiro.
 
-## Prova proporcional de extensibilidade
-
-A extensibilidade pode ser validada com fixture sintética mínima ou testes de contrato, desde que isso não substitua o E2E real da Jornada OpenAI.
-
-Uma prova sintética deve apenas confirmar que o núcleo não possui acoplamento indevido. Ela não é uma capacidade de produto nem pode ser apresentada como jornada entregue.
-
-## Prioridade de implementação
+## Gate
 
 ```text
-1. Jornada OpenAI oficial e fluxo real
-2. identidade, HubSpot, AWS e operação
-3. requisitos funcionais das issues
-4. remoção de acoplamentos concretos encontrados
-5. novas jornadas após aprovação
+openai_journey_release_ready = false
+second_production_journey_required = false
+journey_specific_runtime_branching_allowed = false
+content_changes_require_code = false
 ```
-
-## Linguagem oficial
-
-Usar:
-
-> “A Jornada OpenAI é a jornada oficial da primeira release. A arquitetura evita impedir futuras jornadas.”
-
-Evitar:
-
-> “Uma segunda jornada produtiva é obrigatória antes da primeira release.”
-
-> “A plataforma está concluída porque uma jornada sintética passou.”
-
-> “Multi-jornada autoriza adiar a experiência completa da Jornada OpenAI.”

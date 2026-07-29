@@ -30,10 +30,8 @@ jobs:
           set -euo pipefail
           standard='^(feat|fix|docs|refactor|test|ci|chore|security|hotfix)/[a-z0-9]+(-[a-z0-9]+)*$'
           dependabot='^dependabot/(npm_and_yarn|github_actions)/[A-Za-z0-9._/-]+$'
-
           if [[ ! "$BRANCH_NAME" =~ $standard && ! "$BRANCH_NAME" =~ $dependabot ]]; then
             echo "Invalid branch name: $BRANCH_NAME"
-            echo "Expected: <type>/<scope>-<description> in kebab-case."
             exit 1
           fi
 
@@ -44,10 +42,8 @@ jobs:
         run: |
           set -euo pipefail
           pattern='^(feat|fix|docs|refactor|test|ci|chore|security|perf|build)(\([a-z0-9-]+\))?(!)?: .{10,}$'
-
           if [[ ! "$PR_TITLE" =~ $pattern ]]; then
             echo "Invalid pull request title: $PR_TITLE"
-            echo "Expected Conventional Commits, for example: feat(diagnostics): add versioned assignment"
             exit 1
           fi
 
@@ -64,11 +60,9 @@ jobs:
         run: |
           set -euo pipefail
           invalid=0
-
           while IFS= read -r path; do
             [[ -z "$path" ]] && continue
             filename="${path##*/}"
-
             if [[ "$path" == docs/*.md || "$path" == docs/**/*.md ]]; then
               doc_pattern='^([A-Z0-9]+(_[A-Z0-9]+)*|ADR-[0-9]{3}-[A-Z0-9]+(-[A-Z0-9]+)*)\.md$'
               if [[ ! "$filename" =~ $doc_pattern ]]; then
@@ -76,7 +70,6 @@ jobs:
                 invalid=1
               fi
             fi
-
             if [[ "$path" == supabase/migrations/*.sql || "$path" == supabase/pending-migrations/*.sql ]]; then
               migration_pattern='^[0-9]{14}_[a-z0-9]+(_[a-z0-9]+)*\.sql$'
               if [[ ! "$filename" =~ $migration_pattern ]]; then
@@ -85,10 +78,7 @@ jobs:
               fi
             fi
           done < <(git diff --name-only --diff-filter=A "$BASE_SHA" "$HEAD_SHA")
-
-          if [[ "$invalid" -ne 0 ]]; then
-            exit 1
-          fi
+          [[ "$invalid" -eq 0 ]]
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -132,11 +122,8 @@ jobs:
       - name: Validate repository hygiene
         run: npm run validate:repository
 
-      - name: Test migration history tooling
-        run: npm run test:migration-history
-
-      - name: Test public RPC contract tooling
-        run: npm run test:public-rpc-contracts
+      - name: Test repository tooling
+        run: npm run test:repository-tooling
 
       - name: Validate migration history
         run: npm run validate:migration-history

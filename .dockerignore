@@ -1,10 +1,16 @@
 .git
 .github
+.claude
+.superpowers
+.deployment-triggers
+.artifacts
+.secrets
 .next
 **/.next
 node_modules
 **/node_modules
 coverage
+**/coverage
 .tmp
 **/.tmp
 .env
@@ -15,7 +21,9 @@ coverage
 !**/.env.example
 *.zip
 *.tar
+*.tar.gz
 *.tgz
 *.log
+ref
 infra/aws/terraform/*.tfstate*
 infra/aws/terraform/.terraform

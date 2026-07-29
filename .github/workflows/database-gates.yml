@@ -10,16 +10,7 @@ on:
       - "apps/web/lib/credentials/**"
       - "apps/web/lib/library/**"
       - "docs/implementation/public-rpc-contracts-v1.json"
-      - "scripts/database/activity-comments/**"
-      - "scripts/database/backend-e2e/**"
-      - "scripts/database/configurable-product-persistence/**"
-      - "scripts/database/practice-uploads/**"
-      - "scripts/database/learning-credentials/**"
-      - "scripts/database/content-library/**"
-      - "scripts/database/equivalence/**"
-      - "scripts/database/legacy-rpc/**"
-      - "scripts/database/public-rpc-contracts/**"
-      - "scripts/database/migration-history/**"
+      - "scripts/database/**"
       - "supabase/canonical-migrations/**"
       - "supabase/migrations/**"
 
@@ -84,13 +75,13 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
 
-      - name: Replay history and verify schema, contracts and backend E2E
+      - name: Run database gates
         id: database_gates
         shell: bash
         run: |
           set +e
           mkdir -p .artifacts
-          npm run test:database-gates > .artifacts/database-gates.log 2>&1
+          npm run test:database > .artifacts/database-gates.log 2>&1
           exit_code=$?
           echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
           if [[ "$exit_code" -eq 0 ]]; then
@@ -115,5 +106,5 @@ jobs:
         if: steps.database_gates.outputs.exit_code != '0'
         shell: bash
         run: |
-          echo "Replay, equivalence, public contracts, backend E2E, persistence, comments, practice uploads, learning credentials or content library failed. Inspect the uploaded diagnostic artifact."
+          echo "A database gate failed. Inspect the uploaded diagnostic artifact."
           exit 1

@@ -1,12 +1,12 @@
 # Fluxo lógico de integração com HubSpot
 
-**Versão:** 1.1  
-**Data:** 2026-07-16  
-**Status:** escopo aprovado; adapter real pendente
+**Versão:** 1.2  
+**Data:** 2026-07-29  
+**Status:** escopo aprovado pela DEC-070; adapter real pendente
 
 ## Objetivo
 
-Este fluxo implementa [ADR-003](../decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md).
+Este fluxo implementa a [`DEC-070`](../decisions/HUBSPOT_SCOPE_DECISION.md).
 
 O PostgreSQL é o banco operacional e detalhado. O HubSpot recebe apenas identificadores mínimos de vínculo, sinais de engajamento e informações úteis para cálculos aprovados.
 
@@ -178,5 +178,4 @@ not_synced_rules_tested = true
 idempotency_retry_rate_limit_tested = true
 reconciliation_tested = true
 critical_readback_tested = true
-outage_backlog_recovery_tested = true
 ```
