@@ -11,7 +11,7 @@ language sql
 stable
 security definer
 set search_path = pg_catalog
-as $function$
+as $$
   with latest_responses as (
     select distinct on (response.item_id)
       response.item_id,
@@ -30,7 +30,7 @@ as $function$
   )
   select coalesce(jsonb_object_agg(dimension_scores.code, dimension_scores.score), '{}'::jsonb)
   from dimension_scores;
-$function$;
+$$;
 
 revoke all on function app_private.e14_dimension_scores_c(uuid)
   from public, anon, authenticated;
