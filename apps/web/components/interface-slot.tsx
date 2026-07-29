@@ -22,6 +22,10 @@ function safeImage(value: unknown) {
   return typeof value === "string" && (value.startsWith("/") || value.startsWith("https://")) ? value : null;
 }
 
+function externalProps(href: string | null) {
+  return href?.startsWith("https://") ? { target: "_blank" as const, rel: "noreferrer" } : {};
+}
+
 export function InterfaceSlot({
   area,
   placement,
@@ -55,7 +59,7 @@ export function InterfaceSlot({
         }
 
         if ((type === "button" || type === "link") && href) {
-          return <ButtonLink key={key} href={href} variant={type === "button" ? "primary" : "secondary"} className="w-fit">{text || title || "Abrir"}</ButtonLink>;
+          return <ButtonLink key={key} href={href} variant={type === "button" ? "primary" : "secondary"} className="w-fit" {...externalProps(href)}>{text || title || "Abrir"}</ButtonLink>;
         }
 
         if (type === "notice" || type === "section" || type === "element") {
@@ -63,7 +67,7 @@ export function InterfaceSlot({
             <article key={key} className={cn("rounded-2xl border p-4", toneClasses[tone] ?? toneClasses.neutral)}>
               {title ? <h2 className="font-semibold">{title}</h2> : null}
               {body || text ? <p className="mt-1 whitespace-pre-line text-sm leading-6">{body || text}</p> : null}
-              {href ? <ButtonLink href={href} variant="secondary" size="sm" className="mt-3 w-fit">{typeof value.button_text === "string" && value.button_text ? value.button_text : "Saiba mais"}</ButtonLink> : null}
+              {href ? <ButtonLink href={href} variant="secondary" size="sm" className="mt-3 w-fit" {...externalProps(href)}>{typeof value.button_text === "string" && value.button_text ? value.button_text : "Saiba mais"}</ButtonLink> : null}
             </article>
           );
         }
