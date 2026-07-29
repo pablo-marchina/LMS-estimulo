@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { adminOAuthRedirectTarget } from "@/lib/auth/admin-oauth-bridge-core.mjs";
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -10,14 +11,16 @@ export async function GET(request: NextRequest) {
   const client = await createSessionClient();
   await client.auth.signOut();
 
-  const callback = new URL(
-    "/auth/admin/callback",
-    publicApplicationOrigin(request.nextUrl.origin),
-  ).toString();
+  const applicationOrigin = publicApplicationOrigin(request.nextUrl.origin);
+  const redirectTo = adminOAuthRedirectTarget({
+    applicationOrigin,
+    requestOrigin: request.nextUrl.origin,
+    bridgeOrigin: process.env.ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN,
+  });
   const { data, error } = await client.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: callback,
+      redirectTo,
       skipBrowserRedirect: true,
       queryParams: {
         hd: "estimulo.org",
