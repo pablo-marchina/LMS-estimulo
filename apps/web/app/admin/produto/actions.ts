@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
-import { clearAdminActivityParts, saveAdminPathBadge } from "@/lib/admin/journey-editor";
+import { clearAdminActivityParts } from "@/lib/admin/journey-editor";
 import { attachLibraryContentToActivity, configureAdminPathTemplate, saveAdminProductResource } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
@@ -188,7 +188,6 @@ export async function saveTrilhaAction(formData: FormData) {
   const journeyVersionId = text(formData, "journey_version_id");
   const pathTemplateId = nullable(formData, "path_template_id");
   const name = text(formData, "name");
-  const badgeTitle = text(formData, "badge_title");
   const back = `/admin/produto?etapa=trilhas&versao=${journeyVersionId}`;
 
   try {
@@ -218,17 +217,6 @@ export async function saveTrilhaAction(formData: FormData) {
       presentation: { tone: text(formData, "tone") || "cyan", icon: text(formData, "icon") || "sparkles" },
       idempotencyKey: randomUUID(),
     });
-
-    if (badgeTitle) {
-      await saveAdminPathBadge({
-        actorUserAccountId: auth.identity.user_account_id,
-        organizationId,
-        pathTemplateId: savedPathTemplateId,
-        title: badgeTitle,
-        description: text(formData, "badge_description"),
-        idempotencyKey: randomUUID(),
-      });
-    }
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
     redirect(`${back}&erro=${reason}`);
