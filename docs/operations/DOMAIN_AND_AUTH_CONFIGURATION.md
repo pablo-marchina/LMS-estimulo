@@ -1,50 +1,96 @@
-# Configuração atual de domínio e autenticação
+# Domínio e autenticação por ambiente
 
 **Revisado em:** 2026-07-29  
-**Status:** desenvolvimento e preview; produção AWS pendente
+**Status:** Supabase configurado para validação; Cognito/domínio AWS pendentes
 
-## Domínio canônico desejado
+## Domínio público
 
-`plataforma.estimulo.org` é o domínio recomendado para a experiência pública. A associação definitiva deve ser feita no ambiente AWS aprovado.
+O domínio canônico proposto é:
 
-## Hospedagem temporária
+```text
+https://plataforma.estimulo.org
+```
 
-O projeto `lms-estimulo-web` na Vercel pode ser usado para preview e validação controlada. Ele não é o ambiente oficial de produção.
+A ativação depende do inventário da AWS corporativa, DNS/Route 53, edge/CloudFront, WAF, API Gateway, certificado ACM e owners aprovados.
 
-Em previews, o runtime pode usar `VERCEL_BRANCH_URL` ou `VERCEL_URL`. Não reutilizar uma URL de produção como configuração global de preview.
+## Desenvolvimento e preview
 
-## Supabase Auth
+Supabase Auth e Vercel podem ser usados somente para desenvolvimento/teste e previews controlados.
 
-O ambiente Supabase de desenvolvimento/teste deve permitir:
+Redirects versionados no `supabase/config.toml`:
 
 ```text
 http://localhost:3000/**
 http://127.0.0.1:3000/**
 https://lms-estimulo-web.vercel.app/**
 https://*-pablo-marchinas-projects.vercel.app/**
-https://plataforma.estimulo.org/**
 ```
 
-A última URL é uma reserva de domínio; não comprova DNS ou deploy AWS.
+O domínio final da AWS não é callback Supabase. Isso impede que a configuração de teste seja promovida ou confundida com a identidade de produção.
 
-Rotas da aplicação:
+Rotas atuais do adapter Supabase:
 
-- `/auth/admin/callback`: callback administrativo;
-- `/confirm`: confirmação canônica de e-mail;
-- `/auth/confirm`: compatibilidade;
-- `/`: encaminha códigos OAuth administrativos recebidos na raiz para o callback correto.
+- `/auth/admin/callback` — callback administrativo;
+- `/confirm` — confirmação canônica de e-mail;
+- `/auth/confirm` — compatibilidade;
+- `/` — fallback de códigos OAuth administrativos.
 
-No Google OAuth, o redirect autorizado aponta para o callback do projeto Supabase ativo:
+O Google OAuth de desenvolvimento usa o callback do projeto Supabase ativo:
 
 ```text
 https://<project-ref>.supabase.co/auth/v1/callback
 ```
 
-Não registrar client secret, tokens ou cookies neste documento.
+## Produção AWS
+
+A produção segue a [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md):
+
+```text
+plataforma.estimulo.org
+→ CloudFront/edge corporativo
+→ WAF
+→ API Gateway HTTP API
+→ Lambda alias
+→ Cognito User Pool ou broker OIDC corporativo
+```
+
+O Cognito deve configurar URLs específicas por ambiente para:
+
+- callback de participantes;
+- callback administrativo federado;
+- logout;
+- recuperação de conta;
+- confirmação/verificação quando aplicável.
+
+Wildcards de preview não são permitidos nos callbacks de produção.
+
+A origem pública em staging/produção é obrigatória, HTTPS e não pode fazer fallback para Vercel ou localhost.
+
+## Administração federada
+
+O acesso administrativo mantém quatro verificações independentes:
+
+1. token OIDC válido do provider aprovado;
+2. Google/IdP corporativo e e-mail confirmado;
+3. domínio exato `@estimulo.org` quando essa política permanecer vigente;
+4. membership organizacional e capacidades RBAC no PostgreSQL.
+
+O domínio de e-mail ou o parâmetro `hd` não concede acesso sozinho.
+
+## Cookies e origem
+
+A configuração AWS precisa comprovar:
+
+- origem canônica HTTPS;
+- cookies `Secure`, `HttpOnly` e `SameSite` adequados;
+- forwarded host/proto confiáveis atrás do edge/API Gateway;
+- proteção contra open redirect;
+- CSRF nos fluxos mutáveis;
+- CORS mínimo e específico;
+- expiração, renovação e revogação de sessão;
+- nenhuma persistência de tokens em logs ou domínio.
 
 ## Ambiente local
-
-Na raiz:
 
 ```bash
 cp .env.example .env
@@ -52,11 +98,21 @@ cp .env.example .env
 
 ```text
 APP_ENV=development
+PLATFORM_RUNTIME_PROVIDER=supabase
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-`supabase/config.toml` mantém a configuração local equivalente. Valores hospedados continuam dependentes da configuração do dashboard do Supabase e devem ser verificados antes de cada prova real.
+## Informações pendentes da empresa
 
-## Produção
+- domínio e hosted zone responsáveis;
+- distribuição CloudFront/edge existente;
+- API Gateway e WAF existentes;
+- certificado ACM;
+- Cognito User Pool ou IdP corporativo;
+- Google Workspace/OIDC/SAML;
+- política de MFA, senha e recuperação;
+- callbacks e logout URLs aprovados;
+- migração/linking de usuários Supabase;
+- owner operacional e processo de incidente.
 
-A produção AWS exigirá nova configuração de domínio, certificado, callbacks e provedor de identidade. Este documento não autoriza promover a configuração Vercel/Supabase atual para produção.
+Não registrar client secrets, tokens, cookies ou identificadores sensíveis neste documento.

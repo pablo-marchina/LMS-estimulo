@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "environment_class": "production",
+  "runtime_provider": "aws",
+  "application_architecture": "modular_nextjs_monolith",
+  "compute": "lambda_container",
+  "front_door": "api_gateway_http_api",
+  "edge": "corporate_cloudfront_or_equivalent",
+  "waf_required": true,
+  "identity": "cognito_or_corporate_oidc_broker",
+  "authorization": "internal_postgresql_rbac",
+  "database": "rds_postgresql_multi_az",
+  "database_access": "rds_proxy",
+  "storage": "s3_private_direct_upload",
+  "async_delivery": "postgres_outbox_sqs_lambda_dlq",
+  "secrets": "secrets_manager_kms_or_corporate_equivalent",
+  "observability": "cloudwatch_tracing_slos_or_corporate_equivalent",
+  "supabase_allowed": false,
+  "corporate_resource_inventory_required": true,
+  "implementation": {
+    "lambda_dockerfile_present": true,
+    "lambda_image_build_verified": false,
+    "corporate_inventory_complete": false,
+    "identity_adapter_active": false,
+    "postgres_adapter_active": false,
+    "s3_adapter_active": false,
+    "direct_uploads_active": false,
+    "sqs_workers_active": false,
+    "transactional_e2e_passed": false,
+    "production_ready": false
+  }
+}

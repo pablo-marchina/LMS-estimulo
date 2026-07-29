@@ -1,6 +1,10 @@
 import "server-only";
-import { createHash } from "node:crypto";
-import { createPrivilegedClient } from "@/lib/supabase/admin";
+import {
+  createPrivateDownloadUrl,
+  ensurePrivateBucket,
+  removePrivateObject,
+  uploadBufferedPrivateObject,
+} from "@/lib/platform/object-storage";
 
 export const ANNOUNCEMENT_BANNER_MAX_BYTES = 4 * 1024 * 1024;
 export const ANNOUNCEMENT_BANNER_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
@@ -10,6 +14,10 @@ const MIME_EXTENSIONS: Record<string, string[]> = {
   "image/jpeg": ["jpg", "jpeg"],
   "image/webp": ["webp"],
 };
+
+function detail(error: unknown): string {
+  return error instanceof Error ? error.message : "unknown";
+}
 
 export function announcementBannerBucket(): string {
   return process.env.ANNOUNCEMENT_BANNER_BUCKET?.trim() || "announcement-banners";
@@ -29,52 +37,41 @@ export function validateAnnouncementBanner(file: File): void {
   }
 }
 
-async function ensurePrivateBucket(bucket: string): Promise<void> {
-  const client = createPrivilegedClient();
-  const { data } = await client.storage.getBucket(bucket);
-  if (data) return;
-  const { error } = await client.storage.createBucket(bucket, {
-    public: false,
-    fileSizeLimit: ANNOUNCEMENT_BANNER_MAX_BYTES,
-    allowedMimeTypes: [...ANNOUNCEMENT_BANNER_MIME_TYPES],
-  });
-  if (error && !/already exists/i.test(error.message)) {
-    throw new Error(`ANNOUNCEMENT_BUCKET_CREATE_FAILED:${error.message}`);
-  }
-}
-
 export async function uploadAnnouncementBanner(input: {
   bucket: string;
   objectKey: string;
   file: File;
 }): Promise<{ sha256: string; etag: string | null; providerObjectVersion: string | null; created: boolean }> {
   validateAnnouncementBanner(input.file);
-  await ensurePrivateBucket(input.bucket);
-  const bytes = Buffer.from(await input.file.arrayBuffer());
-  const sha256 = createHash("sha256").update(bytes).digest("hex");
-  const client = createPrivilegedClient();
-  const { error } = await client.storage.from(input.bucket).upload(input.objectKey, bytes, {
-    contentType: input.file.type,
-    cacheControl: "3600",
-    upsert: false,
-  });
-  if (error && !/already exists|asset already exists/i.test(error.message)) {
-    throw new Error(`ANNOUNCEMENT_STORAGE_UPLOAD_FAILED:${error.message}`);
+  try {
+    await ensurePrivateBucket({
+      bucket: input.bucket,
+      maxBytes: ANNOUNCEMENT_BANNER_MAX_BYTES,
+      allowedMimeTypes: ANNOUNCEMENT_BANNER_MIME_TYPES,
+    });
+  } catch (error) {
+    throw new Error(`ANNOUNCEMENT_BUCKET_CREATE_FAILED:${detail(error)}`);
   }
-  return { sha256, etag: null, providerObjectVersion: null, created: !error };
+
+  try {
+    return await uploadBufferedPrivateObject(input);
+  } catch (error) {
+    throw new Error(`ANNOUNCEMENT_STORAGE_UPLOAD_FAILED:${detail(error)}`);
+  }
 }
 
 export async function removeAnnouncementBanner(bucket: string, objectKey: string): Promise<void> {
-  const client = createPrivilegedClient();
-  const { error } = await client.storage.from(bucket).remove([objectKey]);
-  if (error) throw new Error(`ANNOUNCEMENT_STORAGE_REMOVE_FAILED:${error.message}`);
+  try {
+    await removePrivateObject(bucket, objectKey);
+  } catch (error) {
+    throw new Error(`ANNOUNCEMENT_STORAGE_REMOVE_FAILED:${detail(error)}`);
+  }
 }
 
 export async function createAnnouncementBannerUrl(input: { bucket: string; objectKey: string }): Promise<string> {
-  const client = createPrivilegedClient();
-  const { data, error } = await client.storage.from(input.bucket).createSignedUrl(input.objectKey, 300);
-  if (error || !data?.signedUrl) {
-    throw new Error(`ANNOUNCEMENT_SIGNED_URL_FAILED:${error?.message ?? "missing_url"}`);
+  try {
+    return await createPrivateDownloadUrl({ ...input, expiresInSeconds: 300 });
+  } catch (error) {
+    throw new Error(`ANNOUNCEMENT_SIGNED_URL_FAILED:${detail(error)}`);
   }
-  return data.signedUrl;
 }

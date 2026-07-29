@@ -1,6 +1,10 @@
 import "server-only";
-import { createHash } from "node:crypto";
-import { createPrivilegedClient } from "@/lib/supabase/admin";
+import {
+  createPrivateDownloadUrl,
+  ensurePrivateBucket,
+  removePrivateObject,
+  uploadBufferedPrivateObject,
+} from "@/lib/platform/object-storage";
 
 export const LIBRARY_CONTENT_MAX_BYTES = 6 * 1024 * 1024;
 export const LIBRARY_CONTENT_MIME_TYPES = [
@@ -21,6 +25,10 @@ const MIME_EXTENSIONS: Record<string, string[]> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"],
 };
 
+function detail(error: unknown): string {
+  return error instanceof Error ? error.message : "unknown";
+}
+
 export function libraryContentBucket(): string {
   return process.env.LIBRARY_CONTENT_BUCKET?.trim() || "library-content";
 }
@@ -39,45 +47,35 @@ export function validateLibraryContentFile(file: File): void {
   }
 }
 
-async function ensurePrivateBucket(bucket: string): Promise<void> {
-  const client = createPrivilegedClient();
-  const { data } = await client.storage.getBucket(bucket);
-  if (data) return;
-  const { error } = await client.storage.createBucket(bucket, {
-    public: false,
-    fileSizeLimit: LIBRARY_CONTENT_MAX_BYTES,
-    allowedMimeTypes: [...LIBRARY_CONTENT_MIME_TYPES],
-  });
-  if (error && !/already exists/i.test(error.message)) {
-    throw new Error(`LIBRARY_BUCKET_CREATE_FAILED:${error.message}`);
-  }
-}
-
 export async function uploadLibraryContent(input: {
   bucket: string;
   objectKey: string;
   file: File;
 }): Promise<{ sha256: string; etag: string | null; providerObjectVersion: string | null; created: boolean }> {
   validateLibraryContentFile(input.file);
-  await ensurePrivateBucket(input.bucket);
-  const bytes = Buffer.from(await input.file.arrayBuffer());
-  const sha256 = createHash("sha256").update(bytes).digest("hex");
-  const client = createPrivilegedClient();
-  const { error } = await client.storage.from(input.bucket).upload(input.objectKey, bytes, {
-    contentType: input.file.type,
-    cacheControl: "3600",
-    upsert: false,
-  });
-  if (error && !/already exists|asset already exists/i.test(error.message)) {
-    throw new Error(`LIBRARY_STORAGE_UPLOAD_FAILED:${error.message}`);
+  try {
+    await ensurePrivateBucket({
+      bucket: input.bucket,
+      maxBytes: LIBRARY_CONTENT_MAX_BYTES,
+      allowedMimeTypes: LIBRARY_CONTENT_MIME_TYPES,
+    });
+  } catch (error) {
+    throw new Error(`LIBRARY_BUCKET_CREATE_FAILED:${detail(error)}`);
   }
-  return { sha256, etag: null, providerObjectVersion: null, created: !error };
+
+  try {
+    return await uploadBufferedPrivateObject(input);
+  } catch (error) {
+    throw new Error(`LIBRARY_STORAGE_UPLOAD_FAILED:${detail(error)}`);
+  }
 }
 
 export async function removeLibraryContent(bucket: string, objectKey: string): Promise<void> {
-  const client = createPrivilegedClient();
-  const { error } = await client.storage.from(bucket).remove([objectKey]);
-  if (error) throw new Error(`LIBRARY_STORAGE_REMOVE_FAILED:${error.message}`);
+  try {
+    await removePrivateObject(bucket, objectKey);
+  } catch (error) {
+    throw new Error(`LIBRARY_STORAGE_REMOVE_FAILED:${detail(error)}`);
+  }
 }
 
 export async function createLibraryContentDownloadUrl(input: {
@@ -85,12 +83,9 @@ export async function createLibraryContentDownloadUrl(input: {
   objectKey: string;
   filename: string;
 }): Promise<string> {
-  const client = createPrivilegedClient();
-  const { data, error } = await client.storage.from(input.bucket).createSignedUrl(input.objectKey, 60, {
-    download: input.filename,
-  });
-  if (error || !data?.signedUrl) {
-    throw new Error(`LIBRARY_SIGNED_URL_FAILED:${error?.message ?? "missing_url"}`);
+  try {
+    return await createPrivateDownloadUrl({ ...input, expiresInSeconds: 60 });
+  } catch (error) {
+    throw new Error(`LIBRARY_SIGNED_URL_FAILED:${detail(error)}`);
   }
-  return data.signedUrl;
 }

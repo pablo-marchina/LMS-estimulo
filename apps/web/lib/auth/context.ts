@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { CurrentIdentityError, resolveCurrentIdentity, type CurrentIdentityContext } from "@/lib/auth/current-identity";
+import { assertPlatformRuntimePolicy } from "@/lib/platform/runtime-provider";
 import { createSessionClient } from "@/lib/supabase/server";
 
 export type AuthContext =
@@ -9,6 +10,17 @@ export type AuthContext =
   | { status: "authenticated"; identity: CurrentIdentityContext; email: string; provider: string };
 
 export const getAuthContext = cache(async (): Promise<AuthContext> => {
+  let provider: "supabase" | "aws";
+  try {
+    provider = assertPlatformRuntimePolicy();
+  } catch {
+    return { status: "identity_error", reason: "RUNTIME_POLICY_REJECTED" };
+  }
+
+  if (provider === "aws") {
+    return { status: "identity_error", reason: "AWS_IDENTITY_ADAPTER_NOT_IMPLEMENTED" };
+  }
+
   const session = await createSessionClient();
   try {
     const identity = await resolveCurrentIdentity(session);

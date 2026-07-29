@@ -1,6 +1,10 @@
 import "server-only";
-import { createHash } from "node:crypto";
-import { createPrivilegedClient } from "@/lib/supabase/admin";
+import {
+  createPrivateDownloadUrl,
+  ensurePrivateBucket,
+  removePrivateObject,
+  uploadBufferedPrivateObject,
+} from "@/lib/platform/object-storage";
 
 export const PRACTICE_EVIDENCE_MAX_BYTES = 6 * 1024 * 1024;
 export const PRACTICE_EVIDENCE_MIME_TYPES = [
@@ -9,7 +13,7 @@ export const PRACTICE_EVIDENCE_MIME_TYPES = [
   "image/jpeg",
   "image/webp",
   "text/plain",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ] as const;
 
 const MIME_EXTENSIONS: Record<string, string[]> = {
@@ -18,8 +22,12 @@ const MIME_EXTENSIONS: Record<string, string[]> = {
   "image/jpeg": ["jpg", "jpeg"],
   "image/webp": ["webp"],
   "text/plain": ["txt"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"]
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"],
 };
+
+function detail(error: unknown): string {
+  return error instanceof Error ? error.message : "unknown";
+}
 
 export function practiceEvidenceBucket(): string {
   return process.env.PRACTICE_EVIDENCE_BUCKET?.trim() || "practice-evidence";
@@ -39,21 +47,6 @@ export function validatePracticeEvidenceFile(file: File): void {
   }
 }
 
-async function ensurePrivateBucket(bucket: string): Promise<void> {
-  const client = createPrivilegedClient();
-  const { data } = await client.storage.getBucket(bucket);
-  if (data) return;
-
-  const { error } = await client.storage.createBucket(bucket, {
-    public: false,
-    fileSizeLimit: PRACTICE_EVIDENCE_MAX_BYTES,
-    allowedMimeTypes: [...PRACTICE_EVIDENCE_MIME_TYPES]
-  });
-  if (error && !/already exists/i.test(error.message)) {
-    throw new Error(`PRACTICE_BUCKET_CREATE_FAILED:${error.message}`);
-  }
-}
-
 export async function uploadPracticeEvidence(input: {
   bucket: string;
   objectKey: string;
@@ -65,27 +58,29 @@ export async function uploadPracticeEvidence(input: {
   created: boolean;
 }> {
   validatePracticeEvidenceFile(input.file);
-  await ensurePrivateBucket(input.bucket);
-
-  const bytes = Buffer.from(await input.file.arrayBuffer());
-  const sha256 = createHash("sha256").update(bytes).digest("hex");
-  const client = createPrivilegedClient();
-  const { error } = await client.storage.from(input.bucket).upload(input.objectKey, bytes, {
-    contentType: input.file.type,
-    cacheControl: "3600",
-    upsert: false
-  });
-  if (error && !/already exists|asset already exists/i.test(error.message)) {
-    throw new Error(`PRACTICE_STORAGE_UPLOAD_FAILED:${error.message}`);
+  try {
+    await ensurePrivateBucket({
+      bucket: input.bucket,
+      maxBytes: PRACTICE_EVIDENCE_MAX_BYTES,
+      allowedMimeTypes: PRACTICE_EVIDENCE_MIME_TYPES,
+    });
+  } catch (error) {
+    throw new Error(`PRACTICE_BUCKET_CREATE_FAILED:${detail(error)}`);
   }
 
-  return { sha256, etag: null, providerObjectVersion: null, created: !error };
+  try {
+    return await uploadBufferedPrivateObject(input);
+  } catch (error) {
+    throw new Error(`PRACTICE_STORAGE_UPLOAD_FAILED:${detail(error)}`);
+  }
 }
 
 export async function removePracticeEvidence(bucket: string, objectKey: string): Promise<void> {
-  const client = createPrivilegedClient();
-  const { error } = await client.storage.from(bucket).remove([objectKey]);
-  if (error) throw new Error(`PRACTICE_STORAGE_REMOVE_FAILED:${error.message}`);
+  try {
+    await removePrivateObject(bucket, objectKey);
+  } catch (error) {
+    throw new Error(`PRACTICE_STORAGE_REMOVE_FAILED:${detail(error)}`);
+  }
 }
 
 export async function createPracticeEvidenceDownloadUrl(input: {
@@ -93,12 +88,9 @@ export async function createPracticeEvidenceDownloadUrl(input: {
   objectKey: string;
   filename: string;
 }): Promise<string> {
-  const client = createPrivilegedClient();
-  const { data, error } = await client.storage.from(input.bucket).createSignedUrl(input.objectKey, 60, {
-    download: input.filename
-  });
-  if (error || !data?.signedUrl) {
-    throw new Error(`PRACTICE_SIGNED_URL_FAILED:${error?.message ?? "missing_url"}`);
+  try {
+    return await createPrivateDownloadUrl({ ...input, expiresInSeconds: 60 });
+  } catch (error) {
+    throw new Error(`PRACTICE_SIGNED_URL_FAILED:${detail(error)}`);
   }
-  return data.signedUrl;
 }
