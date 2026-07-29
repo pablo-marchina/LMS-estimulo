@@ -42,33 +42,39 @@ PostgreSQL outbox
 
 Componentes corporativos equivalentes podem ser reutilizados, mas precisam cumprir os mesmos contratos. O inventário necessário está em [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](../../infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md).
 
-## Runtime atual e transição
-
-O runtime ativo ainda usa Supabase Auth, Storage, Edge Function `authenticated-rpc` e RPC/PostgREST. Isso é válido apenas em `local`, `development/test` e previews controlados.
-
-O selector versionado é:
+## Dois providers, sem fallback
 
 ```text
-PLATFORM_RUNTIME_PROVIDER=supabase  → desenvolvimento/teste
-PLATFORM_RUNTIME_PROVIDER=aws       → staging/produção
+PLATFORM_RUNTIME_PROVIDER=supabase  → local, test e preview
+PLATFORM_RUNTIME_PROVIDER=aws       → staging e production
 ```
 
-Quando `APP_ENV=production`, qualquer provider diferente de `aws` é rejeitado. No provider AWS, a readiness permanece fail-closed até existirem probes reais de identidade, banco e storage.
+A política é aplicada pela fronteira central e pelos próprios adapters Supabase. Qualquer tentativa de criar sessão, acesso privilegiado, RPC ou storage Supabase em staging/produção falha explicitamente.
+
+A verificação real do ambiente Supabase é executada por:
+
+```bash
+npm run verify:supabase
+```
+
+No provider AWS, a readiness permanece fail-closed até existirem probes reais de identidade, banco e storage.
 
 ## Compute
 
-AWS Lambda é o compute canônico para o Next.js. `Dockerfile.lambda`:
+AWS Lambda é o único compute versionado para o Next.js. Não existe stack ECS/Fargate nem segundo Dockerfile na árvore ativa.
+
+`Dockerfile.lambda`:
 
 - produz o Next.js standalone;
 - inclui AWS Lambda Web Adapter;
-- seleciona `PLATFORM_RUNTIME_PROVIDER=aws`;
-- usa `/api/health/ready`, não liveness, para aceitar tráfego;
-- converte status `500-599` em falha da invocação;
-- direciona apenas cache descartável para `/tmp`.
+- seleciona `APP_ENV=production` e `PLATFORM_RUNTIME_PROVIDER=aws`;
+- incorpora somente `NEXT_PUBLIC_APP_URL` como configuração pública;
+- não recebe configuração Supabase;
+- usa `/api/health/live` para o Web Adapter detectar que o servidor HTTP iniciou;
+- mantém `/api/health/ready` como gate externo das dependências AWS;
+- direciona somente cache descartável para `/tmp`.
 
 A função será publicada por imagem ECR imutável, versão e alias. Promoção e rollback não usarão tags mutáveis.
-
-O Terraform ECS/Fargate existente é scaffolding anterior e não é a arquitetura-alvo. Ele permanece bloqueado até ser removido ou reaproveitado explicitamente após o inventário corporativo.
 
 ## Identidade
 
@@ -99,7 +105,7 @@ A migração preserva:
 - idempotência e auditoria;
 - RLS como defesa em profundidade.
 
-PostgREST e a Edge Function Supabase deixam de ser dependências. O adapter AWS autentica a identidade Cognito, estabelece o contexto interno e executa operações aprovadas no PostgreSQL.
+PostgREST e a Edge Function Supabase deixam de ser dependências de produção. O adapter AWS autentica a identidade Cognito, estabelece o contexto interno e executa operações aprovadas no PostgreSQL.
 
 Antes de ativar RDS são obrigatórios replay limpo, inventário de extensões/roles, equivalência de grants e comportamento, teste de conexão via Proxy, PITR, restore e rollback.
 
@@ -127,6 +133,18 @@ A outbox do PostgreSQL continua sendo a fonte persistente. Um dispatcher publica
 
 O request Lambda não executa trabalho permanente após devolver a resposta.
 
+## Infraestrutura
+
+A árvore ativa não declara recursos AWS físicos antes do inventário corporativo. Ela contém apenas:
+
+- o container Lambda;
+- o contrato de arquitetura;
+- as fronteiras de provider;
+- o guia operacional;
+- o inventário de integração necessário.
+
+A infraestrutura será integrada aos recursos, módulos e pipelines oficiais da empresa depois que contas, rede, edge, identidade, dados, filas, secrets e observabilidade forem conhecidos.
+
 ## Segurança e operação
 
 A plataforma exige:
@@ -141,28 +159,19 @@ A plataforma exige:
 - backup, PITR, restore, canary e rollback exercitados;
 - SBOM, scanning e imagem por digest.
 
-## Ambientes
-
-```text
-local              Supabase local/teste
- development/test   Supabase hospedado autorizado
- preview            Supabase e dados de teste
- AWS staging        adapters AWS e serviços equivalentes à produção
- AWS production     adapters AWS exclusivamente
-```
-
-Nenhum artefato de Supabase pode ser promovido como prova de produção.
-
 ## Estado verificável
 
 ```text
 aws_architecture_decided = true
 production_compute = lambda
+second_container_present = false
+ecs_terraform_present = false
 production_identity = cognito_or_corporate_federation
 production_database = rds_postgresql_via_rds_proxy
 production_storage = s3_direct_upload
 production_async = sqs_and_lambda_workers
 supabase_allowed_in_production = false
+supabase_verification_command = present
 corporate_aws_inventory_complete = false
 aws_runtime_adapters_active = false
 lambda_image_build_verified = false
