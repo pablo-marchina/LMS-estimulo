@@ -112,4 +112,4 @@ Nem todos os eventos precisam desses blocos. Os schemas específicos devem proib
 
 ## 7. Schema executável
 
-O contrato está em [`schemas/event-envelope-v1.schema.json`](schemas/event-envelope-v1.schema.json). Exemplos válidos estão em [`examples/`](examples/).
+O contrato executável está em [`schemas/event-envelope-v1.schema.json`](schemas/event-envelope-v1.schema.json). Exemplos canônicos devem permanecer incorporados aos schemas e testes versionados, evitando diretórios documentais sem inventário próprio.
