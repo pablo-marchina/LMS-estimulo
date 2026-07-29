@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { resolvePublicApplicationOrigin } from "../../apps/web/lib/http-public-origin-core.mjs";
+
+const administrativeLoginPage = await readFile(
+  new URL("../../apps/web/app/entrar/administracao/page.tsx", import.meta.url),
+  "utf8",
+);
+const administrativeOAuthRoute = await readFile(
+  new URL("../../apps/web/app/auth/admin/start/route.ts", import.meta.url),
+  "utf8",
+);
 
 test("local request origin wins over stale Vercel preview variables", () => {
   assert.equal(
@@ -45,4 +55,13 @@ test("production rejects a local configured origin", () => {
     () => resolvePublicApplicationOrigin({ environment: "production", appUrl: "http://localhost:3000" }),
     /DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED/,
   );
+});
+
+test("admin login starts OAuth through a native GET navigation", () => {
+  assert.match(administrativeLoginPage, /<form action="\/auth\/admin\/start" method="get">/);
+  assert.doesNotMatch(administrativeLoginPage, /ButtonLink href="\/auth\/admin\/start"/);
+});
+
+test("admin OAuth callback is bound to the actual request origin", () => {
+  assert.match(administrativeOAuthRoute, /publicApplicationOrigin\(request\.nextUrl\.origin\)/);
 });
