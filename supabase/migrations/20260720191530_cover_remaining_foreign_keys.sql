@@ -4,6 +4,8 @@ set statement_timeout = '15min';
 -- Create only the indexes still missing for application-owned foreign keys.
 -- An existing index is accepted when its leading columns match the FK columns
 -- in constraint order, so wider useful indexes are not duplicated.
+-- pg_index.indkey is a zero-based int2vector; normalize its leading elements
+-- into a regular one-based array before comparing it with pg_constraint.conkey.
 do $$
 declare
   v_fk record;
@@ -41,7 +43,11 @@ begin
         and i.indisvalid
         and i.indisready
         and i.indpred is null
-        and (i.indkey::smallint[])[1:cardinality(fk.column_numbers)] = fk.column_numbers
+        and array(
+          select i.indkey[position]
+          from generate_series(0,cardinality(fk.column_numbers)-1) as position
+          order by position
+        )=fk.column_numbers
     )
     order by fk.schema_name,fk.table_name,fk.constraint_name
   loop
@@ -95,7 +101,11 @@ begin
         and i.indisvalid
         and i.indisready
         and i.indpred is null
-        and (i.indkey::smallint[])[1:cardinality(fk.column_numbers)] = fk.column_numbers
+        and array(
+          select i.indkey[position]
+          from generate_series(0,cardinality(fk.column_numbers)-1) as position
+          order by position
+        )=fk.column_numbers
     )
   )
   select coalesce(jsonb_agg(jsonb_build_object(
