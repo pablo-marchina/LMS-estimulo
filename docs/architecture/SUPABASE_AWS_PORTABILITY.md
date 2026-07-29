@@ -1,126 +1,76 @@
-# Portabilidade Supabase → AWS
+# Lacunas de portabilidade entre Supabase e AWS
 
-**Versão:** 0.1  
-**Status:** Obrigatória para a primeira release de produção
+**Revisado em:** 2026-07-29  
+**Status:** análise de lacunas; portabilidade ainda não implementada
 
-## 1. Objetivo
+## Estado atual
 
-Permitir que o mesmo produto seja desenvolvido e testado rapidamente no Supabase, mas implantado na AWS sem reescrita do domínio, migrations ou fluxos centrais.
+O runtime usa diretamente:
 
-## 2. Matriz de equivalência
+- `@supabase/ssr` e `@supabase/supabase-js`;
+- Supabase Auth;
+- Supabase Storage;
+- RPC/PostgREST;
+- Edge Function `authenticated-rpc`.
 
-| Capacidade | Local/test | AWS staging/production | Estratégia de portabilidade |
+O Terraform declara RDS e S3, mas esses recursos não estão ligados à aplicação. Nenhum adapter AWS de identidade, banco ou storage está ativo.
+
+## Objetivo
+
+Migrar para AWS sem reescrever regras de negócio, histórico de migrations ou experiência do produto. Esse objetivo ainda precisa ser comprovado por implementação e testes.
+
+## Matriz
+
+| Capacidade | Runtime atual | Destino AWS definido | Estado |
 |---|---|---|---|
-| PostgreSQL | Supabase Postgres | Amazon RDS for PostgreSQL | SQL PostgreSQL portável e migrations únicas |
-| Autenticação | Supabase Auth | Amazon Cognito User Pools | adapter OIDC/JWT + identidade interna |
-| Arquivos | Supabase Storage | Amazon S3 | `StorageProvider` e URLs assinadas |
-| API | aplicação containerizada | ECS/Fargate + ALB | mesma imagem/container |
-| Workers | processo local/test | ECS/Fargate workers | mesmo código e contrato de job |
-| Fila | adapter de teste/Postgres outbox | Amazon SQS + DLQ | `QueueProvider` |
-| Agendamento | runner de teste | EventBridge Scheduler | `SchedulerProvider` |
-| Secrets | `.env` seguro/CI secrets | AWS Secrets Manager/SSM | `SecretProvider` |
-| E-mail | sink/sandbox | Amazon SES | `MailProvider` |
-| Observabilidade | OpenTelemetry local/test | ADOT + CloudWatch/X-Ray | instrumentação OTel única |
-| CDN/WAF/DNS | não aplicável/teste | CloudFront + WAF + Route 53 + ACM | camada de edge AWS |
+| banco | Supabase PostgreSQL + RPC | RDS PostgreSQL | recurso declarado; adapter pendente |
+| identidade | Supabase Auth | provedor ainda não aprovado | decisão e adapter pendentes |
+| arquivos | Supabase Storage | S3 privado | recurso declarado; adapter pendente |
+| compute | Next.js em desenvolvimento/preview | ECS/Fargate + ALB | Terraform presente; deploy pendente |
+| secrets | ambiente protegido | Secrets Manager por ARN | Terraform preparado |
+| observabilidade | logs da plataforma atual | CloudWatch + alarmes | Terraform parcial; operação pendente |
+| integrações | outbox e adapters no código | execução AWS a definir | não implantada |
 
-## 3. Banco portátil
+Cognito, SQS, SES, EventBridge, CloudFront, WAF, RDS Proxy e ADOT não são componentes ativos nem decisões finais.
 
-### Permitido no núcleo
+## Banco
 
-- PostgreSQL SQL padrão e recursos suportados no RDS;
-- schemas, FKs, checks, triggers e funções PL/pgSQL justificadas;
-- RLS PostgreSQL;
-- JSONB para configurações versionadas e payloads validados;
-- `pgcrypto` quando suportado e aprovado;
-- migrations SQL versionadas.
+As migrations usam PostgreSQL, mas incluem contratos ligados ao ecossistema Supabase. Antes de RDS:
 
-### Proibido sem adapter ou plano de equivalência
+- identificar extensões e APIs não portáveis;
+- definir autenticação e contexto transacional;
+- substituir dependências de PostgREST/RPC quando necessário;
+- executar replay em RDS limpo;
+- comparar schema e comportamento;
+- exercitar backup, PITR e restore.
 
-- lógica central em Supabase Edge Functions;
-- dependência direta de Supabase Realtime;
-- uso do PostgREST como única API de domínio;
-- policies acopladas diretamente a `auth.uid()`;
-- URLs e IDs internos do Supabase persistidos como domínio;
-- webhooks de banco como mecanismo único de integração;
-- extensões indisponíveis no RDS escolhido.
+## Identidade
 
-## 4. Identidade portátil
+A identidade interna não deve depender apenas do identificador externo. A produção precisa preservar a relação entre provedor, conta interna, participante, organização e permissões.
 
-O token externo nunca será a identidade de domínio.
+A escolha do provedor de produção permanece aberta. Nenhuma documentação deve declarar Cognito como implementado ou obrigatório sem decisão posterior.
+
+## Arquivos
+
+O domínio deve manter metadados e chave opaca do objeto, nunca URL assinada persistida. A implementação S3 precisa reproduzir:
 
 ```text
-JWT Supabase ou Cognito
-→ validação pelo adapter OIDC
-→ external_identity(provider, subject)
-→ iam.user_account
-→ contexto interno da transação
+autorização
+validação de MIME/extensão/tamanho
+hash SHA-256
+upload privado
+download autorizado
+revogação e retenção
 ```
 
-A API resolverá o usuário interno e definirá contexto transacional PostgreSQL:
+O scanner de malware não faz parte do produto atual.
 
-```sql
-SET LOCAL app.user_account_id = '<uuid>';
-SET LOCAL app.organization_id = '<uuid>';
-```
+## Prova necessária
 
-As funções de RLS deverão ler esse contexto neutro, e não claims proprietários do provedor.
-
-## 5. Storage portátil
-
-O domínio persiste somente:
-
-- `file_object_id`;
-- provider lógico;
-- bucket lógico;
-- object key opaca;
-- hash;
-- tamanho;
-- MIME validado;
-- status de scan;
-- classificação de privacidade.
-
-Nunca persistir URL assinada. Supabase Storage e S3 implementam o mesmo contrato:
-
-```text
-request_upload
-confirm_upload
-scan
-promote
-request_download
-revoke
-```
-
-## 6. Filas e processamento
-
-O compromisso atômico termina no PostgreSQL:
-
-```text
-transação de domínio
-+ evento
-+ outbox
-```
-
-Um dispatcher lê a outbox. Em testes pode usar um adapter síncrono/controlado; em AWS publicará no SQS. Consumidores usam inbox/idempotência em ambos.
-
-## 7. Testes de portabilidade obrigatórios
-
-- aplicar todas as migrations no Supabase limpo;
-- aplicar todas as migrations no RDS PostgreSQL limpo;
-- comparar schemas esperados;
-- executar a mesma suíte de integração;
-- validar diferenças de timezone, extensões e tipos;
-- validar RLS com tokens Supabase e Cognito;
-- executar testes de storage em Supabase e S3;
-- executar testes de fila em adapter de teste e SQS;
-- impedir importações de SDK Supabase dentro dos módulos de domínio.
-
-## 8. Lint arquitetural
-
-O CI deverá falhar quando módulos de domínio importarem diretamente:
-
-- SDK Supabase;
-- SDK AWS;
-- cliente HubSpot;
-- cliente OpenAI;
-
-Esses imports pertencem à camada de infraestrutura/adapters.
+- replay e testes em RDS;
+- testes equivalentes de identidade;
+- upload/download em S3;
+- importações de infraestrutura contidas fora das regras de domínio;
+- E2E em AWS staging;
+- rollback para versão anterior;
+- documentação operacional baseada na implementação real.

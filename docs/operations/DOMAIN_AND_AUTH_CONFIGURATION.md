@@ -1,33 +1,21 @@
-# Domínio e redirects da Plataforma Estímulo
+# Configuração atual de domínio e autenticação
 
-## Domínio recomendado
+**Revisado em:** 2026-07-29  
+**Status:** desenvolvimento e preview; produção AWS pendente
 
-Use `plataforma.estimulo.org` como domínio público da plataforma de capacitação.
+## Domínio canônico desejado
 
-Ele preserva a marca institucional `estimulo.org`, diferencia o produto educacional do fluxo de crédito em `app.estimulo.org` e permite trocar a infraestrutura Vercel no futuro sem mudar a URL dos participantes.
+`plataforma.estimulo.org` é o domínio recomendado para a experiência pública. A associação definitiva deve ser feita no ambiente AWS aprovado.
 
-## Vercel
+## Hospedagem temporária
 
-1. Abra o projeto `lms-estimulo-web`.
-2. Em **Settings > Domains**, adicione `plataforma.estimulo.org`.
-3. Crie no provedor DNS do domínio `estimulo.org` o registro solicitado pela Vercel.
-4. Defina a variável de produção:
+O projeto `lms-estimulo-web` na Vercel pode ser usado para preview e validação controlada. Ele não é o ambiente oficial de produção.
 
-```text
-NEXT_PUBLIC_APP_URL=https://plataforma.estimulo.org
-```
+Em previews, o runtime pode usar `VERCEL_BRANCH_URL` ou `VERCEL_URL`. Não reutilizar uma URL de produção como configuração global de preview.
 
-Não defina a URL de produção como variável compartilhada de Preview: o runtime usa automaticamente `VERCEL_BRANCH_URL`/`VERCEL_URL` em previews.
+## Supabase Auth
 
-## Supabase Auth > URL Configuration
-
-**Site URL**
-
-```text
-https://plataforma.estimulo.org
-```
-
-**Redirect URLs**
+O ambiente Supabase de desenvolvimento/teste deve permitir:
 
 ```text
 http://localhost:3000/**
@@ -37,25 +25,38 @@ https://*-pablo-marchinas-projects.vercel.app/**
 https://plataforma.estimulo.org/**
 ```
 
-Os caminhos usados atualmente são `/auth/admin/callback` para o OAuth administrativo e `/auth/confirm` para confirmação de cadastro.
+A última URL é uma reserva de domínio; não comprova DNS ou deploy AWS.
 
-## Google OAuth
+Rotas da aplicação:
 
-No provedor Google, mantenha como URI de redirecionamento autorizada o callback do Supabase:
+- `/auth/admin/callback`: callback administrativo;
+- `/confirm`: confirmação canônica de e-mail;
+- `/auth/confirm`: compatibilidade;
+- `/`: encaminha códigos OAuth administrativos recebidos na raiz para o callback correto.
+
+No Google OAuth, o redirect autorizado aponta para o callback do projeto Supabase ativo:
 
 ```text
-https://cfpfeavjlgheqqiaqtzv.supabase.co/auth/v1/callback
+https://<project-ref>.supabase.co/auth/v1/callback
 ```
 
-As URLs da aplicação ficam na allowlist do Supabase; o Google retorna primeiro ao Supabase Auth.
+Não registrar client secret, tokens ou cookies neste documento.
 
-## Local
+## Ambiente local
 
-No `.env` da raiz:
+Na raiz:
+
+```bash
+cp .env.example .env
+```
 
 ```text
 APP_ENV=development
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-O arquivo `supabase/config.toml` contém a configuração equivalente para o Supabase local.
+`supabase/config.toml` mantém a configuração local equivalente. Valores hospedados continuam dependentes da configuração do dashboard do Supabase e devem ser verificados antes de cada prova real.
+
+## Produção
+
+A produção AWS exigirá nova configuração de domínio, certificado, callbacks e provedor de identidade. Este documento não autoriza promover a configuração Vercel/Supabase atual para produção.

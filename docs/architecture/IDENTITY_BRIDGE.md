@@ -1,157 +1,87 @@
-# Bridge de identidade Supabase/Cognito/HubSpot
+# Identidade, acesso e vínculo externo
 
-**Versão:** 1.1  
-**Data:** 2026-07-16  
-**Estado:** contrato técnico parcial; integração oficial pendente
+**Revisado em:** 2026-07-29  
+**Status:** identidade da aplicação implementada em Supabase; integração institucional pendente
 
-## Autoridade e objetivo
+## Estado implementado
 
-`premissas-desenvolvimento.md` exige:
+### Participantes
 
-- clientes com crédito vinculados ao registro correto;
-- criação de clientes sem crédito para associação futura;
-- coleta ou resolução de nome, e-mail, CPF, telefone, CNPJ opcional e UTM;
-- login integrado à experiência Estímulo.
+- cadastro público;
+- confirmação de e-mail;
+- login por senha;
+- captura de UTM de primeiro contato;
+- conclusão do cadastro com CPF obrigatório;
+- CPF validado, cifrado por AES-256-GCM e indexado por HMAC independente;
+- resolução de contexto interno para acessar áreas protegidas.
 
-A DEC-070 limita os dados enviados pelo LMS ao HubSpot a identificadores mínimos de vínculo, engajamento e dados úteis para cálculos aprovados.
+### Administração
 
-## Fluxo esperado
+- entrada separada em `/entrar/administracao`;
+- Google OAuth;
+- e-mail confirmado no domínio exato `@estimulo.org`;
+- vínculo organizacional e RBAC;
+- login administrativo por senha proibido.
 
-```text
-entrada pelo site Estímulo
-→ autenticação no provedor autorizado
-→ validação de token, issuer, audience e expiração
-→ coleta ou resolução dos campos obrigatórios
-→ normalização da identidade externa
-→ resolução do user_account interno
-→ busca e deduplicação no HubSpot
-→ vínculo ou criação do registro CRM
-→ persistência dos identificadores cruzados
-→ sessão interna autorizada
-→ contexto transacional PostgreSQL
-```
+O domínio do e-mail e o parâmetro Google `hd` não concedem permissões sozinhos.
 
-## Identidades separadas
+## Entidades
 
-O domínio preserva:
+A aplicação distingue:
 
-- identidade externa de autenticação;
-- conta interna `iam.user_account`;
-- empreendedor;
+- identidade externa;
+- conta interna;
+- participante/empreendedor;
 - negócio;
-- contato/empresa no HubSpot;
-- operação de crédito;
-- organização operadora.
+- organização operadora;
+- contato e empresa no HubSpot;
+- operação de crédito.
 
-Nenhum identificador substitui silenciosamente outro.
+Não existe vínculo automático por simples coincidência de e-mail.
 
-## Regras de autenticação
+## Runtime atual
 
-- JWT e refresh token não são persistidos;
-- chave do domínio nunca é apenas o `sub` externo;
-- identidade externa é única por `(issuer, subject)`;
-- e-mail deve ser verificado;
-- colisão por e-mail não vincula contas automaticamente;
-- mudança de provedor não troca o `user_account_id`;
-- sessões administrativas exigem autorização Estímulo;
-- recursos de teste falham fechados em produção.
+Supabase Auth é o provedor ativo de desenvolvimento/teste. Cookies e tokens são gerenciados pelo adapter SSR e não são persistidos como dados de domínio.
 
-## Dados de entrada
+O provedor de produção na AWS ainda não foi selecionado. Cognito é uma alternativa possível, não uma implementação vigente.
 
-Antes da ativação oficial, definir e testar:
+## Lacunas institucionais
 
-- nome e nome preferido;
-- e-mail normalizado e verificado;
-- CPF validado e protegido;
-- telefone normalizado;
-- CNPJ opcional e vínculo ao negócio;
-- UTMs e origem;
-- consentimentos e aviso de privacidade;
-- atualização e correção.
+Ainda precisam ser definidos e comprovados:
 
-Esses dados podem já existir no HubSpot como dados CRM. A integração do LMS usa somente os identificadores mínimos necessários para localizar ou associar os sinais permitidos pela DEC-070.
-
-## Resolução no HubSpot
-
-A busca pode considerar:
-
-- ID HubSpot conhecido;
-- CPF;
-- CNPJ e associação;
-- e-mail;
+- entrada integrada ao site Estímulo ou SSO;
+- tratamento de usuários já existentes;
 - telefone;
-- identificador de crédito;
-- ID interno sincronizado.
+- CNPJ opcional e vínculo com negócio;
+- recuperação e suporte de conta;
+- merge e conflitos;
+- provedor de identidade de produção;
+- configuração oficial dos redirects e domínios;
+- vínculo e deduplicação no HubSpot;
+- relação com operações de crédito.
 
-Estados possíveis:
+## HubSpot
 
-```text
-single_match
-no_match_create
-multiple_matches_manual_resolution
-conflict_blocked
-existing_contact_new_company
-existing_contact_existing_credit
-```
+O código possui política, adapter HTTP e fila de resolução administrativa, mas não possui inventário físico, sandbox ou regras aprovadas para criar, associar ou mesclar registros reais.
 
-Merge automático somente com regra aprovada e auditável.
+Somente identificadores mínimos e dados autorizados pela DEC-070 podem sair do LMS. CPF bruto não é enviado em eventos de engajamento.
 
-## Identificadores persistidos para integração
+## Testes sintéticos
 
-O LMS deve preferir:
+O Browser E2E possui modo sintético restrito a host local, token longo e cookie específico. Não existe rota pública de cadastro de teste e não há bypass produtivo.
 
-- `user_account_id` interno;
-- `hubspot_contact_id`;
-- `hubspot_company_id` quando necessário;
-- `credit_operation_id` quando autorizado;
-- hashes ou fingerprints necessários para reconciliação.
-
-Não é necessário repetir CPF, telefone ou e-mail em cada evento de engajamento.
-
-## Contexto transacional
-
-Após validação e resolução:
-
-```sql
-SET LOCAL app.user_account_id = '<uuid>';
-SET LOCAL app.organization_id = '<uuid>';
-```
-
-O contexto é derivado pelo servidor.
-
-## Provedores
-
-### Supabase development/test
-
-O adapter pode validar tokens do projeto autorizado e resolver identidade interna. A prova real exige usuário controlado e fluxo com HubSpot sandbox.
-
-### AWS production
-
-O adapter de produção deve validar Cognito ou alternativa aprovada, mantendo o mesmo contrato interno.
-
-## Cadastro de teste
-
-O cadastro de teste:
-
-- existe somente para desenvolvimento;
-- não coleta todos os campos oficiais;
-- não resolve identidade HubSpot real;
-- não integra o site;
-- não encerra o requisito.
-
-## Gates
+## Gate
 
 ```text
-site_entry_flow_defined = false
-real_identity_provider_selected = false
-name_email_cpf_phone_cnpj_utm_flow_tested = false
-hubspot_identity_search_implemented = false
-hubspot_contact_creation_implemented = false
-hubspot_company_and_credit_association_implemented = false
-deduplication_and_conflict_rules_approved = false
-minimal_linking_identifiers_defined = false
-participant_and_admin_permissions_tested = false
-supabase_real_token_flow_tested = false
-aws_identity_flow_tested = false
-production_test_bypasses_disabled = true
+participant_signup = implemented
+participant_email_confirmation = implemented
+participant_password_login = implemented
+cpf_protection = implemented
+admin_google_oauth = implemented
+admin_domain_and_rbac_gate = implemented
+official_site_entry = pending
+phone_and_optional_cnpj = pending
+production_identity_provider = pending
+hubspot_identity_resolution = pending
+aws_identity_e2e = pending
 ```
