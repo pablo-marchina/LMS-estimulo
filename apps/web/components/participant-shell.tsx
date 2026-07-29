@@ -5,9 +5,10 @@ import { Award, BookOpen, Compass, FileUp, Home, Menu, Trophy, User, X } from "l
 import { signOutAction } from "@/app/entrar/actions";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
+import { InterfaceSlot } from "@/components/interface-slot";
 import { Button } from "@/components/ui/button";
 import { NavItem } from "@/components/ui/nav-item";
-import { interfaceOrder, interfaceText, interfaceVisible } from "@/lib/interface-content/contracts";
+import { interfaceHref, interfaceOrder, interfaceText, interfaceVisible } from "@/lib/interface-content/contracts";
 
 const linkDefinitions = [
   { href: "/empreendedor", label: "Início", contentKey: "participant.nav.home", icon: Home, exact: true, order: 10 },
@@ -27,10 +28,10 @@ export function ParticipantShell({ email, children }: { email: string; children:
   const links = linkDefinitions
     .filter((link) => interfaceVisible(content, link.contentKey))
     .sort((a, b) => interfaceOrder(content, a.contentKey, a.order) - interfaceOrder(content, b.contentKey, b.order))
-    .map((link) => ({ ...link, label: interfaceText(content, link.contentKey, link.label) }));
+    .map((link) => ({ ...link, href: interfaceHref(content, link.contentKey, link.href), label: interfaceText(content, link.contentKey, link.label) }));
   const nav = links.map((link) => {
     const Icon = link.icon;
-    return <NavItem key={link.href} href={link.href} exact={link.exact} variant="top" icon={<Icon size={16} aria-hidden="true" />}>{link.label}</NavItem>;
+    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={16} aria-hidden="true" />}>{link.label}</NavItem>;
   });
 
   return (
@@ -45,7 +46,10 @@ export function ParticipantShell({ email, children }: { email: string; children:
         </div>
         {mobileOpen ? <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 xl:hidden"><nav className="grid gap-1 pt-3 sm:grid-cols-2">{nav}</nav><div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3"><span className="truncate text-xs text-white/70">{email}</span><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}
       </header>
+      <InterfaceSlot area="participant" placement="before_content" />
       <main id="conteudo-principal" className="mx-auto w-full max-w-[1400px]" tabIndex={-1}>{children}</main>
+      <InterfaceSlot area="participant" placement="after_content" />
+      <InterfaceSlot area="participant" placement="footer" />
     </div>
   );
 }
