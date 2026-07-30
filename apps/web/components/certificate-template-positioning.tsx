@@ -3,10 +3,18 @@
 import { useState } from "react";
 import { Input, Label, Select } from "@/components/ui/input";
 
-export function CertificateTemplatePositioning() {
-  const [nameY, setNameY] = useState(53);
-  const [journeyY, setJourneyY] = useState(40);
-  const [textColor, setTextColor] = useState("primary");
+export function CertificateTemplatePositioning({
+  initialNameY = 53,
+  initialJourneyY = 40,
+  initialTextColor = "primary",
+}: {
+  initialNameY?: number;
+  initialJourneyY?: number;
+  initialTextColor?: string;
+}) {
+  const [nameY, setNameY] = useState(initialNameY);
+  const [journeyY, setJourneyY] = useState(initialJourneyY);
+  const [textColor, setTextColor] = useState(initialTextColor === "white" ? "white" : "primary");
   const colorClass = textColor === "white" ? "text-white" : "text-primary";
 
   return (
