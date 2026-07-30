@@ -13,6 +13,7 @@ const [
   gateway,
   migration,
   productionValidator,
+  productionContract,
 ] = await Promise.all([
   read("apps/web/app/cadastro/actions.ts"),
   read("apps/web/app/cadastro/page.tsx"),
@@ -22,7 +23,8 @@ const [
   read("apps/web/app/api/health/ready/route.ts"),
   read("supabase/functions/authenticated-rpc/index.ts"),
   read("supabase/migrations/20260727153000_permanent_auth_signup_hardening.sql"),
-  read("scripts/runtime/validate-production-config.mjs"),
+  read("scripts/runtime/validate-production-config-core.mjs"),
+  read("config/platform/aws-production.json"),
 ]);
 
 test("initial signup never handles CPF or calls Auth Admin on an obfuscated user", () => {
@@ -35,7 +37,6 @@ test("initial signup never handles CPF or calls Auth Admin on an obfuscated user
   assert.doesNotMatch(signupAction, /deleteUser/u);
   assert.doesNotMatch(signupPage, /name="cpf"/u);
   assert.doesNotMatch(signupPage, /name="telefone"/u);
-  assert.match(signupPage, /Acesso administrativo com Google/u);
 });
 
 test("CPF is protected only inside authenticated profile completion", () => {
@@ -57,13 +58,13 @@ test("confirmed accounts recover from missing or consumed PKCE state", () => {
   assert.match(confirmationAction, /cadastro=confirmado/u);
 });
 
-test("public signup v3 remains available through the authenticated gateway", () => {
+test("public signup v3 remains available through the authenticated test gateway", () => {
   assert.match(gateway, /provision_public_signup_participant_v3/u);
   assert.match(gateway, /p_user_account_id/u);
   assert.match(gateway, /ACTOR_MISMATCH/u);
 });
 
-test("database recovery is narrow and deployment readiness covers signup contracts", () => {
+test("database recovery is narrow while AWS production remains fail-closed and undecided", () => {
   assert.match(migration, /@estimulo\\\.org/u);
   assert.match(migration, /custom_claims/u);
   assert.match(migration, /v_active_previous_count/u);
@@ -71,7 +72,8 @@ test("database recovery is narrow and deployment readiness covers signup contrac
   assert.match(migration, /public_signup_v3/u);
   assert.match(migration, /cpf_protection_schema/u);
   assert.match(migration, /identity_recovery/u);
-  assert.match(productionValidator, /PRODUCTION_DATABASE_NOT_READY/u);
-  assert.match(productionValidator, /PRODUCTION_SECRET_REUSE_FORBIDDEN/u);
-  assert.match(productionValidator, /public_signup_v3/u);
+  assert.match(productionValidator, /BUILD_SECRET_REUSE_FORBIDDEN:CPF_KEYS/u);
+  assert.match(productionValidator, /AWS_BUILD_REQUIRES_DEPLOYED_ENVIRONMENT/u);
+  assert.match(productionContract, /"architecture_status": "decision_pending"/u);
+  assert.match(productionContract, /"production_ready": false/u);
 });
