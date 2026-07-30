@@ -6,25 +6,26 @@ const adminStart = await readFile("apps/web/app/auth/admin/start/route.ts", "utf
 const adminCallback = await readFile("apps/web/app/auth/admin/callback/route.ts", "utf8");
 const adminPage = await readFile("apps/web/app/entrar/administracao/page.tsx", "utf8");
 const participantLogin = await readFile("apps/web/app/entrar/page.tsx", "utf8");
-const participantLoginAction = await readFile("apps/web/app/entrar/actions.ts", "utf8");
 const mediaViewer = await readFile("apps/web/components/content-asset-viewer.tsx", "utf8");
 const nextConfig = await readFile("apps/web/next.config.ts", "utf8");
 const migration = await readFile("supabase/migrations/20260730150000_openai_official_drive_videos.sql", "utf8");
 
-test("administrative Google login is authorized by active RBAC instead of a duplicated domain gate", () => {
+test("administrative Google login hints the requested corporate account and still requires domain plus RBAC", () => {
+  assert.match(adminStart, /requestedEmail/u);
+  assert.match(adminStart, /isEstimuloAdministrativeEmail\(requestedEmail\)/u);
+  assert.match(adminStart, /hd:\s*"estimulo\.org"/u);
   assert.match(adminStart, /prompt:\s*"select_account"/u);
-  assert.doesNotMatch(adminStart, /hd:\s*"estimulo\.org"/u);
+  assert.match(adminStart, /login_hint:\s*requestedEmail/u);
+  assert.match(adminCallback, /isEstimuloAdministrativeEmail\(user\.email\)/u);
   assert.match(adminCallback, /administrativeOrganization\(identity\)/u);
-  assert.doesNotMatch(adminCallback, /isEstimuloAdministrativeEmail|dominio_invalido/u);
-  assert.match(adminPage, /papel administrativo ativo/u);
-  assert.match(adminPage, /Escolher conta Google/u);
-  assert.match(participantLoginAction, /administrativeOrganization\(auth\.identity\)/u);
+  assert.match(adminPage, /name="email"/u);
+  assert.match(adminPage, /Continuar com Google/u);
 });
 
 test("participant login presents signup and team access as distinct visual actions", () => {
   assert.match(participantLogin, /Ainda não tem conta\?/u);
   assert.match(participantLogin, /Criar minha conta/u);
-  assert.match(participantLogin, /Equipe Estímulo/u);
+  assert.match(participantLogin, /Sou da equipe Estímulo/u);
   assert.match(participantLogin, /Acessar área administrativa/u);
   assert.match(participantLogin, /sm:grid-cols-2/u);
   assert.match(participantLogin, /bg-primary-soft\/55/u);
