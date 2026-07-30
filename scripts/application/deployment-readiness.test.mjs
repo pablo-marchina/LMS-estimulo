@@ -27,8 +27,8 @@ test("liveness checks only the process while dependency readiness fails closed",
   assert.doesNotMatch(live, /createPrivilegedClient|rpc\(/u);
   assert.match(ready, /assertPlatformRuntimePolicy/u);
   assert.match(ready, /get_application_readiness/u);
-  assert.match(ready, /aws_architecture_pending/u);
-  assert.match(ready, /status:\s*503/u);
+  assert.match(ready, /function response\([\s\S]*status = 503/u);
+  assert.match(ready, /return response\("aws_architecture_pending"/u);
   assert.match(ready, /cache-control/u);
   assert.doesNotMatch(ready, /error\.message|JSON\.stringify\(process\.env/u);
 });
