@@ -31,18 +31,20 @@ export function AdminSectionNav({
 }
 
 export function AdminDisclosure({
+  id,
   title,
   description,
   children,
   open = false,
 }: {
+  id?: string;
   title: string;
   description: string;
   children: React.ReactNode;
   open?: boolean;
 }) {
   return (
-    <details className="rounded-2xl border border-border bg-white" open={open}>
+    <details id={id} className="scroll-mt-6 rounded-2xl border border-border bg-white" open={open}>
       <summary className="cursor-pointer list-none px-5 py-4 marker:content-none [&::-webkit-details-marker]:hidden">
         <strong className="block text-sm text-secondary">{title}</strong>
         <span className="mt-1 block text-xs leading-5 text-muted">{description}</span>
