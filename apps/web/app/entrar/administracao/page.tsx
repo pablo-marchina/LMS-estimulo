@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
-import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ButtonLink } from "@/components/ui/button";
 
 const errorMessages: Record<string, string> = {
   oauth_indisponivel: "Não foi possível iniciar o acesso com Google. Tente novamente.",
@@ -39,14 +39,12 @@ export default async function AdministrativeSignInPage({
         </div>
       </div>
 
-      <form action="/auth/admin/start" method="get">
-        <div className="grid gap-3">
-          <PendingSubmitButton pendingLabel="Abrindo o Google…" size="lg" className="w-full">
-            Continuar com Google
-          </PendingSubmitButton>
-          <p className="text-center text-xs leading-5 text-muted">O clique abre a seleção de contas do Google. Sua senha não é compartilhada com a plataforma.</p>
-        </div>
-      </form>
+      <div className="grid gap-3">
+        <ButtonLink href="/auth/admin/start" size="lg" className="w-full">
+          Continuar com Google
+        </ButtonLink>
+        <p className="text-center text-xs leading-5 text-muted">Você será redirecionado para a seleção de contas do Google. Sua senha não é compartilhada com a plataforma.</p>
+      </div>
 
       <AuthFooter>
         <Link href="/entrar" className="font-semibold text-primary hover:underline">
