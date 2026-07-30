@@ -213,7 +213,11 @@ select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=:'e14_di
 select pg_temp.e14_assert((select value->>'journey_status'='completed' from e14_test_results where name='operator_result'),'operator result');
 
 select pg_temp.e14_assert((select count(*)-:'e14_events_before'::bigint>0 from eventing.events),'event total');
-select pg_temp.e14_assert((select count(*)-:'e14_events_before'::bigint=count(*)-:'e14_outbox_before'::bigint from eventing.outbox),'event and outbox total');
+select pg_temp.e14_assert(
+  (select count(*) from eventing.events)-:'e14_events_before'::bigint=
+  (select count(*) from eventing.outbox)-:'e14_outbox_before'::bigint,
+  'event and outbox total'
+);
 select pg_temp.e14_assert((select count(*)>0 from eventing.events where journey_instance_id=:'e14_journey_instance_id'::uuid),'journey events');
 select pg_temp.e14_assert((select
   (select count(*) from eventing.events where journey_instance_id=:'e14_journey_instance_id'::uuid)=
