@@ -3,6 +3,10 @@ declare
   v_organization_id uuid;
   v_definition_id uuid;
   v_eligibility_rule_version_id uuid;
+  v_current_version engagement.point_rule_versions%rowtype;
+  v_expected_policy jsonb;
+  v_next_version integer;
+  v_new_version_id uuid;
 begin
   select organization.id
     into v_organization_id
@@ -46,24 +50,64 @@ begin
     raise exception 'COMPLETE_DIAGNOSTIC_POINT_RULE_NOT_FOUND';
   end if;
 
-  update engagement.point_rule_versions version
-  set amount = 50,
-      eligibility_rule_version_id = v_eligibility_rule_version_id,
-      recurrence_policy = jsonb_build_object(
-        'scope', 'journey',
-        'frequency', 'once',
-        'maximum', 1,
-        'maximum_awards', 1,
-        'transferable', false,
-        'description', 'Concluir o diagnóstico empreendedor.',
-        'trigger', jsonb_build_object('event_name', 'diagnostic.session.completed')
-      ),
-      published_at = coalesce(version.published_at, now())
-  where version.point_rule_definition_id = v_definition_id
-    and version.status = 'published';
+  v_expected_policy := jsonb_build_object(
+    'scope', 'journey',
+    'frequency', 'once',
+    'maximum', 1,
+    'maximum_awards', 1,
+    'transferable', false,
+    'description', 'Concluir o diagnóstico empreendedor.',
+    'trigger', jsonb_build_object('event_name', 'diagnostic.session.completed')
+  );
 
-  if not found then
+  select version.*
+    into v_current_version
+  from engagement.point_rule_versions version
+  where version.point_rule_definition_id = v_definition_id
+    and version.status = 'published'
+    and version.published_at is not null
+  order by version.version_number desc
+  limit 1;
+
+  if v_current_version.id is null then
     raise exception 'COMPLETE_DIAGNOSTIC_POINT_RULE_VERSION_NOT_FOUND';
   end if;
+
+  if v_current_version.amount = 50
+    and v_current_version.eligibility_rule_version_id = v_eligibility_rule_version_id
+    and v_current_version.recurrence_policy = v_expected_policy
+  then
+    return;
+  end if;
+
+  select coalesce(max(version.version_number), 0) + 1
+    into v_next_version
+  from engagement.point_rule_versions version
+  where version.point_rule_definition_id = v_definition_id;
+
+  v_new_version_id := app_private.e14_deterministic_uuid(
+    'point-rule-version|' || v_definition_id::text || '|' || v_next_version::text || '|diagnostic-normalized'
+  );
+
+  insert into engagement.point_rule_versions (
+    id,
+    point_rule_definition_id,
+    version_number,
+    status,
+    amount,
+    eligibility_rule_version_id,
+    recurrence_policy,
+    published_at
+  ) values (
+    v_new_version_id,
+    v_definition_id,
+    v_next_version,
+    'published',
+    50,
+    v_eligibility_rule_version_id,
+    v_expected_policy,
+    now()
+  )
+  on conflict (point_rule_definition_id, version_number) do nothing;
 end
 $$;
