@@ -101,7 +101,6 @@
   "status": {
     "database_surface_frozen": true,
     "application_mapping_frozen": true,
-    "behavioral_replay_required": true,
-    "backend_e2e_replayed": false
+    "behavioral_replay_required": true
   }
 }
