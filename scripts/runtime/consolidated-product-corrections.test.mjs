@@ -20,6 +20,7 @@ test("participant authentication exposes password recovery and accessible visibi
   assert.match(login, /Sou da equipe Estímulo/u);
   assert.match(signup, /terms_version/u);
   assert.match(signup, /href="\/privacidade"/u);
+  assert.match(field, /useState\(true\)/u);
   assert.match(field, /aria-label=\{visible \? "Ocultar senha" : "Mostrar senha"\}/u);
   assert.match(requestAction, /resetPasswordForEmail/u);
   assert.match(callback, /exchangeCodeForSession/u);
@@ -27,29 +28,40 @@ test("participant authentication exposes password recovery and accessible visibi
   assert.match(updateAction, /updateUser\(\{ password:/u);
 });
 
-test("diagnostic completion persists answers, result navigation and idempotent points", async () => {
-  const [page, stepper, action, result, migration, reconciliation] = await Promise.all([
+test("diagnostic completion persists answers, result navigation and transactional idempotent points", async () => {
+  const [page, stepper, action, result, pointRuleMigration, reconciliation, atomicMigration, gateway] = await Promise.all([
     source("apps/web/app/empreendedor/diagnostico/page.tsx"),
     source("apps/web/components/diagnostic-stepper.tsx"),
     source("apps/web/app/empreendedor/diagnostico/actions.ts"),
     source("apps/web/app/empreendedor/resultado/page.tsx"),
     source("supabase/migrations/20260730020728_complete_diagnostic_point_rule.sql"),
     source("supabase/migrations/20260730113000_normalize_diagnostic_point_rule_eligibility.sql"),
+    source("supabase/migrations/20260730130000_atomic_diagnostic_completion_points.sql"),
+    source("supabase/functions/authenticated-rpc/index.ts"),
   ]);
 
   assert.match(page, /DiagnosticStepper/u);
   assert.match(stepper, /Pergunta \{currentIndex \+ 1\} de \{items.length\}/u);
   assert.match(action, /recordDiagnosticResponse/u);
-  assert.match(action, /completeDiagnostic/u);
-  assert.match(action, /award_participant_action_points/u);
-  assert.match(action, /p_action_code: "complete_diagnostic"/u);
+  assert.match(action, /complete_participant_diagnostic_with_points/u);
+  assert.doesNotMatch(action, /journeyRuntime\.completeDiagnostic/u);
+  assert.match(action, /p_completion_idempotency_key/u);
+  assert.match(action, /p_points_idempotency_key/u);
   assert.match(action, /\/empreendedor\/resultado\?journey=/u);
   assert.match(result, /diagnostico === "concluido"/u);
-  assert.match(migration, /e14_always_eligible/u);
-  assert.match(migration, /'maximum', 1/u);
-  assert.match(migration, /diagnostic\.session\.completed/u);
+  assert.match(pointRuleMigration, /e14_always_eligible/u);
+  assert.match(pointRuleMigration, /'maximum', 1/u);
+  assert.match(pointRuleMigration, /diagnostic\.session\.completed/u);
   assert.match(reconciliation, /COMPLETE_DIAGNOSTIC_POINT_RULE_VERSION_NOT_FOUND/u);
   assert.match(reconciliation, /e14_always_eligible/u);
+  assert.match(atomicMigration, /for update/u);
+  assert.match(atomicMigration, /e14_entrepreneur_for_account/u);
+  assert.match(atomicMigration, /DIAGNOSTIC_JOURNEY_MISMATCH/u);
+  assert.match(atomicMigration, /v_session_status = 'completed'/u);
+  assert.match(atomicMigration, /public\.e14_complete_diagnostic/u);
+  assert.match(atomicMigration, /public\.award_participant_action_points/u);
+  assert.match(atomicMigration, /revoke all .* from public, anon, authenticated/iu);
+  assert.match(gateway, /complete_participant_diagnostic_with_points/u);
 });
 
 test("certificate wallet and templates remain discoverable after upload", async () => {
@@ -86,11 +98,15 @@ test("administrative destructive actions are dependency-safe", async () => {
   assert.match(trackEditor, /if \(trilha\.status === "retired"\) return null/u);
 });
 
-test("gateway, help, legal and admin recovery contracts are versioned", async () => {
-  const [gateway, layout, users, terms, privacy, pointEditor] = await Promise.all([
+test("gateway, actionable help, legal and admin recovery contracts are versioned", async () => {
+  const [gateway, layout, usersAction, usersPage, accessPolicy, help, environment, terms, privacy, pointEditor] = await Promise.all([
     source("supabase/functions/authenticated-rpc/index.ts"),
     source("apps/web/app/layout.tsx"),
     source("apps/web/app/admin/usuarios/actions.ts"),
+    source("apps/web/app/admin/usuarios/page.tsx"),
+    source("apps/web/lib/auth/administrative-access.ts"),
+    source("apps/web/app/ajuda/page.tsx"),
+    source(".env.example"),
     source("apps/web/app/termos/page.tsx"),
     source("apps/web/app/privacidade/page.tsx"),
     source("apps/web/app/admin/gamificacao/point-rule-editor.tsx"),
@@ -101,6 +117,7 @@ test("gateway, help, legal and admin recovery contracts are versioned", async ()
     "archive_admin_track",
     "archive_library_content",
     "award_participant_action_points",
+    "complete_participant_diagnostic_with_points",
     "list_operator_certificate_templates",
     "register_admin_interface_content",
     "save_admin_journey",
@@ -110,10 +127,42 @@ test("gateway, help, legal and admin recovery contracts are versioned", async ()
     assert.match(gateway, new RegExp(`\\b${rpc}\\b`, "u"));
   }
   assert.match(layout, /SupportButton/u);
-  assert.match(users, /sendUserPasswordRecoveryAction/u);
+  assert.match(help, /Abrir WhatsApp/u);
+  assert.match(help, /Enviar e-mail/u);
+  assert.match(environment, /SUPPORT_EMAIL=contato@estimulo\.org/u);
+  assert.match(environment, /SUPPORT_WHATSAPP_URL=https:\/\/wa\.me\/5511935027090/u);
+  assert.match(usersAction, /sendUserPasswordRecoveryAction/u);
+  assert.match(usersAction, /usesCorporateGoogleIdentity/u);
+  assert.doesNotMatch(usersAction, /@estimulo\.org/u);
+  assert.match(usersPage, /E-mail, papel, status ou ID/u);
+  assert.match(accessPolicy, /usesCorporateGoogleIdentity/u);
   assert.match(terms, /aprovação jurídica/u);
   assert.match(privacy, /responsável jurídico e de privacidade/u);
   assert.match(pointEditor, /diagnostic\.session\.completed/u);
+});
+
+test("participant journeys, library formats and administrative user discovery follow the consolidated UX", async () => {
+  const [catalog, journey, library, users] = await Promise.all([
+    source("apps/web/app/empreendedor/jornadas/page.tsx"),
+    source("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx"),
+    source("apps/web/components/participant-library-page.tsx"),
+    source("apps/web/app/admin/usuarios/page.tsx"),
+  ]);
+
+  assert.doesNotMatch(catalog, /Jornada em destaque/iu);
+  assert.match(catalog, /Capacitação Estímulo/u);
+  assert.match(journey, /participantEyebrow/u);
+  assert.match(journey, /Seu caminho de aprendizagem/u);
+  assert.match(journey, /PendingSubmitButton/u);
+  assert.match(journey, /activityLabels/u);
+  for (const icon of ["Newspaper", "Video", "Podcast", "BookOpen", "Wrench", "GraduationCap"]) {
+    assert.match(library, new RegExp(`\\b${icon}\\b`, "u"));
+  }
+  assert.match(library, /formatIcon\(item\.content_format, item\.content_kind\)/u);
+  assert.match(users, /membership\.user_account_id/u);
+  assert.match(users, /membership\.membership_id/u);
+  assert.match(users, /role\.role_name/u);
+  assert.match(users, /membershipMatches/u);
 });
 
 test("migration boundary preserves release hardening and consolidated corrections", async () => {
@@ -128,8 +177,9 @@ test("migration boundary preserves release hardening and consolidated correction
     "20260730021926_safe_library_content_archiving.sql",
     "20260730022413_safe_admin_track_archiving.sql",
     "20260730113000_normalize_diagnostic_point_rule_eligibility.sql",
+    "20260730130000_atomic_diagnostic_completion_points.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260730113000_normalize_diagnostic_point_rule_eligibility\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260730130000_atomic_diagnostic_completion_points\.sql'/u);
 });
