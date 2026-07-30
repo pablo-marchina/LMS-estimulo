@@ -39,11 +39,13 @@ export default async function AdministrativeSignInPage({
         </div>
       </div>
 
-      <form action="/auth/admin/start" method="get" className="grid gap-3">
-        <PendingSubmitButton pendingLabel="Abrindo o Google…" size="lg" className="w-full">
-          Continuar com Google
-        </PendingSubmitButton>
-        <p className="text-center text-xs leading-5 text-muted">O clique abre a seleção de contas do Google. Sua senha não é compartilhada com a plataforma.</p>
+      <form action="/auth/admin/start" method="get">
+        <div className="grid gap-3">
+          <PendingSubmitButton pendingLabel="Abrindo o Google…" size="lg" className="w-full">
+            Continuar com Google
+          </PendingSubmitButton>
+          <p className="text-center text-xs leading-5 text-muted">O clique abre a seleção de contas do Google. Sua senha não é compartilhada com a plataforma.</p>
+        </div>
       </form>
 
       <AuthFooter>
