@@ -3,9 +3,10 @@ import { Award, Check } from "lucide-react";
 import { issueLearningCredentialsAction } from "@/app/actions/journey";
 import { DiagnosticDimensionChart } from "@/components/diagnostic-dimension-chart";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MetricTile } from "@/components/ui/metric-tile";
 import { PageHeader } from "@/components/ui/page-header";
@@ -16,9 +17,9 @@ import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { participantNextHref, statusLabel } from "@/lib/journey-runtime/navigation";
 
 export default async function ResultPage({
-  searchParams
+  searchParams,
 }: {
-  searchParams: Promise<{ journey?: string; avaliacao?: string; credenciais?: string }>;
+  searchParams: Promise<{ journey?: string; avaliacao?: string; credenciais?: string; diagnostico?: string }>;
 }) {
   const query = await searchParams;
   const journey = query.journey;
@@ -32,6 +33,7 @@ export default async function ResultPage({
       </div>
     );
   }
+
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
   const [state, credentials, diagnosticSummary] = await Promise.all([
@@ -47,6 +49,11 @@ export default async function ResultPage({
       <PageHeader eyebrow="Resultado da jornada" title={state.journey_title ?? state.journey_code} description="Acompanhe o que foi registrado durante sua experiência de aprendizagem." />
       <JourneyProgressNav state={state} current="result" />
 
+      {query.diagnostico === "concluido" ? (
+        <StatusPanel title="Diagnóstico concluído" tone="success">
+          <p>Suas respostas, seu perfil e os pontos de conclusão foram registrados. Esta operação é idempotente e não duplica pontos ao recarregar.</p>
+        </StatusPanel>
+      ) : null}
       {query.avaliacao === "aprovada" ? <StatusPanel title="Avaliação aprovada" tone="success"><p>O resultado foi registrado e as credenciais elegíveis foram processadas.</p></StatusPanel> : null}
       {query.credenciais === "atualizadas" ? <StatusPanel title="Credenciais atualizadas" tone="success"><p>Selos e certificados elegíveis foram verificados.</p></StatusPanel> : null}
 
@@ -58,9 +65,13 @@ export default async function ResultPage({
 
       <ProgressMeter value={state.progress} label="Progresso total" />
 
-      {diagnosticSummary.dimensions.length >= 3 ? (
+      {diagnosticSummary.dimensions.length ? (
         <Card className="after:!hidden" aria-labelledby="diagnostico-empreendedor-resultado">
-          <div><p className="brand-kicker">Seu momento</p><h2 id="diagnostico-empreendedor-resultado" className="display-font mt-1 text-2xl text-secondary">Diagnóstico empreendedor</h2><p className="mt-2 text-sm text-muted">O gráfico radar compara as áreas avaliadas no diagnóstico mais recente.</p></div>
+          <div>
+            <p className="brand-kicker">Seu momento</p>
+            <h2 id="diagnostico-empreendedor-resultado" className="display-font mt-1 text-2xl text-secondary">Diagnóstico empreendedor</h2>
+            <p className="mt-2 text-sm text-muted">As barras ajudam a identificar pontos fortes e oportunidades de evolução sem expor pesos ou regras internas de classificação.</p>
+          </div>
           <DiagnosticDimensionChart dimensions={diagnosticSummary.dimensions} />
         </Card>
       ) : null}
@@ -73,7 +84,7 @@ export default async function ResultPage({
         <form action={issueLearningCredentialsAction} className="no-print">
           <input type="hidden" name="journey_instance_id" value={journey} />
           <input type="hidden" name="idempotency_key" value={randomUUID()} />
-          <Button variant="secondary" type="submit">Verificar credenciais elegíveis</Button>
+          <PendingSubmitButton pendingLabel="Verificando credenciais…" variant="secondary">Verificar credenciais elegíveis</PendingSubmitButton>
         </form>
       ) : (
         <StatusPanel title="Jornada ainda em andamento" tone="info">
