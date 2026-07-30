@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
 import { libraryRuntime } from "@/lib/library/runtime";
+import { invokeServerRpc, ServerRpcError } from "@/lib/rpc/server-invoke";
 
 const uuid = z.string().uuid();
 const contentKind = z.enum(["article", "external_link", "file"]);
@@ -73,6 +74,30 @@ export async function publishLibraryContentAction(formData: FormData) {
   const organizationId = uuid.parse(formData.get("organization_id"));
   await libraryRuntime.publish(actor, organizationId, uuid.parse(formData.get("library_item_version_id")), z.string().regex(/^[0-9a-f]{64}$/).parse(formData.get("content_hash")), String(formData.get("idempotency_key") || randomUUID()));
   redirect(`/admin/biblioteca?organization=${organizationId}&publicado=1`);
+}
+
+export async function archiveLibraryContentAction(formData: FormData) {
+  const actor = await actorId();
+  const organizationId = uuid.parse(formData.get("organization_id"));
+  const versionId = uuid.parse(formData.get("library_item_version_id"));
+  const confirmation = String(formData.get("confirmation") ?? "").trim().toUpperCase();
+  if (confirmation !== "ARQUIVAR") {
+    redirect(`/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=confirmacao`);
+  }
+
+  try {
+    await invokeServerRpc("archive_library_content", {
+      p_actor_user_account_id: actor,
+      p_organization_id: organizationId,
+      p_library_item_version_id: versionId,
+      p_idempotency_key: String(formData.get("idempotency_key") || randomUUID()),
+    });
+  } catch (error) {
+    const inUse = error instanceof ServerRpcError && ["23503", "409"].includes(error.code);
+    redirect(`/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${inUse ? "em_uso" : "arquivamento"}`);
+  }
+
+  redirect(`/admin/biblioteca?view=conteudos&organization=${organizationId}&arquivado=1`);
 }
 
 export async function openLibraryContentAction(formData: FormData) {

@@ -5,7 +5,7 @@ import { EstimuloBrand } from "@/components/estimulo-brand";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 
-export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
+export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <main className="grid min-h-screen place-items-center gap-6 bg-surface-muted p-6">
       <EstimuloBrand href="/" centered compact />
@@ -17,13 +17,13 @@ export default function ErrorPage({ reset }: { error: Error; reset: () => void }
         action={
           <div className="flex flex-wrap justify-center gap-3">
             <Button onClick={reset}>Tentar novamente</Button>
-            <ButtonLink href="/" variant="secondary">
-              Voltar ao início
-            </ButtonLink>
+            <ButtonLink href="/ajuda" variant="secondary">Abrir ajuda</ButtonLink>
+            <ButtonLink href="/" variant="ghost">Voltar ao início</ButtonLink>
           </div>
         }
       >
-        <p>Nenhum dado foi alterado. Tente novamente.</p>
+        <p>Nenhum dado foi alterado. Tente novamente ou informe a referência abaixo ao suporte.</p>
+        {error.digest ? <p className="mt-2 text-xs font-semibold text-muted">Referência: {error.digest}</p> : null}
       </EmptyState>
     </main>
   );

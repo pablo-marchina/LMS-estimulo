@@ -26,6 +26,20 @@ function redirectTo(request: NextRequest, params: Record<string, string>) {
   return NextResponse.redirect(target, 303);
 }
 
+function sleep(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+async function waitForProjection(actorUserAccountId: string, externalCredentialId: string) {
+  const delays = [0, 100, 250, 500];
+  for (const delay of delays) {
+    if (delay) await sleep(delay);
+    const projection = await extendedCredentialRuntime.listExternal(actorUserAccountId);
+    if (projection.items.some((item) => item.id === externalCredentialId)) return true;
+  }
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) return new NextResponse("Forbidden", { status: 403 });
   const auth = await requireParticipantContext();
@@ -79,9 +93,13 @@ export async function POST(request: NextRequest) {
     });
     credentialConfirmed = true;
 
-    const projection = await extendedCredentialRuntime.listExternal(auth.identity.user_account_id);
-    if (!projection.items.some((item) => item.id === confirmation.data.external_credential_id)) {
-      throw new Error("EXTERNAL_CREDENTIAL_PROJECTION_INCONSISTENT");
+    const projected = await waitForProjection(auth.identity.user_account_id, confirmation.data.external_credential_id);
+    if (!projected) {
+      console.error("EXTERNAL_CREDENTIAL_PROJECTION_DELAYED", {
+        actorUserAccountId: auth.identity.user_account_id,
+        externalCredentialId: confirmation.data.external_credential_id,
+      });
+      return redirectTo(request, { certificadoExterno: "enviado", aviso: "atualizando" });
     }
 
     return redirectTo(request, { certificadoExterno: "enviado" });

@@ -1,10 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { submitDiagnosisAction } from "@/app/actions/journey";
+import { DiagnosticStepper } from "@/components/diagnostic-stepper";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
-import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StatusPanel } from "@/components/status-panel";
 import { ButtonLink } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireParticipantContext } from "@/lib/auth/participant-context";
 import { participantDiagnosticRuntime } from "@/lib/diagnostics/participant-runtime";
@@ -28,22 +26,19 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
   const experience = await participantDiagnosticRuntime.getExperience(auth.identity.user_account_id, journey);
 
   if (experience.state.d?.status === "completed") {
-    const step = experience.state.s?.step_instance_id;
     return (
-      <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
+      <div className="mx-auto grid max-w-[980px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
         <PageHeader
           eyebrow="Diagnóstico"
-          title={experience.journey.title}
-          description="Seu caminho de aprendizagem já foi definido com base nas respostas registradas."
+          title="Seu perfil já foi identificado"
+          description="Consulte o resultado para entender seus pontos fortes e as oportunidades de evolução."
         />
         <JourneyProgressNav state={experience.state} current="diagnostic" />
         <StatusPanel title="Diagnóstico concluído" tone="success">
-          <p>Esta etapa está concluída e não precisa ser respondida novamente.</p>
-          {step ? (
-            <ButtonLink href={`/empreendedor/atividade/${step}?journey=${journey}`} className="mt-3">
-              Continuar aprendizagem
-            </ButtonLink>
-          ) : null}
+          <p>Suas respostas e seu resultado continuam salvos.</p>
+          <ButtonLink href={`/empreendedor/resultado?journey=${journey}`} className="mt-3">
+            Ver resultado do diagnóstico
+          </ButtonLink>
         </StatusPanel>
       </div>
     );
@@ -51,7 +46,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
 
   if (!experience.diagnostic) {
     return (
-      <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
+      <div className="mx-auto grid max-w-[980px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
         <JourneyProgressNav state={experience.state} current="diagnostic" />
         <StatusPanel title="Diagnóstico indisponível" tone="warning">
           <p>O diagnóstico de perfil ainda não está publicado. Nenhuma resposta foi perdida.</p>
@@ -64,49 +59,18 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
   }
 
   return (
-    <div className="grid gap-8">
+    <div className="mx-auto grid max-w-[980px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
-        eyebrow="Etapa 1"
-        title="Diagnóstico inicial"
-        description="As respostas ajudam a personalizar recomendações de aprendizagem. Elas não constituem avaliação de crédito."
+        eyebrow="Conheça seu perfil"
+        title="Diagnóstico empreendedor"
+        description="Responda algumas perguntas para que possamos conhecer melhor você e o seu negócio. Assim, recomendamos conteúdos e jornadas mais alinhados ao seu momento e às suas necessidades."
       />
       <JourneyProgressNav state={experience.state} current="diagnostic" />
-      <form action={submitDiagnosisAction} className="grid gap-4">
-        <input type="hidden" name="journey_instance_id" value={journey} />
-        <input type="hidden" name="idempotency_key" value={randomUUID()} />
-        {experience.diagnostic.items.map((item, index) => (
-          <Card key={item.id} className="grid gap-3">
-            <legend className="text-sm font-semibold text-ink">
-              <span className="mr-2 text-primary">Questão {index + 1}</span>
-              {item.prompt}
-            </legend>
-            <div className="grid gap-2">
-              {item.options.map((option) => (
-                <label
-                  key={option.id}
-                  className="flex items-center gap-3 rounded-lg border border-border p-3 text-sm font-medium has-checked:border-primary has-checked:bg-primary-soft"
-                >
-                  <input
-                    type="radio"
-                    name={`answer_${item.id}`}
-                    value={option.code}
-                    required={item.is_required}
-                    defaultChecked={item.response?.option_code === option.code}
-                    className="size-4 accent-primary"
-                  />
-                  <span>{option.label}</span>
-                </label>
-              ))}
-            </div>
-          </Card>
-        ))}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
-          <ButtonLink href="/empreendedor" variant="secondary">
-            Voltar ao painel
-          </ButtonLink>
-          <PendingSubmitButton pendingLabel="Salvando diagnóstico…">Concluir diagnóstico</PendingSubmitButton>
-        </div>
-      </form>
+      <DiagnosticStepper
+        journeyInstanceId={journey}
+        idempotencyKey={randomUUID()}
+        items={experience.diagnostic.items}
+      />
     </div>
   );
 }

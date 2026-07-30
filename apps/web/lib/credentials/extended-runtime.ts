@@ -36,6 +36,29 @@ export type ExternalCredentialIssuers = {
   items: ExternalCredentialIssuer[];
 };
 
+export type CertificateTemplateUsage = {
+  certificate_version_id: string;
+  certificate_definition_id: string;
+  certificate_name: string;
+  version_number: number;
+  status: string;
+};
+
+export type CertificateTemplate = {
+  file_object_id: string;
+  original_filename: string | null;
+  content_type: string;
+  size_bytes: number;
+  security_status: string;
+  created_at: string;
+  used_by: CertificateTemplateUsage[];
+};
+
+export type CertificateTemplateCatalog = {
+  organization_id: string;
+  items: CertificateTemplate[];
+};
+
 export type CertificateRenderPayload = {
   issuance_id: string;
   display_name: string;
@@ -60,6 +83,10 @@ type UploadIntent = {
 export const extendedCredentialRuntime = {
   listExternal: (actorUserAccountId: string) => invokeServerRpc<ExternalCredentialWallet>("list_participant_external_credentials", { p_actor_user_account_id: actorUserAccountId }),
   listIssuers: (actorUserAccountId: string) => invokeServerRpc<ExternalCredentialIssuers>("list_external_credential_issuers", { p_actor_user_account_id: actorUserAccountId }),
+  listTemplates: (actorUserAccountId: string, organizationId: string) => invokeServerRpc<CertificateTemplateCatalog>("list_operator_certificate_templates", {
+    p_actor_user_account_id: actorUserAccountId,
+    p_organization_id: organizationId,
+  }),
   createExternalIntent: (input: { actorUserAccountId: string; originalFilename: string; expectedContentType: string; storageProvider: string; bucket: string; idempotencyKey: string }) => invokeServerRpc<RpcEnvelope<UploadIntent>>("create_external_credential_upload_intent", {
     p_actor_user_account_id: input.actorUserAccountId,
     p_original_filename: input.originalFilename,
