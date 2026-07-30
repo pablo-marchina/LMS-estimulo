@@ -11,7 +11,8 @@ begin
       and definition.code = 'capacitacao_ia_mei_openai'
       and version.status = 'published'
   ) then
-    raise exception 'OPENAI_PUBLISHED_JOURNEY_NOT_FOUND' using errcode = 'P0002';
+    raise notice 'OpenAI published journey fixture is not present during structural replay; official videos were not seeded.';
+    return;
   end if;
 
   -- Remove the two generic inspirational-playlist placeholders. They were useful
