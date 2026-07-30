@@ -88,6 +88,17 @@ export async function saveDiagnosticAction(formData: FormData) {
   const existingCode = text(formData, "definition_code");
   const versionId = nullable(formData, "version_id");
   const intent = text(formData, "intent") === "publish" ? "publish" : "draft";
+  const archetypeMapping: Record<string, string> = {};
+  if (intent === "publish") {
+    const mappingCount = integer(formData, "mapping_count");
+    for (let index = 0; index < mappingCount; index += 1) {
+      const oldCode = text(formData, `mapping_old_code_${index}`).toLowerCase();
+      const targetCode = text(formData, `mapping_target_code_${index}`).toLowerCase();
+      if (!oldCode || !profileCodes.has(targetCode)) redirect(`/admin/diagnostico?versao=${versionId ?? ""}&erro=mapeamento_incompleto`);
+      archetypeMapping[oldCode] = targetCode;
+    }
+  }
+
   const payload = {
     definition_id: nullable(formData, "definition_id"),
     version_id: versionId,
@@ -95,13 +106,14 @@ export async function saveDiagnosticAction(formData: FormData) {
     name,
     purpose: text(formData, "purpose"),
     status: "draft",
-    configuration: {},
+    configuration: { archetype_codes: profiles.map((profile) => profile.code) },
     dimensions,
     items,
     archetypes: profiles,
     classification_rules: { default_archetype_code: defaultArchetypeCode, rules },
   };
 
+  let savedVersionId = versionId ?? "";
   try {
     const saved = await saveAdminProductResource({
       actorUserAccountId: auth.identity.user_account_id,
@@ -110,18 +122,10 @@ export async function saveDiagnosticAction(formData: FormData) {
       payload,
       idempotencyKey: randomUUID(),
     });
-    const savedVersionId = stringValue(saved.version_id) || versionId;
+    savedVersionId = stringValue(saved.version_id) || savedVersionId;
     if (!savedVersionId) throw new Error("DIAGNOSTIC_VERSION_MISSING");
 
     if (intent === "publish") {
-      const mappingCount = integer(formData, "mapping_count");
-      const archetypeMapping: Record<string, string> = {};
-      for (let index = 0; index < mappingCount; index += 1) {
-        const oldCode = text(formData, `mapping_old_code_${index}`).toLowerCase();
-        const targetCode = text(formData, `mapping_target_code_${index}`).toLowerCase();
-        if (!oldCode || !profileCodes.has(targetCode)) redirect(`/admin/diagnostico?versao=${savedVersionId}&erro=mapeamento_incompleto`);
-        archetypeMapping[oldCode] = targetCode;
-      }
       await publishAdminDiagnosticTransition({
         actorUserAccountId: auth.identity.user_account_id,
         organizationId: organization.organization_id,
@@ -129,17 +133,20 @@ export async function saveDiagnosticAction(formData: FormData) {
         archetypeMapping,
         idempotencyKey: randomUUID(),
       });
-      revalidatePath("/admin/diagnostico");
-      revalidatePath("/admin/produto");
-      revalidatePath("/empreendedor", "layout");
-      redirect("/admin/diagnostico?sucesso=publicado");
     }
-    redirect(`/admin/diagnostico?versao=${savedVersionId}&sucesso=salvo`);
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     const reason = message.includes("ARCHETYPE_MAPPING") ? "mapeamento_incompleto" : message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
-    redirect(`/admin/diagnostico?versao=${versionId ?? ""}&erro=${reason}`);
+    redirect(`/admin/diagnostico?versao=${savedVersionId}&erro=${reason}`);
   }
+
+  revalidatePath("/admin/diagnostico");
+  if (intent === "publish") {
+    revalidatePath("/admin/produto");
+    revalidatePath("/empreendedor", "layout");
+    redirect("/admin/diagnostico?sucesso=publicado");
+  }
+  redirect(`/admin/diagnostico?versao=${savedVersionId}&sucesso=salvo`);
 }
 
 export async function retireDiagnosticAction(formData: FormData) {
