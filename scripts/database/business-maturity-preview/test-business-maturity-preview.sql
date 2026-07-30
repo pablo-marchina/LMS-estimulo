@@ -1,24 +1,41 @@
 begin;
 
--- The maturity preview endpoint belonged to the removed administration module.
--- The final release must not expose the function or retain execution grants.
 do $$
 declare
-  v_signature regprocedure;
+  v_org uuid;
+  v_operator uuid:=app_private.e14_deterministic_uuid('e14:user:operator');
+  v_participant uuid:=app_private.e14_deterministic_uuid('e14:user:participant');
+  v_operator_role uuid:=app_private.e14_deterministic_uuid('e14:role:operator');
+  v_permission uuid;
+  v_preview jsonb;
 begin
-  v_signature:=to_regprocedure('public.get_business_maturity_draft(uuid,uuid)');
-  if v_signature is not null then
-    raise exception 'obsolete business maturity preview RPC remains';
-  end if;
+  select owner_organization_id into strict v_org
+  from diagnostics.diagnostic_definitions
+  where code='business_maturity_self_assessment';
 
-  if exists (
-    select 1
-    from information_schema.routine_privileges
-    where specific_schema='public'
-      and routine_name='get_business_maturity_draft'
-      and grantee in ('PUBLIC','anon','authenticated','service_role','app_worker')
-  ) then
-    raise exception 'obsolete business maturity preview grants remain';
+  select id into strict v_permission from iam.permission_definitions
+  where code='diagnostic.configuration.manage';
+  insert into iam.role_permissions(role_id,permission_id)
+  values(v_operator_role,v_permission)
+  on conflict do nothing;
+
+  v_preview:=public.get_business_maturity_draft(v_operator,v_org);
+  if v_preview#>>'{definition,status}'<>'draft' then raise exception 'definition preview must be draft'; end if;
+  if v_preview#>>'{version,status}'<>'draft' then raise exception 'version preview must be draft'; end if;
+  if jsonb_array_length(v_preview->'dimensions')<>6 then raise exception 'preview must expose six dimensions'; end if;
+  if jsonb_array_length(v_preview->'segments')<>3 then raise exception 'preview must expose three segments'; end if;
+  if (v_preview->>'assignment_count')::integer<>0 then raise exception 'draft preview cannot have assignments'; end if;
+  if coalesce((v_preview#>>'{version,configuration,activation_allowed}')::boolean,true) then raise exception 'preview must show activation blocked'; end if;
+
+  begin
+    perform public.get_business_maturity_draft(v_participant,v_org);
+    raise exception 'participant unexpectedly accessed maturity preview';
+  exception when insufficient_privilege then null;
+  end;
+
+  if has_function_privilege('authenticated','public.get_business_maturity_draft(uuid,uuid)','execute')
+     or has_function_privilege('anon','public.get_business_maturity_draft(uuid,uuid)','execute') then
+    raise exception 'browser roles must not execute maturity preview RPC';
   end if;
 end;
 $$;
