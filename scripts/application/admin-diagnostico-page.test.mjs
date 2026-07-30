@@ -21,10 +21,11 @@ test("diagnostic editor keeps publication behind an explicit methodological revi
   assert.match(page, /Versões publicadas não aparecem aqui/u);
 });
 
-test("diagnostic editor exposes a default-archetype fallback selector", () => {
+test("diagnostic editor exposes all four archetypes and a required fallback selector", () => {
   assert.match(page, /name="default_archetype_code"/u);
+  assert.match(page, /value=\{archetype\.code\}/u);
   for (const code of ["fazedor", "batalhador", "construtor", "navegador"]) {
-    assert.match(page, new RegExp(`value="${code}"`, "u"));
+    assert.match(page, new RegExp(`code: "${code}"`, "u"));
   }
 });
 
