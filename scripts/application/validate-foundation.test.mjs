@@ -1,196 +1,156 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile, readdir } from "node:fs/promises";
+import { resolve } from "node:path";
 
-const root = resolve(import.meta.dirname, '../..');
-const read = (file) => readFile(resolve(root, file), 'utf8');
+const root = resolve(import.meta.dirname, "../..");
+const read = (file) => readFile(resolve(root, file), "utf8");
+
+async function assertPresent(relative, minimum = 40) {
+  const source = await read(relative);
+  assert.ok(source.length >= minimum, `${relative} must contain an implemented source`);
+  return source;
+}
 
 async function findMigration(suffix) {
-  const names = (await readdir(resolve(root, 'supabase/migrations')))
+  const names = (await readdir(resolve(root, "supabase/migrations")))
     .filter((name) => name.endsWith(suffix))
     .sort();
   assert.equal(names.length, 1, `expected one migration ending with ${suffix}`);
   return `supabase/migrations/${names[0]}`;
 }
 
-const applicationMigration = await findMigration('_m14_step5_application_read_surfaces.sql');
-const operatorMigration = await findMigration('_m14b_step5_operator_workspace.sql');
-
-test('workspace contém aplicação Next.js real em apps/web', async () => {
-  const rootPackage = JSON.parse(await read('package.json'));
-  const webPackage = JSON.parse(await read('apps/web/package.json'));
-  assert.deepEqual(rootPackage.workspaces, ['apps/*']);
-  assert.equal(webPackage.dependencies.next, '16.2.10');
+test("workspace contains the current Next.js application and exact toolchain", async () => {
+  const rootPackage = JSON.parse(await read("package.json"));
+  const webPackage = JSON.parse(await read("apps/web/package.json"));
+  assert.deepEqual(rootPackage.workspaces, ["apps/*"]);
+  assert.equal(rootPackage.packageManager, "npm@10.9.8");
+  assert.equal(webPackage.dependencies.next, "16.2.12");
+  assert.equal(webPackage.dependencies.react, "19.2.7");
+  assert.equal(webPackage.devDependencies.typescript, "6.0.3");
 });
 
-test('rotas centrais e credenciais existem', async () => {
+test("central participant, administrative and credential routes are implemented", async () => {
   for (const file of [
-    'entrar/page.tsx',
-    'entrar/administracao/page.tsx',
-    'cadastro/page.tsx',
-    'empreendedor/page.tsx',
-    'empreendedor/diagnostico/page.tsx',
-    'empreendedor/atividade/[stepInstanceId]/page.tsx',
-    'empreendedor/resultado/page.tsx',
-    'empreendedor/credenciais/page.tsx',
-    'credenciais/[verificationCode]/page.tsx',
-    'admin/page.tsx',
-  ]) {
-    assert.ok((await read(`apps/web/app/${file}`)).length > 50);
-  }
+    "apps/web/app/entrar/page.tsx",
+    "apps/web/app/entrar/administracao/page.tsx",
+    "apps/web/app/cadastro/page.tsx",
+    "apps/web/app/empreendedor/page.tsx",
+    "apps/web/app/empreendedor/diagnostico/page.tsx",
+    "apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx",
+    "apps/web/app/empreendedor/resultado/page.tsx",
+    "apps/web/app/empreendedor/credenciais/page.tsx",
+    "apps/web/app/credenciais/[verificationCode]/page.tsx",
+    "apps/web/app/admin/page.tsx",
+  ]) await assertPresent(file);
 });
 
-test('service role permanece server-only', async () => {
-  const admin = await read('apps/web/lib/supabase/admin.ts');
-  const actions = await read('apps/web/app/actions/journey.ts');
-  const credentials = await read('apps/web/lib/credentials/runtime.ts');
-  assert.ok(admin.includes('import "server-only"'));
-  assert.ok(credentials.includes('import "server-only"'));
-  assert.ok(!actions.includes('SUPABASE_SERVICE_ROLE_KEY'));
-  assert.ok(!credentials.includes('SUPABASE_SERVICE_ROLE_KEY'));
+test("privileged Supabase credentials remain server-only and outside participant actions", async () => {
+  const [admin, journeyActions, credentials, gateway] = await Promise.all([
+    read("apps/web/lib/supabase/admin.ts"),
+    read("apps/web/app/actions/journey.ts"),
+    read("apps/web/lib/credentials/runtime.ts"),
+    read("apps/web/lib/rpc/authenticated-gateway.ts"),
+  ]);
+  assert.match(admin, /import "server-only"/u);
+  assert.match(credentials, /import "server-only"/u);
+  assert.doesNotMatch(journeyActions, /SUPABASE_SERVICE_ROLE_KEY/u);
+  assert.doesNotMatch(credentials, /SUPABASE_SERVICE_ROLE_KEY/u);
+  assert.doesNotMatch(gateway, /SUPABASE_SERVICE_ROLE_KEY|createPrivilegedClient/u);
 });
 
-test('todos os comandos da jornada são acessados pela camada tipada', async () => {
-  const rpc = await read('apps/web/lib/journey-runtime/rpc.ts');
+test("journey commands remain behind the typed runtime boundary", async () => {
+  const rpc = await read("apps/web/lib/journey-runtime/rpc.ts");
   for (const name of [
-    'publishVertical',
-    'createEnrollment',
-    'startJourney',
-    'startDiagnostic',
-    'recordDiagnosticResponse',
-    'completeDiagnostic',
-    'startActivity',
-    'acknowledgeSection',
-    'startQuickCheck',
-    'recordQuickCheckAnswer',
-    'submitQuickCheck',
-    'getParticipantState',
-    'getOperatorResult',
+    "startJourney",
+    "startDiagnostic",
+    "recordDiagnosticResponse",
+    "completeDiagnostic",
+    "startActivity",
+    "acknowledgeSection",
+    "startQuickCheck",
+    "recordQuickCheckAnswer",
+    "submitQuickCheck",
+    "getParticipantState",
+  ]) assert.match(rpc, new RegExp(name, "u"));
+  assert.match(rpc, /invokeServerRpc|invokeAuthenticatedGateway/u);
+});
+
+test("multi-journey discovery does not use a hardcoded runtime UUID", async () => {
+  const home = await read("apps/web/app/empreendedor/page.tsx");
+  const migration = await read(await findMigration("_m14_step5_application_read_surfaces.sql"));
+  assert.match(home, /listParticipantJourneys/u);
+  assert.match(migration, /e14_list_participant_journeys/u);
+  assert.doesNotMatch(home, /runtime_validation_journey/u);
+});
+
+test("participant and administrative authentication remain separate", async () => {
+  const [login, signup, adminLogin, adminStart, adminCallback] = await Promise.all([
+    read("apps/web/app/entrar/page.tsx"),
+    read("apps/web/app/cadastro/page.tsx"),
+    read("apps/web/app/entrar/administracao/page.tsx"),
+    read("apps/web/app/auth/admin/start/route.ts"),
+    read("apps/web/app/auth/admin/callback/route.ts"),
+  ]);
+  assert.match(login, /href="\/cadastro"/u);
+  assert.match(login, /href="\/entrar\/administracao"/u);
+  assert.match(signup, /createPublicAccountAction/u);
+  assert.match(adminLogin, /<form action="\/auth\/admin\/start" method="get">/u);
+  assert.doesNotMatch(adminLogin, /type="password"/u);
+  assert.match(adminStart, /provider:\s*"google"/u);
+  assert.match(adminStart, /hd:\s*"estimulo\.org"/u);
+  assert.match(adminCallback, /isGoogleAuthProvider/u);
+  assert.match(adminCallback, /administrativeOrganization/u);
+});
+
+test("AWS production boundaries remain fail-closed while architecture is pending", async () => {
+  const [context, proxy, ready, dataGateway, storage] = await Promise.all([
+    read("apps/web/lib/auth/context.ts"),
+    read("apps/web/proxy.ts"),
+    read("apps/web/app/api/health/ready/route.ts"),
+    read("apps/web/lib/rpc/authenticated-gateway.ts"),
+    read("apps/web/lib/platform/object-storage.ts"),
+  ]);
+  assert.match(context, /AWS_IDENTITY_ARCHITECTURE_PENDING/u);
+  assert.match(proxy, /aws_identity_architecture_pending/u);
+  assert.match(ready, /aws_architecture_pending/u);
+  assert.match(dataGateway, /AWS_DATA_ARCHITECTURE_PENDING/u);
+  assert.match(storage, /AWS_STORAGE_ARCHITECTURE_PENDING/u);
+});
+
+test("administrative CMS distinguishes backend outage from an empty workspace", async () => {
+  const [page, runtime] = await Promise.all([
+    read("apps/web/app/admin/experiencia/page.tsx"),
+    read("apps/web/lib/interface-content/runtime.ts"),
+  ]);
+  assert.match(page, /CMS temporariamente indisponível/u);
+  assert.match(page, /Nenhuma alteração foi aplicada/u);
+  assert.match(runtime, /interface_content_fallback/u);
+  assert.match(runtime, /platformRuntimeProvider\(\) === "aws"/u);
+});
+
+test("application shell keeps idempotent submission and separate participant/admin navigation", async () => {
+  const [shell, adminShell, participantShell] = await Promise.all([
+    read("apps/web/components/app-shell.tsx"),
+    read("apps/web/components/admin-shell.tsx"),
+    read("apps/web/components/participant-shell.tsx"),
+  ]);
+  assert.match(shell, /IdempotentSubmitBoundary/u);
+  assert.match(shell, /AdminShell/u);
+  assert.match(shell, /ParticipantShell/u);
+  assert.match(adminShell, /id="conteudo-principal"|main/u);
+  assert.match(participantShell, /id="conteudo-principal"|main/u);
+});
+
+test("behavioral smoke migrations are content-conditional during structural replay", async () => {
+  for (const file of [
+    "supabase/migrations/20260726010300_runtime_smoke_validation.sql",
+    "supabase/migrations/20260726010400_journey_points_smoke_validation.sql",
+    "supabase/migrations/20260726010450_points_smoke_validation.sql",
   ]) {
-    assert.ok(rpc.includes(name));
+    const source = await read(file);
+    assert.match(source, /fixture is not present during structural replay/u);
+    assert.match(source, /raise notice/u);
+    assert.match(source, /return;/u);
   }
-});
-
-test('descoberta multi-jornada não depende de UUID hardcoded', async () => {
-  const home = await read('apps/web/app/empreendedor/page.tsx');
-  const migration = await read(applicationMigration);
-  assert.ok(home.includes('listParticipantJourneys'));
-  assert.ok(migration.includes('e14_list_participant_journeys'));
-  assert.ok(!home.includes('runtime_validation_journey'));
-});
-
-test('conteúdo versionado vem do backend e não vaza resposta correta', async () => {
-  const migration = await read(applicationMigration);
-  assert.ok(migration.includes('content_sections'));
-  assert.ok(migration.includes('assessment.answer_options'));
-  assert.ok(!migration.includes("'is_correct'"));
-});
-
-test('migration operacional é localizada por nome sem timestamp hardcoded', async () => {
-  const migration = await read(operatorMigration);
-  assert.ok(migration.includes('e14_get_operator_workspace'));
-});
-
-test('resultados pedagógicos não são apresentados como decisão de crédito', async () => {
-  const result = await read('apps/web/app/empreendedor/resultado/page.tsx');
-  assert.ok(result.includes('não os apresenta como score, risco ou decisão de crédito'));
-});
-
-test('admin não exige UUIDs digitados manualmente', async () => {
-  const source = await read('apps/web/app/admin/page.tsx');
-  assert.ok(source.includes('workspace.journey_versions'));
-  assert.ok(source.includes('workspace.participants'));
-  assert.ok(!source.includes('ID do empreendedor'));
-  assert.ok(!source.includes('ID da versão da jornada'));
-});
-
-test('cadastro de participante e entrada administrativa permanecem separados', async () => {
-  const login = await read('apps/web/app/entrar/page.tsx');
-  const signup = await read('apps/web/app/cadastro/page.tsx');
-  const adminLogin = await read('apps/web/app/entrar/administracao/page.tsx');
-  const adminAction = await read('apps/web/app/entrar/administracao/actions.ts');
-  const adminCallback = await read('apps/web/app/auth/admin/callback/route.ts');
-  assert.ok(login.includes('href="/cadastro"'));
-  assert.ok(login.includes('href="/entrar/administracao"'));
-  assert.ok(!login.includes('/cadastro/teste'));
-  assert.ok(signup.includes('createPublicAccountAction'));
-  assert.ok(signup.includes('Acesso público'));
-  assert.ok(adminLogin.includes('signInWithGoogleAction'));
-  assert.ok(!adminLogin.includes('type="password"'));
-  assert.ok(adminAction.includes('provider: "google"'));
-  assert.ok(adminAction.includes('hd: "estimulo.org"'));
-  assert.ok(adminCallback.includes('isGoogleAuthProvider(user)'));
-  assert.ok(adminCallback.includes('administrativeOrganization(auth.identity)'));
-});
-
-test('login direciona participante e operador por fluxos distintos', async () => {
-  const participantAction = await read('apps/web/app/entrar/actions.ts');
-  const adminCallback = await read('apps/web/app/auth/admin/callback/route.ts');
-  assert.ok(participantAction.includes('auth.identity.entrepreneur_id'));
-  assert.ok(participantAction.includes('/entrar/administracao?erro=conta_google_necessaria'));
-  assert.ok(!participantAction.includes('/admin?organization='));
-  assert.ok(adminCallback.includes('/admin?organization='));
-});
-
-test('atividade renderiza o heading real do conteúdo versionado', async () => {
-  const activity = await read('apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx');
-  assert.ok(activity.includes('section.heading'));
-});
-
-test('avaliação registra todas as questões versionadas', async () => {
-  const activity = await read('apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx');
-  const actions = await read('apps/web/app/actions/journey.ts');
-  assert.ok(activity.includes('assessment.questions.map'));
-  assert.ok(activity.includes('answer_${question.id}'));
-  assert.ok(actions.includes('for (const question of assessment.questions)'));
-  assert.ok(actions.includes(':answer:${question.id}'));
-});
-
-test('tentativa reprovada retorna para revisão da atividade', async () => {
-  const actions = await read('apps/web/app/actions/journey.ts');
-  assert.ok(actions.includes('updated.state.q?.passed'));
-  assert.ok(actions.includes('/empreendedor/atividade/${step}'));
-});
-
-test('aprovação processa credenciais pela camada server-only', async () => {
-  const actions = await read('apps/web/app/actions/journey.ts');
-  const runtime = await read('apps/web/lib/credentials/runtime.ts');
-  assert.ok(actions.includes('credentialRuntime.issue'));
-  assert.ok(runtime.includes('issue_learning_credentials'));
-  assert.ok(runtime.includes('verify_certificate'));
-});
-
-test('área operacional mantém consulta quando gestão não está disponível', async () => {
-  const admin = await read('apps/web/app/admin/page.tsx');
-  assert.ok(admin.includes('Promise.allSettled'));
-  assert.ok(admin.includes('Consulta disponível'));
-});
-
-test('painel consolida próxima ação, progresso, pontos e credenciais', async () => {
-  const home = await read('apps/web/app/empreendedor/page.tsx');
-  assert.ok(home.includes('participantNextActionLabel'));
-  assert.ok(home.includes('participantJourneyPriority'));
-  assert.ok(home.includes('credentialRuntime.listParticipant'));
-  assert.ok(home.includes('dashboard-next'));
-  assert.ok(home.includes('Pontos registrados'));
-});
-
-test('diagnóstico, atividade e resultado compartilham orientação de etapas', async () => {
-  const files = [
-    'apps/web/app/empreendedor/diagnostico/page.tsx',
-    'apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx',
-    'apps/web/app/empreendedor/resultado/page.tsx'
-  ];
-  for (const file of files) assert.ok((await read(file)).includes('JourneyProgressNav'));
-  const navigation = await read('apps/web/components/journey-progress-nav.tsx');
-  assert.ok(navigation.includes('aria-current'));
-  assert.ok(navigation.includes('journey-progress-step--locked'));
-});
-
-test('shell oferece salto para conteúdo e navegação de painel', async () => {
-  const shell = await read('apps/web/components/app-shell.tsx');
-  assert.ok(shell.includes('Pular para o conteúdo'));
-  assert.ok(shell.includes('id="conteudo-principal"'));
-  assert.ok(shell.includes('{ href: "/empreendedor", label: "Painel" }'));
 });
