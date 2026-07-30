@@ -1,180 +1,130 @@
-# Arquitetura de fila e worker assíncrono
+# Contrato lógico de processamento assíncrono
 
-**Versão:** 1.0  
-**Data:** 2026-07-08  
-**Ambiente comprovado:** Supabase/PostgreSQL 17 com PGMQ  
-**Destino de produção:** AWS SQS Standard + DLQ
+**Revisado em:** 2026-07-30  
+**Estado:** requisitos lógicos preservados; provider e operação AWS pendentes
 
-## 1. Objetivo
+## Objetivo
 
-A fila desacopla trabalhos demorados ou falháveis do request transacional sem introduzir semântica específica de um provedor no domínio. O primeiro consumidor é o scan de arquivos, mas o modelo é genérico para integrações, projeções, notificações e computações futuras.
+Desacoplar trabalhos demorados ou falháveis do request transacional sem introduzir semântica de um provedor no domínio.
 
-O contrato da aplicação assume **entrega pelo menos uma vez**. Duplicatas, reentregas após timeout e falhas entre efeito e acknowledgement são condições normais do sistema, não exceções impossíveis.
+Este documento não escolhe fila, scheduler, worker, dead-letter service ou mecanismo de identidade de workload. Essas decisões pertencem à futura arquitetura AWS.
 
-## 2. Fronteiras
+## Estado atual
+
+- o PostgreSQL contém eventos, outbox e estruturas históricas de jobs;
+- o runtime ativo não possui scheduler ou worker de malware scan aprovado;
+- Edge Functions e filas temporárias de scan não fazem parte da fonte versionada;
+- nenhuma estrutura do ambiente Supabase de teste constitui arquitetura de produção;
+- o código de domínio deve permanecer atrás de portas lógicas.
+
+## Semântica mínima
+
+Quando processamento assíncrono for implementado, o contrato deve assumir entrega **pelo menos uma vez**. Duplicatas, reentregas e falhas entre efeito e acknowledgement são condições normais.
+
+Invariantes:
+
+- cada trabalho possui identidade estável;
+- publicação lógica duplicada é suprimida por chave de deduplicação;
+- efeitos usam chave idempotente independente da entrega física;
+- cada recebimento possui ownership e prazo explícitos;
+- acknowledgement somente conclui o recebimento atual;
+- retry não cria novo efeito de negócio;
+- poison messages são isoladas e auditáveis;
+- redrive preserva histórico e exige correção da causa;
+- perda, duplicação ou reordenação não corrompe o estado de domínio;
+- backlog e idade da mensagem são observáveis.
+
+## Modelo lógico
 
 ```text
-Caso de uso / domínio
-        ↓
-QueueProvider
-        ↓
-┌──────────────────────┬──────────────────────┐
-│ Supabase de testes   │ AWS produção         │
-│ PGMQ                 │ SQS Standard         │
-│ pgmq.read/set_vt     │ Receive/ChangeVT     │
-│ archive              │ DeleteMessage        │
-│ fila DLQ explícita   │ Redrive policy/DLQ   │
-└──────────────────────┴──────────────────────┘
+transação de domínio
+→ evento/outbox
+→ publicação idempotente
+→ trabalho disponível
+→ claim por consumidor
+→ efeito idempotente
+→ acknowledgement
 ```
 
-O worker recebe somente o contrato normalizado. Ele não conhece `msg_id`, receipt handle nativo do SQS, nomes físicos de tabelas PGMQ ou SDK específico do provedor.
-
-## 3. Modelo persistente
-
-| Tabela | Finalidade |
-|---|---|
-| `eventing.queue_definitions` | Configuração lógica da fila, provider físico, visibility timeout, tentativas, batch e retry policy. |
-| `eventing.queue_jobs` | Identidade estável e deduplicável do trabalho. |
-| `eventing.queue_receipts` | Receipt handle novo a cada recebimento, ownership do worker e prazo de visibilidade. |
-| `eventing.queue_attempts` | Auditoria de cada execução e desfecho. |
-| `eventing.queue_dead_letters` | Registro governado de poison messages e redrive. |
-
-As tabelas físicas do PGMQ são implementação do adapter e não fonte de verdade do domínio.
-
-## 4. Identidade e idempotência
-
-- `job_id` permanece estável entre retry e redrive;
-- `deduplication_key` impede publicação lógica duplicada;
-- cada `receive` cria um `receipt_handle` novo;
-- acknowledgement exige o receipt atual e o mesmo `worker_id`;
-- efeitos de negócio usam `job_id` como chave idempotente;
-- `core.file_security_scans.queue_job_id` é único;
-- o resultado repetido de scan retorna `already_applied=true` em vez de duplicar fatos.
-
-## 5. Estados
-
-### Job
+Estados mínimos de um trabalho:
 
 ```text
 created → queued → in_flight
                     ├─ completed
                     ├─ retry_scheduled → in_flight
-                    ├─ dead_lettered → queued (redrive)
+                    ├─ dead_lettered → redrive autorizado
                     └─ cancelled
 ```
 
-### Receipt
+A implementação física pode adaptar esse modelo, mas não pode remover auditabilidade, idempotência ou reconciliação.
+
+## Fronteiras
+
+O domínio conhece somente contratos equivalentes a:
+
+- publicar trabalho;
+- receber/claimar lote;
+- renovar prazo;
+- concluir;
+- solicitar retry;
+- encaminhar para dead letter;
+- redrive autorizado;
+- consultar backlog e tentativas.
+
+SDKs, receipt handles, nomes de filas, políticas físicas e credenciais permanecem dentro do adapter escolhido após ADR.
+
+## Transação e outbox
+
+Uma ação de negócio que exige processamento posterior deve confirmar estado, evento e outbox de forma atômica. Publicação externa ocorre depois do commit e é reconciliável.
 
 ```text
-in_flight → acked
-          → released
-          → expired
-          → dead_lettered
-          → superseded
+estado + evento + outbox
+→ commit
+→ publisher
+→ provider assíncrono
+→ consumidor
+→ projeção/integração
 ```
 
-### Attempt
+Falha de publicação não pode perder o trabalho. Falha do consumidor não pode confirmar efeito parcial como concluído.
 
-```text
-processing → succeeded
-           → retry_scheduled
-           → visibility_expired
-           → dead_lettered
-           → duplicate_suppressed
-           → failed
-```
+## Segurança
 
-## 6. Configuração inicial
+A futura implementação deve garantir:
 
-| Parâmetro | Valor de teste |
-|---|---:|
-| Queue code | `file_scan` |
-| Source queue | `estimulo_file_scan_jobs` |
-| DLQ | `estimulo_file_scan_dlq` |
-| Visibility timeout | 120 s |
-| Max receive count | 5 |
-| Batch máximo | 10 |
-| Retenção declarada | 14 dias |
-| Retry | exponencial, base 15 s, cap 900 s, full jitter |
+- identidade de workload sem segredo permanente exposto ao cliente;
+- privilégio mínimo por operação e recurso;
+- payload sem token, segredo ou dado pessoal desnecessário;
+- criptografia e retenção conforme classificação;
+- logs com correlação e redação;
+- proteção contra replay não autorizado;
+- separação entre produção, staging e testes.
 
-A retenção declarada é parte do contrato portável. A configuração física equivalente ainda deve ser aplicada e comprovada no SQS.
+Nenhum mecanismo físico é considerado aprovado até ADR próprio.
 
-## 7. Lifecycle operacional
+## Capacidade e operação
 
-### Publish
+O Gate B deve comprovar:
 
-1. valida a queue definition;
-2. calcula SHA-256 do payload;
-3. cria `queue_jobs` com dedup key única;
-4. publica o envelope no provider;
-5. registra message id físico e `queued`;
-6. publicação repetida retorna o mesmo `job_id`.
+- throughput e paralelismo definidos por workload;
+- backpressure e rejeição controlada;
+- retry com jitter e limites;
+- dead letter e redrive;
+- reconciliação periódica;
+- saturação e recuperação de dependências;
+- alarmes por backlog, idade, falhas e dead letters;
+- soak sem crescimento sustentado;
+- custo e limites operacionais.
 
-### Receive
+## Critério de implementação
 
-1. provider torna a mensagem invisível;
-2. envelope e `job_id` são validados;
-3. receipt antigo vencido é marcado `expired`;
-4. jobs concluídos ou mortos são suprimidos;
-5. excesso de recebimentos vai para DLQ;
-6. receipt e attempt são criados;
-7. worker recebe payload normalizado.
+Uma implementação somente pode ser marcada como ativa quando houver:
 
-### Retry
+1. ADR do provider e da operação;
+2. adapter sem vazamento de SDK para o domínio;
+3. testes de idempotência, retry, dead letter e reconciliação;
+4. observabilidade e runbooks;
+5. carga no ambiente AWS aprovado;
+6. rollback e recuperação exercitados.
 
-- não cria novo job;
-- muda a visibilidade da mesma mensagem;
-- encerra o receipt atual como `released`;
-- o próximo receive produz novo receipt e incrementa `receive_count`;
-- ao atingir `max_attempts`, move para DLQ.
-
-### Acknowledgement
-
-- arquiva/remove a mensagem física;
-- marca receipt `acked`;
-- marca attempt `succeeded`;
-- marca job `completed`;
-- repetição do ack do mesmo receipt concluído retorna sucesso idempotente.
-
-### DLQ e redrive
-
-- snapshot do envelope e motivo são preservados;
-- mensagem física é publicada na DLQ antes de arquivar a origem;
-- redrive mantém o mesmo `job_id`;
-- redrive zera o contador operacional do job, mas mantém histórico de attempts e dead letter;
-- redrive sem corrigir a causa é operação proibida pelo runbook.
-
-## 8. Integração com arquivos
-
-A confirmação do upload e a criação do scan job acontecem na mesma transação PostgreSQL:
-
-```text
-confirm upload
-  ├─ cria file_object em scan_pending
-  ├─ publica job file.malware_scan.requested
-  ├─ grava scan_job_id
-  └─ confirma upload_intent
-```
-
-Se a publicação falhar, a transação inteira é revertida. Não existe arquivo confirmado como aguardando scan sem identidade de trabalho persistida.
-
-## 9. Autenticação do worker no Supabase de testes
-
-O endpoint `file-scan-worker` usa duas barreiras:
-
-1. `verify_jwt=true` no gateway;
-2. token aleatório de dispatch de uso único, com hash persistido, worker vinculado e TTL de 90 segundos.
-
-A chave publicável atravessa somente o gateway; o consumo é autorizado pelo claim atômico do token usando RPC server-side. O mecanismo é específico do ambiente de teste e **não será copiado para AWS**.
-
-Na AWS, a identidade de workload deverá usar IAM e políticas mínimas para Receive/Delete/ChangeVisibility, leitura do prefixo de quarentena, escrita no prefixo protegido e chamada do scanner.
-
-## 10. Limitações atuais
-
-- não há scheduler automático chamando o Edge Worker;
-- não houve benchmark concorrente com múltiplos workers;
-- o scanner embutido é somente prova técnica para `e12_storage_proof`;
-- perfis reais falham fechados e são enviados à DLQ;
-- SQS, IAM, EventBridge e scanner AWS ainda não foram comprovados;
-- métricas, alarmes e auto-scaling ainda não foram provisionados;
-- o histórico remoto fragmenta M10 em migrations operacionais; o pacote conserva M10 consolidado.
+Até lá, processamento assíncrono de produção permanece bloqueado e fail-closed.
