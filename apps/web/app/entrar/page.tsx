@@ -59,8 +59,8 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
             <span className="grid size-10 place-items-center rounded-xl bg-white text-primary shadow-sm" aria-hidden="true">
               <ShieldCheck size={20} />
             </span>
-            <h2 className="mt-3 font-bold text-secondary">Equipe Estímulo</h2>
-            <p className="mt-1 flex-1 text-sm leading-6 text-muted">Entre com a conta Google que possui um papel administrativo ativo.</p>
+            <h2 className="mt-3 font-bold text-secondary">Sou da equipe Estímulo</h2>
+            <p className="mt-1 flex-1 text-sm leading-6 text-muted">Entre com o e-mail corporativo que possui um papel administrativo ativo.</p>
             <ButtonLink href="/entrar/administracao" className="mt-4 w-full">
               Acessar área administrativa
             </ButtonLink>
