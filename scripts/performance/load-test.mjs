@@ -34,15 +34,28 @@ function targetUrl() {
   return new URL(requestPath, base);
 }
 
+function reportPath() {
+  const artifactDirectory = path.resolve(".artifacts");
+  const requested = process.env.LOAD_TEST_REPORT_PATH?.trim() || ".artifacts/load-test.json";
+  const resolved = path.resolve(requested);
+  if (resolved !== artifactDirectory && !resolved.startsWith(`${artifactDirectory}${path.sep}`)) {
+    throw new Error("LOAD_TEST_REPORT_PATH must remain inside .artifacts");
+  }
+  return resolved;
+}
+
 function mapToObject(map, sorter) {
   return Object.fromEntries([...map.entries()].sort(([left], [right]) => sorter(left, right)));
 }
 
 const url = targetUrl();
+const outputPath = reportPath();
 const concurrency = integer("LOAD_TEST_CONCURRENCY", 10, 1, 500);
 const durationSeconds = integer("LOAD_TEST_DURATION_SECONDS", 10, 1, 900);
 const warmupSeconds = integer("LOAD_TEST_WARMUP_SECONDS", 2, 0, 60);
 const requestTimeoutMs = integer("LOAD_TEST_REQUEST_TIMEOUT_MS", 5_000, 100, 60_000);
+const minimumRequests = integer("LOAD_TEST_MIN_REQUESTS", 0, 0, 100_000_000);
+const minimumRequestsPerSecond = decimal("LOAD_TEST_MIN_RPS", 0, 0, 1_000_000);
 const maximumErrorRate = decimal("LOAD_TEST_MAX_ERROR_RATE", 0.01, 0, 1);
 const maximumP95Ms = decimal("LOAD_TEST_MAX_P95_MS", 2_000, 1, 120_000);
 const maximumP99Ms = decimal("LOAD_TEST_MAX_P99_MS", 5_000, 1, 120_000);
@@ -74,13 +87,15 @@ let requests = 0;
 let failures = 0;
 let minimumLatencyMs = Number.POSITIVE_INFINITY;
 let maximumLatencyMs = 0;
+let responseBytes = 0;
 
 function increment(map, key) {
   map.set(key, (map.get(key) ?? 0) + 1);
 }
 
-function recordResult(status, error, durationMs) {
+function recordResult(status, error, durationMs, bytes) {
   requests += 1;
+  responseBytes += bytes;
   increment(statusCounts, status);
   if (error) {
     failures += 1;
@@ -107,6 +122,7 @@ async function oneRequest(record) {
   const startedAt = performance.now();
   let status = 0;
   let error = null;
+  let bytes = 0;
   try {
     const response = await fetch(url, {
       method,
@@ -117,12 +133,12 @@ async function oneRequest(record) {
       signal: AbortSignal.timeout(requestTimeoutMs),
     });
     status = response.status;
-    await response.arrayBuffer();
+    bytes = (await response.arrayBuffer()).byteLength;
     if (!expectedStatuses.has(status)) error = `unexpected_status_${status}`;
   } catch (cause) {
     error = cause instanceof Error ? cause.name : "request_failed";
   }
-  if (record) recordResult(status, error, Math.max(0, performance.now() - startedAt));
+  if (record) recordResult(status, error, Math.max(0, performance.now() - startedAt), bytes);
 }
 
 async function warmup() {
@@ -142,9 +158,10 @@ await Promise.all(Array.from({ length: concurrency }, async () => {
 }));
 const elapsedSeconds = Math.max(0.001, (performance.now() - startedAt) / 1_000);
 const errorRate = requests === 0 ? 1 : failures / requests;
+const requestsPerSecond = requests / elapsedSeconds;
 
 const report = {
-  schema_version: "1.0",
+  schema_version: "1.1",
   target: `${url.origin}${url.pathname}`,
   method,
   concurrency,
@@ -152,7 +169,8 @@ const report = {
   request_timeout_ms: requestTimeoutMs,
   expected_statuses: [...expectedStatuses].sort((left, right) => left - right),
   requests,
-  requests_per_second: Number((requests / elapsedSeconds).toFixed(2)),
+  requests_per_second: Number(requestsPerSecond.toFixed(2)),
+  response_bytes: responseBytes,
   failures,
   error_rate: Number(errorRate.toFixed(6)),
   latency_ms: {
@@ -167,6 +185,8 @@ const report = {
   status_counts: mapToObject(statusCounts, (left, right) => Number(left) - Number(right)),
   error_counts: mapToObject(errorCounts, (left, right) => String(left).localeCompare(String(right))),
   thresholds: {
+    minimum_requests: minimumRequests,
+    minimum_requests_per_second: minimumRequestsPerSecond,
     maximum_error_rate: maximumErrorRate,
     maximum_p95_ms: maximumP95Ms,
     maximum_p99_ms: maximumP99Ms,
@@ -175,17 +195,15 @@ const report = {
 
 const failuresAgainstThreshold = [];
 if (requests === 0) failuresAgainstThreshold.push("no_requests_completed");
+if (requests < minimumRequests) failuresAgainstThreshold.push("minimum_requests_not_reached");
+if (requestsPerSecond < minimumRequestsPerSecond) failuresAgainstThreshold.push("minimum_rps_not_reached");
 if (errorRate > maximumErrorRate) failuresAgainstThreshold.push("error_rate_exceeded");
 if (report.latency_ms.p95 > maximumP95Ms) failuresAgainstThreshold.push("p95_exceeded");
 if (report.latency_ms.p99 > maximumP99Ms) failuresAgainstThreshold.push("p99_exceeded");
 report.status = failuresAgainstThreshold.length === 0 ? "passed" : "failed";
 report.threshold_failures = failuresAgainstThreshold;
 
-await mkdir(path.resolve(".artifacts"), { recursive: true });
-await writeFile(
-  path.resolve(".artifacts/load-test.json"),
-  `${JSON.stringify(report, null, 2)}\n`,
-  "utf8",
-);
+await mkdir(path.dirname(outputPath), { recursive: true });
+await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
 process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 if (failuresAgainstThreshold.length > 0) process.exitCode = 1;
