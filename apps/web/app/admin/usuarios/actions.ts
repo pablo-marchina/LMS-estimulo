@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { roleManagementRuntime } from "@/lib/admin/role-management";
+import { usesCorporateGoogleIdentity } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
@@ -55,7 +56,7 @@ export async function sendUserPasswordRecoveryAction(formData: FormData) {
   await roleManagerContext(organizationId);
   const targetEmail = email.parse(formData.get("email"));
 
-  if (targetEmail.endsWith("@estimulo.org")) {
+  if (usesCorporateGoogleIdentity(targetEmail)) {
     redirect("/admin/usuarios?status=acesso_google");
   }
 

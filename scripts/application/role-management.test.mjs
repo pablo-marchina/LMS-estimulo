@@ -5,6 +5,7 @@ import test from "node:test";
 const runtime = await readFile("apps/web/lib/admin/role-management.ts", "utf8");
 const actions = await readFile("apps/web/app/admin/usuarios/actions.ts", "utf8");
 const page = await readFile("apps/web/app/admin/usuarios/page.tsx", "utf8");
+const accessPolicy = await readFile("apps/web/lib/auth/administrative-access.ts", "utf8");
 const adminShell = await readFile("apps/web/components/admin-shell.tsx", "utf8");
 
 test("role management remains server-only and uses audited RPCs", () => {
@@ -25,7 +26,10 @@ test("role actions require explicit permission, UUID validation and typed confir
 });
 
 test("password recovery keeps corporate Google accounts on the federated access path", () => {
-  assert.match(actions, /targetEmail\.endsWith\("@estimulo\.org"\)/u);
+  assert.match(actions, /usesCorporateGoogleIdentity\(targetEmail\)/u);
+  assert.doesNotMatch(actions, /@estimulo\.org/u);
+  assert.match(accessPolicy, /usesCorporateGoogleIdentity/u);
+  assert.match(accessPolicy, /corporateGoogleDomain/u);
   assert.match(actions, /status=acesso_google/u);
   assert.match(actions, /resetPasswordForEmail/u);
   assert.match(actions, /\/auth\/password-recovery/u);

@@ -13,7 +13,7 @@ type PasswordFieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & 
 export function PasswordField({ id, label = "Senha", help, className, ...props }: PasswordFieldProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   return (
     <label className="grid gap-1.5 text-sm font-medium text-ink" htmlFor={inputId}>

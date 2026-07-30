@@ -5,16 +5,36 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+import { MetricTile } from "@/components/ui/metric-tile";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Table, TableScroll, Td, Th } from "@/components/ui/table";
-import { roleManagementRuntime } from "@/lib/admin/role-management";
-import { administrativeOrganization } from "@/lib/auth/administrative-access";
+import { roleManagementRuntime, type ManagedMembership } from "@/lib/admin/role-management";
+import { administrativeOrganization, usesCorporateGoogleIdentity } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { grantOrganizationRoleAction, revokeOrganizationRoleAction, sendUserPasswordRecoveryAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "America/Sao_Paulo" });
+
+function shortId(value: string) {
+  return `${value.slice(0, 8)}…${value.slice(-4)}`;
+}
+
+function membershipMatches(membership: ManagedMembership, search: string) {
+  if (!search) return true;
+  const terms = search.split(/\s+/u).filter(Boolean);
+  const identityLabel = usesCorporateGoogleIdentity(membership.email) ? "google corporativa" : "senha participante";
+  const searchable = [
+    membership.email,
+    membership.user_account_id,
+    membership.membership_id,
+    membership.membership_status,
+    identityLabel,
+    ...membership.roles.flatMap((role) => [role.role_code, role.role_name, role.active ? "ativo" : "inativo"]),
+  ].join(" ").toLocaleLowerCase("pt-BR");
+  return terms.every((term) => searchable.includes(term));
+}
 
 export default async function UserAdministrationPage({ searchParams }: { searchParams: Promise<{ status?: string; q?: string }> }) {
   const query = await searchParams;
@@ -27,33 +47,55 @@ export default async function UserAdministrationPage({ searchParams }: { searchP
   const workspace = await roleManagementRuntime.list(auth.identity.user_account_id, organization.organization_id).catch(() => null);
   const administratorRole = workspace?.roles.find((role) => role.code === "e14_operator" && role.status === "active") ?? null;
   const search = (query.q ?? "").trim().toLocaleLowerCase("pt-BR");
-  const memberships = workspace?.memberships.filter((membership) => !search || membership.email.toLocaleLowerCase("pt-BR").includes(search)) ?? [];
+  const allMemberships = workspace?.memberships ?? [];
+  const memberships = allMemberships.filter((membership) => membershipMatches(membership, search));
+  const activeCount = allMemberships.filter((membership) => membership.membership_status === "active").length;
+  const administratorCount = allMemberships.filter((membership) => membership.roles.some((role) => role.active && role.role_code === "e14_operator")).length;
+  const passwordAccountCount = allMemberships.filter((membership) => !usesCorporateGoogleIdentity(membership.email)).length;
 
   return (
     <AppShell area="admin" email={auth.email}>
       <div className="grid gap-6">
-        <PageHeader eyebrow="Equipe" title="Usuários e acessos" description="Consulte as contas da organização, pesquise por e-mail e aplique contornos seguros quando alguém não consegue entrar." />
+        <PageHeader eyebrow="Equipe" title="Usuários e acessos" description="Consulte identidade, vínculo, papéis e validade. Pesquise por e-mail, papel, status ou identificador e aplique contornos seguros de acesso." />
         {query.status === "concedido" ? <StatusPanel title="Acesso administrativo concedido" tone="success">O usuário já pode alterar as configurações permitidas.</StatusPanel> : null}
         {query.status === "removido" ? <StatusPanel title="Acesso administrativo removido" tone="success">O usuário continua com acesso de consulta.</StatusPanel> : null}
         {query.status === "recuperacao_enviada" ? <StatusPanel title="Recuperação enviada" tone="success">O usuário recebeu um link para definir uma nova senha. Nenhuma senha temporária foi criada ou exposta.</StatusPanel> : null}
         {query.status === "recuperacao_falhou" ? <StatusPanel title="Não foi possível enviar" tone="warning">Tente novamente mais tarde. Nenhuma credencial foi alterada.</StatusPanel> : null}
-        {query.status === "acesso_google" ? <StatusPanel title="Conta com acesso Google" tone="info">Contas @estimulo.org não usam senha de participante. Oriente a pessoa a entrar pela área administrativa com a conta corporativa correta.</StatusPanel> : null}
+        {query.status === "acesso_google" ? <StatusPanel title="Conta com acesso Google" tone="info">Contas corporativas não usam senha de participante. Oriente a pessoa a entrar pela área administrativa com a conta Google correta.</StatusPanel> : null}
         {!canManageRoles ? <StatusPanel title="Somente consulta" tone="info">Você pode ver os usuários, mas não alterar seus papéis nem iniciar recuperação de acesso.</StatusPanel> : null}
 
-        <Card><form method="get" className="flex flex-wrap items-end gap-3"><Label className="min-w-64 flex-1">Buscar usuário<Input name="q" defaultValue={query.q ?? ""} placeholder="nome@dominio.org" /></Label><Button type="submit" variant="secondary">Buscar</Button></form></Card>
+        {workspace ? (
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo de usuários">
+            <MetricTile index={0} label="Contas vinculadas" value={allMemberships.length} />
+            <MetricTile index={1} label="Vínculos ativos" value={activeCount} />
+            <MetricTile index={2} label="Administradores" value={administratorCount} />
+            <MetricTile index={3} label="Contas com senha" value={passwordAccountCount} />
+          </section>
+        ) : null}
 
-        {!workspace ? <StatusPanel title="Usuários indisponíveis" tone="warning">Não foi possível carregar os acessos neste momento.</StatusPanel> : memberships.length === 0 ? <StatusPanel title="Nenhum usuário encontrado" tone="info">Revise a busca e tente novamente.</StatusPanel> : (
+        <Card>
+          <form method="get" className="flex flex-wrap items-end gap-3">
+            <Label className="min-w-64 flex-1">Buscar usuário<Input name="q" defaultValue={query.q ?? ""} placeholder="E-mail, papel, status ou ID" autoComplete="off" /></Label>
+            <Button type="submit" variant="secondary">Buscar</Button>
+            {search ? <ButtonLink href="/admin/usuarios" variant="ghost">Limpar</ButtonLink> : null}
+          </form>
+          {search ? <p className="mt-3 text-xs text-muted">{memberships.length} {memberships.length === 1 ? "resultado" : "resultados"} para “{query.q}”.</p> : null}
+        </Card>
+
+        {!workspace ? <StatusPanel title="Usuários indisponíveis" tone="warning">Não foi possível carregar os acessos neste momento.</StatusPanel> : memberships.length === 0 ? <StatusPanel title="Nenhum usuário encontrado" tone="info">Revise a busca ou limpe os filtros para consultar todos os vínculos.</StatusPanel> : (
           <TableScroll>
             <Table>
-              <thead><tr><Th>Usuário</Th><Th>Acesso</Th><Th>Vínculo</Th>{canManageRoles ? <Th className="text-right">Ações</Th> : null}</tr></thead>
+              <thead><tr><Th>Usuário</Th><Th>Identidade</Th><Th>Papéis e acesso</Th><Th>Vínculo</Th>{canManageRoles ? <Th className="text-right">Ações</Th> : null}</tr></thead>
               <tbody>{memberships.map((membership) => {
                 const generalAdmin = membership.roles.find((role) => role.active && role.role_code === "e14_operator") ?? null;
-                const usesGoogle = membership.email.toLowerCase().endsWith("@estimulo.org");
+                const usesGoogle = usesCorporateGoogleIdentity(membership.email);
+                const activeRoles = membership.roles.filter((role) => role.active);
                 return (
                   <tr key={membership.membership_id}>
-                    <Td><div className="flex items-center gap-3"><Avatar name={membership.email} /><div><p className="font-semibold text-ink">{membership.email}</p><p className="text-xs text-muted">{usesGoogle ? "Identidade corporativa Google" : "Conta com senha"}</p></div></div></Td>
-                    <Td><StatusPill tone={generalAdmin ? "success" : "neutral"}>{generalAdmin ? "Administrador geral" : "Consulta"}</StatusPill></Td>
-                    <Td><p className="text-sm text-ink">{membership.membership_status === "active" ? "Ativo" : membership.membership_status}</p><p className="text-xs text-muted">Desde {dateFormatter.format(new Date(membership.valid_from))}</p></Td>
+                    <Td><div className="flex items-center gap-3"><Avatar name={membership.email} /><div><p className="font-semibold text-ink">{membership.email}</p><p className="text-xs text-muted" title={membership.user_account_id}>Conta {shortId(membership.user_account_id)}</p></div></div></Td>
+                    <Td><StatusPill tone={usesGoogle ? "info" : "neutral"}>{usesGoogle ? "Google corporativo" : "E-mail e senha"}</StatusPill><p className="mt-2 text-xs text-muted">{usesGoogle ? "Entrada pela área administrativa" : "Recuperação por link seguro"}</p></Td>
+                    <Td><div className="flex flex-wrap gap-1.5">{activeRoles.length ? activeRoles.map((role) => <StatusPill key={`${membership.membership_id}-${role.role_id}`} tone={role.role_code === "e14_operator" ? "success" : "neutral"}>{role.role_name}</StatusPill>) : <StatusPill tone="neutral">Consulta</StatusPill>}</div><p className="mt-2 text-xs text-muted">{activeRoles.length} {activeRoles.length === 1 ? "papel ativo" : "papéis ativos"}</p></Td>
+                    <Td><p className="text-sm font-medium text-ink">{membership.membership_status === "active" ? "Ativo" : membership.membership_status}</p><p className="text-xs text-muted">Desde {dateFormatter.format(new Date(membership.valid_from))}</p>{membership.valid_until ? <p className="text-xs text-muted">Até {dateFormatter.format(new Date(membership.valid_until))}</p> : <p className="text-xs text-muted">Sem data final</p>}<p className="mt-1 text-xs text-muted" title={membership.membership_id}>Vínculo {shortId(membership.membership_id)}</p></Td>
                     {canManageRoles ? (
                       <Td>
                         <div className="flex flex-wrap justify-end gap-2">
