@@ -157,14 +157,5 @@ jobs:
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
           psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
 
-      - name: Validate migration inventory
-        run: npm run validate:migration-history
-
-      - name: Replay all migrations
-        run: npm run replay:database-clean
-
-      - name: Validate schema and behavioral gates
-        run: |
-          npm run validate:schema-equivalence
-          npm run validate:public-rpc-contracts
-          npm run test:database
+      - name: Replay and validate canonical database once
+        run: npm run test:database
