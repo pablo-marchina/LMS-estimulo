@@ -111,3 +111,20 @@ test("gateway, help, legal and admin recovery contracts are versioned", async ()
   assert.match(privacy, /responsável jurídico e de privacidade/u);
   assert.match(pointEditor, /diagnostic\.session\.completed/u);
 });
+
+test("migration boundary preserves release hardening and consolidated corrections", async () => {
+  const validator = await source("scripts/database/migration-history/validate-active-migrations.mjs");
+  for (const migration of [
+    "20260729235959_release_readiness_fk_indexes.sql",
+    "20260730000000_fix_published_mutation_guard.sql",
+    "20260730000001_restore_path_template_presentation.sql",
+    "20260730000002_portable_auth_identity_resolution.sql",
+    "20260730020728_complete_diagnostic_point_rule.sql",
+    "20260730021001_operator_certificate_template_catalog.sql",
+    "20260730021926_safe_library_content_archiving.sql",
+    "20260730022413_safe_admin_track_archiving.sql",
+  ]) {
+    assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
+  }
+  assert.match(validator, /expectedLastMigration = '20260730022413_safe_admin_track_archiving\.sql'/u);
+});
