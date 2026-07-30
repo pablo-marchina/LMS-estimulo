@@ -142,6 +142,13 @@ jobs:
       - name: Build Supabase test application
         run: npm run build:web
 
+      - name: Restore generated Next.js declaration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore -- apps/web/next-env.d.ts
+          git diff --exit-code
+
       - name: Build AWS Lambda container image
         shell: bash
         run: |
@@ -225,6 +232,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git diff --exit-code
           mkdir -p .artifacts
           docker save lms-estimulo-lambda:ci | sha256sum > .artifacts/lambda-image.sha256
           image_id="$(docker image inspect lms-estimulo-lambda:ci --format '{{.Id}}')"
