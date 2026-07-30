@@ -20,11 +20,13 @@ begin
     v_account_id,'email',v_issuer,v_old_subject::text,v_email,true,repeat('a',64)
   );
 
+  -- Confirmation timestamps differ across supported GoTrue/Auth schema
+  -- revisions. Verification is an explicit input to resolve_external_identity,
+  -- so the fixture only writes stable auth.users columns.
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,
-    raw_app_meta_data,raw_user_meta_data,created_at,updated_at
+    id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values(
-    v_new_subject,'authenticated','authenticated',v_email,now(),
+    v_new_subject,'authenticated','authenticated',v_email,
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"estimulo.org"}}'::jsonb,now(),now()
   );
@@ -63,10 +65,9 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,
-    raw_app_meta_data,raw_user_meta_data,created_at,updated_at
+    id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values(
-    v_new_subject,'authenticated','authenticated',v_email,now(),
+    v_new_subject,'authenticated','authenticated',v_email,
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"gmail.com"}}'::jsonb,now(),now()
   );
@@ -103,15 +104,14 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,
-    raw_app_meta_data,raw_user_meta_data,created_at,updated_at
+    id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values
   (
-    v_old_subject,'authenticated','authenticated',v_old_email,now(),
+    v_old_subject,'authenticated','authenticated',v_old_email,
     '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now()
   ),
   (
-    v_new_subject,'authenticated','authenticated',v_email,now(),
+    v_new_subject,'authenticated','authenticated',v_email,
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"estimulo.org"}}'::jsonb,now(),now()
   );
