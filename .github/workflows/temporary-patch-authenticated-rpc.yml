@@ -1,0 +1,59 @@
+name: Temporary patch authenticated RPC
+
+on:
+  push:
+    branches:
+      - agent/consolidated-product-corrections
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/consolidated-product-corrections
+          fetch-depth: 0
+
+      - name: Patch gateway policy
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('supabase/functions/authenticated-rpc/index.ts')
+          text = path.read_text(encoding='utf-8')
+
+          allowed_marker = 'const allowedRpcs = new Set(`'
+          allowed_additions = (
+              'archive_admin_track archive_library_content '
+              'award_participant_action_points list_operator_certificate_templates '
+          )
+          participant_marker = 'const participantOnlyRpcs = new Set(`'
+          participant_additions = 'award_participant_action_points '
+
+          allowed_line = next(line for line in text.splitlines() if line.startswith(allowed_marker))
+          if 'archive_admin_track' not in allowed_line:
+              text = text.replace(allowed_marker, allowed_marker + allowed_additions, 1)
+
+          participant_line = next(line for line in text.splitlines() if line.startswith(participant_marker))
+          if 'award_participant_action_points' not in participant_line:
+              text = text.replace(participant_marker, participant_marker + participant_additions, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Commit patch
+        run: |
+          if git diff --quiet; then
+            echo "Gateway policy already updated."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/functions/authenticated-rpc/index.ts
+          git commit -m "fix(gateway): allow consolidated product RPCs"
+          git push origin HEAD:agent/consolidated-product-corrections
