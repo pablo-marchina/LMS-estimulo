@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { ShieldCheck, UserPlus } from "lucide-react";
 import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
 import { PasswordField } from "@/components/password-field";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
-import { ButtonLink } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { signInAction } from "./actions";
 
@@ -43,28 +41,18 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
       </form>
 
       <AuthFooter>
-        <div className="grid gap-3 text-left sm:grid-cols-2">
-          <section className="flex flex-col rounded-2xl border border-border bg-surface-muted/70 p-4">
-            <span className="grid size-10 place-items-center rounded-xl bg-white text-primary shadow-sm" aria-hidden="true">
-              <UserPlus size={20} />
-            </span>
-            <h2 className="mt-3 font-bold text-secondary">Ainda não tem conta?</h2>
-            <p className="mt-1 flex-1 text-sm leading-6 text-muted">Crie seu acesso de participante para começar as jornadas.</p>
-            <ButtonLink href="/cadastro" variant="secondary" className="mt-4 w-full">
-              Criar minha conta
-            </ButtonLink>
-          </section>
+        <p className="text-muted">
+          Não tem conta?{" "}
+          <Link href="/cadastro" className="font-semibold text-primary hover:underline">
+            Criar minha conta
+          </Link>
+        </p>
 
-          <section className="flex flex-col rounded-2xl border border-primary/20 bg-primary-soft/55 p-4">
-            <span className="grid size-10 place-items-center rounded-xl bg-white text-primary shadow-sm" aria-hidden="true">
-              <ShieldCheck size={20} />
-            </span>
-            <h2 className="mt-3 font-bold text-secondary">Sou da equipe Estímulo</h2>
-            <p className="mt-1 flex-1 text-sm leading-6 text-muted">Entre com o e-mail corporativo que possui um papel administrativo ativo.</p>
-            <ButtonLink href="/entrar/administracao" className="mt-4 w-full">
-              Acessar área administrativa
-            </ButtonLink>
-          </section>
+        <div className="border-t border-border/70 pt-3 text-xs leading-5 text-muted">
+          <Link href="/entrar/administracao" className="font-medium text-muted underline-offset-4 transition-colors hover:text-primary hover:underline">
+            Sou da equipe Estímulo
+          </Link>
+          <p className="mt-1">Contas da equipe Estímulo entram exclusivamente pela área administrativa.</p>
         </div>
       </AuthFooter>
     </AuthLayout>
