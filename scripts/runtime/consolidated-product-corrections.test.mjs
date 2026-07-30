@@ -179,8 +179,11 @@ test("migration boundary preserves release hardening and consolidated correction
     "20260730113000_normalize_diagnostic_point_rule_eligibility.sql",
     "20260730130000_atomic_diagnostic_completion_points.sql",
     "20260730150000_openai_official_drive_videos.sql",
+    "20260730183000_optional_journey_program.sql",
+    "20260730183100_admin_journey_and_diagnostic_lifecycle.sql",
+    "20260730183200_route_admin_lifecycle_through_product_rpc.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260730150000_openai_official_drive_videos\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260730183200_route_admin_lifecycle_through_product_rpc\.sql'/u);
 });
