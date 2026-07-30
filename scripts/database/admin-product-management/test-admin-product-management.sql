@@ -2,7 +2,9 @@ begin;
 
 do $$
 declare
-  v_actor uuid;
+  v_actor uuid:=gen_random_uuid();
+  v_membership uuid:=gen_random_uuid();
+  v_role uuid;
   v_org uuid;
   v_program uuid;
   v_journey jsonb;
@@ -17,21 +19,36 @@ declare
   v_report jsonb;
   v_replay jsonb;
 begin
-  select ua.id,om.organization_id
-  into v_actor,v_org
-  from iam.user_accounts ua
-  join iam.organization_memberships om on om.user_account_id=ua.id and om.status='active'
-  where ua.email_normalized like '%@estimulo.org'
-    and app_private.e14_actor_has_permission(ua.id,om.organization_id,'journey.definition.manage')
-    and app_private.e14_actor_has_permission(ua.id,om.organization_id,'diagnostic.configuration.manage')
-    and app_private.e14_actor_has_permission(ua.id,om.organization_id,'engagement.manage')
-    and app_private.e14_actor_has_permission(ua.id,om.organization_id,'reporting.read')
-  order by ua.email_normalized
+  select id,owner_organization_id into v_program,v_org
+  from catalog.programs
+  order by created_at
   limit 1;
-  if v_actor is null then raise exception 'integral administrator fixture missing'; end if;
+  if v_program is null or v_org is null then raise exception 'program fixture missing'; end if;
 
-  select id into v_program from catalog.programs where owner_organization_id=v_org order by created_at limit 1;
-  if v_program is null then raise exception 'program fixture missing'; end if;
+  select id into v_role
+  from iam.role_definitions
+  where organization_id=v_org and code='e14_operator' and status='active'
+  limit 1;
+  if v_role is null then raise exception 'integral administrator role missing'; end if;
+
+  insert into iam.user_accounts(id,email_normalized,status,last_authenticated_at)
+  values(v_actor,'admin-product-e2e@invalid.local','active',now());
+
+  insert into iam.organization_memberships(
+    id,organization_id,user_account_id,status,valid_from,valid_until
+  ) values(
+    v_membership,v_org,v_actor,'active',now()-interval '1 minute',null
+  );
+
+  insert into iam.membership_roles(membership_id,role_id,scope,valid_from,valid_until)
+  values(v_membership,v_role,'{}'::jsonb,now()-interval '1 minute',null);
+
+  if not app_private.e14_actor_has_permission(v_actor,v_org,'journey.definition.manage')
+     or not app_private.e14_actor_has_permission(v_actor,v_org,'diagnostic.configuration.manage')
+     or not app_private.e14_actor_has_permission(v_actor,v_org,'engagement.manage')
+     or not app_private.e14_actor_has_permission(v_actor,v_org,'reporting.read') then
+    raise exception 'integral administrator permissions missing';
+  end if;
 
   v_rule:=public.save_admin_product_resource(v_actor,v_org,'rule',jsonb_build_object(
     'code','admin_e2e_rule','name','Regra administrativa E2E','rule_type','eligibility','language','json-logic',
