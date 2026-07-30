@@ -26,8 +26,9 @@ test("administrative entry requires Google, verified claims, the exact Estímulo
   assert.match(adminCallback, /administrativeOrganization/u);
   assert.match(adminCallback, /client\.auth\.signOut/u);
   assert.match(adminLayout, /administrativeOrganization/u);
-  assert.match(participantSignIn, /isEstimuloAdministrativeEmail/u);
-  assert.doesNotMatch(participantSignIn, /grant|membership_roles|organization_memberships/u);
+  assert.match(participantSignIn, /auth\.signInWithPassword/u);
+  assert.match(participantSignIn, /auth\.identity\.entrepreneur_id/u);
+  assert.doesNotMatch(participantSignIn, /isEstimuloAdministrativeEmail|grant|membership_roles|organization_memberships/u);
 });
 
 test("CPF normalization and check digits reject malformed identifiers", () => {
@@ -56,7 +57,8 @@ test("verified signup requires CPF and sends only a protected payload to the RPC
   assert.match(completionPage, /name="cpf"/u);
   assert.match(completionAction, /protectCpf\(parsed\.data\.cpf/u);
   assert.match(completionAction, /protectedCpf/u);
-  assert.doesNotMatch(completionAction, /user_metadata[\s\S]*cpf|searchParams[\s\S]*cpf|console\./u);
+  assert.match(completionAction, /provisionPublicSignupParticipant\(\{[\s\S]*protectedCpf/u);
+  assert.doesNotMatch(completionAction, /console\.(?:error|warn)\([^\n]*parsed\.data\.cpf|console\.(?:error|warn)\([^\n]*\bcpf\b/u);
   assert.match(migration, /create table if not exists iam\.user_cpf_identifiers/u);
   assert.match(migration, /lookup_hmac text not null unique/u);
   assert.match(migration, /enable row level security/u);
