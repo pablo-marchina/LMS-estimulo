@@ -58,12 +58,11 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - [Portas e adapters de provedores](docs/architecture/PROVIDER_PORTS_AND_ADAPTERS.md)
 - [Migrations executáveis](docs/architecture/EXECUTABLE_MIGRATIONS.md)
 - [Observabilidade e alertas](docs/architecture/OBSERVABILITY_AND_ALERTS.md)
-- [Arquitetura lógica de filas](docs/architecture/QUEUE_ARCHITECTURE.md)
-- [Scheduler e dispatcher](docs/architecture/SCHEDULER_DISPATCHER_ARCHITECTURE.md)
+- [Contrato lógico de processamento assíncrono](docs/architecture/QUEUE_ARCHITECTURE.md)
 - [Outbox transacional](docs/architecture/TRANSACTIONAL_OUTBOX.md)
 - [Reconciliação e recuperação](docs/architecture/RECONCILIATION_AND_RECOVERY.md)
 - [Implementação de RLS](docs/architecture/RLS_IMPLEMENTATION.md)
-- [Arquitetura lógica de armazenamento](docs/architecture/STORAGE_ARCHITECTURE.md)
+- [Contrato lógico de armazenamento](docs/architecture/STORAGE_ARCHITECTURE.md)
 
 ## Dados e banco
 
