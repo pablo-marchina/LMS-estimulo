@@ -1,6 +1,6 @@
 # Plataforma Estímulo — índice canônico
 
-Este índice aponta para a documentação permanente. Requisitos, decisões, estado implementado e bloqueadores são mantidos diretamente nos documentos correspondentes.
+Este índice aponta para a documentação permanente. Requisitos, decisões, estado implementado e bloqueadores são mantidos diretamente nos documentos correspondentes. Resultados transitórios de CI, SHAs, contagens e métricas de um candidato ficam nos artefatos do workflow e no pull request correspondente, não em documentos permanentes.
 
 ## Entrada
 
@@ -111,8 +111,6 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - [Contenção de helpers opacos](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
 - [Contratos públicos de RPC](docs/implementation/PUBLIC_RPC_CONTRACTS.md)
 - [Contrato público de RPC v1](docs/implementation/public-rpc-contracts-v1.json)
-- [Lacuna de runtime](docs/implementation/RUNTIME_GAP.md)
-- [Delta de schema](docs/implementation/SCHEMA_DELTA.md)
 - [Bloqueadores da entrega](docs/implementation/DELIVERY_BLOCKERS.md)
 
 ## Operação e release
@@ -149,7 +147,8 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - especificações de produto descrevem requisitos aprovados ou propostas identificadas;
 - decisões registram apenas escolhas vigentes;
 - documentos de implementação descrevem somente o código versionado;
-- bloqueadores descrevem o que ainda falta;
+- bloqueadores descrevem lacunas ativas, sem congelar SHAs, contagens ou resultados transitórios;
+- evidências de um candidato pertencem aos workflows, manifestos e pull request daquele SHA;
 - Supabase e Vercel são evidência de desenvolvimento, teste e preview, não de produção;
 - `Dockerfile.lambda`, mocks, fixtures e smoke tests não constituem prova de produção;
 - serviços AWS específicos não podem ser tratados como decididos antes de ADR aprovado.
