@@ -232,6 +232,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git restore -- apps/web/next-env.d.ts
           git diff --exit-code
           mkdir -p .artifacts
           docker save lms-estimulo-lambda:ci | sha256sum > .artifacts/lambda-image.sha256
