@@ -1,10 +1,10 @@
 -- Replace the newly introduced opaque E14 helper definition without rewriting
--- the already applied migration. The SQL signature remains uuid -> jsonb, so
--- existing consumers are binary-compatible while the argument contract becomes
--- explicit and leaves the frozen legacy-helper inventory unchanged.
+-- the already applied migration. PostgreSQL does not allow CREATE OR REPLACE
+-- to rename an input parameter, so the original argument name `a` is retained
+-- while the implementation and function comment make its meaning explicit.
 
 create or replace function app_private.e14_dimension_scores_c(
-  p_session_id uuid
+  a uuid
 )
 returns jsonb
 language sql
@@ -17,7 +17,7 @@ as $$
       response.item_id,
       response.response_value
     from diagnostics.responses response
-    where response.session_id = p_session_id
+    where response.session_id = a
     order by response.item_id, response.revision desc
   ), dimension_scores as (
     select
