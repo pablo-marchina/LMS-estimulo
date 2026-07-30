@@ -1,9 +1,12 @@
--- Replace the newly introduced opaque E14 helper definition without rewriting
--- the already applied migration. The SQL signature remains uuid -> jsonb, so
--- existing consumers are binary-compatible while the argument contract becomes
--- explicit and leaves the frozen legacy-helper inventory unchanged.
+-- Explicitly replace the opaque helper introduced earlier in the migration
+-- history. PostgreSQL cannot rename input parameters through CREATE OR REPLACE,
+-- so the old function is dropped and recreated with a descriptive contract.
+-- pg_depend inspection confirms that no stored object depends on this function;
+-- callers resolve it by signature at execution time.
 
-create or replace function app_private.e14_dimension_scores_c(
+drop function if exists app_private.e14_dimension_scores_c(uuid);
+
+create function app_private.e14_dimension_scores_c(
   p_session_id uuid
 )
 returns jsonb

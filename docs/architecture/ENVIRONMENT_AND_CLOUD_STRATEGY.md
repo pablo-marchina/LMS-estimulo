@@ -1,99 +1,113 @@
 # Estratégia de ambientes
 
 **Revisado em:** 2026-07-29  
-**Status:** política vigente; AWS corporativa ainda não inventariada
+**Status:** política de ambientes aprovada; arquitetura AWS pendente
 
 ## Ambientes
 
-| Ambiente | Provider obrigatório | Finalidade | Dados |
+| Ambiente | Provider | Finalidade | Dados |
 |---|---|---|---|
-| `local` | `supabase` | desenvolvimento e testes rápidos | sintéticos |
-| `development/test` | `supabase` | integração, QA e validação temporária | sintéticos ou anonimizados aprovados |
-| `preview` | `supabase` | revisão controlada de interface e fluxos | somente teste |
-| `aws-staging` | `aws` | paridade, operação, carga, segurança e migração | sintéticos/anonimizados |
-| `aws-production` | `aws` | operação oficial | reais após gates |
+| `development` | `supabase` | desenvolvimento local | sintéticos |
+| `test` | `supabase` | CI, integração e QA | sintéticos ou anonimizados aprovados |
+| `preview` | `supabase` em Vercel | revisão controlada de interface e fluxos | somente teste |
+| `staging` | `aws` | validação da futura arquitetura de produção | bloqueado até ADRs e implementação |
+| `production` | `aws` | operação oficial | bloqueado até todos os gates |
 
-Supabase e Vercel não são ambientes oficiais de produção.
+Supabase e Vercel não são ambientes oficiais de produção e não podem receber dados ou tráfego oficial por mudança de nome, alias ou domínio.
 
-## Promoção
+## Política de provider
+
+```text
+APP_ENV=development|test|preview + PLATFORM_RUNTIME_PROVIDER=supabase  permitido
+APP_ENV=staging|production        + PLATFORM_RUNTIME_PROVIDER=aws       obrigatório
+APP_ENV=staging|production        + PLATFORM_RUNTIME_PROVIDER=supabase  rejeitado
+```
+
+A política é aplicada em toda consulta ao provider e pelos adapters Supabase. Um runtime AWS não pode usar Supabase como fallback.
+
+## Promoção em duas etapas
+
+### Release do software
 
 ```text
 mudança revisada
-→ validações locais
-→ CI funcional
-→ Supabase development/test
-→ npm run verify:supabase
-→ build imutável da imagem Lambda
-→ AWS staging com adapters AWS
-→ E2E transacional, carga, restore e rollback
-→ aprovação de produção
-→ alias Lambda de produção
+→ instalação limpa
+→ validações de fonte e contratos
+→ replay do PostgreSQL desde zero
+→ testes de aplicação, produto, integrações e banco
+→ typecheck e build
+→ imagem Lambda por digest
+→ scans e manifesto
+→ candidato de software aprovado
 ```
 
-Não existe promoção direta de Supabase para produção. Dados, configuração e evidência de desenvolvimento não são tratados como prova AWS.
+Esse resultado comprova que o código é um candidato reproduzível. Ele não autoriza produção.
 
-## Provider policy
+### Release do ambiente de produção
 
 ```text
-APP_ENV=development|test + PLATFORM_RUNTIME_PROVIDER=supabase  permitido
-APP_ENV=staging|production + PLATFORM_RUNTIME_PROVIDER=aws     obrigatório
-APP_ENV=staging|production + PLATFORM_RUNTIME_PROVIDER=supabase rejeitado
+requisitos não funcionais aprovados
+→ ADRs AWS aprovados
+→ implementação da arquitetura
+→ staging no mesmo SHA e digest
+→ E2E transacional
+→ isolamento e segurança
+→ ramp, spike e soak
+→ observabilidade e resposta a incidentes
+→ backup, restore e rollback
+→ aprovações de privacidade, conteúdo e acessibilidade
+→ produção
 ```
 
-A política é aplicada em toda consulta ao provider e pelos próprios adapters Supabase.
+## Paridade lógica
 
-A readiness de um ambiente AWS só pode ficar verde após probes reais de Cognito/IdP, RDS Proxy/PostgreSQL, S3 e configuração de segurança.
-
-## Paridade
-
-Devem permanecer iguais entre os adapters:
+As decisões físicas da AWS ainda estão abertas, mas os seguintes contratos lógicos precisam permanecer invariáveis entre o provider de teste e o provider de produção:
 
 - modelo de domínio;
-- identidade interna, organizações e RBAC;
-- migrations e funções PostgreSQL aplicáveis;
-- eventos, outbox e idempotência;
+- identidade interna, organizações e capacidades RBAC;
+- migrations e contratos PostgreSQL portáveis;
+- eventos, outbox, idempotência e reconciliação;
 - regras de diagnóstico, jornada e credenciais;
-- metadados e autorização de arquivos;
-- contratos HubSpot.
+- metadados, autorização e integridade de arquivos;
+- contratos de integrações externas;
+- auditabilidade e proteção de dados.
 
-A implementação física muda:
+A escolha física de identidade, entrada pública, banco, conexão, armazenamento, filas, rede, segredos e observabilidade deve ser feita por ADR e não pode ser inferida do adapter Supabase.
 
-| Capacidade | Desenvolvimento/teste | AWS staging/produção |
-|---|---|---|
-| identidade | Supabase Auth | Cognito/OIDC corporativo |
-| gateway de operações | Edge Function + RPC/PostgREST | adapter server-only + RDS Proxy |
-| PostgreSQL | Supabase PostgreSQL | RDS PostgreSQL Multi-AZ |
-| arquivos | Supabase Storage | S3 privado e upload direto |
-| assíncrono | contratos/outbox sem worker final | SQS, Lambdas consumidoras e DLQ |
-| secrets | ambiente gerenciado de teste | Secrets Manager/KMS corporativo |
-| observabilidade | logs da plataforma de teste | CloudWatch/tracing e SLOs corporativos |
+## Estado do container
 
-## Infraestrutura corporativa
+`Dockerfile.lambda` é o único artefato AWS aprovado. Ele define o empacotamento do monólito Next.js para Lambda, mas não define:
 
-Antes de criar ou aplicar recursos, o inventário de [`infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md`](../../infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md) precisa identificar contas, rede, edge, identidade, RDS, S3, filas, secrets, observabilidade e pipeline existentes.
+- front door, CDN, DNS, TLS ou WAF;
+- identidade ou sessão;
+- banco ou conexão;
+- armazenamento ou uploads;
+- processamento assíncrono;
+- rede;
+- segredos e chaves;
+- observabilidade;
+- pipeline de deploy, backup ou recuperação.
 
-A árvore ativa não contém stack genérica de infraestrutura. A implementação física usará os recursos, módulos e pipelines oficiais da empresa.
+Enquanto essas decisões estiverem abertas, `/api/health/ready` deve responder `503` com `aws_architecture_pending`.
 
-## Dados, secrets e isolamento
+## Dados, segredos e isolamento
 
-- desenvolvimento usa dados sintéticos por padrão;
-- cópias de produção exigem processo de anonimização e aprovação;
-- contas e recursos de staging/produção devem ser separados conforme a política corporativa;
-- secrets nunca entram em Git, build arguments, imagens ou logs;
-- callbacks, domínios e buckets são específicos por ambiente;
-- integrações externas usam sandbox antes de produção;
-- migrations são executadas por identidade operacional separada da aplicação.
+- desenvolvimento e preview usam dados sintéticos por padrão;
+- cópias de dados reais exigem anonimização e aprovação;
+- ambientes produtivos devem ser isolados conforme a arquitetura futura;
+- segredos nunca entram em Git, argumentos de build, imagens ou logs;
+- integrações externas usam sandbox antes da produção;
+- migrations são executadas por identidade operacional separada da aplicação;
+- toda decisão de armazenamento ou transferência deve considerar LGPD e retenção.
 
-## Evidência mínima de staging
+## Gate para staging AWS
 
-1. imagem por digest e alias de staging;
-2. identidade real de teste e RBAC;
-3. replay e equivalência em RDS;
-4. upload/download direto em S3;
-5. outbox, SQS, retry e DLQ;
-6. HubSpot em sandbox;
-7. logs, métricas e alarmes;
-8. teste transacional em navegador;
-9. teste de carga e concorrência;
-10. backup, PITR, restore e rollback;
-11. segurança, privacidade e acessibilidade aprovadas.
+Staging somente poderá existir após:
+
+1. aprovação de [`AWS_ARCHITECTURE_STATUS.md`](AWS_ARCHITECTURE_STATUS.md) por meio dos ADRs correspondentes;
+2. contrato legível por máquina atualizado;
+3. adapters de produção implementados e fail-closed;
+4. infraestrutura reproduzível e revisada;
+5. modelo de ameaças e plano de operação;
+6. capacidade, custo e SLOs definidos;
+7. estratégia de observabilidade, backup, restore e rollback.

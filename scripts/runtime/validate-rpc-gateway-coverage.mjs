@@ -19,9 +19,12 @@ async function sourceFiles(directory) {
 }
 
 const gateway = await readFile(gatewayPath, "utf8");
-const allowlistMatch = gateway.match(/const allowedRpcs = new Set\(`([^`]+)`\.split/u);
+const allowlistMatch = gateway.match(
+  /const allowedRpcs = new Set\(`([^`]+)`(?:\.trim\(\))?\.split\(\/\\s\+\/u\)\);/u,
+);
 assert.ok(allowlistMatch, "authenticated RPC allowlist could not be parsed");
-const allowed = new Set(allowlistMatch[1].trim().split(/\s+/u));
+const allowlistEntries = allowlistMatch[1].trim().split(/\s+/u);
+const allowed = new Set(allowlistEntries);
 
 const required = new Set([
   "clear_admin_activity_parts",
@@ -45,6 +48,6 @@ assert.deepEqual(missing, [], `RPCs invoked by the application are missing from 
 for (const operation of allowed) {
   assert.match(operation, /^[a-z][a-z0-9_]+$/u, `invalid RPC allowlist entry: ${operation}`);
 }
-assert.equal(allowed.size, new Set(allowed).size, "authenticated RPC allowlist contains duplicates");
+assert.equal(allowlistEntries.length, allowed.size, "authenticated RPC allowlist contains duplicates");
 
 process.stdout.write(`[rpc-gateway-coverage] ${required.size} required RPC operations are allowlisted\n`);

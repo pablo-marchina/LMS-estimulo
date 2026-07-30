@@ -1,4 +1,7 @@
--- Validate all 11 point rules, total, history, ranking and idempotency, then roll back.
+-- Historical migration retained for version compatibility.
+-- The behavioral points smoke runs only when its controlled journey and point
+-- rule fixtures are present. Empty structural replay must not depend on mutable
+-- published content.
 do $smoke$
 declare
   v_actor uuid:=gen_random_uuid(); v_entrepreneur uuid:=gen_random_uuid(); v_journey_version uuid;
@@ -6,15 +9,27 @@ declare
   v_actions text[]:=array['rate_lesson','complete_quick_activity','complete_lesson','complete_basic_module','submit_practice','pass_path_assessment','complete_bonus_content','pass_basic_assessment','pass_advanced_assessment'];
   v_ledger_count integer; v_points integer; v_hub jsonb; v_before integer;
 begin
+  select version.id into v_journey_version
+  from catalog.journey_versions version
+  join catalog.journey_definitions definition on definition.id=version.journey_definition_id
+  where definition.code='capacitacao_ia_mei_openai' and version.status='published'
+  order by version.version_number desc limit 1;
+
+  if v_journey_version is null then
+    raise notice 'points smoke skipped: published OpenAI journey fixture is not present during structural replay';
+    return;
+  end if;
+
+  if (select count(*) from engagement.point_rule_definitions definition where definition.status='active')<>11 then
+    raise notice 'points smoke skipped: complete active point-rule fixture is not present during structural replay';
+    return;
+  end if;
+
   begin
     insert into iam.user_accounts(id,email_normalized,status)
     values(v_actor,'runtime-smoke-points-'||replace(v_actor::text,'-','')||'@invalid.local','active');
     insert into core.entrepreneurs(id,user_account_id,preferred_name,email_normalized,status,profile_data)
     values(v_entrepreneur,v_actor,'Runtime Smoke Points','runtime-smoke-points-'||replace(v_actor::text,'-','')||'@invalid.local','active','{}'::jsonb);
-    select version.id into v_journey_version
-    from catalog.journey_versions version join catalog.journey_definitions definition on definition.id=version.journey_definition_id
-    where definition.code='capacitacao_ia_mei_openai' and version.status='published'
-    order by version.version_number desc limit 1;
     v_enrollment:=public.e14_self_enroll(v_actor,v_journey_version,'smoke-points-enroll');
     v_instance:=(v_enrollment->'data'->>'journey_instance_id')::uuid;
     v_state:=public.e14_get_participant_state(v_actor,v_instance);

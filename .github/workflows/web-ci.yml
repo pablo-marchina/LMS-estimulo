@@ -120,6 +120,9 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Lint versioned source
+        run: npm run lint:source
+
       - name: Validate repository and application contracts
         run: |
           npm run validate:repository
@@ -141,6 +144,13 @@ jobs:
 
       - name: Build Supabase test application
         run: npm run build:web
+
+      - name: Restore generated Next.js declaration
+        shell: bash
+        run: |
+          set -euo pipefail
+          git restore -- apps/web/next-env.d.ts
+          git diff --exit-code
 
       - name: Build AWS Lambda container image
         shell: bash
@@ -184,13 +194,17 @@ jobs:
           vuln-type: os,library
           severity: CRITICAL,HIGH
 
-      - name: Smoke test hardened Lambda web container
+      - name: Smoke and capacity test bounded Lambda web container
         shell: bash
         run: |
           set -euo pipefail
           docker run --detach --name lms-estimulo-lambda-ci \
             --read-only \
             --tmpfs /tmp:rw,nosuid,nodev,size=268435456 \
+            --memory 536870912 \
+            --memory-swap 536870912 \
+            --cpus 1.0 \
+            --pids-limit 256 \
             --publish 3000:3000 \
             --env NEXT_PUBLIC_APP_URL=https://ci.example.org \
             lms-estimulo-lambda:ci
@@ -213,18 +227,27 @@ jobs:
           HTTP_HARDENING_BASE_URL=http://127.0.0.1:3000 npm run verify:http-hardening
 
           LOAD_TEST_BASE_URL=http://127.0.0.1:3000 \
-          LOAD_TEST_CONCURRENCY=20 \
-          LOAD_TEST_DURATION_SECONDS=8 \
-          LOAD_TEST_WARMUP_SECONDS=2 \
+          LOAD_TEST_CONCURRENCY=40 \
+          LOAD_TEST_DURATION_SECONDS=15 \
+          LOAD_TEST_WARMUP_SECONDS=3 \
+          LOAD_TEST_MIN_REQUESTS=750 \
+          LOAD_TEST_MIN_RPS=50 \
           LOAD_TEST_MAX_ERROR_RATE=0.01 \
           LOAD_TEST_MAX_P95_MS=2000 \
           LOAD_TEST_MAX_P99_MS=5000 \
           npm run test:capacity
 
+          test "$(docker inspect lms-estimulo-lambda-ci --format '{{.RestartCount}}')" = "0"
+          test "$(docker inspect lms-estimulo-lambda-ci --format '{{.State.OOMKilled}}')" = "false"
+          test "$(docker inspect lms-estimulo-lambda-ci --format '{{.State.Status}}')" = "running"
+          docker stats --no-stream --format '{{json .}}' lms-estimulo-lambda-ci > .artifacts/container-stats.json
+
       - name: Generate immutable release evidence
         shell: bash
         run: |
           set -euo pipefail
+          git restore -- apps/web/next-env.d.ts
+          git diff --exit-code
           mkdir -p .artifacts
           docker save lms-estimulo-lambda:ci | sha256sum > .artifacts/lambda-image.sha256
           image_id="$(docker image inspect lms-estimulo-lambda:ci --format '{{.Id}}')"
@@ -240,6 +263,7 @@ jobs:
             .artifacts/release-manifest.sha256
             .artifacts/lambda-image.sha256
             .artifacts/load-test.json
+            .artifacts/container-stats.json
             .artifacts/trivy-image.json
           include-hidden-files: true
           if-no-files-found: error

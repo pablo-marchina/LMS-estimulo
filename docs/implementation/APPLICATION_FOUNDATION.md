@@ -1,82 +1,85 @@
 # Fundação atual da aplicação
 
 **Revisado em:** 2026-07-29  
-**Status:** desenvolvimento/teste funcional; produção AWS bloqueada
+**Status:** candidato de software em validação; produção AWS bloqueada por arquitetura
 
 ## Forma do sistema
 
-O repositório contém um monorepo npm com um workspace `apps/web/`. A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Server Components, route handlers, server actions e módulos server-only compõem os casos de uso; não existe backend de domínio paralelo.
+O repositório contém um monorepo npm com o workspace `apps/web/`. A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Server Components, route handlers, server actions e módulos server-only compõem os casos de uso; não existe backend de domínio paralelo.
 
-## Providers de plataforma
+## Providers
 
 ```text
 PLATFORM_RUNTIME_PROVIDER=supabase
 PLATFORM_RUNTIME_PROVIDER=aws
 ```
 
-- `supabase` é permitido em local, test e preview;
-- `aws` é obrigatório em staging e produção;
+- `supabase` é permitido em development, test e preview;
+- `aws` é obrigatório em staging e production;
 - qualquer consulta ao provider aplica a política de ambiente;
-- os próprios clientes Supabase rejeitam execução no provider AWS;
-- provider inválido ou combinação proibida falha fechado.
+- os clientes Supabase rejeitam execução no provider AWS;
+- combinação inválida falha fechado;
+- o provider AWS permanece `not_ready` enquanto sua arquitetura estiver pendente.
 
-A política está em `apps/web/lib/platform/runtime-provider.ts` e é verificada por `npm run validate:platform-contract`.
+A política está em `apps/web/lib/platform/runtime-provider.ts` e é validada por `npm run validate:platform-contract`.
 
-## Runtime Supabase de teste
+## Runtime Supabase/Vercel de teste
 
-O caminho funcional de desenvolvimento/teste usa:
+O caminho funcional de desenvolvimento, teste e preview usa:
 
 - Supabase Auth e cookies SSR;
 - Supabase Storage;
 - Edge Function `authenticated-rpc`;
 - RPC/PostgREST;
 - Supabase PostgreSQL como estado operacional, event store e outbox;
-- adapter HTTP HubSpot, ainda sem inventário, worker ou sandbox real.
+- Vercel somente para previews controlados;
+- adapter HTTP HubSpot sem autorização de produção.
 
-O gateway RPC possui timeout controlado e uma fronteira única. Não existem rotas de login de teste, identidade sintética, banco falso, storage local alternativo ou bypass de RPC.
+O gateway autenticado valida sessão, identidade interna e correspondência do ator, aplica allowlist, limita payload e timeout e sanitiza erros. Toda RPC usada pela aplicação deve estar coberta pelo gate `validate:rpc-gateway-coverage`.
 
-O ambiente real pode ser verificado, sem mutações, por:
+O ambiente de teste pode ser verificado sem mutações por:
 
 ```bash
 npm run verify:supabase
 ```
 
-O comando verifica Auth, readiness do PostgreSQL e proteção da Edge Function autenticada.
+A verificação consulta Auth, readiness do PostgreSQL e a proteção do gateway autenticado. Isso não constitui prova de produção.
 
-## Arquitetura AWS aprovada
+## Estado AWS
 
-A produção seguirá a [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md):
+As únicas decisões aprovadas são:
 
-```text
-CloudFront/edge + WAF
-→ API Gateway HTTP API
-→ Lambda alias
-→ Next.js + Lambda Web Adapter
-→ Cognito/OIDC
-→ RDS Proxy + RDS PostgreSQL
-→ S3 privado e upload direto
-→ SQS + Lambdas consumidoras + DLQ
-```
+1. AWS será o ambiente definitivo de produção;
+2. a aplicação será empacotada por `Dockerfile.lambda`;
+3. Supabase e Vercel não podem ser usados como fallback ou produção oficial.
 
-No provider AWS, identidade, gateway PostgreSQL e storage permanecem fail-closed até os adapters reais existirem.
+Entrada pública, identidade, banco, conexão, armazenamento, processamento assíncrono, rede, segredos, observabilidade, deploy e continuidade ainda precisam de ADR. Consulte [`AWS_ARCHITECTURE_STATUS.md`](../architecture/AWS_ARCHITECTURE_STATUS.md).
+
+No provider AWS:
+
+- `/api/health/live` pode apenas comprovar que o processo HTTP iniciou;
+- `/api/health/ready` retorna `503` com `aws_architecture_pending`;
+- autenticação protegida retorna indisponibilidade;
+- operações de dados e armazenamento não executam em Supabase;
+- nenhum serviço AWS específico é presumido pelo código ou documentação.
 
 ## Superfícies funcionais
 
 ### Participante
 
-- cadastro, confirmação e login no adapter Supabase;
-- conclusão com CPF protegido;
+- cadastro, confirmação e login no adapter de teste;
+- conclusão de perfil com CPF protegido;
 - home, jornadas, atividades, diagnóstico, perfil, biblioteca e conquistas;
 - progresso, avaliações, práticas, comentários, arquivos, pontos e credenciais.
 
 ### Administração
 
-- entrada separada por Google OAuth no adapter Supabase;
+- entrada separada pelo provider de teste;
 - e-mail confirmado `@estimulo.org`;
-- organização interna e RBAC;
-- produto, diagnóstico, gamificação, engajamento, biblioteca, usuários, relatórios e operação.
+- organização interna e capacidades RBAC;
+- produto, jornadas, trilhas, aulas, diagnóstico, CMS, gamificação, engajamento, biblioteca, usuários, relatórios e operação.
 
-A existência das telas não aprova conteúdo, metodologia, identidade institucional ou integração externa para usuários reais.
+A existência das telas não aprova conteúdo, metodologia, identidade institucional, privacidade ou integração externa para usuários reais.
 
 ## Módulos principais
 
@@ -96,42 +99,37 @@ apps/web/lib/hubspot/
 apps/web/lib/configurable-product/
 ```
 
-## Banco
+## Banco e integridade
 
-- `supabase/migrations/` é o único histórico executável e imutável;
+- `supabase/migrations/` é o único histórico executável;
 - `supabase/canonical-migrations/` contém baselines recuperadas e manifests;
-- migrations posteriores corrigem o estado sem editar migrations aplicadas;
-- contratos públicos permanecem em `docs/implementation/public-rpc-contracts-v1.json`;
-- após o replay, os gates aceitam somente arquivos SQL `test-*`.
+- replay estrutural não depende de conteúdo editorial mutável;
+- testes comportamentais usam fixtures controladas depois do replay;
+- contratos públicos permanecem em `public-rpc-contracts-v1.json`;
+- após o replay, os gates aceitam somente suites SQL de teste;
+- idempotência, constraints, RLS e autorização devem ser provadas sob concorrência.
 
-A prova em RDS, incluindo extensões, roles, grants, RLS, funções, índices, RDS Proxy, PITR e restore, ainda não existe.
+A tecnologia e a operação do banco AWS ainda não estão decididas. Qualquer prova futura deve cobrir replay, equivalência, extensões, roles, grants, RLS, conexão, failover, backup e restore no desenho aprovado.
 
 ## Container
 
-Existe somente `Dockerfile.lambda`.
-
-Ele:
+Existe somente `Dockerfile.lambda`. Ele:
 
 - usa Node.js 22 e Next.js standalone;
 - inclui AWS Lambda Web Adapter;
 - configura `APP_ENV=production` e `PLATFORM_RUNTIME_PROVIDER=aws`;
-- incorpora somente `NEXT_PUBLIC_APP_URL` como configuração pública;
-- não incorpora configuração Supabase ou secrets;
-- usa `/api/health/live` para inicialização do servidor;
-- mantém `/api/health/ready` como gate externo fail-closed;
-- usa `/tmp` apenas para cache descartável.
+- não incorpora configuração Supabase ou segredos;
+- usa `/api/health/live` para inicialização do processo;
+- preserva `/api/health/ready` como gate externo fail-closed;
+- usa `/tmp` apenas para cache descartável;
+- executa como usuário não-root.
 
-A stack Terraform ECS/Fargate e o Dockerfile genérico foram removidos.
-
-O Web CI deve construir a aplicação Supabase de teste e, separadamente, construir, inspecionar e iniciar o container Lambda. Os runners ainda precisam executar os steps para que essa evidência exista.
+A imagem não define a arquitetura AWS ao redor da função.
 
 ## Validações permanentes
 
 ```bash
-npm run validate:repository
-npm run validate:dependency-lock
-npm run validate:platform-contract
-npm run validate:migration-history
+npm run validate:release-candidate
 npm run test:repository-tooling
 npm run test:application
 npm run test:product
@@ -139,27 +137,39 @@ npm run test:integrations
 npm run test:database
 npm run typecheck:web
 npm run build:web
+npm run scan:secrets
+npm run test:secret-scanning
 npm run verify:supabase
 ```
 
-`npm run verify:deployment` é um smoke test autenticado read-only. Ele não comprova criação transacional, upload, outbox, SQS ou HubSpot.
+O CI também deve reconstruir o banco desde zero, construir e inspecionar a imagem e preservar evidências associadas ao mesmo SHA.
+
+## Capacidade e performance
+
+O harness de carga produz throughput, taxa de erro e percentis. O cenário curto de `/api/health/live` valida apenas o harness e o processo HTTP. Prontidão multiusuário requer, no ambiente AWS definido:
+
+- leitura e escrita autenticadas;
+- diagnóstico e progresso concorrentes;
+- administração e publicação;
+- arquivos;
+- processamento assíncrono e integrações;
+- múltiplas organizações e testes negativos;
+- ramp, spike e soak;
+- métricas de memória, conexões, backlog, erros e custo.
 
 ## Limites atuais
 
-Não estão implementados ou comprovados:
+Ainda não estão aprovados ou comprovados:
 
-- inventário da AWS corporativa;
-- adapter Cognito/OIDC;
-- adapter PostgreSQL via RDS Proxy;
-- replay/equivalência em RDS;
-- S3 e uploads diretos;
-- SQS, workers, DLQ e reconciliação;
-- infraestrutura Lambda/front door aplicada;
-- build e execução da imagem Lambda em CI;
-- observabilidade, SLOs, backup, restore e rollback;
-- E2E transacional AWS;
+- arquitetura AWS completa;
+- adapters e infraestrutura de produção;
+- E2E transacional no ambiente definitivo;
+- perfil de carga, limites e SLOs validados;
+- observabilidade e resposta a incidentes;
+- backup, restore e rollback;
+- operação institucional das chaves do CPF;
+- integração externa em sandbox e produção;
 - conteúdo e diagnóstico oficiais;
-- HubSpot sandbox;
 - aprovações de segurança, privacidade e acessibilidade.
 
 O estado de liberação está em [`DELIVERY_BLOCKERS.md`](DELIVERY_BLOCKERS.md).

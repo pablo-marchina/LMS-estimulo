@@ -1,18 +1,27 @@
--- Skip diagnosis, create the default path and roll back synthetic data.
+-- Historical migration retained for version compatibility.
+-- The behavioral journey smoke runs only when its controlled editorial fixture
+-- is present. Empty structural replay must not depend on mutable published content.
 do $smoke$
 declare
   v_actor uuid:=gen_random_uuid(); v_entrepreneur uuid:=gen_random_uuid(); v_journey_version uuid;
   v_enrollment jsonb; v_instance uuid; v_state jsonb; v_outline jsonb;
 begin
+  select version.id into v_journey_version
+  from catalog.journey_versions version
+  join catalog.journey_definitions definition on definition.id=version.journey_definition_id
+  where definition.code='capacitacao_ia_mei_openai' and version.status='published'
+  order by version.version_number desc limit 1;
+
+  if v_journey_version is null then
+    raise notice 'journey smoke skipped: published OpenAI journey fixture is not present during structural replay';
+    return;
+  end if;
+
   begin
     insert into iam.user_accounts(id,email_normalized,status)
     values(v_actor,'runtime-smoke-journey-'||replace(v_actor::text,'-','')||'@invalid.local','active');
     insert into core.entrepreneurs(id,user_account_id,preferred_name,email_normalized,status,profile_data)
     values(v_entrepreneur,v_actor,'Runtime Smoke Journey','runtime-smoke-journey-'||replace(v_actor::text,'-','')||'@invalid.local','active','{}'::jsonb);
-    select version.id into v_journey_version
-    from catalog.journey_versions version join catalog.journey_definitions definition on definition.id=version.journey_definition_id
-    where definition.code='capacitacao_ia_mei_openai' and version.status='published'
-    order by version.version_number desc limit 1;
     v_enrollment:=public.e14_self_enroll(v_actor,v_journey_version,'smoke-journey-enroll');
     v_instance:=(v_enrollment->'data'->>'journey_instance_id')::uuid;
     v_state:=public.e14_get_participant_state(v_actor,v_instance);

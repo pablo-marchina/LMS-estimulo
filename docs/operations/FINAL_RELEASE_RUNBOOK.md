@@ -1,81 +1,210 @@
 # Runbook do release final
 
+**Revisado em:** 2026-07-29  
+**Estado:** gate de software executável; deploy de produção bloqueado pela arquitetura AWS
+
+## Regra central
+
+Existem dois gates independentes:
+
+1. **release do software** — comprova que um SHA é íntegro, reproduzível, testado e empacotável;
+2. **release de produção** — comprova que esse mesmo SHA pode operar com múltiplos usuários no ambiente AWS definitivo.
+
+A aprovação do primeiro não autoriza o segundo.
+
 ## Candidato único
 
-O release só pode ser promovido a partir de um único commit da branch `release/2026-07-final`. O manifesto, as migrations, a função Edge, o deployment e os resultados dos testes devem registrar esse mesmo SHA.
+O candidato deve partir de uma única branch `release/YYYY-MM-descricao`. Fonte, lockfile, migrations, gateway de teste, imagem, manifestos e resultados precisam registrar o mesmo SHA.
 
-## Baseline de dependências críticas
+## Toolchain fixada
 
+- Node.js `22.23.1`;
+- npm `10.9.8`;
 - Next.js `16.2.12`;
-- Sharp `0.35.3` por override de segurança;
-- PostCSS `8.5.23` por override de segurança;
-- lockfile v3 regenerado do zero com npm `10.9.8` e aprovado por `npm audit --omit=dev`.
+- Sharp `0.35.3` por override;
+- PostCSS `8.5.23` por override;
+- lockfile v3 instalado exclusivamente por `npm ci`.
 
-Qualquer alteração nesses componentes exige novo lockfile, audit e repetição integral dos gates.
+Qualquer mudança nesses componentes exige repetição integral dos gates.
 
-## Ordem de promoção
+# Gate A — release do software
 
-1. executar `npm ci --ignore-scripts --no-audit --no-fund` com Node.js 22.23.1 e npm 10.9.8;
-2. executar `npm run validate:release-candidate`;
-3. executar testes de aplicação, produto, integrações e tooling;
-4. reproduzir o PostgreSQL desde zero e executar todos os gates de banco;
-5. aplicar somente as migrations ainda ausentes, preservando versões já registradas;
-6. implantar `authenticated-rpc` com JWT obrigatório e verificar o hash remoto;
-7. gerar o manifesto e o digest da imagem;
-8. executar smoke, carga progressiva, spike e soak em homologação;
-9. comprovar isolamento entre organizações e imutabilidade de versões publicadas;
-10. exercitar restore e rollback antes da promoção.
+## Ordem obrigatória
 
-## Gates de integridade
+1. checkout do SHA exato com árvore limpa e line endings determinísticos;
+2. `npm ci --ignore-scripts --no-audit --no-fund`;
+3. `npm run validate:release-candidate`;
+4. `npm run test:repository-tooling`;
+5. `npm run test:application`;
+6. `npm run test:product`;
+7. `npm run test:integrations`;
+8. reconstrução do PostgreSQL desde zero;
+9. equivalência de schema, contratos públicos e `npm run test:database`;
+10. `npm run typecheck:web`;
+11. `npm run build:web`;
+12. secret scanning e audit de dependências;
+13. build da imagem de `Dockerfile.lambda` por digest;
+14. scan de vulnerabilidades e inspeção não-root/read-only;
+15. smoke de `/api/health/live` e comprovação de que `/api/health/ready` permanece fechado no provider AWS pendente;
+16. geração de manifesto e hashes.
 
-- Git, banco e replay limpo contêm o mesmo inventário de migrations.
-- Toda RPC invocada pela aplicação está na allowlist da função autenticada.
-- Nenhuma função temporária ou de smoke permanece ativa.
-- O deployment contém o SHA aprovado e a imagem contém o digest do manifesto.
-- A árvore de trabalho usada para gerar os artefatos está limpa.
+Nenhum passo obrigatório pode ficar `skipped`, cancelado ou vermelho.
 
-## Gates de segurança
+## Integridade
 
-- secret scanning e audit de dependências aprovados;
-- Trivy sem vulnerabilidade corrigível alta ou crítica;
-- CSP, HSTS, `nosniff`, políticas de referência/permissões e proteção contra framing presentes;
-- sessões inválidas removidas sem loop de refresh;
-- payload, timeout, concorrência, fila e burst limitados;
-- mensagens internas do PostgreSQL não são expostas;
-- leaked-password protection habilitada no provedor de identidade;
-- testes negativos entre organizações aprovados.
+- toda RPC chamada pela aplicação está na allowlist do gateway de teste;
+- o gateway valida sessão, identidade e correspondência do ator;
+- migrations estruturais não dependem de conteúdo editorial mutável;
+- o replay começa em banco vazio e termina com todos os gates aprovados;
+- idempotency keys incompatíveis, duplicatas e transições inválidas são rejeitadas;
+- código, contratos, migrations e documentação descrevem o mesmo comportamento;
+- a imagem e os manifestos apontam para o SHA aprovado.
 
-## Gates de performance e capacidade
+## Reprodutibilidade
 
-SLOs iniciais de homologação:
+- Linux e Windows usam a mesma toolchain e lockfile;
+- o checkout permanece limpo antes e depois da instalação e do build;
+- nenhum download não fixado ou chamada externa ocorre durante validação de configuração;
+- artefatos são produzidos novamente a partir do mesmo SHA;
+- banco vazio é reconstruído sem depender de estado remoto.
 
-- erro HTTP menor ou igual a 1%;
-- p95 de rota dinâmica menor ou igual a 2 segundos;
-- p99 menor ou igual a 5 segundos;
-- nenhum crescimento sustentado do backlog crítico;
-- readiness fecha quando uma dependência obrigatória falha;
-- fila e backpressure rejeitam sobrecarga de forma controlada;
-- soak test não apresenta crescimento contínuo de memória, conexões ou latência.
+## Segurança da fonte e da imagem
 
-## Condições de NO-GO
+- histórico Git sem segredo não autorizado;
+- dependências sem vulnerabilidade corrigível incompatível com a política;
+- imagem por digest, não-root e sem gerenciador de pacotes no runtime;
+- filesystem read-only no smoke;
+- payload, timeout, concorrência e fila limitados;
+- mensagens internas não são devolvidas aos clientes;
+- CSP e headers HTTP verificados;
+- Supabase e Vercel permanecem restritos a teste/preview;
+- o provider AWS não faz fallback para Supabase.
 
-Qualquer uma das condições abaixo interrompe a promoção:
+## Resultado do Gate A
 
-- workflow ausente, cancelado antes dos steps ou não verde;
-- migration aplicada sem arquivo idêntico no candidato;
-- função Edge diferente da versão manifestada;
-- backlog crítico sem worker, retry e reconciliação comprovados;
-- erro de isolamento, autorização ou idempotência;
-- restore ou rollback não exercitado;
-- deployment diferente do SHA aprovado.
+Quando todos os passos estiverem verdes, o SHA pode ser marcado como **candidato de software aprovado**. Isso permite revisão e preparação de staging, mas não usuários reais.
 
-## Evidência mínima arquivada
+# Gate B — produção AWS multiusuário
 
-- `release-manifest.json` e SHA-256;
-- digest e scan da imagem;
-- inventário e hash das migrations;
-- resultados de replay e gates SQL;
-- resultados de carga e soak;
-- relatório dos testes de isolamento;
-- IDs dos deployments e da versão da função Edge;
-- registro de restore e rollback.
+## Pré-condição arquitetural
+
+Antes de implementar ou promover produção, [`AWS_ARCHITECTURE_STATUS.md`](../architecture/AWS_ARCHITECTURE_STATUS.md) deve estar encerrado por ADRs aprovados. O único elemento previamente definido é `Dockerfile.lambda`.
+
+Os ADRs precisam resolver:
+
+- entrada pública e proteção de borda;
+- identidade e sessão;
+- banco e gerenciamento de conexões;
+- armazenamento privado e uploads;
+- processamento assíncrono e reconciliação;
+- rede e isolamento de ambientes;
+- segredos, criptografia e rotação;
+- observabilidade e operação;
+- deploy, promoção, rollback e continuidade.
+
+## E2E transacional
+
+No mesmo SHA e digest aprovados, staging deve comprovar:
+
+- cadastro, confirmação, login, refresh, logout e recuperação;
+- vínculo da identidade externa com a conta interna sem duplicação;
+- participante e administrador com capacidades corretas;
+- isolamento negativo entre organizações;
+- diagnóstico, jornada, progresso, avaliação e prática;
+- CMS, edição, publicação e imutabilidade histórica;
+- upload, inspeção, download e remoção autorizada;
+- eventos, outbox, processamento assíncrono, retry, dead-letter e reconciliação;
+- integração externa em sandbox;
+- falhas parciais sem corrupção ou duplicação.
+
+## Capacidade e performance
+
+O teste curto de liveness não atende este gate. Devem existir cenários representativos com dados e usuários sintéticos:
+
+- ramp progressivo;
+- spike acima do pico esperado;
+- soak prolongado;
+- concorrência autenticada de leitura e escrita;
+- carga administrativa e publicação;
+- arquivos e processamento assíncrono;
+- múltiplas organizações;
+- falha e recuperação de dependências.
+
+SLOs iniciais, sujeitos à aprovação do produto e da operação:
+
+- erro HTTP não esperado ≤ 1%;
+- p95 de rota dinâmica ≤ 2 segundos;
+- p99 ≤ 5 segundos;
+- nenhuma perda de escrita confirmada;
+- nenhum crescimento sustentado de backlog crítico;
+- rejeição controlada sob sobrecarga;
+- readiness fecha quando dependência obrigatória falha;
+- soak sem crescimento contínuo de memória, conexões ou latência.
+
+Os resultados precisam incluir throughput, p50, p95, p99, erros por operação, saturação, conexões, memória, backlog, cold starts e custo estimado.
+
+## Segurança e privacidade
+
+- modelo de ameaças aprovado;
+- rate limiting e abuse protection distribuídos;
+- testes de autorização e isolamento entre organizações;
+- rotação e recuperação de segredos e chaves;
+- proteção de dados sensíveis em trânsito e repouso;
+- logs e tracing sem CPF, tokens ou conteúdo proibido;
+- bases legais, consentimento, retenção, exclusão e direitos dos titulares aprovados;
+- fornecedores e transferências avaliados;
+- plano de incidente exercitado;
+- acessibilidade e segurança de conteúdo aprovadas.
+
+## Operação e continuidade
+
+- dashboards e alertas associados aos SLOs;
+- on-call e escalonamento definidos;
+- runbooks de degradação e reconciliação;
+- backup, restore e recuperação pontual comprovados;
+- rollback de aplicação exercitado;
+- estratégia segura para migrations incompatíveis;
+- RTO e RPO aprovados;
+- capacidade e custos com limites e alertas.
+
+# Condições de NO-GO
+
+Qualquer item abaixo bloqueia promoção:
+
+- workflow obrigatório ausente, cancelado, ignorado ou não verde;
+- migration aplicada diferente do arquivo manifestado;
+- replay de banco incompleto;
+- RPC usada fora da fronteira autorizada;
+- imagem ou deployment diferente do SHA aprovado;
+- vulnerabilidade bloqueante ou segredo não rotacionado;
+- erro de autorização, isolamento, idempotência ou integridade;
+- arquitetura AWS ainda pendente;
+- Supabase ou Vercel configurado como produção;
+- capacidade ou SLOs não comprovados;
+- backlog sem processamento e reconciliação comprovados;
+- observabilidade insuficiente para detectar falhas;
+- backup, restore ou rollback não exercitado;
+- aprovação jurídica, privacidade, conteúdo ou acessibilidade pendente quando aplicável.
+
+# Evidência arquivada
+
+## Gate A
+
+- SHA e `release-manifest.json`;
+- hashes das migrations e contratos;
+- logs do replay e gates SQL;
+- resultados dos testes, typecheck e build;
+- digest, SBOM quando disponível e scan da imagem;
+- secret scanning e audit de dependências;
+- evidência de toolchain Linux e Windows.
+
+## Gate B
+
+- ADRs e diagrama da arquitetura aprovada;
+- IDs e configuração dos ambientes;
+- relatório E2E transacional;
+- relatório de isolamento e segurança;
+- resultados de ramp, spike e soak;
+- dashboards e alertas;
+- registros de backup, restore, rollback e incidente;
+- aprovações institucionais aplicáveis.

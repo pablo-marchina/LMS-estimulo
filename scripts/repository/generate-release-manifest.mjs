@@ -53,7 +53,12 @@ const commitEpoch = command("git", ["show", "-s", "--format=%ct", commit], proce
 const generatedAt = Number(commitEpoch) > 0
   ? new Date(Number(commitEpoch) * 1_000).toISOString()
   : "1970-01-01T00:00:00.000Z";
-const dirty = command("git", ["status", "--porcelain"], "").length > 0;
+
+// Release evidence is intentionally generated as untracked output. Source integrity
+// is concerned with modifications to versioned files, which are the bytes that the
+// release commit and critical-file digests attest to.
+const trackedChanges = command("git", ["status", "--porcelain", "--untracked-files=no"], "");
+const dirty = trackedChanges.length > 0;
 const imageArchiveShaPath = path.join(artifactDirectory, "lambda-image.sha256");
 let imageArchiveSha256 = process.env.RELEASE_IMAGE_ARCHIVE_SHA256?.trim() || null;
 try {
@@ -99,6 +104,6 @@ await writeFile(
 );
 process.stdout.write(serialized);
 if (dirty) {
-  process.stderr.write("release manifest generated from a dirty working tree\n");
+  process.stderr.write(`release manifest generated with tracked source changes:\n${trackedChanges}\n`);
   process.exitCode = 1;
 }

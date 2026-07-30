@@ -124,20 +124,23 @@ insert into practice_upload_test_results values(
 select value#>>'{data,file_object_id}' file_object_id
 from practice_upload_test_results where name='confirm'
 \gset practice_
-select scan_job_id::text scan_job_id from core.file_objects where id=:'practice_file_object_id'::uuid
-\gset practice_
 
 select pg_temp.practice_assert(
-  (select value#>>'{data,security_status}'='scan_pending' from practice_upload_test_results where name='confirm'),
-  'confirmation must queue scan'
+  (select value#>>'{data,status}'='awaiting_review' from practice_upload_test_results where name='confirm'),
+  'confirmation must transition directly to awaiting review'
+);
+select pg_temp.practice_assert(
+  (select count(*)=1 from core.file_objects
+    where id=:'practice_file_object_id'::uuid
+      and security_status='clean'
+      and verified_at is not null
+      and released_at is not null
+      and quarantined_at is null),
+  'confirmed file must be immediately verified and released under the scanner-free contract'
 );
 select pg_temp.practice_assert(
   (select count(*)=1 from assessment.submission_evidence where submission_id=:'practice_submission_id'::uuid and file_object_id=:'practice_file_object_id'::uuid),
   'submission evidence missing'
-);
-select pg_temp.practice_assert(
-  (select count(*)=1 from eventing.queue_jobs where id=:'practice_scan_job_id'::uuid and job_type='file.malware_scan.requested'),
-  'scan job missing'
 );
 select pg_temp.practice_assert(
   (select count(*)=1 from core.file_upload_intents where id=:'practice_upload_intent_id'::uuid and status='confirmed'),
@@ -157,41 +160,21 @@ select pg_temp.practice_assert(
 );
 
 insert into practice_upload_test_results values(
-  'participant_processing',public.list_practice_submissions(
+  'participant_ready',public.list_practice_submissions(
     :'practice_participant_id'::uuid,:'practice_step_instance_id'::uuid
   )
 );
 select pg_temp.practice_assert(
-  (select value#>>'{practice,enabled}'='true' from practice_upload_test_results where name='participant_processing'),
+  (select value#>>'{practice,enabled}'='true' from practice_upload_test_results where name='participant_ready'),
   'practice configuration missing'
 );
 select pg_temp.practice_assert(
-  (select value#>>'{submissions,0,status}'='processing' from practice_upload_test_results where name='participant_processing'),
-  'participant processing status missing'
-);
-
-select * from public.file_apply_scan_result(
-  :'practice_scan_job_id'::uuid,:'practice_file_object_id'::uuid,
-  'synthetic_e2e_scanner','1','clean','[]'::jsonb,'[]'::jsonb,'scan-reference',now(),now()
-);
-select * from public.file_complete_release(
-  :'practice_file_object_id'::uuid,
-  regexp_replace(:'practice_object_key','^quarantine/','protected/'),
-  'provider-version-2','etag-2'
-);
-
-insert into practice_upload_test_results values(
-  'participant_clean',public.list_practice_submissions(
-    :'practice_participant_id'::uuid,:'practice_step_instance_id'::uuid
-  )
+  (select value#>>'{submissions,0,status}'='awaiting_review' from practice_upload_test_results where name='participant_ready'),
+  'confirmed evidence must await review'
 );
 select pg_temp.practice_assert(
-  (select value#>>'{submissions,0,status}'='awaiting_review' from practice_upload_test_results where name='participant_clean'),
-  'clean evidence must await review'
-);
-select pg_temp.practice_assert(
-  (select value#>>'{submissions,0,can_download}'='true' from practice_upload_test_results where name='participant_clean'),
-  'clean evidence must be downloadable'
+  (select value#>>'{submissions,0,can_download}'='true' from practice_upload_test_results where name='participant_ready'),
+  'confirmed evidence must be downloadable'
 );
 
 insert into practice_upload_test_results values(

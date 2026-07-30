@@ -1,5 +1,26 @@
 begin;
 
+create or replace function pg_temp.mark_auth_user_confirmed(p_user_id uuid)
+returns void
+language plpgsql
+as $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='auth' and table_name='users' and column_name='email_confirmed_at'
+  ) then
+    execute 'update auth.users set email_confirmed_at=now() where id=$1' using p_user_id;
+  elsif exists (
+    select 1 from information_schema.columns
+    where table_schema='auth' and table_name='users' and column_name='confirmed_at'
+  ) then
+    execute 'update auth.users set confirmed_at=now() where id=$1' using p_user_id;
+  else
+    raise exception 'AUTH_CONFIRMATION_COLUMN_MISSING';
+  end if;
+end;
+$$;
+
 -- A recreated, verified Google Workspace account in the Estímulo tenant may
 -- recover the only stale identity that points to a deleted Auth user.
 do $$
@@ -21,13 +42,13 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,
-    raw_app_meta_data,raw_user_meta_data,created_at,updated_at
+    id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values(
-    v_new_subject,'authenticated','authenticated',v_email,now(),
+    v_new_subject,'authenticated','authenticated',v_email,
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"estimulo.org"}}'::jsonb,now(),now()
   );
+  perform pg_temp.mark_auth_user_confirmed(v_new_subject);
 
   v_resolved := iam.resolve_external_identity(
     'google',v_issuer,v_new_subject::text,v_email,true,repeat('b',64)
@@ -63,13 +84,13 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,
-    raw_app_meta_data,raw_user_meta_data,created_at,updated_at
+    id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values(
-    v_new_subject,'authenticated','authenticated',v_email,now(),
+    v_new_subject,'authenticated','authenticated',v_email,
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"gmail.com"}}'::jsonb,now(),now()
   );
+  perform pg_temp.mark_auth_user_confirmed(v_new_subject);
 
   begin
     perform iam.resolve_external_identity(
@@ -103,18 +124,19 @@ begin
   );
 
   insert into auth.users(
-    id,aud,role,email,email_confirmed_at,
-    raw_app_meta_data,raw_user_meta_data,created_at,updated_at
+    id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at
   ) values
   (
-    v_old_subject,'authenticated','authenticated',v_old_email,now(),
+    v_old_subject,'authenticated','authenticated',v_old_email,
     '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now()
   ),
   (
-    v_new_subject,'authenticated','authenticated',v_email,now(),
+    v_new_subject,'authenticated','authenticated',v_email,
     '{"provider":"google","providers":["google"]}'::jsonb,
     '{"custom_claims":{"hd":"estimulo.org"}}'::jsonb,now(),now()
   );
+  perform pg_temp.mark_auth_user_confirmed(v_old_subject);
+  perform pg_temp.mark_auth_user_confirmed(v_new_subject);
 
   begin
     perform iam.resolve_external_identity(

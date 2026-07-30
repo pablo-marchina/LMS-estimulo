@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
   "artifact": "public_rpc_contracts",
-  "observed_at": "2026-07-10",
+  "observed_at": "2026-07-30",
   "database_contract": {
-    "rpc_count": 18,
-    "contract_sha256": "b751369fb873eb50a423ed7d74614a6c75e4480058e79e6a63006ec10920336f",
+    "rpc_count": 20,
+    "contract_sha256": "ab15c15242ea8a5291bfaddf2b95a36a94d675541b11d662d487b9947bde5a9d",
     "required_grantees": ["app_worker", "postgres", "service_role"],
     "forbidden_grantees": ["PUBLIC", "anon", "authenticated"],
     "required_security_definer": true,
@@ -17,12 +17,14 @@
       "e14_get_operator_workspace(uuid,uuid)",
       "e14_get_participant_experience(uuid,uuid)",
       "e14_get_participant_state(uuid,uuid)",
+      "e14_list_eligible_journeys(uuid)",
       "e14_list_operator_instances(uuid,uuid)",
       "e14_list_participant_journeys(uuid)",
       "e14_publish_vertical(uuid,uuid,uuid,text,text)",
       "e14_record_diagnostic_response(uuid,uuid,uuid,text,integer,integer,text)",
       "e14_record_quick_check_answer(uuid,uuid,uuid,text,text)",
       "e14_resolve_identity(text,text,text,text,boolean,text)",
+      "e14_self_enroll(uuid,uuid,text)",
       "e14_start_activity(uuid,uuid,bigint,text)",
       "e14_start_diagnostic(uuid,uuid,uuid,text)",
       "e14_start_journey(uuid,uuid,bigint,text)",
@@ -32,6 +34,7 @@
   },
   "application_contract": {
     "source_file": "apps/web/lib/journey-runtime/rpc.ts",
+    "rpc_count": 20,
     "method_to_rpc": {
       "resolveIdentity": "e14_resolve_identity",
       "listParticipantJourneys": "e14_list_participant_journeys",
@@ -40,6 +43,8 @@
       "getOperatorWorkspace": "e14_get_operator_workspace",
       "publishVertical": "e14_publish_vertical",
       "createEnrollment": "e14_create_enrollment",
+      "selfEnroll": "e14_self_enroll",
+      "listEligibleJourneys": "e14_list_eligible_journeys",
       "startJourney": "e14_start_journey",
       "startDiagnostic": "e14_start_diagnostic",
       "recordDiagnosticResponse": "e14_record_diagnostic_response",
@@ -55,6 +60,7 @@
     "command_methods": [
       "publishVertical",
       "createEnrollment",
+      "selfEnroll",
       "startJourney",
       "startDiagnostic",
       "recordDiagnosticResponse",
@@ -68,6 +74,7 @@
     "query_methods": [
       "listParticipantJourneys",
       "getParticipantExperience",
+      "listEligibleJourneys",
       "listOperatorInstances",
       "getOperatorWorkspace",
       "getParticipantState",

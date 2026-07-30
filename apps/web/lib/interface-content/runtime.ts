@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import type { AdminInterfaceContentWorkspace, InterfaceContentMap, InterfaceContentValue } from "@/lib/interface-content/contracts";
 import { publicSupabaseEnv } from "@/lib/env";
+import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 export const INTERFACE_CONTENT_CACHE_TAG = "interface-content:published";
@@ -19,7 +20,7 @@ function contentMap(value: unknown): InterfaceContentMap {
   );
 }
 
-const loadPublishedInterfaceContent = unstable_cache(
+const loadPublishedSupabaseInterfaceContent = unstable_cache(
   async (organizationSlug: string, locale: string): Promise<InterfaceContentMap> => {
     const { url, anonKey } = publicSupabaseEnv();
     const client = createClient(url, anonKey, {
@@ -41,8 +42,19 @@ export async function getPublishedInterfaceContent(
   organizationSlug = "estimulo",
   locale = "pt-BR",
 ): Promise<InterfaceContentMap> {
+  if (platformRuntimeProvider() === "aws") {
+    console.warn(JSON.stringify({
+      level: "warn",
+      event: "interface_content_adapter_unavailable",
+      component: "interface_content_runtime",
+      provider: "aws",
+      architecture_status: "decision_pending",
+    }));
+    return {};
+  }
+
   try {
-    return await loadPublishedInterfaceContent(organizationSlug, locale);
+    return await loadPublishedSupabaseInterfaceContent(organizationSlug, locale);
   } catch (error) {
     console.warn(JSON.stringify({
       level: "warn",

@@ -33,17 +33,22 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     steps:
+      - name: Configure deterministic Git line endings
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
       - name: Checkout exact commit
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
         with:
           persist-credentials: false
 
-      - name: Normalize checkout consistently
+      - name: Confirm checkout is clean
         shell: bash
         run: |
           set -euo pipefail
-          git config core.autocrlf false
-          git reset --hard HEAD
           git diff --exit-code
 
       - name: Set up exact Node.js
@@ -82,8 +87,10 @@ jobs:
       - name: Record toolchain evidence
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p .artifacts
-          node -e "const fs=require('node:fs'); fs.writeFileSync('.artifacts/toolchain-${{ matrix.os }}.json', JSON.stringify({commit:process.env.GITHUB_SHA,node:process.version,npm:require('node:child_process').execFileSync('npm',['--version'],{encoding:'utf8'}).trim(),platform:process.platform,arch:process.arch},null,2)+'\n')"
+          npm_version="$(npm --version)"
+          NPM_VERSION="$npm_version" node -e "const fs=require('node:fs'); fs.writeFileSync('.artifacts/toolchain-${{ matrix.os }}.json', JSON.stringify({commit:process.env.GITHUB_SHA,node:process.version,npm:process.env.NPM_VERSION,platform:process.platform,arch:process.arch},null,2)+'\n')"
 
       - name: Upload toolchain evidence
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -99,19 +106,27 @@ jobs:
     timeout-minutes: 35
     services:
       postgres:
-        image: supabase/postgres:17.6.1.141
+        image: supabase/postgres:17.6.1.136
         env:
+          POSTGRES_HOST: /var/run/postgresql
+          PGPORT: 5432
+          POSTGRES_PORT: 5432
+          PGPASSWORD: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: lms_replay
+          PGDATABASE: postgres
+          POSTGRES_DB: postgres
+          JWT_SECRET: local-replay-jwt-secret-with-at-least-thirty-two-characters
+          JWT_EXP: 3600
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d lms_replay"
+          --health-cmd "pg_isready -U postgres -h localhost -p 5432"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+          --health-start-period 20s
     env:
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/lms_replay
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
@@ -135,14 +150,12 @@ jobs:
       - name: Install from lockfile
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validate migration inventory
-        run: npm run validate:migration-history
-
-      - name: Replay all migrations
-        run: npm run replay:database-clean
-
-      - name: Validate schema and behavioral gates
+      - name: Confirm database version and extensions
+        shell: bash
         run: |
-          npm run validate:schema-equivalence
-          npm run validate:public-rpc-contracts
-          npm run test:database
+          set -euo pipefail
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
+
+      - name: Replay and validate canonical database once
+        run: npm run test:database

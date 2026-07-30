@@ -35,8 +35,6 @@ export function resolvePublicApplicationOrigin(input = {}) {
   const environment = String(input.environment ?? "development").trim().toLowerCase() || "development";
   const requestOrigin = normalizeOrigin(input.requestOrigin);
 
-  // A request that actually reached a local development server must return to that
-  // same local origin, even when stale Vercel variables exist in the shell.
   if ((environment === "development" || environment === "test") && requestOrigin && isLocalOrigin(requestOrigin)) {
     return requestOrigin;
   }

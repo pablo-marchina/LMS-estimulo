@@ -44,6 +44,8 @@ function runSqlTestSuite(label, files) {
 
 // Build the database exactly once from the canonical immutable migration history.
 // Every later suite is assertion-only and may not modify the implementation schema.
+// These foundational stages remain fail-fast because later suites are not meaningful
+// if the database cannot be reconstructed or its public contracts have drifted.
 runNpm("validate:migration-history");
 runNpm("replay:database-clean");
 runNpm("validate:schema-equivalence");
@@ -73,6 +75,19 @@ const suites = [
   ["admin product management", ["scripts/database/admin-product-management/test-admin-product-management.sql"]],
 ];
 
-for (const [label, files] of suites) runSqlTestSuite(label, files);
+const suiteFailures = [];
+for (const [label, files] of suites) {
+  try {
+    runSqlTestSuite(label, files);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    suiteFailures.push({ label, message });
+    process.stderr.write(`[database-gates] suite failed: ${label}: ${message}\n`);
+  }
+}
+
+if (suiteFailures.length > 0) {
+  throw new Error(`database domain suites failed:\n${suiteFailures.map(({ label, message }) => `- ${label}: ${message}`).join("\n")}`);
+}
 
 process.stdout.write("\n[database-gates] canonical migration replay and all assertion-only suites passed\n");

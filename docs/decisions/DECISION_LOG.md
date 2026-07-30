@@ -19,13 +19,13 @@ Este arquivo contém somente decisões vigentes do produto e da arquitetura. His
 | DEC-047 | 2026-07-08 | Retenção não é inventada e políticas destrutivas começam desativadas. | Aprovada | Prazos e deleções dependem de aprovação e legal hold. |
 | DEC-049 | 2026-07-08 | Logs e eventos são redigidos antes de persistência e hashing. | Aprovada | Segredos e dados brutos proibidos não entram na evidência física. |
 | DEC-050 | 2026-07-08 | Tabelas de aplicação mantêm RLS, inclusive quando server-only. | Aprovada | Novas migrations precisam preservar defesa em profundidade. |
-| DEC-051 | 2026-07-08 | Repositório e banco armazenam referências de secrets, nunca valores. | Aprovada | Valores ficam em secret manager ou ambiente gerenciado. |
+| DEC-051 | 2026-07-08 | Repositório e banco armazenam referências de secrets, nunca valores. | Aprovada | Valores ficam no mecanismo institucional que vier a ser aprovado. |
 | DEC-052 | 2026-07-08 | Produção depende de gates verificáveis, não apenas de código compilado. | Aprovada | Release permanece bloqueada enquanto requisitos de produto, operação ou segurança estiverem abertos. |
 | DEC-055 | 2026-07-09 | A operação inicial usa quatro arquétipos configuráveis e versionados. | Aprovada | Perguntas, scoring, textos e ativações não podem ser hardcoded. |
 | DEC-056 | 2026-07-09 | Formulários usam definição–versão–instância. | Aprovada | Drafts são editáveis e versões publicadas preservam histórico. |
 | DEC-057 | 2026-07-09 | Conteúdo próprio e externo usa modelo unificado e adapters. | Aprovada | Direitos, disponibilidade, tracking, formato e fallback são metadados obrigatórios. |
 | DEC-058 | 2026-07-09 | Toda ação relevante da interface gera evento estruturado. | Aprovada | Ações sem contrato, finalidade e teste não são consideradas concluídas. |
-| DEC-059 | 2026-07-09 | Supabase é desenvolvimento/teste; AWS é staging/produção. | Aprovada | Provas no Supabase não são apresentadas como produção. |
+| DEC-059 | 2026-07-09 | Supabase e Vercel são restritos a desenvolvimento, teste e preview; AWS é o ambiente definitivo de produção. | Aprovada | Nenhuma evidência do ambiente de teste autoriza produção e não existe fallback de produção para Supabase. |
 | DEC-060 | 2026-07-09 | Código, testes, migrations e documentação operacional mudam juntos. | Aprovada | Manutenibilidade e CI fazem parte do aceite. |
 | DEC-064 | 2026-07-14 | Sinais educacionais não decidem crédito sem validação e governança. | Aprovada | Integrações e interfaces mantêm a separação explícita. |
 | DEC-067 | 2026-07-16 | Jornada OpenAI é a primeira jornada oficial; o núcleo continua extensível. | Aprovada | Segunda jornada produtiva não bloqueia a primeira release. |
@@ -36,4 +36,4 @@ Este arquivo contém somente decisões vigentes do produto e da arquitetura. His
 | DEC-072 | 2026-07-21 | CPF é obrigatório no cadastro e protegido por AES-256-GCM e HMAC independente. | Aprovada | CPF bruto não aparece em metadata, URL, logs ou eventos; mudança exige revisão de identidade. |
 | DEC-073 | 2026-07-21 | Experiências existentes devem ser adaptadas sobre o runtime real antes de reconstruções parciais. | Aprovada | Painel, perfil, anúncios, recompensas, ranking e administração reutilizam capacidades já existentes no domínio. |
 | DEC-074 | 2026-07-21 | Auditorias e cobertura de materiais externos permanecem fora do repositório. | Aprovada | O Git contém requisitos diretos, decisões ativas, implementação, testes e documentação operacional. |
-| DEC-075 | 2026-07-29 | A produção será integralmente operada na AWS; Supabase permanece somente em desenvolvimento/teste. | Aprovada | Lambda, Cognito/OIDC, RDS Proxy/PostgreSQL, S3 e SQS/workers formam a arquitetura canônica; produção rejeita qualquer runtime Supabase. |
+| DEC-075 | 2026-07-29 | A AWS será o ambiente definitivo de produção e a aplicação será empacotada por `Dockerfile.lambda`; todas as demais decisões AWS permanecem abertas. | Parcialmente definida | Produção permanece `not_ready` até ADRs aprovarem identidade, dados, storage, rede, edge, assíncrono, observabilidade, deploy e continuidade. |

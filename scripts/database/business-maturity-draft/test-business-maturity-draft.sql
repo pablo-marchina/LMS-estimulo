@@ -7,10 +7,10 @@ declare
   v_version uuid;
   v_rule_version uuid;
 begin
-  select id into strict v_org from iam.organizations where slug='estimulo-e14-internal';
-  select id into strict v_definition
+  select id,owner_organization_id into strict v_definition,v_org
   from diagnostics.diagnostic_definitions
-  where owner_organization_id=v_org and code='business_maturity_self_assessment';
+  where code='business_maturity_self_assessment';
+
   select id into strict v_version
   from diagnostics.diagnostic_versions
   where diagnostic_definition_id=v_definition and version_number=1;

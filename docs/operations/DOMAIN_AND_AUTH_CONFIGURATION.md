@@ -1,21 +1,17 @@
 # Domínio e autenticação por ambiente
 
 **Revisado em:** 2026-07-29  
-**Status:** Supabase configurado para validação; Cognito/domínio AWS pendentes
+**Status:** Supabase configurado para teste; domínio e identidade AWS pendentes de arquitetura
 
 ## Domínio público
 
-O domínio canônico proposto é:
+O domínio oficial ainda precisa ser confirmado institucionalmente. Nenhuma escolha de DNS, certificado, entrada pública, edge ou proteção de borda está aprovada.
 
-```text
-https://plataforma.estimulo.org
-```
-
-A ativação depende do inventário da AWS corporativa, DNS/Route 53, edge/CloudFront, WAF, API Gateway, certificado ACM e owners aprovados.
+A origem de staging e produção deverá ser HTTPS, explícita e não poderá fazer fallback para Vercel ou localhost. O domínio e sua topologia serão definidos por ADR conforme [`AWS_ARCHITECTURE_STATUS.md`](../architecture/AWS_ARCHITECTURE_STATUS.md).
 
 ## Desenvolvimento e preview
 
-Supabase Auth e Vercel podem ser usados somente para desenvolvimento/teste e previews controlados.
+Supabase Auth e Vercel podem ser usados somente para desenvolvimento, teste e previews controlados.
 
 Redirects versionados no `supabase/config.toml`:
 
@@ -26,69 +22,73 @@ https://lms-estimulo-web.vercel.app/**
 https://*-pablo-marchinas-projects.vercel.app/**
 ```
 
-O domínio final da AWS não é callback Supabase. Isso impede que a configuração de teste seja promovida ou confundida com a identidade de produção.
+O futuro domínio AWS não pode ser callback Supabase. Isso impede que a configuração de teste seja promovida ou confundida com identidade de produção.
 
 Rotas atuais do adapter Supabase:
 
+- `/auth/admin/start` — inicia OAuth administrativo por navegação GET;
 - `/auth/admin/callback` — callback administrativo;
 - `/confirm` — confirmação canônica de e-mail;
 - `/auth/confirm` — compatibilidade;
 - `/` — fallback de códigos OAuth administrativos.
 
-O Google OAuth de desenvolvimento usa o callback do projeto Supabase ativo:
+O callback de desenvolvimento usa o projeto Supabase ativo:
 
 ```text
 https://<project-ref>.supabase.co/auth/v1/callback
 ```
 
+A resolução de origem preserva o host e a porta da requisição local, usa a URL do preview Vercel em preview e exige origem HTTPS configurada em staging/produção.
+
 ## Produção AWS
 
-A produção segue a [`DEC-075`](../decisions/AWS_PRODUCTION_ARCHITECTURE.md):
+A única decisão de runtime é o empacotamento da aplicação por `Dockerfile.lambda`. Permanecem abertas:
 
-```text
-plataforma.estimulo.org
-→ CloudFront/edge corporativo
-→ WAF
-→ API Gateway HTTP API
-→ Lambda alias
-→ Cognito User Pool ou broker OIDC corporativo
-```
+- origem e domínio oficiais;
+- identidade, federação e sessão;
+- confirmação, recuperação, logout e revogação;
+- vínculo de identidades externas com contas internas;
+- cookies, CSRF e CORS;
+- MFA e políticas de credenciais;
+- proteção de borda e abuso;
+- disponibilidade, observabilidade e resposta a incidentes.
 
-O Cognito deve configurar URLs específicas por ambiente para:
+Enquanto essas decisões estiverem abertas:
 
-- callback de participantes;
-- callback administrativo federado;
-- logout;
-- recuperação de conta;
-- confirmação/verificação quando aplicável.
+- o proxy protegido retorna `503 aws_identity_architecture_pending`;
+- a resolução de identidade retorna `AWS_IDENTITY_ARCHITECTURE_PENDING`;
+- `/api/health/ready` retorna `503 aws_architecture_pending`;
+- nenhum provider de teste é usado como fallback.
 
-Wildcards de preview não são permitidos nos callbacks de produção.
+## Administração
 
-A origem pública em staging/produção é obrigatória, HTTPS e não pode fazer fallback para Vercel ou localhost.
+O modelo lógico mantém verificações independentes, qualquer que seja o provider futuro:
 
-## Administração federada
+1. credencial externa válida e verificada;
+2. identidade vinculada à conta interna correta;
+3. política institucional de domínio ou IdP, quando aprovada;
+4. membership organizacional e capacidades RBAC ativas;
+5. auditoria da concessão, uso, revogação e expiração.
 
-O acesso administrativo mantém quatro verificações independentes:
+O domínio de e-mail ou um parâmetro de OAuth nunca concede acesso sozinho.
 
-1. token OIDC válido do provider aprovado;
-2. Google/IdP corporativo e e-mail confirmado;
-3. domínio exato `@estimulo.org` quando essa política permanecer vigente;
-4. membership organizacional e capacidades RBAC no PostgreSQL.
+## Requisitos da futura decisão de identidade
 
-O domínio de e-mail ou o parâmetro `hd` não concede acesso sozinho.
+O ADR deve avaliar e registrar:
 
-## Cookies e origem
-
-A configuração AWS precisa comprovar:
-
-- origem canônica HTTPS;
+- requisitos de participantes e administradores;
+- provedores, protocolos e integração corporativa;
+- fluxo de cadastro, confirmação, recuperação e exclusão;
+- linking, deduplicação e migração dos usuários de teste;
+- MFA, risco adaptativo e proteção de credenciais;
+- sessão, refresh, revogação e logout global;
+- callbacks específicos por ambiente, sem wildcards de produção;
 - cookies `Secure`, `HttpOnly` e `SameSite` adequados;
-- forwarded host/proto confiáveis atrás do edge/API Gateway;
-- proteção contra open redirect;
-- CSRF nos fluxos mutáveis;
-- CORS mínimo e específico;
-- expiração, renovação e revogação de sessão;
-- nenhuma persistência de tokens em logs ou domínio.
+- host/protocolo encaminhados de forma confiável;
+- proteção contra open redirect, CSRF e CORS excessivo;
+- logs sem tokens, cookies, CPF ou claims proibidos;
+- capacidade, disponibilidade, limites e custo;
+- operação, suporte e resposta a incidente.
 
 ## Ambiente local
 
@@ -101,18 +101,5 @@ APP_ENV=development
 PLATFORM_RUNTIME_PROVIDER=supabase
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
-
-## Informações pendentes da empresa
-
-- domínio e hosted zone responsáveis;
-- distribuição CloudFront/edge existente;
-- API Gateway e WAF existentes;
-- certificado ACM;
-- Cognito User Pool ou IdP corporativo;
-- Google Workspace/OIDC/SAML;
-- política de MFA, senha e recuperação;
-- callbacks e logout URLs aprovados;
-- migração/linking de usuários Supabase;
-- owner operacional e processo de incidente.
 
 Não registrar client secrets, tokens, cookies ou identificadores sensíveis neste documento.

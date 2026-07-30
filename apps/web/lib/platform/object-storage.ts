@@ -86,11 +86,14 @@ export function assertObjectInspectionRequest(input: ObjectInspectionRequest): v
   if (!sha256Pattern.test(input.expectedSha256)) throw new Error("OBJECT_INSPECTION_SHA256_INVALID");
 }
 
-export async function ensurePrivateBucket(policy: PrivateBucketPolicy): Promise<void> {
+function assertTestStorageProvider(): void {
   if (platformRuntimeProvider() === "aws") {
-    throw new Error("AWS_BUCKETS_MUST_BE_PROVISIONED_BY_INFRASTRUCTURE");
+    throw new Error("AWS_STORAGE_ARCHITECTURE_PENDING");
   }
+}
 
+export async function ensurePrivateBucket(policy: PrivateBucketPolicy): Promise<void> {
+  assertTestStorageProvider();
   const client = createPrivilegedClient();
   const { data } = await client.storage.getBucket(policy.bucket);
   if (data) return;
@@ -111,10 +114,7 @@ export async function uploadBufferedPrivateObject(input: {
   file: File;
   cacheControl?: string;
 }): Promise<StoredObjectReceipt> {
-  if (platformRuntimeProvider() === "aws") {
-    throw new Error("AWS_DIRECT_UPLOAD_REQUIRED");
-  }
-
+  assertTestStorageProvider();
   const bytes = Buffer.from(await input.file.arrayBuffer());
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   const client = createPrivilegedClient();
@@ -130,10 +130,7 @@ export async function uploadBufferedPrivateObject(input: {
 }
 
 export async function removePrivateObject(bucket: string, objectKey: string): Promise<void> {
-  if (platformRuntimeProvider() === "aws") {
-    throw new Error("AWS_STORAGE_ADAPTER_NOT_IMPLEMENTED");
-  }
-
+  assertTestStorageProvider();
   const { error } = await createPrivilegedClient().storage.from(bucket).remove([objectKey]);
   if (error) throw new Error(`SUPABASE_STORAGE_REMOVE_FAILED:${error.message}`);
 }
@@ -144,10 +141,7 @@ export async function createPrivateDownloadUrl(input: {
   expiresInSeconds: number;
   filename?: string;
 }): Promise<string> {
-  if (platformRuntimeProvider() === "aws") {
-    throw new Error("AWS_STORAGE_ADAPTER_NOT_IMPLEMENTED");
-  }
-
+  assertTestStorageProvider();
   const options = input.filename ? { download: input.filename } : undefined;
   const { data, error } = await createPrivilegedClient()
     .storage
@@ -160,10 +154,7 @@ export async function createPrivateDownloadUrl(input: {
 }
 
 export async function downloadPrivateObject(bucket: string, objectKey: string): Promise<Buffer> {
-  if (platformRuntimeProvider() === "aws") {
-    throw new Error("AWS_STORAGE_ADAPTER_NOT_IMPLEMENTED");
-  }
-
+  assertTestStorageProvider();
   const { data, error } = await createPrivilegedClient().storage.from(bucket).download(objectKey);
   if (error || !data) {
     throw new Error(`SUPABASE_STORAGE_DOWNLOAD_FAILED:${error?.message ?? "missing_data"}`);
@@ -174,15 +165,15 @@ export async function downloadPrivateObject(bucket: string, objectKey: string): 
 export async function createDirectUploadGrant(input: DirectUploadRequest): Promise<DirectUploadGrant> {
   assertDirectUploadRequest(input);
   if (platformRuntimeProvider() !== "aws") {
-    throw new Error("DIRECT_UPLOAD_GRANT_REQUIRES_AWS_RUNTIME");
+    throw new Error("DIRECT_UPLOAD_GRANT_REQUIRES_PRODUCTION_PROVIDER");
   }
-  throw new Error("AWS_DIRECT_UPLOAD_ADAPTER_NOT_IMPLEMENTED");
+  throw new Error("AWS_STORAGE_ARCHITECTURE_PENDING");
 }
 
 export async function inspectDirectUploadObject(input: ObjectInspectionRequest): Promise<InspectedObject> {
   assertObjectInspectionRequest(input);
   if (platformRuntimeProvider() !== "aws") {
-    throw new Error("DIRECT_UPLOAD_INSPECTION_REQUIRES_AWS_RUNTIME");
+    throw new Error("DIRECT_UPLOAD_INSPECTION_REQUIRES_PRODUCTION_PROVIDER");
   }
-  throw new Error("AWS_DIRECT_UPLOAD_ADAPTER_NOT_IMPLEMENTED");
+  throw new Error("AWS_STORAGE_ARCHITECTURE_PENDING");
 }

@@ -2,13 +2,17 @@ begin;
 
 do $$
 declare
-  v_org uuid:=app_private.e14_deterministic_uuid('e14:organization');
+  v_org uuid;
   v_operator uuid:=app_private.e14_deterministic_uuid('e14:user:operator');
   v_participant uuid:=app_private.e14_deterministic_uuid('e14:user:participant');
   v_operator_role uuid:=app_private.e14_deterministic_uuid('e14:role:operator');
   v_permission uuid;
   v_preview jsonb;
 begin
+  select owner_organization_id into strict v_org
+  from diagnostics.diagnostic_definitions
+  where code='business_maturity_self_assessment';
+
   select id into strict v_permission from iam.permission_definitions
   where code='diagnostic.configuration.manage';
   insert into iam.role_permissions(role_id,permission_id)

@@ -48,29 +48,22 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 
 - [Registro de decisões ativas](docs/decisions/DECISION_LOG.md)
 - [DEC-070 — escopo HubSpot](docs/decisions/HUBSPOT_SCOPE_DECISION.md)
-- [DEC-075 — produção integral na AWS](docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md)
-- [ADR-001 — Supabase em teste e AWS em produção](docs/decisions/ADR-001-SUPABASE-TEST-AWS-PRODUCTION.md)
 - [ADR-002 — rebaseline das premissas](docs/decisions/ADR-002-REBASELINE-NEW-PREMISES.md)
 - [Registro de riscos](docs/decisions/RISK_REGISTER.md)
 
 ## Arquitetura e ambientes
 
-- [Arquitetura-alvo AWS](docs/architecture/AWS_TARGET_ARCHITECTURE.md)
+- [Estado da arquitetura AWS](docs/architecture/AWS_ARCHITECTURE_STATUS.md)
 - [Estratégia de ambientes](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md)
-- [Migração dos adapters Supabase → AWS](docs/architecture/SUPABASE_AWS_PORTABILITY.md)
-- [Identidade, Cognito/OIDC e vínculo interno](docs/architecture/IDENTITY_BRIDGE.md)
 - [Portas e adapters de provedores](docs/architecture/PROVIDER_PORTS_AND_ADAPTERS.md)
-- [Mapeamento operacional AWS](docs/architecture/AWS_OPERATIONS_MAPPING.md)
 - [Migrations executáveis](docs/architecture/EXECUTABLE_MIGRATIONS.md)
 - [Observabilidade e alertas](docs/architecture/OBSERVABILITY_AND_ALERTS.md)
-- [Arquitetura de filas](docs/architecture/QUEUE_ARCHITECTURE.md)
-- [Mapeamento de filas para SQS](docs/architecture/QUEUE_AWS_SQS_MAPPING.md)
+- [Arquitetura lógica de filas](docs/architecture/QUEUE_ARCHITECTURE.md)
 - [Scheduler e dispatcher](docs/architecture/SCHEDULER_DISPATCHER_ARCHITECTURE.md)
 - [Outbox transacional](docs/architecture/TRANSACTIONAL_OUTBOX.md)
 - [Reconciliação e recuperação](docs/architecture/RECONCILIATION_AND_RECOVERY.md)
 - [Implementação de RLS](docs/architecture/RLS_IMPLEMENTATION.md)
-- [Arquitetura de armazenamento](docs/architecture/STORAGE_ARCHITECTURE.md)
-- [Mapeamento de armazenamento para AWS](docs/architecture/STORAGE_AWS_MAPPING.md)
+- [Arquitetura lógica de armazenamento](docs/architecture/STORAGE_ARCHITECTURE.md)
 
 ## Dados e banco
 
@@ -105,7 +98,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 
 ## Integrações
 
-- [Contrato do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
+- [Contrato lógico do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
 - [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
 - [Solicitação de inventário HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 - [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
@@ -128,9 +121,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - [Configuração de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
 - [Baseline de qualidade para produção](docs/operations/PRODUCTION_QUALITY_BASELINE.md)
 - [Runbook do release final](docs/operations/FINAL_RELEASE_RUNBOOK.md)
-- [Registro da rotação da service role](docs/deployments/SUPABASE_SERVICE_ROLE_ROTATION_2026_07_27.md)
-- [Inventário necessário da AWS corporativa](infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md)
-- [Runtime web em AWS Lambda](infra/aws/lambda/README.md)
+- [Registro da rotação da service role de testes](docs/deployments/SUPABASE_SERVICE_ROLE_ROTATION_2026_07_27.md)
 
 ## Segurança, privacidade e continuidade
 
@@ -156,8 +147,9 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 ## Regra de leitura
 
 - especificações de produto descrevem requisitos aprovados ou propostas identificadas;
-- decisões registram escolhas vigentes;
+- decisões registram apenas escolhas vigentes;
 - documentos de implementação descrevem somente o código versionado;
 - bloqueadores descrevem o que ainda falta;
-- Supabase é evidência de desenvolvimento/teste, não de produção;
-- `Dockerfile.lambda`, mocks, fixtures e smoke tests não constituem prova de produção.
+- Supabase e Vercel são evidência de desenvolvimento, teste e preview, não de produção;
+- `Dockerfile.lambda`, mocks, fixtures e smoke tests não constituem prova de produção;
+- serviços AWS específicos não podem ser tratados como decididos antes de ADR aprovado.

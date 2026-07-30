@@ -111,9 +111,11 @@ export async function proxy(request: NextRequest) {
     return finalize(unavailable("runtime_policy_rejected"), id, startedAt);
   }
 
-  // The Cognito/OIDC proxy adapter is intentionally fail-closed until implemented.
+  // The definitive AWS identity and session architecture has not been selected.
+  // Protected traffic remains unavailable instead of inferring a service or using
+  // the Supabase preview provider as a production fallback.
   if (provider === "aws") {
-    return finalize(unavailable("aws_identity_adapter_unavailable"), id, startedAt);
+    return finalize(unavailable("aws_identity_architecture_pending"), id, startedAt);
   }
 
   const oauthFallback = adminOAuthFallback(request);
@@ -126,8 +128,6 @@ export async function proxy(request: NextRequest) {
     || administrativePath
     || request.nextUrl.pathname.startsWith("/cadastro/concluir");
 
-  // Public pages do not need an Auth round trip. This avoids duplicate session validation
-  // on landing, login, signup and OAuth callback routes.
   if (!protectedPath) {
     return finalize(withFirstTouch(response, request), id, startedAt);
   }

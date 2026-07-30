@@ -5,25 +5,31 @@ import test from "node:test";
 const page = await readFile("apps/web/app/admin/diagnostico/page.tsx", "utf8");
 const actions = await readFile("apps/web/app/admin/diagnostico/actions.ts", "utf8");
 
-test("diagnostic editor no longer has raw JSON textareas for dimensions/items/archetypes/configuration", () => {
+test("diagnostic editor uses structured fields instead of raw JSON textareas", () => {
   assert.doesNotMatch(page, /name="dimensions"/u);
   assert.doesNotMatch(page, /name="items"/u);
   assert.doesNotMatch(page, /name="archetypes"/u);
   assert.doesNotMatch(page, /name="configuration"/u);
-  assert.doesNotMatch(page, /Dimensões JSON/u);
-  assert.doesNotMatch(page, /Perguntas e opções JSON/u);
+  assert.match(page, /AdminDisclosure title="Dimensões avaliadas"/u);
+  assert.match(page, /AdminDisclosure title="Perguntas"/u);
+  assert.match(page, /AdminDisclosure title="Regras de classificação"/u);
 });
 
-test("diagnostic editor shows the draft-pending-approval banner", () => {
-  assert.match(page, /pendente de aprova[cç][aã]o institucional/iu);
+test("diagnostic editor keeps publication behind an explicit methodological review choice", () => {
+  assert.match(page, /Mantenha como rascunho durante a revisão metodológica/u);
+  assert.match(page, /name="status" value="published"/u);
+  assert.match(page, /Versões publicadas não aparecem aqui/u);
 });
 
-test("diagnostic editor has a publish control and a default-archetype fallback selector", () => {
-  assert.match(page, /name="status"/u);
+test("diagnostic editor exposes all four archetypes and a required fallback selector", () => {
   assert.match(page, /name="default_archetype_code"/u);
+  assert.match(page, /value=\{archetype\.code\}/u);
+  for (const code of ["fazedor", "batalhador", "construtor", "navegador"]) {
+    assert.match(page, new RegExp(`code: "${code}"`, "u"));
+  }
 });
 
-test("save action builds dimensions/items/archetypes/classification_rules arrays from structured fields, not JSON.parse of a single textarea", () => {
+test("save action builds structured diagnostic collections without parsing one opaque JSON field", () => {
   assert.doesNotMatch(actions, /json\(formData, "dimensions"/u);
   assert.doesNotMatch(actions, /json\(formData, "items"/u);
   assert.doesNotMatch(actions, /json\(formData, "archetypes"/u);

@@ -1,9 +1,12 @@
+-- The official video is seeded only when its target editorial activity exists.
+-- Structural replay must remain valid without environment-specific content.
 insert into catalog.content_assets(
   id,activity_version_id,file_object_id,asset_type,title,external_url,language_code,
   accessibility_metadata,position,is_required,created_at
-) values(
+)
+select
   app_private.e14_deterministic_uuid('official-estimulo-video|3c9c78b7-36d4-4292-9f88-dc5f1206e8e6'),
-  '3c9c78b7-36d4-4292-9f88-dc5f1206e8e6'::uuid,
+  activity.id,
   null,
   'video',
   'Mentorias inspiracionais — Estímulo',
@@ -17,7 +20,8 @@ insert into catalog.content_assets(
   1,
   false,
   now()
-)
+from catalog.activity_versions activity
+where activity.id='3c9c78b7-36d4-4292-9f88-dc5f1206e8e6'::uuid
 on conflict(activity_version_id,position) do update set
   asset_type=excluded.asset_type,
   title=excluded.title,
