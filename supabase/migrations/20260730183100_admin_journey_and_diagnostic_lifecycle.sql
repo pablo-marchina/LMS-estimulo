@@ -51,7 +51,7 @@ begin
 
   v_result:=jsonb_build_object('journey_definition_id',p_journey_definition_id,'status','retired');
   select coalesce(max(aggregate_version),0)+1 into v_aggregate_version from eventing.events where aggregate_type='journey_definition' and aggregate_id=p_journey_definition_id;
-  perform app_private.e14_append_event(v_event_id,'admin.journey.retired','journey_definition',p_journey_definition_id,'user_account',p_actor_user_account_id,p_organization_id,null,'journey_definition',p_journey_definition_id,v_aggregate_version,v_event_id,null,jsonb_build_object('request_hash',v_request_hash,'result',v_result));
+  perform app_private.e14_append_event(v_event_id,'admin.product.configuration.saved','journey_definition',p_journey_definition_id,'user_account',p_actor_user_account_id,p_organization_id,null,'journey_definition',p_journey_definition_id,v_aggregate_version,v_event_id,null,jsonb_build_object('resource_type','journey','request_hash',v_request_hash,'result',v_result));
   return v_result||jsonb_build_object('replayed',false);
 end;
 $function$;
@@ -287,7 +287,7 @@ begin
     'remapped_journey_versions',v_journey_count
   );
   select coalesce(max(aggregate_version),0)+1 into v_aggregate_version from eventing.events where aggregate_type='diagnostic_version' and aggregate_id=p_diagnostic_version_id;
-  perform app_private.e14_append_event(v_event_id,'admin.diagnostic.published','diagnostic_version',p_diagnostic_version_id,'user_account',p_actor_user_account_id,p_organization_id,null,'diagnostic_version',p_diagnostic_version_id,v_aggregate_version,v_event_id,null,jsonb_build_object('request_hash',v_request_hash,'result',v_result,'archetype_mapping',p_archetype_mapping));
+  perform app_private.e14_append_event(v_event_id,'admin.product.configuration.saved','diagnostic_version',p_diagnostic_version_id,'user_account',p_actor_user_account_id,p_organization_id,null,'diagnostic_version',p_diagnostic_version_id,v_aggregate_version,v_event_id,null,jsonb_build_object('resource_type','diagnostic','request_hash',v_request_hash,'result',v_result));
   return v_result||jsonb_build_object('replayed',false);
 end;
 $function$;
