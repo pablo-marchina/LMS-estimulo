@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { InterfaceContentProvider } from "@/components/interface-content-provider";
 import { NavigationFeedback } from "@/components/navigation-feedback";
+import { SupportButton } from "@/components/support-button";
 import { getPublishedInterfaceContent } from "@/lib/interface-content/runtime";
 import "./globals.css";
 import "./brand-motion.css";
@@ -30,6 +31,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             <NavigationFeedback />
           </Suspense>
           {children}
+          <SupportButton />
         </InterfaceContentProvider>
       </body>
     </html>

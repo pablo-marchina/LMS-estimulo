@@ -22,7 +22,7 @@ function fulfilled<T>(result: PromiseSettledResult<T>): T | null {
 export default async function ParticipantProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string; sucesso?: string }>;
+  searchParams: Promise<{ erro?: string; sucesso?: string; referencia?: string }>;
 }) {
   const query = await searchParams;
   const auth = await requireParticipantContext();
@@ -53,13 +53,13 @@ export default async function ParticipantProfilePage({
 
   return (
     <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-      <PageHeader eyebrow="Minha conta" title="Perfil" description="Seus dados, momento empreendedor e evolução na plataforma." />
+      <PageHeader eyebrow="Minha conta" title="Perfil" description="Seus dados, seu progresso e as informações que personalizam sua experiência." />
 
       {dataUnavailable ? <StatusPanel title="Algumas informações não puderam ser atualizadas" tone="warning">Seus dados continuam salvos. Recarregue a página para tentar novamente.</StatusPanel> : null}
       {query.erro === "diagnostico_indisponivel" ? <StatusPanel title="Não foi possível abrir o diagnóstico" tone="warning">Tente novamente. Se o problema continuar, use a área de Jornadas.</StatusPanel> : null}
       {query.erro === "diagnostico_nao_configurado" ? <StatusPanel title="Diagnóstico temporariamente indisponível" tone="warning">A equipe ainda está preparando a versão ativa do diagnóstico.</StatusPanel> : null}
       {query.erro === "objetivo_invalido" ? <StatusPanel title="Revise o objetivo" tone="warning">Escreva entre 5 e 500 caracteres.</StatusPanel> : null}
-      {query.erro === "objetivo_indisponivel" ? <StatusPanel title="Objetivo não salvo" tone="warning">Nenhuma alteração foi perdida. Tente novamente em instantes.</StatusPanel> : null}
+      {query.erro === "objetivo_indisponivel" ? <StatusPanel title="Objetivo não salvo" tone="warning"><p>Nenhuma alteração foi perdida. Tente novamente em instantes.</p>{query.referencia ? <p className="mt-2 text-xs">Referência do erro: {query.referencia}</p> : null}</StatusPanel> : null}
       {query.sucesso === "objetivo_salvo" ? <StatusPanel title="Objetivo definido" tone="success">Seu objetivo foi salvo. Os 50 pontos são concedidos uma única vez.</StatusPanel> : null}
 
       <section className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
@@ -97,7 +97,7 @@ export default async function ParticipantProfilePage({
           </Card>
         ) : (
           <EmptyState icon={<Compass size={24} />} title="Descubra seu perfil empreendedor" tone="info" className="brand-spark-card">
-            <p>Responda 12 perguntas quando desejar. O diagnóstico não bloqueia jornadas abertas.</p>
+            <p>Responda 12 perguntas quando desejar. Elas aparecem uma por vez e seu progresso fica salvo durante a sessão.</p>
             <form action={startProfileDiagnosticAction} className="mt-4">
               <PendingSubmitButton pendingLabel="Abrindo diagnóstico…" size="lg" icon={<Sparkles size={17} />} disabled={diagnosticUnavailable}>
                 {diagnosticUnavailable ? "Diagnóstico indisponível" : diagnosticEntry?.status === "in_progress" ? "Continuar diagnóstico" : "Fazer diagnóstico agora"}

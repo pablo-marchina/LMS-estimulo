@@ -6,12 +6,16 @@ import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 import { createSessionClient } from "@/lib/supabase/server";
 
+const consentVersionSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u);
+
 const signupSchema = z.object({
   preferredName: z.string().trim().min(2).max(120),
   email: z.string().trim().email().max(320).transform((value: string) => value.toLowerCase()),
   password: z.string().min(10).max(128),
   passwordConfirmation: z.string(),
   terms: z.literal("accepted"),
+  termsVersion: consentVersionSchema,
+  privacyVersion: consentVersionSchema,
 }).refine((value) => value.password === value.passwordConfirmation, {
   path: ["passwordConfirmation"],
   message: "PASSWORDS_DIFFER",
@@ -50,6 +54,8 @@ export async function createPublicAccountAction(formData: FormData) {
     password: formData.get("password"),
     passwordConfirmation: formData.get("password_confirmation"),
     terms: formData.get("terms"),
+    termsVersion: formData.get("terms_version"),
+    privacyVersion: formData.get("privacy_version"),
   });
   if (!parsed.success) redirect(`/cadastro?erro=${validationError(parsed.error.issues)}`);
 
@@ -57,6 +63,7 @@ export async function createPublicAccountAction(formData: FormData) {
 
   const client = await createSessionClient();
   const callback = new URL("/confirm", publicApplicationOrigin()).toString();
+  const acceptedAt = new Date().toISOString();
   const { data, error } = await client.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -64,7 +71,11 @@ export async function createPublicAccountAction(formData: FormData) {
       emailRedirectTo: callback,
       data: {
         preferred_name: parsed.data.preferredName,
-        signup_profile_version: 3,
+        signup_profile_version: 4,
+        terms_accepted_at: acceptedAt,
+        terms_version: parsed.data.termsVersion,
+        privacy_accepted_at: acceptedAt,
+        privacy_version: parsed.data.privacyVersion,
       },
     },
   });
@@ -80,9 +91,6 @@ export async function createPublicAccountAction(formData: FormData) {
   }
   if (!data.user) redirect("/cadastro?erro=criacao_falhou");
 
-  // With email confirmation enabled, Supabase intentionally returns an
-  // obfuscated user for repeated signups. It is not a real Auth user and must
-  // never be sent to the Admin API or treated as a CPF/configuration failure.
   if (isObfuscatedExistingUser(data.user)) {
     redirect("/cadastro?erro=conta_existente_ou_vinculada");
   }

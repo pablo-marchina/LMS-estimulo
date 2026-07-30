@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
-import { Button } from "@/components/ui/button";
+import { PasswordField } from "@/components/password-field";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Input, Label } from "@/components/ui/input";
 import { signInAction } from "./actions";
 
@@ -13,34 +14,45 @@ const errorMessages: Record<string, string> = {
   confirmacao_necessaria: "Confirme seu e-mail antes de concluir o cadastro.",
 };
 
-export default async function SignInPage({ searchParams }: { searchParams: Promise<{ erro?: string; cadastro?: string }> }) {
-  const { erro, cadastro } = await searchParams;
+export default async function SignInPage({ searchParams }: { searchParams: Promise<{ erro?: string; cadastro?: string; senha?: string }> }) {
+  const { erro, cadastro, senha } = await searchParams;
+
   return (
-    <AuthLayout eyebrow="Plataforma Estímulo" title="Entrar como participante" description="Use o e-mail e a senha da sua conta de participante.">
+    <AuthLayout eyebrow="Plataforma Estímulo" title="Entrar" description="Use o e-mail e a senha que você cadastrou.">
       {cadastro === "confirmacao" ? <FormMessage tone="success">Conta criada. Abra o e-mail de confirmação para continuar.</FormMessage> : null}
       {cadastro === "confirmado" ? <FormMessage tone="success">O link de confirmação já foi processado. Entre com a senha cadastrada.</FormMessage> : null}
+      {senha === "alterada" ? <FormMessage tone="success">Senha atualizada. Entre com a sua nova senha.</FormMessage> : null}
       {erro ? <FormMessage tone="error">{errorMessages[erro] ?? "Não foi possível entrar."}</FormMessage> : null}
+
       <form action={signInAction} className="grid gap-4">
         <Label>
           E-mail
           <Input name="email" type="email" autoComplete="email" required />
         </Label>
-        <Label>
-          Senha
-          <Input name="password" type="password" autoComplete="current-password" required />
-        </Label>
-        <Button size="lg" type="submit">
+        <div className="grid gap-2">
+          <PasswordField name="password" autoComplete="current-password" required />
+          <Link href="/recuperar-senha" className="justify-self-end text-sm font-semibold text-primary hover:underline">
+            Esqueci minha senha
+          </Link>
+        </div>
+        <PendingSubmitButton pendingLabel="Entrando…" size="lg">
           Entrar
-        </Button>
+        </PendingSubmitButton>
       </form>
+
       <AuthFooter>
-        <Link href="/cadastro" className="font-semibold text-primary hover:underline">
-          Criar conta
-        </Link>
-        <Link href="/entrar/administracao" className="text-primary hover:underline">
-          Acesso administrativo com Google
-        </Link>
-        <p className="text-muted">Contas da equipe Estímulo entram exclusivamente pela área administrativa.</p>
+        <p>
+          Não tem conta?{" "}
+          <Link href="/cadastro" className="font-semibold text-primary hover:underline">
+            Criar minha conta
+          </Link>
+        </p>
+        <div className="mt-3 grid gap-1 border-t border-border pt-3 text-xs text-muted">
+          <Link href="/entrar/administracao" className="w-fit font-semibold text-primary hover:underline">
+            Sou da equipe Estímulo
+          </Link>
+          <p>Contas da equipe Estímulo entram exclusivamente pela área administrativa.</p>
+        </div>
       </AuthFooter>
     </AuthLayout>
   );
