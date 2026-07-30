@@ -1,8 +1,47 @@
 \set ON_ERROR_STOP on
 
--- These records exist in the Supabase test environment but were created outside
--- the recovered migration history. They are materialized only inside the
--- ephemeral backend E2E database.
+-- These records exist in the Supabase test environment but their operational
+-- status is intentionally disabled outside isolated tests. The ephemeral E2E
+-- database must activate its own deterministic participant instead of relying
+-- on mutable remote state.
+
+insert into iam.user_accounts(id,email_normalized,status,created_at,updated_at)
+values(
+  app_private.e14_deterministic_uuid('e14:user:participant'),
+  'e14.participant@invalid.example',
+  'active',
+  now(),
+  now()
+)
+on conflict(id) do update set
+  email_normalized=excluded.email_normalized,
+  status='active',
+  updated_at=now();
+
+insert into core.entrepreneurs(
+  id,user_account_id,preferred_name,email_normalized,status,profile_data,created_at,updated_at
+)
+values(
+  app_private.e14_deterministic_uuid('e14:entrepreneur'),
+  app_private.e14_deterministic_uuid('e14:user:participant'),
+  'Participante sintético E14',
+  'e14.participant@invalid.example',
+  'active',
+  jsonb_build_object(
+    'synthetic',true,
+    'internal_test_only',true,
+    'owner_organization_id',app_private.e14_deterministic_uuid('e14:organization')
+  ),
+  now(),
+  now()
+)
+on conflict(id) do update set
+  user_account_id=excluded.user_account_id,
+  preferred_name=excluded.preferred_name,
+  email_normalized=excluded.email_normalized,
+  status='active',
+  profile_data=excluded.profile_data,
+  updated_at=now();
 
 insert into diagnostics.items(
   id, diagnostic_version_id, dimension_id, code, item_type, prompt, configuration, position, is_required
