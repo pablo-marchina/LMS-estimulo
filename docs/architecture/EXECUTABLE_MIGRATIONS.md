@@ -1,82 +1,103 @@
-# Migrations executáveis M00–M12
+# Histórico executável de migrations
 
-**Versão:** 0.5  
-**Data:** 2026-07-10  
-**Estado:** 76 migrations remotas recuperadas; replay e equivalência estrutural comprovados
+**Revisado em:** 2026-07-30  
+**Estado:** histórico canônico versionado; replay avaliado por SHA
 
 ## Decisão
 
-M00–M12 continuam sendo treze ondas lógicas, mas o histórico realmente aplicado no Supabase de teste é composto por 76 migrations timestampadas. Os antigos treze agregados locais foram removidos porque não preservavam todos os identificadores nem todas as etapas de correção, prova e limpeza executadas remotamente.
+`supabase/migrations/` é a única sequência executável para reconstruir o PostgreSQL da aplicação. O Supabase remoto não é fonte de criação do banco e não pode fornecer pré-condições ocultas ao replay.
 
-| Onda | Conteúdo |
-|---|---|
-| M00 | extensão, schemas, funções comuns e contexto transacional neutro |
-| M01 | conta interna, identidades externas, organizações, empreendedores, negócios e arquivos |
-| M02 | catálogo multi-jornada versionado |
-| M03 | regras, trilhas, coortes, inscrições e execução |
-| M04 | diagnóstico, avaliações e práticas |
-| M05 | pontos, selos, certificados e intervenções |
-| M06 | eventos, outbox/inbox e integrações |
-| M07 | features, score experimental e governança |
-| M08 | FKs, checks, índices, triggers, RLS, identidade e runtime de outbox |
-| M09 | lifecycle de arquivos, upload assinado, quarentena e release |
-| M10 | fila, retry, visibility, DLQ, redrive e integração com scan |
-| M11 | scheduler, tokens de dispatch, reconciliação, métricas e alertas |
-| M12 | segurança, privacidade/LGPD, retenção, incidentes e gate de produção |
+O histórico possui duas categorias:
 
-## Fonte executável
+1. **faixas recuperadas:** migrations originalmente aplicadas no ambiente de teste e congeladas por manifests em `supabase/canonical-migrations/`;
+2. **migrations ativas:** mudanças posteriores, ordenadas por timestamp e validadas por `validate-active-migrations.mjs`.
+
+Contagens, versões finais e fingerprints ficam nos manifests e artefatos do CI, não neste documento.
+
+## Fontes canônicas
 
 ```text
-first_version = 20260708220357
-last_version = 20260709030140
-migration_count = 76
-total_remote_sql_bytes = 411340
-combined_remote_fingerprint_sha256 = 663173105a16924db650127f437900de0ad3422b2f7bf50a5e804f19d1a570a3
+supabase/migrations/
+supabase/canonical-migrations/
+scripts/database/migration-history/
+scripts/database/equivalence/
 ```
 
-Arquivos de referência:
+Os manifests recuperados fixam ordem, nome, tamanho e hash das faixas históricas. As migrations ativas preservam uma fronteira explícita e crescente.
 
-- `supabase/canonical-migrations/M00_M12_RUNTIME_MANIFEST.json`;
-- `supabase/canonical-migrations/20260708220357_m00_m12_runtime_canonical.sql`;
-- 76 arquivos correspondentes em `supabase/migrations`.
+## Histórico não equivale a runtime ativo
 
-## Regras operacionais
+Migrations antigas podem conter estruturas de experimentos ou subsistemas posteriormente desativados. A presença de tabela, função, extensão ou configuração no histórico não comprova que:
 
-- migration aplicada nunca é editada; correção gera uma nova migration;
-- os arquivos recuperados preservam versão, nome, SQL e hash remoto;
-- mudanças pelo Dashboard remoto são proibidas depois do início do histórico de migrations;
-- o mesmo conjunto deve passar em Supabase local/test e RDS staging;
-- `M00_M12_RUNTIME_MANIFEST.json` fixa ordem, tamanho e SHA-256 de cada versão;
-- a execução de replay usa uma transação por migration;
-- a execução produtiva usa `lock_timeout`, `statement_timeout`, backup e rollback operacional;
-- segredos pertencem à infraestrutura do ambiente, não às migrations portáveis.
+- exista consumidor no código atual;
+- haja scheduler ou worker ativo;
+- a Edge Function correspondente esteja versionada;
+- a capacidade esteja habilitada no ambiente;
+- o componente esteja aprovado para produção.
 
-Roles `app_runtime`, `app_worker` e `app_readonly` fazem parte do histórico remoto M08 e são criadas pelas migrations recuperadas. O catálogo `supabase_migrations.schema_migrations` é um pré-requisito do provedor e é inicializado apenas no ambiente de replay para permitir que helpers temporários de exportação sejam compilados.
+O estado ativo é definido conjuntamente por consumidores, gateway, configuração, testes e documentação vigente. Componentes removidos permanecem inacessíveis ou inativos até uma migration de limpeza segura, quando aplicável.
 
-## Identidade corrigida
+## Regras de alteração
 
-`iam.user_accounts` é interna. A relação com Supabase ou Cognito fica em `iam.external_identities`, identificada por `(issuer, subject)`. Isso permite trocar ou associar provedores sem criar outra pessoa, inscrição ou histórico.
+- migration pertencente a candidato aprovado por replay canônico nunca é editada;
+- correções normais usam migration aditiva e idempotente;
+- migrations estruturais não dependem de contas, dados editoriais ou estado remoto;
+- fixtures comportamentais são criadas depois do replay e revertidas ou descartadas com o banco efêmero;
+- mudanças de Dashboard remoto sem migration correspondente são drift não aprovado;
+- segredos, endpoints e decisões físicas de infraestrutura não entram em migrations;
+- extensões ou roles exigidas devem ser declaradas e verificadas pelo ambiente alvo aprovado.
 
-Não há associação automática quando o e-mail já pertence a uma conta existente. Nessa situação, o banco retorna `identity_link_required` e exige um fluxo explícito e auditável de vinculação.
+### Exceção antes do primeiro replay aprovado
 
-## Validação executada
+Uma migration recém-integrada que nunca passou pelo replay canônico pode ser corrigida somente para restaurar a reconstrução desde zero. Ambientes onde a versão defeituosa já foi aplicada recebem uma migration aditiva de reconciliação. Todo o Gate A deve ser repetido.
 
-O gate de CI confirma:
+## Replay
 
-- 76 migrations M00–M12 com hashes e bytes remotos exatos;
-- execução ordenada em PostgreSQL 17.6 vazio;
-- uma transação por migration, necessária para tabelas temporárias `ON COMMIT DROP`;
-- continuidade com 165 migrations M13 e 2 migrations M14/M14b;
-- 243 migrations executadas sem erro;
-- equivalência de schemas, relações/RLS, colunas, constraints, índices, triggers, policies, rotinas e tipos;
-- ausência de divergência estrutural frente ao Supabase de teste no escopo da aplicação.
+O replay:
 
-O comando reproduzível é:
+1. inicia em PostgreSQL vazio compatível;
+2. executa migrations em ordem, com falha fechada;
+3. registra diagnóstico da migration que falhou;
+4. valida inventário e equivalência do schema;
+5. valida contratos públicos;
+6. executa E2E e suítes de domínio com fixtures sintéticas.
+
+Comandos canônicos:
 
 ```bash
-npm run test:database-clean-replay
+npm run validate:migration-history
+npm run replay:database-clean
+npm run validate:schema-equivalence
+npm run validate:public-rpc-contracts
+npm run test:database
 ```
 
-## M11 e M12 — operação contínua e governança
+## Equivalência
 
-M11 adiciona pg_cron/pg_net no ambiente Supabase de testes, tokens de dispatch de uso único, dispatcher contínuo, reconciliação, snapshots de métricas e alertas. M12 adiciona classificação, ROPA, consentimento, direitos, legal hold, incidentes, redaction, RLS integral e gate de produção. Valores de Vault e decisões jurídicas não pertencem às migrations e são provisionados/aprovados por ambiente.
+A assinatura canônica cobre, conforme o validador versionado:
+
+- schemas, relações e RLS;
+- colunas e tipos;
+- constraints e índices;
+- triggers e policies;
+- rotinas e grants;
+- enums e demais tipos relevantes.
+
+Alterar a baseline somente para aceitar uma divergência é proibido. Toda diferença deve ser explicada por migration revisada e comportamento esperado.
+
+## Portabilidade
+
+O modelo lógico PostgreSQL, migrations, roles, grants, RLS, eventos e outbox devem permanecer portáveis para o banco escolhido pela futura arquitetura AWS. Nenhuma tecnologia, serviço ou mecanismo de conexão é presumido antes de ADR.
+
+O staging futuro deve repetir:
+
+- replay completo;
+- extensões e roles;
+- equivalência;
+- contratos e E2E;
+- concorrência e isolamento;
+- backup, restore e estratégia de migration.
+
+## Evidência
+
+O resultado do replay pertence ao workflow do SHA avaliado. Documentos permanentes não mantêm manualmente número de migrations, último timestamp, bytes, hashes ou estado `passed`.
