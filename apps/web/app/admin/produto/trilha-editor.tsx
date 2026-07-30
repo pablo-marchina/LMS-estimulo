@@ -8,11 +8,14 @@ import { archiveTrackAction } from "./track-actions";
 export type EditableTrilha = Omit<Trilha, "aulas"> & {
   aulas: Array<unknown>;
   is_default?: boolean;
+  status?: string;
 };
 
 function stringValue(value: unknown) { return typeof value === "string" ? value : ""; }
 
 export function TrilhaEditor({ journeyVersionId, trilha }: { journeyVersionId: string; trilha: EditableTrilha }) {
+  if (trilha.status === "retired") return null;
+
   const presentation = trilha.presentation ?? {};
   const tone = stringValue(presentation.tone) || "cyan";
   const icon = stringValue(presentation.icon) || "sparkles";
