@@ -230,10 +230,11 @@ export async function invokeAuthenticatedGateway<T>(
   const provider = platformRuntimeProvider();
   if (provider === "supabase") return invokeSupabaseGateway<T>(name, args, client);
 
-  // The AWS adapter will resolve the Cognito identity and execute approved PostgreSQL
-  // operations through RDS Proxy. Until that implementation exists, fail closed.
+  // The definitive AWS data and authorization boundary has not been selected.
+  // Production must remain unavailable instead of inferring a service topology
+  // or falling back to the Supabase test gateway.
   throw new AuthenticatedGatewayError(
-    "AWS_RPC_GATEWAY_NOT_IMPLEMENTED",
-    "The AWS authenticated RPC adapter is not implemented.",
+    "AWS_DATA_ARCHITECTURE_PENDING",
+    "The AWS authenticated data architecture is pending approval.",
   );
 }
