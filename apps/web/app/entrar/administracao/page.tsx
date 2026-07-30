@@ -38,14 +38,16 @@ export default async function AdministrativeSignInPage({
           </div>
         </div>
       </div>
-      <form action="/auth/admin/start" method="get" className="grid gap-4">
-        <Label>
-          E-mail corporativo
-          <Input name="email" type="email" inputMode="email" autoComplete="email" placeholder="nome@estimulo.org" pattern="[^@\s]+@estimulo\.org" required />
-        </Label>
-        <Button type="submit" size="lg" className="w-full">
-          Continuar com Google
-        </Button>
+      <form action="/auth/admin/start" method="get">
+        <div className="grid gap-4">
+          <Label>
+            E-mail corporativo
+            <Input name="email" type="email" inputMode="email" autoComplete="email" placeholder="nome@estimulo.org" pattern="[^@\s]+@estimulo\.org" required />
+          </Label>
+          <Button type="submit" size="lg" className="w-full">
+            Continuar com Google
+          </Button>
+        </div>
       </form>
       <AuthFooter>
         <Link href="/entrar" className="font-semibold text-primary hover:underline">
