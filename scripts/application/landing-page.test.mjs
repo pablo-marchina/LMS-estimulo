@@ -4,41 +4,35 @@ import test from "node:test";
 
 const page = await readFile("apps/web/app/page.tsx", "utf8");
 
-test("landing page has exactly one call-to-action verb, linking to /entrar", () => {
-  const entrarLinks = page.match(/href="\/entrar"/gu) ?? [];
-  assert.ok(entrarLinks.length >= 2, "expects the CTA repeated at least in the header and the footer/hero");
-  assert.doesNotMatch(page, /\/cadastro/u, "landing page must not offer a separate cadastro CTA");
-  assert.doesNotMatch(page, />\s*Cadastrar\s*</u, "landing page must not offer a separate Cadastrar action");
+test("landing page exposes explicit signup and sign-in calls to action", () => {
+  assert.match(page, /href="\/cadastro"/u);
+  assert.match(page, /href="\/entrar"/u);
+  assert.match(page, /Começar agora/u);
+  assert.match(page, /Já tenho acesso/u);
+  assert.doesNotMatch(page, /redirect\("\/entrar"\)/u);
 });
 
-test("landing page renders the brand mark and a plain-language hero", () => {
+test("landing page renders the brand, skip link and plain-language hero", () => {
   assert.match(page, /<EstimuloBrand/u);
   assert.match(page, /id="conteudo-principal"/u);
   assert.match(page, /className="skip-link"/u);
+  assert.match(page, /Conhecimento que movimenta o seu negócio/u);
 });
 
-test("landing page shows the three confirmed institutional numbers, verbatim", () => {
-  assert.match(page, /R\$ 420 milhões\+/u);
-  assert.match(page, /200 mil\+/u);
-  assert.match(page, /\b88\b/u);
-  assert.match(page, /Harvard/u);
+test("landing page presents the current journey and its three pillars", () => {
+  assert.match(page, /IA para o seu negócio, da estratégia à execução/u);
+  assert.match(page, /Marketing e Vendas com IA/u);
+  assert.match(page, /Gestão com IA/u);
+  assert.match(page, /Desenvolvimento com Codex/u);
 });
 
-test("landing page shows all four archetypes with their official names and descriptions", () => {
-  assert.match(page, /🔨/u);
-  assert.match(page, /Fazedor\(a\)/u);
-  assert.match(page, /Sabe fazer\. Está aprendendo a gerir\./u);
-  assert.match(page, /💪/u);
-  assert.match(page, /Batalhador\(a\)/u);
-  assert.match(page, /Tem garra\. Precisa transformar garra em estrutura\./u);
-  assert.match(page, /🧱/u);
-  assert.match(page, /Construtor\(a\)/u);
-  assert.match(page, /Tem base\. Falta direção\./u);
-  assert.match(page, /🧭/u);
-  assert.match(page, /Navegador\(a\)/u);
-  assert.match(page, /Sabe onde está\. Sabe para onde vai\./u);
-});
-
-test("landing page no longer redirects", () => {
-  assert.doesNotMatch(page, /redirect\("\/entrar"\)/u);
+test("landing page presents all four current archetypes without limiting language", () => {
+  for (const name of ["Fazedor", "Batalhador", "Construtor", "Navegador"]) {
+    assert.match(page, new RegExp(`name: "${name}"`, "u"));
+  }
+  assert.match(page, /Quatro perfis para orientar, nunca limitar/u);
+  assert.match(page, /Transforma ideias em ação/u);
+  assert.match(page, /Mantém o negócio em movimento/u);
+  assert.match(page, /Cria processos, estrutura e consistência/u);
+  assert.match(page, /Lê cenários, testa caminhos/u);
 });
