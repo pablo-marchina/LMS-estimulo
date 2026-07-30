@@ -1,51 +1,80 @@
-# Reconciliação e autorrecuperação
+# Reconciliação e recuperação
 
-**Versão:** 1.0  
-**Data:** 2026-07-08  
-**Estado:** implementado e testado
+**Revisado em:** 2026-07-30  
+**Estado:** requisitos lógicos definidos; automação de produção pendente
+
+## Objetivo
+
+Detectar e corrigir divergências entre estado transacional, eventos, outbox, objetos, integrações e processamentos posteriores sem duplicar efeitos ou esconder falhas.
+
+O runtime atual não possui scheduler, reconciliador de fila, token de dispatch ou worker de scan aprovado. Estruturas históricas no banco não constituem operação ativa.
 
 ## Invariantes
 
-1. Um job de domínio possui identidade estável, mesmo após republicação ou redrive.
-2. Cada recebimento cria um receipt diferente.
-3. O efeito é idempotente por `queue_job_id`.
-4. Mensagem física e estado governado são reconciliáveis.
-5. Arquivo não é liberado até resultado de scan limpo.
+1. toda operação reconciliável possui identidade estável;
+2. efeitos de negócio são idempotentes;
+3. estado confirmado, evento e outbox permanecem correlacionados;
+4. divergência é detectável e auditável;
+5. recuperação não apaga histórico nem altera evidência retroativamente;
+6. retry preserva a intenção original;
+7. ação manual exige autorização, motivo e registro;
+8. falha de reconciliação fecha o fluxo quando integridade ou segurança puder ser afetada.
 
-## Rotas automáticas
+## Classes de divergência
 
-`eventing.reconcile_queue_system` executa a cada minuto e:
+- outbox pendente sem publicação;
+- publicação sem projeção confirmada;
+- integração externa sem readback ou correlação;
+- objeto físico sem registro lógico ou registro sem objeto;
+- sessão ou tentativa interrompida em estado não terminal;
+- identidade externa sem vínculo interno consistente;
+- trabalho assíncrono futuro sem claim, ack ou efeito coerente;
+- configuração publicada divergente da versão referenciada;
+- deployment diferente do SHA/digest aprovado.
 
-- expira receipts cujo prazo venceu;
-- marca attempts como `visibility_expired`;
-- devolve jobs sem receipt ativo para `retry_scheduled`;
-- republica jobs cujo registro físico desapareceu;
-- arquiva mensagens residuais de jobs terminais;
-- envia envelopes inválidos ou órfãos à DLQ;
-- cria scan job para arquivo `scan_pending` sem `scan_job_id`.
+## Ciclo lógico
 
-`eventing.reconcile_dispatch_requests` registra status e erro das chamadas assíncronas do `pg_net`, além de expirar tokens não consumidos.
+```text
+inventariar estado esperado e observado
+→ classificar divergência
+→ bloquear ações inseguras
+→ executar reparo idempotente
+→ verificar resultado
+→ registrar evidência
+→ escalar quando não reconciliável automaticamente
+```
 
-## Recuperação entre efeito e ack
+## Regras de recuperação
 
-Antes de escanear, o worker consulta `file_get_scan_job_state`.
+- nunca inferir sucesso apenas porque uma chamada externa respondeu;
+- consultar estado antes de repetir efeito;
+- usar chaves idempotentes e versões agregadas;
+- não criar novo identificador de domínio para um retry;
+- preservar erro original, tentativas e ator;
+- limitar número e duração de retries;
+- isolar itens não recuperáveis para revisão;
+- não executar redrive sem correção ou autorização;
+- emitir alerta quando backlog, idade ou falha ultrapassar o limite aprovado.
 
-- Se nenhum resultado existe, executa o scan normalmente.
-- Se o scan já foi persistido, não cria outro resultado.
-- Se o arquivo está `release_pending`, conclui a movimentação idempotente.
-- Se o efeito já terminou, executa somente o ack.
-- A tentativa fica registrada como `duplicate_suppressed`.
+## Estado atual do software
 
-## Provas transacionais
+Os gates do banco exercitam idempotência, concorrência, eventos, outbox, autorização e falhas transacionais em PostgreSQL efêmero. Isso prova os contratos do software, não uma operação contínua de produção.
 
-| Falha simulada | Resultado |
-|---|---|
-| Mensagem física removida | republicada com novo provider message ID |
-| Receipt vencido | `expired`, attempt `visibility_expired`, job `retry_scheduled` |
-| Envelope inválido | removido da source queue e enviado à DLQ |
-| Arquivo sem scan job | job e mensagem recriados |
-| Scan aplicado antes do ack | um único scan, arquivo `clean`, job `completed`, duplicata suprimida |
-| Token usado por outro worker | rejeitado |
-| Replay do token | rejeitado |
+A verificação de ambiente implantado deve ser read-only e não criar jobs, tokens ou dados sintéticos permanentes.
 
-Todas as provas de falha foram revertidas ou limpas; nenhuma mensagem ou arquivo artificial permaneceu.
+## Gate B
+
+A futura arquitetura deve definir e provar:
+
+1. proprietário e frequência de cada reconciliação;
+2. fonte de autoridade por entidade;
+3. mecanismo de claim, retry e isolamento;
+4. limites, backoff e dead letter quando aplicável;
+5. observabilidade e alertas;
+6. ferramentas e autorização para reparo manual;
+7. retenção das evidências;
+8. cenários de falha e recuperação no staging AWS;
+9. runbooks e escalonamento;
+10. rollback e disaster recovery.
+
+Produção não pode ser liberada enquanto divergências críticas não forem detectáveis e recuperáveis dentro dos objetivos aprovados.
