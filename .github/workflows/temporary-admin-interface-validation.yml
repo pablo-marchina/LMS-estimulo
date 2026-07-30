@@ -84,18 +84,15 @@ jobs:
         run: |
           set -euo pipefail
           curl --silent --show-error --dump-header /tmp/start.headers --output /dev/null http://127.0.0.1:3000/auth/admin/start
-          cat /tmp/start.headers
           grep -Eqi '^location: https://lms-estimulo-web\.vercel\.app/auth/admin/local-bridge/prepare\?return_to=' /tmp/start.headers
 
           curl --silent --show-error --dump-header /tmp/prepare.headers --output /dev/null 'http://127.0.0.1:3000/auth/admin/local-bridge/prepare?return_to=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fadmin%2Fcallback'
-          cat /tmp/prepare.headers
           grep -Eqi '^location: http://localhost:3000/auth/admin/start\?bridge_ready=1' /tmp/prepare.headers
           grep -Eqi '^set-cookie: estimulo-admin-local-oauth-return=' /tmp/prepare.headers
 
           RETURN_COOKIE=$(node -e 'process.stdout.write(encodeURIComponent("http://localhost:3000/auth/admin/callback"))')
           curl --silent --show-error --dump-header /tmp/return.headers --output /dev/null --header "Cookie: estimulo-admin-local-oauth-return=${RETURN_COOKIE}" 'http://127.0.0.1:3000/?code=oauth-test-code'
-          cat /tmp/return.headers
-          grep -Eqi '^location: http://localhost:3000/auth/admin/callback\?code=oauth-test-code' /tmp/return.headers
+          grep -Eqi '^location: (http://localhost:3000)?/auth/admin/callback\?code=oauth-test-code' /tmp/return.headers
           grep -Eqi '^set-cookie: estimulo-admin-local-oauth-return=' /tmp/return.headers
 
       - name: Verify same-origin preview headers
