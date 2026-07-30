@@ -87,8 +87,10 @@ jobs:
       - name: Record toolchain evidence
         shell: bash
         run: |
+          set -euo pipefail
           mkdir -p .artifacts
-          node -e "const fs=require('node:fs'); const cp=require('node:child_process'); const npm=process.platform==='win32'?'npm.cmd':'npm'; fs.writeFileSync('.artifacts/toolchain-${{ matrix.os }}.json', JSON.stringify({commit:process.env.GITHUB_SHA,node:process.version,npm:cp.execFileSync(npm,['--version'],{encoding:'utf8'}).trim(),platform:process.platform,arch:process.arch},null,2)+'\n')"
+          npm_version="$(npm --version)"
+          NPM_VERSION="$npm_version" node -e "const fs=require('node:fs'); fs.writeFileSync('.artifacts/toolchain-${{ matrix.os }}.json', JSON.stringify({commit:process.env.GITHUB_SHA,node:process.version,npm:process.env.NPM_VERSION,platform:process.platform,arch:process.arch},null,2)+'\n')"
 
       - name: Upload toolchain evidence
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
