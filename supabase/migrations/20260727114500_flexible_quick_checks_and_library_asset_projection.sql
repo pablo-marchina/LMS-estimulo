@@ -1,5 +1,5 @@
 -- Flexible quick checks and reusable Library content projection.
--- Applied to production on 2026-07-27.
+-- Originally exercised in the Supabase test environment on 2026-07-27.
 
 create or replace function app_private.e14_context_i_raw(a uuid)
 returns jsonb
@@ -65,6 +65,29 @@ begin
   return x;
 end;
 $function$;
+
+alter table catalog.content_assets
+  add column if not exists library_item_version_id uuid;
+
+do $constraint$
+begin
+  if not exists (
+    select 1
+    from pg_catalog.pg_constraint constraint_row
+    where constraint_row.conrelid='catalog.content_assets'::regclass
+      and constraint_row.conname='content_assets_library_item_version_id_fkey'
+  ) then
+    alter table catalog.content_assets
+      add constraint content_assets_library_item_version_id_fkey
+      foreign key (library_item_version_id)
+      references catalog.library_item_versions(id)
+      on delete set null;
+  end if;
+end
+$constraint$;
+
+create index if not exists ix_content_assets_library_item_version_id
+  on catalog.content_assets(library_item_version_id);
 
 update catalog.content_assets asset
 set library_item_version_id=version.id
