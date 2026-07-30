@@ -4,18 +4,40 @@ import { AppShell } from "@/components/app-shell";
 import { StatusPanel } from "@/components/status-panel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { Label, Select, Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusPill } from "@/components/ui/status-pill";
-import { getAdminProductWorkspace } from "@/lib/admin/product-management";
+import { getAdminProductWorkspace, type VersionSummary } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { retireDiagnosticAction, saveDiagnosticAction } from "./actions";
+import { retireDiagnosticAction } from "./actions";
+import { DiagnosticBuilder, type DiagnosticBuilderInitial, type DiagnosticDimensionInput, type DiagnosticProfileInput, type DiagnosticQuestionInput, type DiagnosticRuleInput } from "./diagnostic-builder";
 
 export const dynamic = "force-dynamic";
+
 function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
-const ARCHETYPES = [{ code: "fazedor", name: "Fazedor(a)" },{ code: "batalhador", name: "Batalhador(a)" },{ code: "construtor", name: "Construtor(a)" },{ code: "navegador", name: "Navegador(a)" }] as const;
-const DIMENSIONS = [{ code: "gestao_financeira", label: "Gestão financeira" },{ code: "disciplina_habito", label: "Disciplina e hábito" },{ code: "visao_planejamento", label: "Visão e planejamento" },{ code: "perfil_empreendedor", label: "Perfil empreendedor" },{ code: "credito_risco", label: "Relação com crédito e risco" }] as const;
+function stringValue(value: unknown) { return typeof value === "string" ? value : ""; }
+function objectValue(value: unknown): Record<string, unknown> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
+function dateValue(value: unknown) { const date = typeof value === "string" ? Date.parse(value) : Number.NaN; return Number.isFinite(date) ? date : 0; }
+function profiles(version: VersionSummary | null): DiagnosticProfileInput[] {
+  const raw = version && Array.isArray(version.archetypes) ? version.archetypes : [];
+  return raw.map(objectValue).map((item) => ({ code: stringValue(item.code), name: stringValue(item.name), description: stringValue(item.description) })).filter((item) => item.code && item.name);
+}
+function dimensions(version: VersionSummary | null): DiagnosticDimensionInput[] {
+  return (version?.dimensions ?? []).map((item) => ({ code: item.code, name: item.name, description: item.description ?? "" }));
+}
+function questions(version: VersionSummary | null): DiagnosticQuestionInput[] {
+  return (version?.items ?? []).map((item) => ({ prompt: item.prompt, dimension_code: item.dimension_code ?? "", options: item.options.map((option) => ({ label: option.label, score: typeof option.value.score === "number" ? option.value.score : "" })) }));
+}
+function rules(version: VersionSummary | null): DiagnosticRuleInput[] {
+  const configuration = objectValue(version?.configuration);
+  const classification = objectValue(configuration.classification_rules);
+  const raw = Array.isArray(classification.rules) ? classification.rules : [];
+  return raw.map(objectValue).map((item) => ({ archetype_code: stringValue(item.archetype_code), thresholds: objectValue(item.thresholds) as Record<string, number | string> })).filter((item) => item.archetype_code);
+}
+function defaultProfile(version: VersionSummary | null) {
+  const classification = objectValue(objectValue(version?.configuration).classification_rules);
+  return stringValue(classification.default_archetype_code);
+}
 
 export default async function AdminDiagnosticPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
@@ -26,47 +48,44 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
   const canEdit = organization.permissions.includes("diagnostic.configuration.manage");
   const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
   const activeDiagnostics = workspace.diagnostics.filter((item) => item.status !== "retired");
-  const versions = activeDiagnostics.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name, definitionId: item.definition_id, definitionCode: item.code, definitionPurpose: item.purpose })));
-  const draftVersions = versions.filter((item) => item.status === "draft");
+  const versions = activeDiagnostics.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name, definitionId: item.definition_id, definitionCode: item.code, definitionPurpose: stringValue(item.purpose) })));
+  const draftVersions = versions.filter((item) => item.status === "draft").sort((a, b) => b.version_number - a.version_number);
+  const publishedVersion = (versions.filter((item) => item.status === "published").sort((a, b) => dateValue(b.published_at) - dateValue(a.published_at) || b.version_number - a.version_number)[0] ?? null) as (VersionSummary & { definitionName?: string; definitionId?: string; definitionCode?: string; definitionPurpose?: string }) | null;
   const selectedVersionId = single(query.versao);
-  const selectedVersion = (draftVersions.find((item) => String(item.id) === selectedVersionId) ?? null) as any;
-  const questions = selectedVersion?.items?.length ? selectedVersion.items : Array.from({ length: 12 });
+  const selectedVersion = (draftVersions.find((item) => String(item.id) === selectedVersionId) ?? null) as (VersionSummary & { definitionName?: string; definitionId?: string; definitionCode?: string; definitionPurpose?: string }) | null;
+  const seedVersion = selectedVersion ?? publishedVersion;
+  const seedProfiles = profiles(seedVersion);
+  const seedDimensions = dimensions(seedVersion);
+  const seedQuestions = questions(seedVersion);
+  const initial: DiagnosticBuilderInitial = {
+    definitionId: selectedVersion?.definitionId ?? "",
+    versionId: selectedVersionId,
+    definitionCode: selectedVersion?.definitionCode ?? "",
+    name: selectedVersion?.definitionName ?? "",
+    purpose: selectedVersion?.definitionPurpose ?? "",
+    profiles: seedProfiles,
+    dimensions: seedDimensions,
+    questions: seedQuestions,
+    defaultProfileCode: defaultProfile(seedVersion) || seedProfiles[0]?.code || "",
+    rules: rules(seedVersion),
+  };
+  const success = single(query.sucesso);
+  const error = single(query.erro);
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
-    <PageHeader eyebrow="Personalização" title="Diagnósticos e perfis" description="Edite uma parte por vez. As configurações secundárias permanecem recolhidas até serem abertas." />
+    <PageHeader eyebrow="Personalização" title="Diagnósticos e perfis" description="Configure livremente perfis, dimensões, perguntas e regras. Somente um diagnóstico permanece publicado por vez." />
     {!canEdit ? <StatusPanel title="Somente consulta" tone="info">Você pode consultar os diagnósticos, mas não criar, publicar ou excluir versões.</StatusPanel> : null}
-    <StatusPanel title="O resultado não é uma nota" tone="info">Pesos e pontuações existem apenas como configuração interna para classificar respostas. Para participantes, o diagnóstico apresenta descrições qualitativas, pontos fortes e oportunidades de evolução — nunca uma nota numérica ou avaliação de crédito.</StatusPanel>
-    <Card><form method="get" className="flex flex-wrap items-end gap-3"><Label className="min-w-72 flex-1">Diagnóstico em rascunho<Select name="versao" defaultValue={selectedVersionId}><option value="">Criar novo diagnóstico</option>{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · versão {String(item.version_number)}</option>)}</Select><span className="text-[11px] font-normal text-muted">Versões publicadas não aparecem aqui; crie um novo rascunho para mudanças metodológicas.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
-    {single(query.sucesso) === "excluido" ? <StatusPanel title="Diagnóstico excluído" tone="success">A definição foi retirada do painel e os resultados históricos foram preservados.</StatusPanel> : single(query.sucesso) ? <StatusPanel title="Rascunho salvo" tone="success">A configuração foi registrada.</StatusPanel> : null}
-    {single(query.erro) ? <StatusPanel title="Alteração não concluída" tone="warning">Revise os dados e sua confirmação.</StatusPanel> : null}
+    <StatusPanel title="Publicação com migração segura" tone="info">Ao publicar um novo diagnóstico, você precisa relacionar cada perfil antigo a um perfil novo. A plataforma troca o formulário ativo e atualiza perfis de usuários e restrições de jornadas na mesma operação.</StatusPanel>
+    <Card><form method="get" className="flex flex-wrap items-end gap-3"><Label className="min-w-72 flex-1">Diagnóstico em rascunho<Select name="versao" defaultValue={selectedVersionId}><option value="">Criar novo diagnóstico</option>{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · rascunho {String(item.version_number)}</option>)}</Select><span className="text-[11px] font-normal text-muted">Ao criar um novo, os campos metodológicos começam preenchidos com o diagnóstico atualmente publicado para facilitar a revisão.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
+    {success === "publicado" ? <StatusPanel title="Diagnóstico publicado" tone="success">O novo formulário é o único ativo. Usuários e jornadas foram migrados conforme o mapeamento informado.</StatusPanel> : success === "excluido" ? <StatusPanel title="Diagnóstico excluído" tone="success">A definição foi retirada do painel e os resultados históricos foram preservados.</StatusPanel> : success ? <StatusPanel title="Rascunho salvo" tone="success">A configuração foi registrada sem alterar o formulário ativo.</StatusPanel> : null}
+    {error ? <StatusPanel title="Alteração não concluída" tone="warning">{error === "mapeamento_incompleto" ? "Relacione todos os perfis antigos a um perfil novo antes de publicar." : "Revise os dados e tente novamente."}</StatusPanel> : null}
 
     <fieldset disabled={!canEdit} className="contents">
-      <form action={saveDiagnosticAction} className="grid gap-4">
-        <input type="hidden" name="definition_id" value={selectedVersion?.definitionId ?? ""} /><input type="hidden" name="version_id" value={selectedVersionId} /><input type="hidden" name="definition_code" value={selectedVersion?.definitionCode ?? ""} />
-        <Card className="grid gap-4"><div><h2 className="text-lg font-black text-secondary">Informações principais</h2><p className="mt-1 text-sm text-muted">Estes são os únicos campos necessários para iniciar o rascunho.</p></div><Label>Nome do diagnóstico<Input name="name" defaultValue={selectedVersion?.definitionName ?? ""} required /><span className="text-[11px] font-normal text-muted">Nome interno usado pela equipe.</span></Label><Label>Objetivo<Textarea name="purpose" rows={3} defaultValue={selectedVersion?.definitionPurpose ?? ""} required /><span className="text-[11px] font-normal text-muted">Explique o que o diagnóstico pretende compreender.</span></Label></Card>
-
-        <AdminDisclosure title="Perfis de resultado" description="Textos apresentados depois da classificação.">
-          <div className="grid gap-4 sm:grid-cols-2">{ARCHETYPES.map((archetype) => <Label key={archetype.code}>{archetype.name}<Textarea name={`archetype_description_${archetype.code}`} rows={3} defaultValue={selectedVersion?.archetypes?.find((item: any) => item.code === archetype.code)?.description ?? ""} /><span className="text-[11px] font-normal text-muted">Descrição que ajuda a pessoa a interpretar o próprio perfil.</span></Label>)}</div>
-        </AdminDisclosure>
-
-        <AdminDisclosure title="Dimensões avaliadas" description="Eixos usados para organizar perguntas e resultados.">
-          <div className="grid gap-4 sm:grid-cols-2">{DIMENSIONS.map((dimension) => <Label key={dimension.code}>{dimension.label}<Input name={`dimension_name_${dimension.code}`} defaultValue={selectedVersion?.dimensions?.find((item: any) => item.code === dimension.code)?.name ?? dimension.label} /></Label>)}</div>
-        </AdminDisclosure>
-
-        <AdminDisclosure title="Perguntas" description="Abra somente a pergunta que deseja editar. Campos vazios não serão incluídos.">
-          <div className="grid gap-3">{questions.map((item: any, index: number) => <details key={index} className="rounded-xl border border-border bg-surface-muted/35"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-secondary">Pergunta {index + 1}{item?.prompt ? ` · ${item.prompt}` : ""}</summary><fieldset className="grid gap-3 border-t border-border p-4"><Label>Dimensão<Select name={`item_dimension_${index}`} defaultValue={item?.dimension_code ?? ""}><option value="">Selecione</option>{DIMENSIONS.map((dimension) => <option key={dimension.code} value={dimension.code}>{dimension.label}</option>)}</Select><span className="text-[11px] font-normal text-muted">Determina em qual resultado esta resposta terá efeito.</span></Label><Label>Enunciado<Textarea name={`item_prompt_${index}`} rows={2} defaultValue={item?.prompt ?? ""} /></Label><div className="grid gap-3 sm:grid-cols-2">{[0,1,2,3].map((optionIndex) => <div key={optionIndex} className="grid grid-cols-[1fr_96px] gap-2"><Label>Resposta {optionIndex + 1}<Input name={`item_option_label_${index}_${optionIndex}`} defaultValue={item?.options?.[optionIndex]?.label ?? ""} /></Label><Label>Pontos<Input name={`item_option_score_${index}_${optionIndex}`} type="number" defaultValue={item?.options?.[optionIndex]?.value?.score ?? ""} /></Label></div>)}</div></fieldset></details>)}</div>
-        </AdminDisclosure>
-
-        <AdminDisclosure title="Regras de classificação" description="Configuração metodológica avançada: limites por perfil e resultado padrão.">
-          <div className="grid gap-5"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th className="p-2 text-left">Perfil</th>{DIMENSIONS.map((dimension) => <th key={dimension.code} className="p-2 text-left">{dimension.label}</th>)}</tr></thead><tbody>{ARCHETYPES.map((archetype) => <tr key={archetype.code} className="border-t border-border"><td className="p-2 font-medium text-ink">{archetype.name}</td>{DIMENSIONS.map((dimension) => <td key={dimension.code} className="p-2"><Input name={`threshold_${archetype.code}_${dimension.code}`} type="number" placeholder="—" defaultValue={selectedVersion?.configuration?.classification_rules?.rules?.find((rule: any) => rule.archetype_code === archetype.code)?.thresholds?.[dimension.code] ?? ""} /></td>)}</tr>)}</tbody></table></div><Label>Perfil usado quando nenhuma regra específica é atendida<Select name="default_archetype_code" defaultValue={selectedVersion?.configuration?.classification_rules?.default_archetype_code ?? ""} required><option value="">Selecione</option>{ARCHETYPES.map((archetype) => <option key={archetype.code} value={archetype.code}>{archetype.name}</option>)}</Select></Label></div>
-        </AdminDisclosure>
-
-        <Card className="grid gap-4 border-primary/20 bg-primary-soft/40"><div className="flex items-center justify-between gap-4"><div><h2 className="font-semibold text-ink">Salvar</h2><p className="mt-1 text-sm text-muted">Mantenha como rascunho durante a revisão metodológica ou publique quando estiver validado.</p></div><StatusPill tone="neutral">Rascunho</StatusPill></div><label className="flex items-start gap-3 rounded-xl bg-white p-3 text-sm text-ink"><input type="checkbox" name="status" value="published" className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Publicar agora</strong><small className="text-muted">A versão ficará disponível imediatamente para participantes.</small></span></label><Button type="submit" className="w-fit">Salvar diagnóstico</Button></Card>
-      </form>
+      <DiagnosticBuilder initial={initial} previousProfiles={profiles(publishedVersion)} canPublish={canEdit} />
     </fieldset>
 
-    <AdminDisclosure title="Diagnósticos ativos e exclusão" description="Consulte todas as definições. A exclusão retira a configuração do painel, mas preserva resultados históricos.">
-      <div className="grid gap-3 sm:grid-cols-2">{activeDiagnostics.map((item) => <div key={item.definition_id} className="rounded-xl border border-border p-4"><strong className="text-ink">{item.name}</strong><p className="mt-1 text-xs text-muted">{item.versions.length} versão(ões)</p>{canEdit ? <details className="mt-4 rounded-xl border border-border"><summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-secondary">Excluir diagnóstico</summary><form action={retireDiagnosticAction} className="grid gap-2 border-t border-border p-3"><input type="hidden" name="definition_id" value={item.definition_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Label className="text-xs">Confirme digitando EXCLUIR<Input name="confirmation" autoComplete="off" required /></Label><Button type="submit" variant="secondary" size="sm" className="w-fit">Excluir</Button></form></details> : null}</div>)}</div>
+    <AdminDisclosure title="Rascunhos e exclusão" description="A exclusão retira uma definição do painel, mas preserva resultados históricos.">
+      <div className="grid gap-3 sm:grid-cols-2">{activeDiagnostics.map((item) => <div key={item.definition_id} className="rounded-xl border border-border p-4"><strong className="text-ink">{item.name}</strong><p className="mt-1 text-xs text-muted">{item.versions.some((version) => version.status === "published") ? "Publicado" : "Rascunho"}</p>{canEdit ? <details className="mt-4 rounded-xl border border-border"><summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-secondary">Excluir diagnóstico</summary><form action={retireDiagnosticAction} className="grid gap-2 border-t border-border p-3"><input type="hidden" name="definition_id" value={item.definition_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Label className="text-xs">Confirme digitando EXCLUIR<Input name="confirmation" autoComplete="off" required /></Label><Button type="submit" variant="secondary" size="sm" className="w-fit">Excluir</Button></form></details> : null}</div>)}</div>
     </AdminDisclosure>
   </div></AppShell>;
 }

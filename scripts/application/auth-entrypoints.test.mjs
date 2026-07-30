@@ -61,9 +61,9 @@ test("administration has a separate Google-only GET entrypoint and validates cla
   ]);
 
   assert.match(participantPage, /href="\/entrar\/administracao"/u);
-  assert.match(adminPage, /<form action="\/auth\/admin\/start" method="get">/u);
+  assert.match(adminPage, /ButtonLink href="\/auth\/admin\/start"/u);
   assert.match(adminPage, /Continuar com Google/u);
-  assert.doesNotMatch(adminPage, /type="password"|signInWithPassword/u);
+  assert.doesNotMatch(adminPage, /<form action="\/auth\/admin\/start"|type="password"|signInWithPassword/u);
   assert.match(startRoute, /provider:\s*"google"/u);
   assert.match(startRoute, /hd:\s*"estimulo\.org"/u);
   assert.match(startRoute, /skipBrowserRedirect:\s*true/u);

@@ -7,42 +7,15 @@
     "schema_version": "1.0",
     "postgres_major": 17,
     "categories": {
-      "types": {
-        "count": 0,
-        "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
-      },
-      "columns": {
-        "count": 1814,
-        "sha256": "1ee1deba6ebbc30890dbc23b266a7619fd2ce7464192e47e160790611109a95d"
-      },
-      "indexes": {
-        "count": 596,
-        "sha256": "45a63046f597905ede12b7239ca7487ce6e1a66846d0dd6fb78429f99ee86413"
-      },
-      "schemas": {
-        "count": 14,
-        "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344"
-      },
-      "policies": {
-        "count": 622,
-        "sha256": "063a0f31004017b207b3ffaddce320e9efe0f1f5723604092c66b1fb82215248"
-      },
-      "routines": {
-        "count": 234,
-        "sha256": "8db86079866347e92a55c7e933a4552da9682f79d75342cd87a1601d1f632845"
-      },
-      "triggers": {
-        "count": 80,
-        "sha256": "207889dcef9b8ff5848a8578d18a6acfa66a0d82dadeb78b3d1b192b9c07ea76"
-      },
-      "relations": {
-        "count": 176,
-        "sha256": "84a692eaabc715722d558cbe8abfa193967cfbc18c994c4cbfe92c9dd09442b3"
-      },
-      "constraints": {
-        "count": 875,
-        "sha256": "de1ac7fda15fb812934b56bf100237f23b43d7e0b3443adec818db64eda8eded"
-      }
+      "types": { "count": 0, "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" },
+      "columns": { "count": 1814, "sha256": "a96218728ef85d77ea7f6bfb49163dc2a9cf3f28490031f595dac6158852dbd3" },
+      "indexes": { "count": 596, "sha256": "45a63046f597905ede12b7239ca7487ce6e1a66846d0dd6fb78429f99ee86413" },
+      "schemas": { "count": 14, "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344" },
+      "policies": { "count": 622, "sha256": "063a0f31004017b207b3ffaddce320e9efe0f1f5723604092c66b1fb82215248" },
+      "routines": { "count": 234, "sha256": "8db86079866347e92a55c7e933a4552da9682f79d75342cd87a1601d1f632845" },
+      "triggers": { "count": 80, "sha256": "207889dcef9b8ff5848a8578d18a6acfa66a0d82dadeb78b3d1b192b9c07ea76" },
+      "relations": { "count": 176, "sha256": "84a692eaabc715722d558cbe8abfa193967cfbc18c994c4cbfe92c9dd09442b3" },
+      "constraints": { "count": 875, "sha256": "de1ac7fda15fb812934b56bf100237f23b43d7e0b3443adec818db64eda8eded" }
     }
   }
 }

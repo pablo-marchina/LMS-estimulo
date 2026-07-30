@@ -11,11 +11,10 @@ import {
 } from "../../apps/web/lib/auth/admin-oauth-bridge-core.mjs";
 
 const read = (path) => readFile(new URL(`../../${path}`, import.meta.url), "utf8");
-const [adminShell, experiencePage, visualSelector, previewBridge, nextConfig, startRoute, bridgeRoute, prepareRoute, proxy] = await Promise.all([
+const [adminShell, experiencePage, visualSelector, nextConfig, startRoute, bridgeRoute, prepareRoute, proxy] = await Promise.all([
   read("apps/web/components/admin-shell.tsx"),
   read("apps/web/app/admin/experiencia/page.tsx"),
   read("apps/web/app/admin/experiencia/visual-interface-selector.tsx"),
-  read("apps/web/components/interface-preview-bridge.tsx"),
   read("apps/web/next.config.ts"),
   read("apps/web/app/auth/admin/start/route.ts"),
   read("apps/web/app/auth/admin/local-bridge/route.ts"),
@@ -67,14 +66,17 @@ test("admin navigation no longer hides sections under more settings", () => {
   for (const label of ["Diagnósticos", "Pontuação", "Anúncios"]) assert.match(adminShell, new RegExp(label));
 });
 
-test("interface administration is driven by a visual selector", () => {
+test("interface administration is driven by a session-independent visual selector", () => {
   assert.match(experiencePage, /VisualInterfaceSelector/);
-  assert.match(visualSelector, /Selecione na tela o que deseja alterar/);
-  assert.match(visualSelector, /interface_preview=1/);
-  assert.match(previewBridge, /data-interface-content-key/);
+  assert.match(visualSelector, /Selecione o elemento que deseja alterar/);
+  assert.match(visualSelector, /Página exibida/);
+  assert.match(visualSelector, /entryMatchesRoute/);
+  assert.match(visualSelector, /params\.set\("edit", contentKey\)/);
+  assert.doesNotMatch(visualSelector, /<iframe/);
+  assert.doesNotMatch(visualSelector, /interface_preview=1/);
 });
 
-test("visual preview remains protected from cross-origin framing", () => {
+test("visual pages remain protected from cross-origin framing", () => {
   assert.match(nextConfig, /frame-ancestors 'self'/);
   assert.match(nextConfig, /frame-src 'self'/);
   assert.match(nextConfig, /X-Frame-Options", value: "SAMEORIGIN/);

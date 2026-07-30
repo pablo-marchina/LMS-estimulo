@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const migrationsDirectory = path.join(repositoryRoot, 'supabase/migrations');
 const recoveredHistoryLastVersion = '20260714161338';
-const expectedLastMigration = '20260730150000_openai_official_drive_videos.sql';
+const expectedLastMigration = '20260730183200_route_admin_lifecycle_through_product_rpc.sql';
 const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
   '20260729190353_generic_journey_editor_assessment_details.sql',
@@ -39,6 +39,9 @@ const requiredFinalReleaseMigrations = Object.freeze([
   '20260730022413_safe_admin_track_archiving.sql',
   '20260730113000_normalize_diagnostic_point_rule_eligibility.sql',
   '20260730130000_atomic_diagnostic_completion_points.sql',
+  '20260730150000_openai_official_drive_videos.sql',
+  '20260730183000_optional_journey_program.sql',
+  '20260730183100_admin_journey_and_diagnostic_lifecycle.sql',
   expectedLastMigration,
 ]);
 

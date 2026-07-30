@@ -42,7 +42,7 @@ export default async function AdminExperiencePage({ searchParams }: { searchPara
   if (auth.status !== "authenticated") return null;
   const organization = administrativeOrganization(auth.identity);
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
-  const canEdit = organization.permissions.includes("interface.content.manage");
+  const canEdit = organization.permissions.includes("interface.content.manage") || organization.permissions.includes("journey.definition.manage");
   let workspace: AdminInterfaceContentWorkspace;
   try {
     workspace = await getAdminInterfaceContent({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id });
@@ -57,7 +57,7 @@ export default async function AdminExperiencePage({ searchParams }: { searchPara
   const error = single(query.erro);
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
-    <PageHeader eyebrow="Experiência" title="Interface e textos" description="Navegue pela interface real, selecione o elemento na própria tela e altere seu conteúdo sem editar código." actions={pending && canEdit ? <form action={publishInterfaceContentAction}><Button type="submit" variant="secondary">Publicar {pending} alteração(ões)</Button></form> : null} />
+    <PageHeader eyebrow="Experiência" title="Interface e textos" description="Navegue pela interface, selecione um elemento e altere seu conteúdo sem editar código." actions={pending && canEdit ? <form action={publishInterfaceContentAction}><Button type="submit" variant="secondary">Publicar {pending} alteração(ões)</Button></form> : null} />
     {!canEdit ? <StatusPanel title="Acesso somente para visualização" tone="info">Você pode navegar e consultar os elementos, mas não alterá-los.</StatusPanel> : null}
     {success ? <StatusPanel title="Alteração concluída" tone="success">{success === "rascunho_salvo" ? "O rascunho foi salvo. Publique quando estiver pronto." : success === "elemento_criado" ? "O novo elemento foi criado como rascunho." : success === "elemento_removido" ? "O elemento foi removido da experiência." : "A interface publicada já está disponível."}</StatusPanel> : null}
     {error ? <StatusPanel title="Não foi possível concluir" tone="warning">Revise os campos e tente novamente.</StatusPanel> : null}
