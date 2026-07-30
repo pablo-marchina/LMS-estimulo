@@ -7,10 +7,11 @@ export function retireAdminJourney(input: {
   journeyDefinitionId: string;
   idempotencyKey: string;
 }) {
-  return invokeServerRpc<{ journey_definition_id: string; status: string; replayed: boolean }>("retire_admin_journey", {
+  return invokeServerRpc<{ journey_definition_id: string; status: string; replayed: boolean }>("save_admin_product_resource", {
     p_actor_user_account_id: input.actorUserAccountId,
     p_organization_id: input.organizationId,
-    p_journey_definition_id: input.journeyDefinitionId,
+    p_resource_type: "journey_retire",
+    p_payload: { journey_definition_id: input.journeyDefinitionId },
     p_idempotency_key: input.idempotencyKey,
   });
 }
@@ -28,11 +29,14 @@ export function publishAdminDiagnosticTransition(input: {
     remapped_assignments: number;
     remapped_journey_versions: number;
     replayed: boolean;
-  }>("publish_admin_diagnostic_transition", {
+  }>("save_admin_product_resource", {
     p_actor_user_account_id: input.actorUserAccountId,
     p_organization_id: input.organizationId,
-    p_diagnostic_version_id: input.diagnosticVersionId,
-    p_archetype_mapping: input.archetypeMapping,
+    p_resource_type: "diagnostic_transition",
+    p_payload: {
+      diagnostic_version_id: input.diagnosticVersionId,
+      archetype_mapping: input.archetypeMapping,
+    },
     p_idempotency_key: input.idempotencyKey,
   });
 }
