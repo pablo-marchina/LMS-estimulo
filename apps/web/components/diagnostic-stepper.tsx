@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { submitDiagnosisAction } from "@/app/actions/journey";
+import { submitProfileDiagnosisAction } from "@/app/empreendedor/diagnostico/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -56,7 +56,7 @@ export function DiagnosticStepper({
   }
 
   return (
-    <form action={submitDiagnosisAction} className="grid gap-6">
+    <form action={submitProfileDiagnosisAction} className="grid gap-6">
       <input type="hidden" name="journey_instance_id" value={journeyInstanceId} />
       <input type="hidden" name="idempotency_key" value={idempotencyKey} />
       {items.map((item) => (
