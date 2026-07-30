@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     || claimsError
     || !user
     || !claimsData?.claims
+    || !user.email
     || !user.email_confirmed_at
     || !isGoogleAuthProvider(user, claimsData.claims.amr)
   ) {
