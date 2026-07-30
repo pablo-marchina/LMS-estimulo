@@ -1,85 +1,158 @@
 # Gate de prontidão para produção
 
-## Resultado atual
+**Revisado em:** 2026-07-30  
+**Estado:** produção bloqueada enquanto a arquitetura AWS e as evidências do Gate B estiverem pendentes
+
+## Finalidade
+
+Este documento define os critérios permanentes de segurança, privacidade, operação e governança para liberar usuários reais. Ele não mantém contagem de migrations, SHA, resultados de CI, métricas ou infraestrutura presumida.
+
+O estado detalhado dos bloqueadores está em [`DELIVERY_BLOCKERS.md`](../implementation/DELIVERY_BLOCKERS.md), e o processo de promoção está em [`FINAL_RELEASE_RUNBOOK.md`](../operations/FINAL_RELEASE_RUNBOOK.md).
+
+## Regra central
+
+Existem dois níveis independentes:
+
+1. **Gate A — software:** fonte, dependências, banco, contratos, testes, build, imagem e scans aprovados no mesmo SHA;
+2. **Gate B — produção:** arquitetura AWS aprovada e ambiente definitivo comprovado para múltiplos usuários.
+
+A aprovação do Gate A não autoriza produção. Nenhum resultado de outro SHA, preview Vercel, Supabase de teste, fixture ou smoke substitui o Gate B.
+
+## Estado invariável atual
 
 ```text
-ready = false
+aws_definitive_production_environment = required
+approved_aws_artifacts = [Dockerfile.lambda]
+aws_production_architecture_decided = false
+aws_staging_available = false
 production_deploy_allowed = false
-staging_scaffolding = implemented_not_applied
-external_blockers = open
-accepted_risk = 0
+supabase_vercel_production_allowed = false
+production_ready = false
 ```
 
-Código, migrations, container standalone e Terraform não autorizam operação real. `passed` exige prova no ambiente-alvo; risco aceito exige decisão formal identificável.
+## Pré-condição arquitetural
 
-## Evidências técnicas concluídas
+Antes de implementar staging ou produção, ADRs aprovados devem definir:
 
-- RLS interno abrangente e contratos server-only;
-- tabelas server-only sem policies e sem grants para `anon` ou `authenticated`;
-- redaction e secret scanning;
-- cadastro público, confirmação de e-mail e first-touch UTM;
-- CPF obrigatório com dígitos verificadores, AES-256-GCM e HMAC independente;
-- CPF bruto ausente de metadata, URL, logs e eventos;
-- entrada administrativa restrita a e-mail confirmado `@estimulo.org`;
-- RBAC administrativo explícito, revogável, temporal e auditável; o domínio não concede permissões sozinho;
-- 292 migrations executáveis, incluindo correções append-only;
-- testes transacionais de CPF, anúncios, ranking, recompensas, histórico e outline da jornada no Supabase de desenvolvimento;
-- administração integral comprovada para jornadas, atividades, trilhas, regras, diagnóstico, pontos, selos, certificados e relatórios;
-- idempotência e negativa de permissão comprovadas nos contratos administrativos;
-- zero avisos de foreign keys sem índice nas capacidades novas;
-- painel com carrossel administrável, retomada, recompensas e ranking pseudonimizado;
-- perfil com diagnóstico, histórico, pontos e credenciais;
-- trilha com blocos expansíveis e abertura de qualquer atividade liberada pelo backend;
-- maturidade em draft, sem atribuição, crédito ou CRM;
-- nota de utilidade 1–5 com histórico append-only e exclusão de crédito;
-- scanner de malware removido: zero worker, função, tabela, coluna, fila, schedule, cron ou schema de evento ativo;
-- arquivos privados validados por autorização, tipo, extensão, tamanho e SHA-256;
-- política HubSpot limitada às três classes aprovadas e adapter HTTP desabilitado sem inventário/token;
-- harness de navegador E2E real autenticado e read-only implementado;
-- build Next.js standalone previamente comprovado, processo não-root e probes live/ready;
-- Terraform de staging com guard, imagem por digest, configuração pública no build, secrets por ARN e dados privados/criptografados.
+- entrada pública e proteção de borda;
+- identidade, autenticação e sessão;
+- banco e gerenciamento de conexões;
+- armazenamento e fluxo de arquivos;
+- processamento assíncrono e reconciliação;
+- rede e isolamento de ambientes;
+- segredos, criptografia e rotação;
+- observabilidade, alertas e operação;
+- deploy, promoção, rollback e continuidade.
 
-## Evidências ainda não obtidas
+Este documento não escolhe serviços, topologia ou IaC.
 
-- TypeScript e build executados por runner após a administração integral;
-- execução do Browser E2E real contra URL implantada com contas reais de teste;
-- rotação/revogação da credencial historicamente exposta;
-- gestão e rotação institucional das chaves de CPF;
-- proteção contra senhas vazadas habilitada no provedor de identidade;
-- inventário HubSpot, token, scopes e write/readback em sandbox;
-- configuração oficial dos quatro arquétipos;
-- conteúdo oficial e mídias da Jornada OpenAI;
-- captura e tratamento aprovados de telefone e CNPJ opcional;
-- adapters AWS de identidade, RDS e S3;
-- conta, região, certificado, domínio e secrets AWS;
-- imagem OCI construída e escaneada;
-- Terraform validate/plan oficial e apply de staging;
-- rollback, backup, PITR e restore em staging;
-- WCAG completa com auditoria assistiva;
-- workflows do GitHub Actions executando steps no head atual;
-- decisões jurídicas e operacionais descritas abaixo.
+## Segurança do ambiente definitivo
 
-## Governança externa obrigatória
+### Identidade e autorização
 
-1. controlador e escopo jurídico;
-2. encarregado ou análise formal de dispensa, com canal público;
-3. aviso de privacidade e ROPA;
-4. bases legais, consentimentos, retenção, exclusão e legal hold;
-5. finalidade e tratamento de CPF, telefone, CNPJ e identificadores CRM;
-6. contratos, DPAs, subprocessadores e transferências;
-7. owners, contatos e exercício de resposta a incidentes;
-8. RPO/RTO e exercício de continuidade;
-9. governança de crédito, revisão humana, contestação, explicabilidade, equidade e monitoramento;
-10. aprovação metodológica, editorial, de acessibilidade e homologação do piloto.
+- cadastro, confirmação, login, recuperação, refresh, logout e revogação comprovados;
+- identidade externa vinculada à conta interna sem duplicação ou takeover;
+- contas administrativas com requisitos corporativos e RBAC ativo;
+- capacidades, escopo, validade e finalidade verificados server-side;
+- testes negativos de BOLA/IDOR, escalada de privilégio e acesso entre organizações;
+- sessão expirada ou revogada fecha acesso imediatamente dentro do objetivo aprovado.
 
-## Regra comportamental e de crédito
+### Isolamento e dados
 
-Dados educacionais e comportamentais permanecem fora de crédito por padrão. Maturidade, arquétipo, respostas, comentários, ranking e nota de utilidade não podem influenciar elegibilidade, risco ou decisão sem metodologia validada, revisão de vieses, governança humana, base legal e aprovação explícita.
+- isolamento multiorganização comprovado no runtime e no banco definitivos;
+- RLS/RBAC e autorização de objetos privados testados sob concorrência;
+- classificação de dados, finalidade, acesso e retenção aprovados;
+- CPF e demais dados sensíveis protegidos em trânsito e repouso;
+- custódia, rotação, recuperação e segregação das chaves exercitadas;
+- dados de teste sintéticos e separados de produção.
+
+### Aplicação e dependências
+
+- imagem e deployment correspondem ao SHA e digest aprovados;
+- nenhuma configuração, segredo ou fallback Supabase está presente na produção;
+- dependências e imagem dentro da política de vulnerabilidades;
+- proteção distribuída contra abuso, brute force e sobrecarga;
+- limites de payload, timeout, concorrência e consumo de recursos;
+- erros internos sanitizados e readiness fechada quando dependência obrigatória falha.
+
+### Arquivos e processamento assíncrono
+
+- upload, confirmação, acesso temporário, retenção e exclusão autorizados;
+- objetos órfãos ou divergentes detectados e reconciliados;
+- controles de conteúdo definidos pela análise de risco e comprovados no ambiente;
+- trabalhos assíncronos idempotentes, com retry, isolamento de falhas e redrive autorizado;
+- nenhuma capacidade é declarada ativa apenas porque estruturas históricas existem no banco.
+
+## Privacidade e governança
+
+Antes de usuários reais, devem estar aprovados:
+
+1. controlador, operadores, encarregado ou justificativa formal e canais públicos;
+2. registro das atividades de tratamento;
+3. bases legais e consentimentos aplicáveis;
+4. aviso de privacidade e termos finais;
+5. retenção, exclusão, legal hold e direitos dos titulares;
+6. finalidade e tratamento de CPF, telefone, CNPJ e identificadores externos;
+7. fornecedores, contratos, subprocessadores e transferências;
+8. política de logs, redaction, auditoria e acesso;
+9. resposta a incidente e comunicação;
+10. governança de crédito e proibição de uso não aprovado de sinais educacionais.
+
+Dados educacionais e comportamentais permanecem fora de crédito por padrão. Maturidade, arquétipo, respostas, comentários, ranking e avaliações não podem influenciar elegibilidade, risco ou decisão sem metodologia validada, revisão de vieses, base legal, governança humana e aprovação explícita.
+
+## Capacidade e confiabilidade
+
+O staging AWS aprovado deve passar:
+
+- E2E navegador → runtime → dependências definitivas;
+- ramp, spike e soak de operações autenticadas;
+- múltiplos usuários e organizações concorrentes;
+- saturação, backpressure e rejeição controlada;
+- falha e recuperação de dependências;
+- integridade de escrita, idempotência e reconciliação;
+- estabilidade de memória, conexões, latência e backlog;
+- limites e custo operacional aprovados.
+
+## Observabilidade e operação
+
+- logs, métricas e tracing sem dados sensíveis proibidos;
+- dashboards associados aos SLOs;
+- alertas acionáveis com proprietário e severidade;
+- on-call e escalonamento definidos;
+- runbooks de incidente, degradação e reconciliação;
+- correlação entre request, transação, evento, outbox e integração;
+- detecção de deployment divergente do SHA/digest aprovado.
+
+## Continuidade
+
+- backup e recuperação pontual configurados conforme a arquitetura aprovada;
+- restore exercitado e validado;
+- rollback de aplicação exercitado;
+- estratégia segura para migrations incompatíveis;
+- RTO e RPO aprovados;
+- indisponibilidade de dependência obrigatória fecha readiness e impede corrupção.
+
+## Conteúdo e acessibilidade
+
+- conteúdo e mídias oficiais aprovados;
+- diagnóstico, scoring, arquétipos e ativações aprovados metodologicamente;
+- auditoria de acessibilidade com teclado, foco, leitores de tela, contraste e mídia;
+- linguagem de erro, consentimento, ajuda e suporte revisada;
+- piloto homologado pelos responsáveis institucionais.
 
 ## Regra de deploy
 
-- `main` não recebe merge enquanto checks obrigatórios ou revisões estiverem pendentes;
-- produção exige stack separada e aprovação operacional;
-- `confirm_deployment=false` é o default do Terraform;
-- nenhum apply automático é permitido;
-- ausência de prova permanece bloqueio e nunca é convertida em `passed`.
+Produção permanece `NO-GO` quando qualquer item abaixo ocorrer:
+
+- workflow obrigatório não verde no SHA atual;
+- arquitetura AWS ainda pendente;
+- ambiente diferente do SHA ou digest aprovado;
+- erro de autorização, isolamento, integridade ou idempotência;
+- capacidade ou SLOs não comprovados;
+- proteção, observabilidade ou resposta insuficientes;
+- backup, restore ou rollback não exercitado;
+- aprovação jurídica, de privacidade, conteúdo ou acessibilidade pendente;
+- Supabase ou Vercel configurado como produção;
+- risco aceito sem decisão formal identificável.
+
+Ausência de prova permanece bloqueio e nunca é convertida em `passed` por documentação.
