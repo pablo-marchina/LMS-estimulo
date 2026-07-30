@@ -4,7 +4,7 @@
   "observed_at": "2026-07-30",
   "database_contract": {
     "rpc_count": 20,
-    "contract_sha256": "70083c37afb876c31a29dde110eba0be8f5fd902db4f338c7dcde3fc814e6a8a",
+    "contract_sha256": "ab15c15242ea8a5291bfaddf2b95a36a94d675541b11d662d487b9947bde5a9d",
     "required_grantees": ["app_worker", "postgres", "service_role"],
     "forbidden_grantees": ["PUBLIC", "anon", "authenticated"],
     "required_security_definer": true,
