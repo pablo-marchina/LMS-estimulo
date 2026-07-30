@@ -49,13 +49,13 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
   const aggregate = experience.state.d?.aggregate_version;
   if (aggregate === undefined) throw new Error("DIAGNOSTIC_VERSION_NOT_AVAILABLE");
 
-  await journeyRuntime.completeDiagnostic(actor, sessionId, aggregate, `${baseKey}:complete`);
-  await invokeServerRpc("award_participant_action_points", {
+  await invokeServerRpc("complete_participant_diagnostic_with_points", {
     p_actor_user_account_id: actor,
+    p_session_id: sessionId,
+    p_expected_aggregate_version: aggregate,
     p_journey_instance_id: journey,
-    p_action_code: "complete_diagnostic",
-    p_source_reference: sessionId,
-    p_idempotency_key: `${baseKey}:points`,
+    p_completion_idempotency_key: `${baseKey}:complete`,
+    p_points_idempotency_key: `${baseKey}:points`,
   });
 
   redirect(`/empreendedor/resultado?journey=${journey}&diagnostico=concluido`);
