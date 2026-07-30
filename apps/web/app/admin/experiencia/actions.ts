@@ -19,11 +19,15 @@ function checked(formData: FormData, name: string) { return formData.get(name) =
 function integer(value: string, fallback: number) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) ? parsed : fallback; }
 function slug(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "elemento"; }
 
+function canManageInterface(permissions: string[]) {
+  return permissions.includes("interface.content.manage") || permissions.includes("journey.definition.manage");
+}
+
 async function authorize() {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
-  if (!organization?.permissions.includes("interface.content.manage")) redirect("/admin/experiencia?erro=sem_permissao");
+  if (!organization || !canManageInterface(organization.permissions)) redirect("/admin/experiencia?erro=sem_permissao");
   return { auth, organization };
 }
 
