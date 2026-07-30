@@ -37,15 +37,25 @@ export function localAdminCallbackUrl(value) {
 
 export function encodeLocalAdminCallback(value) {
   const callback = localAdminCallbackUrl(value);
-  return callback ? encodeURIComponent(callback.toString()) : null;
+  // ResponseCookies applies the wire encoding. Keeping the logical value raw avoids
+  // a second percent-encoding layer while remaining compatible with older cookies.
+  return callback ? callback.toString() : null;
 }
 
 export function decodeLocalAdminCallback(value) {
-  try {
-    return localAdminCallbackUrl(decodeURIComponent(String(value ?? "")));
-  } catch {
-    return null;
+  let candidate = String(value ?? "").trim();
+  for (let attempt = 0; attempt < 3 && candidate; attempt += 1) {
+    const callback = localAdminCallbackUrl(candidate);
+    if (callback) return callback;
+    try {
+      const decoded = decodeURIComponent(candidate);
+      if (decoded === candidate) return null;
+      candidate = decoded;
+    } catch {
+      return null;
+    }
   }
+  return null;
 }
 
 export function adminOAuthPreparationTarget({ applicationOrigin, requestOrigin, bridgeOrigin }) {
