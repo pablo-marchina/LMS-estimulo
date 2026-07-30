@@ -1,4 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  adminOAuthPreparationTarget,
+  adminOAuthRedirectTarget,
+  isLocalApplicationOrigin,
+} from "@/lib/auth/admin-oauth-bridge-core.mjs";
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -7,17 +12,32 @@ function signInError(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const applicationOrigin = publicApplicationOrigin(request.nextUrl.origin);
+  const localRequest = isLocalApplicationOrigin(request.nextUrl.origin);
+  const bridgeReady = request.nextUrl.searchParams.get("bridge_ready") === "1";
+
+  if (localRequest && !bridgeReady) {
+    const preparation = adminOAuthPreparationTarget({
+      applicationOrigin,
+      requestOrigin: request.nextUrl.origin,
+      bridgeOrigin: process.env.ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN,
+    });
+    if (!preparation) return signInError(request);
+    return NextResponse.redirect(preparation);
+  }
+
   const client = await createSessionClient();
   await client.auth.signOut();
 
-  const callback = new URL(
-    "/auth/admin/callback",
-    publicApplicationOrigin(request.nextUrl.origin),
-  ).toString();
+  const redirectTo = adminOAuthRedirectTarget({
+    applicationOrigin,
+    requestOrigin: request.nextUrl.origin,
+    bridgeOrigin: process.env.ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN,
+  });
   const { data, error } = await client.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: callback,
+      redirectTo,
       skipBrowserRedirect: true,
       queryParams: {
         hd: "estimulo.org",

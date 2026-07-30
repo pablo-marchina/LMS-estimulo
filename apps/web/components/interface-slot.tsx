@@ -51,7 +51,7 @@ export function InterfaceSlot({
 
         if (type === "image" && image) {
           return (
-            <figure key={key} className="overflow-hidden rounded-2xl border border-border bg-white">
+            <figure key={key} data-interface-content-key={key} className="overflow-hidden rounded-2xl border border-border bg-white">
               <img src={image} alt={typeof value.alt === "string" ? value.alt : ""} className="max-h-80 w-full object-cover" />
               {text ? <figcaption className="px-4 py-3 text-sm text-muted">{text}</figcaption> : null}
             </figure>
@@ -59,12 +59,12 @@ export function InterfaceSlot({
         }
 
         if ((type === "button" || type === "link") && href) {
-          return <ButtonLink key={key} href={href} variant={type === "button" ? "primary" : "secondary"} className="w-fit" {...externalProps(href)}>{text || title || "Abrir"}</ButtonLink>;
+          return <ButtonLink key={key} href={href} data-interface-content-key={key} variant={type === "button" ? "primary" : "secondary"} className="w-fit" {...externalProps(href)}>{text || title || "Abrir"}</ButtonLink>;
         }
 
         if (type === "notice" || type === "section" || type === "element") {
           return (
-            <article key={key} className={cn("rounded-2xl border p-4", toneClasses[tone] ?? toneClasses.neutral)}>
+            <article key={key} data-interface-content-key={key} className={cn("rounded-2xl border p-4", toneClasses[tone] ?? toneClasses.neutral)}>
               {title ? <h2 className="font-semibold">{title}</h2> : null}
               {body || text ? <p className="mt-1 whitespace-pre-line text-sm leading-6">{body || text}</p> : null}
               {href ? <ButtonLink href={href} variant="secondary" size="sm" className="mt-3 w-fit" {...externalProps(href)}>{typeof value.button_text === "string" && value.button_text ? value.button_text : "Saiba mais"}</ButtonLink> : null}
@@ -72,7 +72,7 @@ export function InterfaceSlot({
           );
         }
 
-        return text ? <p key={key} className="whitespace-pre-line text-sm leading-6 text-muted">{text}</p> : null;
+        return text ? <p key={key} data-interface-content-key={key} className="whitespace-pre-line text-sm leading-6 text-muted">{text}</p> : null;
       })}
     </section>
   );

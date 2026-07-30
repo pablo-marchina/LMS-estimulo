@@ -15,11 +15,11 @@ if (response.status !== 200) errors.push(`expected HTTP 200, received ${response
 const requiredHeaders = {
   "x-content-type-options": "nosniff",
   "referrer-policy": "strict-origin-when-cross-origin",
-  "x-frame-options": "DENY",
+  "x-frame-options": "SAMEORIGIN",
   "x-permitted-cross-domain-policies": "none",
   "cross-origin-opener-policy": "same-origin-allow-popups",
   "cross-origin-resource-policy": "same-site",
-  "content-security-policy": "frame-ancestors 'none'",
+  "content-security-policy": "frame-ancestors 'self'",
   "strict-transport-security": "max-age=63072000",
   "permissions-policy": "camera=()",
   "cache-control": "no-store",

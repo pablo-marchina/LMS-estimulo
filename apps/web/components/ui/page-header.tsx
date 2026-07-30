@@ -34,9 +34,9 @@ export function PageHeader({
   return (
     <header className={cn("mb-8 flex flex-col gap-4 rounded-xl p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8", dark ? "brand-hero text-white" : "brand-page-header border border-border", className)}>
       <div className="relative z-10 max-w-2xl">
-        {resolvedEyebrow && interfaceVisible(content, `${prefix}.eyebrow`) ? <p className={cn("mb-2 text-xs font-bold uppercase tracking-[.14em]", dark ? "text-brand-cyan" : "text-primary")}>{resolvedEyebrow}</p> : null}
-        {interfaceVisible(content, `${prefix}.title`) ? <h1 className={cn("display-font text-2xl sm:text-3xl", dark ? "text-white" : "text-ink")}>{resolvedTitle}</h1> : null}
-        {resolvedDescription && interfaceVisible(content, `${prefix}.description`) ? <p className={cn("mt-2 text-sm leading-6 sm:text-base", dark ? "text-white/85" : "text-muted")}>{resolvedDescription}</p> : null}
+        {resolvedEyebrow && interfaceVisible(content, `${prefix}.eyebrow`) ? <p data-interface-content-key={`${prefix}.eyebrow`} className={cn("mb-2 text-xs font-bold uppercase tracking-[.14em]", dark ? "text-brand-cyan" : "text-primary")}>{resolvedEyebrow}</p> : null}
+        {interfaceVisible(content, `${prefix}.title`) ? <h1 data-interface-content-key={`${prefix}.title`} className={cn("display-font text-2xl sm:text-3xl", dark ? "text-white" : "text-ink")}>{resolvedTitle}</h1> : null}
+        {resolvedDescription && interfaceVisible(content, `${prefix}.description`) ? <p data-interface-content-key={`${prefix}.description`} className={cn("mt-2 text-sm leading-6 sm:text-base", dark ? "text-white/85" : "text-muted")}>{resolvedDescription}</p> : null}
       </div>
       {actions ? <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-3">{actions}</div> : null}
     </header>
