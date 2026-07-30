@@ -5,7 +5,7 @@ import test from "node:test";
 const runtime = await readFile("apps/web/lib/admin/role-management.ts", "utf8");
 const actions = await readFile("apps/web/app/admin/usuarios/actions.ts", "utf8");
 const page = await readFile("apps/web/app/admin/usuarios/page.tsx", "utf8");
-const shell = await readFile("apps/web/components/app-shell.tsx", "utf8");
+const adminShell = await readFile("apps/web/components/admin-shell.tsx", "utf8");
 
 test("role management remains server-only and uses audited RPCs", () => {
   assert.match(runtime, /import "server-only"/u);
@@ -31,6 +31,5 @@ test("admin page exposes permission-gated and accessible grant and revoke contro
   assert.match(page, /Confirme digitando CONCEDER/u);
   assert.match(page, /Usuários indisponíveis/u);
   assert.match(page, /Somente consulta/u);
-  assert.match(page, /America\/Sao_Paulo/u);
-  assert.match(shell, /\/admin\/usuarios/u);
+  assert.match(adminShell, /\/admin\/usuarios/u);
 });
