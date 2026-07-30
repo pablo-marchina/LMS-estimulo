@@ -49,7 +49,7 @@ jobs:
           fi
 
       - name: Checkout exact commit
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -83,7 +83,7 @@ jobs:
           [[ "$invalid" -eq 0 ]]
 
       - name: Set up exact Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22.23.1"
 
@@ -106,7 +106,7 @@ jobs:
 
       - name: Preserve safe secret-scan metadata
         if: always() && steps.secret-scan.outcome != 'skipped'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: gitleaks-safe-${{ github.run_id }}-${{ github.run_attempt }}
           path: .artifacts/gitleaks-safe.json
