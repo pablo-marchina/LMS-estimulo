@@ -19,9 +19,11 @@ test("administrative Google login starts in one click and validates domain plus 
   assert.doesNotMatch(adminStart, /login_hint/u);
   assert.match(adminCallback, /isEstimuloAdministrativeEmail\(user\.email\)/u);
   assert.match(adminCallback, /administrativeOrganization\(identity\)/u);
-  assert.match(adminPage, /action="\/auth\/admin\/start"/u);
-  assert.match(adminPage, /PendingSubmitButton/u);
-  assert.match(adminPage, /Abrindo o Google…/u);
+  assert.match(adminPage, /href="\/auth\/admin\/start"/u);
+  assert.match(adminPage, /ButtonLink/u);
+  assert.match(adminPage, /Continuar com Google/u);
+  assert.doesNotMatch(adminPage, /<form[^>]+action="\/auth\/admin\/start"/u);
+  assert.doesNotMatch(adminPage, /PendingSubmitButton/u);
   assert.doesNotMatch(adminPage, /name="email"/u);
 });
 
