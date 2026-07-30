@@ -41,7 +41,7 @@ begin
   );
 
   insert into iam.membership_roles(membership_id,role_id,scope,valid_from,valid_until)
-  values(v_membership,v_role,'{}'::jsonb,now()-interval '1 minute',null);
+  values(v_membership,v_role,'{"all":true}'::jsonb,now()-interval '1 minute',null);
 
   if not app_private.e14_actor_has_permission(v_actor,v_org,'journey.definition.manage')
      or not app_private.e14_actor_has_permission(v_actor,v_org,'diagnostic.configuration.manage')
