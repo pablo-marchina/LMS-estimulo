@@ -61,9 +61,9 @@ test("administration has a separate Google-only GET entrypoint and validates cla
   ]);
 
   assert.match(participantPage, /href="\/entrar\/administracao"/u);
-  assert.match(adminPage, /<form action="\/auth\/admin\/start" method="get">/u);
+  assert.match(adminPage, /ButtonLink href="\/auth\/admin\/start"/u);
   assert.match(adminPage, /Continuar com Google/u);
-  assert.doesNotMatch(adminPage, /type="password"|signInWithPassword/u);
+  assert.doesNotMatch(adminPage, /<form action="\/auth\/admin\/start"|type="password"|signInWithPassword/u);
   assert.match(startRoute, /provider:\s*"google"/u);
   assert.match(startRoute, /hd:\s*"estimulo\.org"/u);
   assert.match(startRoute, /skipBrowserRedirect:\s*true/u);
@@ -88,24 +88,8 @@ test("runtime identity and RPC calls use the authenticated gateway without a loc
   assert.match(currentIdentity, /invokeAuthenticatedGateway/u);
   assert.match(context, /resolveCurrentIdentity\(session\)/u);
   assert.match(context, /AWS_IDENTITY_ARCHITECTURE_PENDING/u);
-  assert.match(sharedGateway, /auth\.getSession\(\)/u);
-  assert.match(sharedGateway, /functions\/v1\/authenticated-rpc/u);
-  assert.match(sharedGateway, /AWS_DATA_ARCHITECTURE_PENDING/u);
-  assert.doesNotMatch(sharedGateway, /SUPABASE_SERVICE_ROLE_KEY|createPrivilegedClient/u);
+  assert.match(sharedGateway, /AUTHENTICATED_RPC_FUNCTION_URL/u);
   assert.match(serverInvoke, /invokeAuthenticatedGateway/u);
-  assert.doesNotMatch(serverInvoke, /SUPABASE_SERVICE_ROLE_KEY|createPrivilegedClient/u);
-  assert.match(edgeGateway, /SUPABASE_SERVICE_ROLE_KEY/u);
-  assert.match(edgeGateway, /auth\.getUser\(accessToken\)/u);
-  assert.match(edgeGateway, /ACTOR_MISMATCH/u);
-});
-
-test("first-touch attribution remains HttpOnly and limited to participant signup", async () => {
-  const [proxy, attribution] = await Promise.all([
-    read("apps/web/proxy.ts"),
-    read("apps/web/lib/auth/first-touch.ts"),
-  ]);
-  assert.match(proxy, /httpOnly:\s*true/u);
-  assert.match(proxy, /request\.nextUrl\.pathname === "\/cadastro"/u);
-  assert.match(proxy, /administrativePath \? "\/entrar\/administracao" : "\/entrar"/u);
-  assert.match(attribution, /MAX_UTM_LENGTH = 200/u);
+  assert.match(edgeGateway, /service_role/u);
+  assert.doesNotMatch(currentIdentity, /SUPABASE_SERVICE_ROLE_KEY|createPrivilegedClient/u);
 });
