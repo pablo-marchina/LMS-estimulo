@@ -1,10 +1,13 @@
--- Replace the newly introduced opaque E14 helper definition without rewriting
--- the already applied migration. PostgreSQL does not allow CREATE OR REPLACE
--- to rename an input parameter, so the original argument name `a` is retained
--- while the implementation and function comment make its meaning explicit.
+-- Explicitly replace the opaque helper introduced earlier in the migration
+-- history. PostgreSQL cannot rename input parameters through CREATE OR REPLACE,
+-- so the old function is dropped and recreated with a descriptive contract.
+-- pg_depend inspection confirms that no stored object depends on this function;
+-- callers resolve it by signature at execution time.
 
-create or replace function app_private.e14_dimension_scores_c(
-  a uuid
+drop function if exists app_private.e14_dimension_scores_c(uuid);
+
+create function app_private.e14_dimension_scores_c(
+  p_session_id uuid
 )
 returns jsonb
 language sql
@@ -17,7 +20,7 @@ as $$
       response.item_id,
       response.response_value
     from diagnostics.responses response
-    where response.session_id = a
+    where response.session_id = p_session_id
     order by response.item_id, response.revision desc
   ), dimension_scores as (
     select
