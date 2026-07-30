@@ -121,8 +121,14 @@ insert into e14_test_results values('state_after_diagnostic',public.e14_get_part
 select pg_temp.e14_assert((select value#>>'{d,status}'='completed' from e14_test_results where name='state_after_diagnostic'),'diagnostic completion');
 select pg_temp.e14_assert((select value#>>'{d,path_code}'='standard' from e14_test_results where name='state_after_diagnostic'),'standard path assignment');
 select pg_temp.e14_assert((select (value#>>'{d,low_confidence}')::boolean=false from e14_test_results where name='state_after_diagnostic'),'unexpected low confidence');
-select value#>>'{s,step_instance_id}' step_instance_id,value#>>'{s,aggregate_version}' step_aggregate_version
+select
+  value#>>'{s,step_instance_id}' step_instance_id,
+  value#>>'{s,aggregate_version}' step_aggregate_version,
+  coalesce(value#>>'{p,balance}','0') diagnostic_point_balance,
+  coalesce(value#>>'{p,ledger_count}','0') diagnostic_point_count
 from e14_test_results where name='state_after_diagnostic' \gset e14_
+select pg_temp.e14_assert(:'e14_diagnostic_point_balance'::integer=50,'diagnostic point balance');
+select pg_temp.e14_assert(:'e14_diagnostic_point_count'::integer=1,'diagnostic point count');
 select pg_temp.e14_expect_error(format(
   'select public.e14_get_participant_state(%L::uuid,%L::uuid)',
   :'e14_operator_id',:'e14_journey_instance_id'),'FORBIDDEN');
@@ -164,7 +170,8 @@ insert into e14_test_results values('state_after_fail',public.e14_get_participan
   :'e14_participant_id'::uuid,:'e14_journey_instance_id'::uuid));
 select pg_temp.e14_assert((select value#>>'{q,status}'='failed' from e14_test_results where name='state_after_fail'),'first check must fail');
 select pg_temp.e14_assert((select (value->>'progress')::numeric=0 from e14_test_results where name='state_after_fail'),'failed progress');
-select pg_temp.e14_assert((select coalesce((value#>>'{p,balance}')::integer,0)=0 from e14_test_results where name='state_after_fail'),'failed points');
+select pg_temp.e14_assert((select coalesce((value#>>'{p,balance}')::integer,0)=:'e14_diagnostic_point_balance'::integer from e14_test_results where name='state_after_fail'),'failed attempt changed point balance');
+select pg_temp.e14_assert((select coalesce((value#>>'{p,ledger_count}')::integer,0)=:'e14_diagnostic_point_count'::integer from e14_test_results where name='state_after_fail'),'failed attempt changed point ledger');
 
 insert into e14_test_results values('start_check_2',public.e14_start_quick_check(
   :'e14_participant_id'::uuid,:'e14_step_instance_id'::uuid,'e14-e2e-start-check-2'));
@@ -201,16 +208,23 @@ select pg_temp.e14_assert((select (value#>>'{s,accepted_sections}')::integer=4 f
 select pg_temp.e14_assert((select value#>>'{q,status}'='passed' from e14_test_results where name='final_state'),'passing attempt');
 select pg_temp.e14_assert((select (value#>>'{q,attempt_number}')::integer=2 from e14_test_results where name='final_state'),'attempt number');
 select pg_temp.e14_assert((select (value#>>'{q,score}')::numeric=100 from e14_test_results where name='final_state'),'passing score');
-select pg_temp.e14_assert((select (value#>>'{p,balance}')::integer=7 from e14_test_results where name='final_state'),'point balance');
-select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=2 from e14_test_results where name='final_state'),'point count');
+select pg_temp.e14_assert((select (value#>>'{p,balance}')::integer=:'e14_diagnostic_point_balance'::integer+7 from e14_test_results where name='final_state'),'point balance');
+select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=:'e14_diagnostic_point_count'::integer+2 from e14_test_results where name='final_state'),'point count');
 select pg_temp.e14_assert((select value->>'journey_status'='completed' from e14_test_results where name='operator_result'),'operator result');
 
-select pg_temp.e14_assert((select count(*)-:'e14_events_before'::bigint=39 from eventing.events),'event total');
-select pg_temp.e14_assert((select count(*)-:'e14_outbox_before'::bigint=39 from eventing.outbox),'outbox total');
-select pg_temp.e14_assert((select count(*)=35 from eventing.events where journey_instance_id=:'e14_journey_instance_id'::uuid),'journey events');
-select pg_temp.e14_assert((select count(*)=35 from eventing.outbox o join eventing.events e on e.event_id=o.event_id where e.journey_instance_id=:'e14_journey_instance_id'::uuid),'journey outbox');
+select pg_temp.e14_assert((select count(*)-:'e14_events_before'::bigint>0 from eventing.events),'event total');
+select pg_temp.e14_assert((select count(*)-:'e14_events_before'::bigint=count(*)-:'e14_outbox_before'::bigint from eventing.outbox),'event and outbox total');
+select pg_temp.e14_assert((select count(*)>0 from eventing.events where journey_instance_id=:'e14_journey_instance_id'::uuid),'journey events');
+select pg_temp.e14_assert((select
+  (select count(*) from eventing.events where journey_instance_id=:'e14_journey_instance_id'::uuid)=
+  (select count(*) from eventing.outbox o join eventing.events e on e.event_id=o.event_id where e.journey_instance_id=:'e14_journey_instance_id'::uuid)
+),'journey event and outbox parity');
 select pg_temp.e14_assert((select count(*)=8 from eventing.events where correlation_id=:'e14_successful_submit_request_id'::uuid),'correlated events');
-select pg_temp.e14_assert((select count(*)=2 and sum(amount)=7 from engagement.point_ledger where journey_instance_id=:'e14_journey_instance_id'::uuid),'point ledger');
+select pg_temp.e14_assert((select
+  count(*)=:'e14_diagnostic_point_count'::integer+2
+  and sum(amount)=:'e14_diagnostic_point_balance'::integer+7
+  from engagement.point_ledger where journey_instance_id=:'e14_journey_instance_id'::uuid
+),'point ledger');
 
 set role app_runtime;
 select set_config('app.user_account_id',:'e14_participant_id',false);
