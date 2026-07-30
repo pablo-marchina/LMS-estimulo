@@ -22,15 +22,21 @@
 
 <!-- Diferencie código, teste local, CI e verificação no ambiente. Não inclua segredos ou dados pessoais reais. -->
 
+- SHA final avaliado:
+- Workflows obrigatórios no SHA final:
+- Artefatos ou manifestos:
+
 ### Qualidade
 
 - [ ] Instalação executada com o método canônico do repositório
-- [ ] Lint aprovado ou bloqueio explicitamente documentado
+- [ ] Lint aprovado
 - [ ] Typecheck aprovado
 - [ ] Testes relevantes aprovados
 - [ ] Build de produção concluído
 - [ ] Documentação sincronizada com o runtime
-- [ ] Nenhum mock, fixture ou teste foi apresentado como prova de produção
+- [ ] Todos os workflows obrigatórios estão verdes no SHA final
+- [ ] Nenhum resultado de outro SHA foi usado como aprovação
+- [ ] Nenhum mock, fixture ou preview foi apresentado como prova de produção
 
 ### Banco e eventos
 

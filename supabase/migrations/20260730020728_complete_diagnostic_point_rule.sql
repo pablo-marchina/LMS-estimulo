@@ -17,20 +17,22 @@ begin
     raise exception 'ESTIMULO_ORGANIZATION_NOT_FOUND';
   end if;
 
-  select version.eligibility_rule_version_id
+  select version.id
     into v_eligibility_rule_version_id
-  from engagement.point_rule_definitions definition
-  join engagement.point_rule_versions version
-    on version.point_rule_definition_id = definition.id
+  from orchestration.rule_definitions definition
+  join orchestration.rule_versions version
+    on version.rule_definition_id = definition.id
   where definition.owner_organization_id = v_organization_id
-    and definition.code = 'choose_application_objective'
+    and definition.code = 'e14_always_eligible'
+    and definition.rule_type = 'eligibility'
     and definition.status = 'active'
     and version.status = 'published'
+    and version.published_at is not null
   order by version.version_number desc
   limit 1;
 
   if v_eligibility_rule_version_id is null then
-    raise exception 'DEFAULT_POINT_ELIGIBILITY_RULE_NOT_FOUND';
+    raise exception 'ALWAYS_ELIGIBLE_RULE_NOT_FOUND';
   end if;
 
   select definition.id

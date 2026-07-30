@@ -1,47 +1,34 @@
 # Contratos públicos de RPC
 
-**Versão:** 2.0  
-**Data:** 2026-07-10  
-**Status:** fronteira estrutural e comportamento reproduzidos
+**Revisado em:** 2026-07-30  
+**Status:** fronteira versionada; conformidade avaliada por replay no SHA atual
 
 ## Escopo
 
-A camada pública legada contém 18 RPCs consumidos exclusivamente pelo backend em `apps/web/lib/journey-runtime/rpc.ts`:
+A camada de jornada em `apps/web/lib/journey-runtime/rpc.ts` consome uma superfície PostgreSQL versionada de comandos, consultas e resolução de identidade.
 
-- 11 comandos transacionais;
-- 6 consultas;
-- 1 operação de resolução de identidade.
-
-O navegador não chama o banco diretamente:
+O navegador não chama essa superfície diretamente:
 
 ```text
-browser → Next.js server action/BFF → client privilegiado → RPC PostgreSQL
+browser → Next.js server action/BFF → gateway privilegiado → RPC PostgreSQL
 ```
 
 Os nomes remotos `e14_*` permanecem por compatibilidade com o banco aplicado. Eles não definem a nomenclatura dos módulos da aplicação.
 
-## Contrato congelado
+## Fonte de verdade
 
-O artefato `public-rpc-contracts-v1.json` fixa:
+O contrato legível por máquina é [`public-rpc-contracts-v1.json`](public-rpc-contracts-v1.json). Ele fixa:
 
 - nomes e assinaturas PostgreSQL;
-- quantidade de RPCs;
-- argumentos e retorno por fingerprint do catálogo;
-- linguagem, volatilidade e corpo SQL;
-- `SECURITY DEFINER`;
-- `search_path=pg_catalog`;
-- grants para `postgres`, `service_role` e `app_worker`;
-- bloqueio de `PUBLIC`, `anon` e `authenticated`;
+- quantidade e fingerprint da superfície;
+- `SECURITY DEFINER` e `search_path=pg_catalog`;
+- grants obrigatórios e grantees proibidos;
 - correspondência entre métodos TypeScript e RPCs;
-- classificação entre comandos, consultas e identidade.
+- classificação entre comandos, consultas e identidade;
+- argumentos opacos ainda preservados por compatibilidade;
+- códigos de erro observáveis.
 
-Fingerprint autorizado:
-
-```text
-b751369fb873eb50a423ed7d74614a6c75e4480058e79e6a63006ec10920336f
-```
-
-Alterar apenas o baseline para fazer o CI passar é proibido.
+Este documento não replica contagens, fingerprint ou estado de execução. Alterar apenas o contrato JSON para fazer o CI passar é proibido; toda mudança exige migration, consumidor, justificativa e replay comportamental.
 
 ## Envelope de comandos
 
@@ -52,45 +39,27 @@ replayed
 data
 ```
 
-A camada TypeScript propaga o código PostgreSQL por `JourneyRpcError.code`. O fallback `JOURNEY_RPC_ERROR` é usado apenas quando o provedor não entrega código.
+A camada TypeScript propaga o código PostgreSQL por `JourneyRpcError.code`. O fallback `JOURNEY_RPC_ERROR` é usado somente quando o provider não entrega código.
 
-## Erros comprovados
+## Segurança
 
-- `PUBLISHED_VERSION_IMMUTABLE`;
-- `AGGREGATE_VERSION_CONFLICT`;
-- `IDEMPOTENCY_KEY_REUSED`;
-- `FORBIDDEN`.
+- a função PostgreSQL valida autorização e invariantes de domínio;
+- o gateway valida sessão, identidade interna e correspondência do ator;
+- `PUBLIC`, `anon` e `authenticated` não recebem execução direta;
+- aplicação e gateway devem usar exatamente a superfície permitida;
+- mensagens internas do banco não são devolvidas ao cliente;
+- comandos exigem idempotency key e envelope transacional.
 
-## Compatibilidade técnica
+## Compatibilidade
 
-Oito RPCs ainda expõem argumentos opacos:
-
-- `e14_acknowledge_section`;
-- `e14_complete_diagnostic`;
-- `e14_get_operator_result`;
-- `e14_get_participant_state`;
-- `e14_record_quick_check_answer`;
-- `e14_start_activity`;
-- `e14_start_quick_check`;
-- `e14_submit_quick_check`.
-
-Essa realidade permanece congelada para impedir divergência silenciosa. A aplicação constrói os aliases exclusivamente pela fronteira `legacyRpcArguments`. Substituições futuras devem manter compatibilidade até que todos os consumidores tenham migrado.
+Os argumentos opacos listados no contrato JSON permanecem contidos pela fronteira `legacyRpcArguments`. Novos helpers ou argumentos opacos são proibidos. Uma substituição futura deve preservar compatibilidade até a migração de todos os consumidores.
 
 ## Validação
 
 ```bash
 npm run validate:public-rpc-contracts
-npm run test:backend-e2e
+npm run validate:rpc-gateway-coverage
+npm run test:database
 ```
 
-## Estado comprovado
-
-```text
-public_rpc_count = 18
-public_rpc_database_fingerprint_matches = true
-public_rpc_grants_match = true
-public_rpc_security_boundary_matches = true
-application_rpc_mapping_matches = true
-public_rpc_contracts_passed = true
-backend_e2e_replayed = true
-```
+A validação compara o contrato JSON com o catálogo reconstruído desde zero, o código da aplicação e o gateway. O resultado pertence aos artefatos do workflow do SHA avaliado.

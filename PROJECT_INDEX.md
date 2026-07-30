@@ -1,6 +1,6 @@
 # Plataforma Estímulo — índice canônico
 
-Este índice aponta para a documentação permanente. Requisitos, decisões, estado implementado e bloqueadores são mantidos diretamente nos documentos correspondentes.
+Este índice aponta para a documentação permanente. Requisitos, decisões, estado implementado e bloqueadores são mantidos diretamente nos documentos correspondentes. Resultados transitórios de CI, SHAs, contagens e métricas de um candidato ficam nos artefatos do workflow e no pull request correspondente, não em documentos permanentes.
 
 ## Entrada
 
@@ -58,12 +58,11 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - [Portas e adapters de provedores](docs/architecture/PROVIDER_PORTS_AND_ADAPTERS.md)
 - [Migrations executáveis](docs/architecture/EXECUTABLE_MIGRATIONS.md)
 - [Observabilidade e alertas](docs/architecture/OBSERVABILITY_AND_ALERTS.md)
-- [Arquitetura lógica de filas](docs/architecture/QUEUE_ARCHITECTURE.md)
-- [Scheduler e dispatcher](docs/architecture/SCHEDULER_DISPATCHER_ARCHITECTURE.md)
+- [Contrato lógico de processamento assíncrono](docs/architecture/QUEUE_ARCHITECTURE.md)
 - [Outbox transacional](docs/architecture/TRANSACTIONAL_OUTBOX.md)
 - [Reconciliação e recuperação](docs/architecture/RECONCILIATION_AND_RECOVERY.md)
 - [Implementação de RLS](docs/architecture/RLS_IMPLEMENTATION.md)
-- [Arquitetura lógica de armazenamento](docs/architecture/STORAGE_ARCHITECTURE.md)
+- [Contrato lógico de armazenamento](docs/architecture/STORAGE_ARCHITECTURE.md)
 
 ## Dados e banco
 
@@ -111,8 +110,6 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - [Contenção de helpers opacos](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
 - [Contratos públicos de RPC](docs/implementation/PUBLIC_RPC_CONTRACTS.md)
 - [Contrato público de RPC v1](docs/implementation/public-rpc-contracts-v1.json)
-- [Lacuna de runtime](docs/implementation/RUNTIME_GAP.md)
-- [Delta de schema](docs/implementation/SCHEMA_DELTA.md)
 - [Bloqueadores da entrega](docs/implementation/DELIVERY_BLOCKERS.md)
 
 ## Operação e release
@@ -149,7 +146,8 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - especificações de produto descrevem requisitos aprovados ou propostas identificadas;
 - decisões registram apenas escolhas vigentes;
 - documentos de implementação descrevem somente o código versionado;
-- bloqueadores descrevem o que ainda falta;
+- bloqueadores descrevem lacunas ativas, sem congelar SHAs, contagens ou resultados transitórios;
+- evidências de um candidato pertencem aos workflows, manifestos e pull request daquele SHA;
 - Supabase e Vercel são evidência de desenvolvimento, teste e preview, não de produção;
 - `Dockerfile.lambda`, mocks, fixtures e smoke tests não constituem prova de produção;
 - serviços AWS específicos não podem ser tratados como decididos antes de ADR aprovado.

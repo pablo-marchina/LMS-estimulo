@@ -28,12 +28,13 @@ test("participant authentication exposes password recovery and accessible visibi
 });
 
 test("diagnostic completion persists answers, result navigation and idempotent points", async () => {
-  const [page, stepper, action, result, migration] = await Promise.all([
+  const [page, stepper, action, result, migration, reconciliation] = await Promise.all([
     source("apps/web/app/empreendedor/diagnostico/page.tsx"),
     source("apps/web/components/diagnostic-stepper.tsx"),
     source("apps/web/app/empreendedor/diagnostico/actions.ts"),
     source("apps/web/app/empreendedor/resultado/page.tsx"),
     source("supabase/migrations/20260730020728_complete_diagnostic_point_rule.sql"),
+    source("supabase/migrations/20260730113000_normalize_diagnostic_point_rule_eligibility.sql"),
   ]);
 
   assert.match(page, /DiagnosticStepper/u);
@@ -44,8 +45,11 @@ test("diagnostic completion persists answers, result navigation and idempotent p
   assert.match(action, /p_action_code: "complete_diagnostic"/u);
   assert.match(action, /\/empreendedor\/resultado\?journey=/u);
   assert.match(result, /diagnostico === "concluido"/u);
+  assert.match(migration, /e14_always_eligible/u);
   assert.match(migration, /'maximum', 1/u);
   assert.match(migration, /diagnostic\.session\.completed/u);
+  assert.match(reconciliation, /COMPLETE_DIAGNOSTIC_POINT_RULE_VERSION_NOT_FOUND/u);
+  assert.match(reconciliation, /e14_always_eligible/u);
 });
 
 test("certificate wallet and templates remain discoverable after upload", async () => {
@@ -123,8 +127,9 @@ test("migration boundary preserves release hardening and consolidated correction
     "20260730021001_operator_certificate_template_catalog.sql",
     "20260730021926_safe_library_content_archiving.sql",
     "20260730022413_safe_admin_track_archiving.sql",
+    "20260730113000_normalize_diagnostic_point_rule_eligibility.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260730022413_safe_admin_track_archiving\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260730113000_normalize_diagnostic_point_rule_eligibility\.sql'/u);
 });

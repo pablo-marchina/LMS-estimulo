@@ -1,121 +1,144 @@
-# Portas e adapters — Supabase em teste, AWS em produção
+# Portas e adapters de provedores
 
-**Versão:** 0.1  
-**Status:** baseline para E12
+**Revisado em:** 2026-07-30  
+**Estado:** portas lógicas vigentes; adapters AWS pendentes de arquitetura
 
 ## Objetivo
 
-Impedir que regras de domínio, casos de uso ou contratos de eventos dependam diretamente de Supabase ou AWS.
+Impedir que regras de domínio, casos de uso, contratos de eventos ou componentes de interface dependam diretamente de Supabase ou de serviços AWS ainda não decididos.
 
-## Portas obrigatórias
+## Regra de dependência
+
+```text
+domínio
+  ↑
+casos de uso
+  ↑
+portas lógicas
+  ↑
+adapters de ambiente
+```
+
+SDKs e semânticas físicas ficam exclusivamente nos adapters.
+
+## Portas lógicas
 
 ### IdentityProvider
 
 Responsabilidades:
 
-- validar token externo;
+- validar identidade externa;
 - retornar identidade normalizada;
-- não criar usuário de domínio automaticamente;
-- expor `provider`, `subject`, `email_verified` e claims permitidas;
-- nunca expor o token bruto ao domínio.
+- expor somente claims permitidas;
+- não transformar subject externo em chave de domínio;
+- nunca expor token bruto aos casos de uso.
 
-Adapters:
+Estado:
 
-- `SupabaseIdentityAdapter` em desenvolvimento/teste;
-- `CognitoIdentityAdapter` em staging/produção.
+- adapter Supabase disponível em desenvolvimento, teste e preview;
+- adapter AWS não definido nem implementado.
+
+### DataProvider
+
+Responsabilidades:
+
+- executar comandos e consultas autorizados;
+- preservar transações, idempotência e códigos públicos de erro;
+- aplicar identidade, organização e RBAC;
+- não vazar conexão, SQL ou provider aos módulos de domínio.
+
+Estado:
+
+- PostgreSQL/RPC do ambiente Supabase atende o runtime de teste;
+- tecnologia, conexão e adapter AWS permanecem pendentes.
 
 ### ObjectStorageProvider
 
 Responsabilidades:
 
-- emitir upload/download assinados;
-- confirmar objeto, hash, tamanho e MIME;
-- mover/quarentenar evidências;
-- excluir ou reter conforme política;
-- não expor bucket físico ao domínio.
+- autorizar upload e acesso temporário;
+- confirmar metadados e vínculo de domínio;
+- aplicar retenção, arquivamento e exclusão;
+- reconciliar registro lógico e objeto físico;
+- não expor localização ou credencial física ao domínio.
 
-Adapters:
+Estado:
 
-- `SupabaseStorageAdapter` em teste;
-- `S3StorageAdapter` em AWS.
+- adapter Supabase atende desenvolvimento, teste e preview;
+- provider, upload, verificação e lifecycle AWS permanecem pendentes.
 
-### QueueProvider
+### AsyncWorkProvider
 
 Responsabilidades:
 
-- publicar mensagem com chave de idempotência;
-- receber e confirmar processamento;
-- aplicar retry e dead-letter;
-- preservar correlação e trace context.
+- publicar trabalho com chave idempotente;
+- claimar, renovar, concluir ou solicitar retry;
+- isolar dead letters e permitir redrive autorizado;
+- preservar correlação, observabilidade e reconciliação.
 
-Adapters:
+Estado:
 
-- `InMemoryQueueAdapter` apenas para testes unitários;
-- adapter de teste compartilhado a definir;
-- `SqsQueueAdapter` em AWS.
+- não existe provider assíncrono de produção aprovado;
+- estruturas históricas de banco ou teste não constituem adapter AWS.
 
 ### SecretsProvider
 
 Responsabilidades:
 
-- ler segredos por nome lógico;
-- não disponibilizar listagem ampla;
-- permitir rotação sem recompilar a aplicação.
+- resolver segredo por nome lógico e escopo;
+- impedir listagem ampla;
+- permitir rotação sem recompilar a aplicação;
+- nunca expor segredo ao cliente ou ao log.
 
-Adapters:
+Estado:
 
-- ambiente local/CI;
-- AWS Secrets Manager/SSM em staging/produção.
+- desenvolvimento e CI usam injeção de ambiente controlada;
+- mecanismo institucional de produção permanece pendente.
 
 ### TelemetryProvider
 
 Responsabilidades:
 
 - logs estruturados;
-- métricas;
-- spans e propagação de contexto;
-- redaction de dados pessoais e segredos.
+- métricas e tracing;
+- propagação de correlação;
+- redaction de dados pessoais, tokens e segredos;
+- suporte a SLOs, alertas e incidentes.
 
-Adapters:
+Estado:
 
-- console/OTLP de teste;
-- OpenTelemetry para CloudWatch/X-Ray na AWS.
-
-## Regras de dependência
-
-```text
-Domínio
-  ↑
-Casos de uso
-  ↑
-Portas
-  ↑
-Adapters Supabase/AWS
-```
-
-É proibido:
-
-- importar SDK do Supabase em `domain` ou `application`;
-- importar AWS SDK em `domain` ou `application`;
-- usar `auth.uid()` como identidade de domínio;
-- salvar URL física de bucket como contrato de negócio;
-- usar semântica de SQS no contrato de evento;
-- acoplar migrations a extensões exclusivas não disponíveis no RDS sem decisão explícita.
+- console e evidências de CI atendem o desenvolvimento;
+- plataforma operacional AWS permanece pendente.
 
 ## Identidade interna
 
-A identidade externa é mapeada por:
+A identidade externa é vinculada a uma conta interna por contrato equivalente a:
 
 ```text
 (provider, external_subject) → iam.user_accounts.id
 ```
 
-O `sub` do Cognito e o subject do Supabase nunca serão a chave primária principal da plataforma.
+Nenhum identificador externo se torna automaticamente a chave primária da plataforma.
 
-## Critérios de aceite
+## Proibições
 
-- mesmos casos de uso executam com adapters Supabase e AWS;
-- contratos de domínio não mudam entre ambientes;
-- migrations PostgreSQL são únicas;
-- testes de contrato passam para adapters em memória;
-- staging AWS valida as diferenças físicas antes de produção.
+- importar SDK de provider no domínio ou nos casos de uso;
+- usar identidade do provider como identidade de negócio;
+- salvar URL, fila, bucket, ARN, receipt ou endpoint físico em contrato de domínio;
+- acoplar eventos à semântica de um serviço específico;
+- usar Supabase como fallback no provider AWS;
+- declarar adapter AWS implementado sem código, teste e ambiente correspondente;
+- escolher serviço AWS em documentação antes de ADR aprovado.
+
+## Critérios de aceite de um adapter AWS futuro
+
+1. ADR da fronteira e do provider;
+2. implementação atrás da porta existente ou revisada;
+3. contrato lógico preservado;
+4. testes positivos, negativos e de falha;
+5. segurança e isolamento aprovados;
+6. observabilidade e operação definidas;
+7. capacidade no staging AWS;
+8. migração e rollback exercitados.
+
+Até esses critérios, a fronteira de produção permanece fail-closed.

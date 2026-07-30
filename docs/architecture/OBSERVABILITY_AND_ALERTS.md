@@ -1,59 +1,102 @@
 # Observabilidade e alertas operacionais
 
-**Versão:** 1.0  
-**Data:** 2026-07-08  
-**Estado:** implementado; thresholds provisórios
+**Revisado em:** 2026-07-30  
+**Estado:** requisitos lógicos definidos; plataforma operacional AWS pendente
 
-## Dados persistidos
+## Objetivo
 
-- `scheduler_runs`: cada dispatch e reconciliação;
-- `worker_dispatch_tokens`: emissão, claim e resposta HTTP;
-- `queue_metric_snapshots`: série temporal de saúde da fila;
-- `queue_alert_policies`: regras versionáveis por configuração;
-- `operational_alerts`: abertura, reconhecimento e resolução.
+Permitir detectar, explicar e responder a falhas do produto, do runtime e das dependências sem registrar dados pessoais, tokens, segredos ou conteúdo proibido.
 
-## Métricas
+Este documento não escolhe serviço de logs, métricas, tracing, alertas ou incidentes. Essas decisões dependem da futura arquitetura AWS.
 
-- profundidade da source queue;
-- idade da mensagem mais antiga;
-- total histórico de mensagens;
-- receipts em voo;
-- receipts expirados em cinco minutos;
-- dispatches HTTP com falha;
-- falhas dos jobs pg_cron;
-- dead letters abertas;
-- arquivos `scan_pending` e `release_pending`;
-- idade do `scan_pending` mais antigo;
-- jobs por estado.
+## Estado atual
 
-## Policies atuais
+- aplicação e gateway emitem logs estruturados e correlação no ambiente de teste;
+- headers e `Server-Timing` permitem observar partes do request;
+- GitHub Actions preserva artefatos de build, replay, scan e capacidade;
+- não existe plataforma de observabilidade de produção aprovada;
+- métricas históricas do scheduler, fila de scan ou worker removido não representam o runtime atual.
 
-| Alerta | Warning | Critical |
-|---|---:|---:|
-| Queue length | 20 | 100 |
-| Oldest message age | 120 s | 300 s |
-| Open dead letters | 1 | 5 |
-| Expired receipts/5 min | 3 | 10 |
-| Dispatch failures/5 min | 1 | 3 |
-| Cron failures/5 min | 1 | 3 |
-| Oldest scan pending | 300 s | 900 s |
+## Sinais mínimos do runtime
 
-Os valores são guardrails iniciais, não SLAs validados. Devem ser recalibrados com volume, duração p95/p99, custo e criticidade reais.
+### HTTP e aplicação
 
-## Ciclos
+- volume por rota e operação;
+- taxa de erro por classe e código público;
+- latência p50, p95 e p99;
+- rejeições por limite, timeout ou backpressure;
+- liveness e readiness;
+- versão, SHA e digest em execução;
+- autenticação, autorização e revogação sem registrar credenciais.
 
-- métricas e alertas: a cada minuto;
-- reconciliação: a cada minuto;
-- limpeza de históricos: diariamente às 03:17 UTC;
-- retenção: tokens 2 dias; snapshots, scheduler runs e cron runs 30 dias.
+### Banco e domínio
 
-## Prova de alerta
+- latência, erro e timeout de comandos e consultas;
+- conexões e saturação;
+- conflitos de versão e idempotência;
+- violações de constraint, RLS ou RBAC;
+- eventos e outbox pendentes;
+- falhas de reconciliação;
+- crescimento anormal de tabelas ou índices críticos.
 
-A prova concorrente criou 20 dead letters controladas. O alerta `dead_letters_open` abriu como `critical`, valor 20. Depois da limpeza e novo snapshot, foi resolvido automaticamente. O estado final possui zero alertas ativos.
+### Arquivos
 
-A API operacional é server-side:
+- uploads iniciados, confirmados, abortados e órfãos;
+- falhas de validação e autorização;
+- emissão e uso de acessos temporários;
+- divergência entre objeto físico e registro lógico;
+- retenção e exclusão pendentes.
 
-- `queue_get_operational_status`;
-- `queue_acknowledge_alert`.
+### Processamento assíncrono futuro
 
-`anon` e `authenticated` não têm EXECUTE nessas RPCs.
+Quando houver provider aprovado:
+
+- backlog e idade do trabalho mais antigo;
+- trabalhos em voo, retries e dead letters;
+- taxa de sucesso e duração por consumidor;
+- deduplicação e redrive;
+- saturação e backpressure;
+- reconciliação e perda potencial.
+
+## Logs e tracing
+
+Todo registro deve:
+
+- possuir timestamp, ambiente, serviço, versão e request/correlation ID;
+- usar códigos de erro estáveis;
+- evitar CPF, tokens, cookies, URLs assinadas e payload arbitrário;
+- aplicar redaction antes da saída;
+- permitir correlação entre request, transação, evento, outbox e integração;
+- respeitar classificação, retenção e acesso.
+
+## Alertas
+
+Alertas devem representar sintomas acionáveis, não qualquer evento isolado. Categorias mínimas:
+
+- indisponibilidade ou readiness fechada;
+- aumento sustentado de erro ou latência;
+- saturação de recurso ou dependência;
+- backlog ou idade acima do limite;
+- falha de integração ou reconciliação;
+- violação de segurança ou isolamento;
+- backup, restore ou rotação fora da política;
+- divergência entre SHA/digest aprovado e implantado.
+
+Thresholds finais serão definidos com SLOs, capacidade e operação. Valores de teste ficam nos artefatos da release, não neste documento.
+
+## Operação
+
+Antes do Gate B, devem existir:
+
+1. dashboards por SLO e jornada crítica;
+2. alertas com proprietário, severidade e janela;
+3. on-call e escalonamento;
+4. runbooks de diagnóstico, degradação e reconciliação;
+5. retenção e acesso aprovados;
+6. testes de alerta e resposta;
+7. correlação com deploy e mudança;
+8. revisão periódica de ruído e cobertura.
+
+## Critério de aceite
+
+A observabilidade de produção somente pode ser marcada como pronta quando falhas representativas forem injetadas no staging AWS e detectadas dentro dos tempos aprovados, com informação suficiente para triagem e sem vazamento de dados sensíveis.

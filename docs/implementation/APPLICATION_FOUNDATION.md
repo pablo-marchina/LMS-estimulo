@@ -1,7 +1,7 @@
 # Fundação atual da aplicação
 
-**Revisado em:** 2026-07-29  
-**Status:** candidato de software em validação; produção AWS bloqueada por arquitetura
+**Revisado em:** 2026-07-30  
+**Status:** implementação atual documentada; Gate A é avaliado por SHA; produção AWS bloqueada por arquitetura
 
 ## Forma do sistema
 
@@ -67,17 +67,25 @@ No provider AWS:
 
 ### Participante
 
-- cadastro, confirmação e login no adapter de teste;
+- cadastro, aceite versionado de termos e política, confirmação e login;
+- recuperação e redefinição de senha sem revelar existência de conta;
 - conclusão de perfil com CPF protegido;
-- home, jornadas, atividades, diagnóstico, perfil, biblioteca e conquistas;
-- progresso, avaliações, práticas, comentários, arquivos, pontos e credenciais.
+- home, jornadas, atividades, diagnóstico, resultado, perfil, biblioteca e conquistas;
+- diagnóstico guiado, uma pergunta por etapa, com conclusão e visualização acessível dos resultados;
+- progresso, avaliações, práticas, comentários e arquivos;
+- pontos, recompensas, selos, certificados internos e credenciais externas;
+- ajuda global, página de suporte e textos legais operacionais.
 
 ### Administração
 
-- entrada separada pelo provider de teste;
-- e-mail confirmado `@estimulo.org`;
+- entrada separada pelo provider de teste e OAuth corporativo;
+- contas `@estimulo.org` orientadas ao acesso federado, sem senha temporária;
 - organização interna e capacidades RBAC;
-- produto, jornadas, trilhas, aulas, diagnóstico, CMS, gamificação, engajamento, biblioteca, usuários, relatórios e operação.
+- produto, jornadas, trilhas, aulas, diagnóstico, CMS, gamificação, engajamento, biblioteca, usuários, relatórios e operação;
+- templates persistentes de certificado e posicionamento visual;
+- arquivamento seguro de conteúdos de biblioteca e trilhas, preservando histórico e bloqueando dependências;
+- recuperação de acesso por e-mail para contas não federadas;
+- diferenciação explícita entre catálogo vazio e indisponibilidade do backend.
 
 A existência das telas não aprova conteúdo, metodologia, identidade institucional, privacidade ou integração externa para usuários reais.
 
@@ -103,11 +111,13 @@ apps/web/lib/configurable-product/
 
 - `supabase/migrations/` é o único histórico executável;
 - `supabase/canonical-migrations/` contém baselines recuperadas e manifests;
-- replay estrutural não depende de conteúdo editorial mutável;
+- replay estrutural não depende de conteúdo editorial, contas ou estado remoto não versionado;
+- correções de ambiente já migrado usam migrations aditivas e idempotentes;
 - testes comportamentais usam fixtures controladas depois do replay;
 - contratos públicos permanecem em `public-rpc-contracts-v1.json`;
-- após o replay, os gates aceitam somente suites SQL de teste;
-- idempotência, constraints, RLS e autorização devem ser provadas sob concorrência.
+- após o replay, os gates aceitam somente suítes SQL de teste;
+- idempotência, constraints, RLS, RBAC e autorização devem ser provadas sob concorrência;
+- regras event-driven, templates de certificado e operações de arquivamento pertencem ao histórico canônico.
 
 A tecnologia e a operação do banco AWS ainda não estão decididas. Qualquer prova futura deve cobrir replay, equivalência, extensões, roles, grants, RLS, conexão, failover, backup e restore no desenho aprovado.
 
@@ -142,11 +152,11 @@ npm run test:secret-scanning
 npm run verify:supabase
 ```
 
-O CI também deve reconstruir o banco desde zero, construir e inspecionar a imagem e preservar evidências associadas ao mesmo SHA.
+O CI também deve reconstruir o banco desde zero, construir e inspecionar a imagem e preservar evidências associadas ao mesmo SHA. O status de um candidato não é mantido manualmente neste documento.
 
 ## Capacidade e performance
 
-O harness de carga produz throughput, taxa de erro e percentis. O cenário curto de `/api/health/live` valida apenas o harness e o processo HTTP. Prontidão multiusuário requer, no ambiente AWS definido:
+O harness de carga produz throughput, taxa de erro e percentis. O cenário curto de `/api/health/live` valida o artefato e o processo HTTP sob limites definidos. Prontidão multiusuário requer, no ambiente AWS decidido:
 
 - leitura e escrita autenticadas;
 - diagnóstico e progresso concorrentes;
@@ -157,6 +167,8 @@ O harness de carga produz throughput, taxa de erro e percentis. O cenário curto
 - ramp, spike e soak;
 - métricas de memória, conexões, backlog, erros e custo.
 
+Resultados numéricos de um candidato ficam nos artefatos do workflow.
+
 ## Limites atuais
 
 Ainda não estão aprovados ou comprovados:
@@ -164,12 +176,12 @@ Ainda não estão aprovados ou comprovados:
 - arquitetura AWS completa;
 - adapters e infraestrutura de produção;
 - E2E transacional no ambiente definitivo;
-- perfil de carga, limites e SLOs validados;
+- perfil de carga, limites e SLOs validados no ambiente final;
 - observabilidade e resposta a incidentes;
 - backup, restore e rollback;
 - operação institucional das chaves do CPF;
 - integração externa em sandbox e produção;
-- conteúdo e diagnóstico oficiais;
+- conteúdo e diagnóstico oficiais aprovados;
 - aprovações de segurança, privacidade e acessibilidade.
 
 O estado de liberação está em [`DELIVERY_BLOCKERS.md`](DELIVERY_BLOCKERS.md).

@@ -1,53 +1,63 @@
 # Arquitetura de segurança, privacidade e governança
 
-**Versão:** 2.0  
-**Data:** 2026-07-08  
-**Estado:** baseline técnico implementado; produção bloqueada por decisões e evidências externas
+**Revisado em:** 2026-07-30  
+**Estado:** guardrails de software versionados; conformidade e produção pendentes de decisões e evidências
 
 ## Objetivo
 
-Transformar segurança e LGPD em regras verificáveis do produto, do banco e da operação. Esta entrega não declara conformidade jurídica e não substitui análise da Estímulo, de seu encarregado ou de assessoria jurídica. Ela cria os registros, guardrails e gates necessários para que as decisões institucionais sejam tomadas com evidência e aplicadas sem depender de controles informais.
+Transformar segurança e LGPD em regras verificáveis do produto, do banco e da operação. O repositório não declara conformidade jurídica nem substitui decisões institucionais; ele mantém contratos, registros e gates para que essas decisões sejam aplicadas com evidência.
 
-## Princípios adotados
+## Princípios
 
-1. **Finalidade e necessidade antes da coleta.** Um dado só pode ser vinculado a uma atividade de tratamento, finalidade, ativo e justificativa de necessidade.
-2. **Consentimento não é base padrão.** O catálogo contém bases possíveis, mas nenhuma foi atribuída automaticamente às atividades.
-3. **Rascunho não autoriza produção.** As sete finalidades, cinco políticas de retenção e sete atividades permanecem `draft`.
-4. **Perfil comportamental e crédito têm gate reforçado.** Atividades de alto risco exigem RIPD efetivo; uso em crédito também exige governança específica aprovada.
-5. **Backend por contrato, não acesso direto.** As RPCs operacionais são exclusivas de `service_role`; `anon` e `authenticated` não leem tabelas diretamente.
-6. **Segredo não é dado de aplicação.** O inventário guarda somente metadados e referências ao secret manager.
-7. **Evidência operacional.** Consentimentos, eventos de solicitações e incidentes têm trilhas append-only; logs estruturados são redigidos antes de persistir.
-8. **Produção falha fechada.** O gate permanece `ready=false` enquanto qualquer controle bloqueante estiver aberto.
+1. **Finalidade e necessidade antes da coleta.** Todo dado possui finalidade, ativo, proprietário e justificativa.
+2. **Base legal não é inferida pelo código.** Catálogos e drafts não autorizam tratamento real.
+3. **Rascunho não autoriza produção.** Política, conteúdo ou formulário sem aprovação permanece inativo ou bloqueado.
+4. **Dados educacionais não decidem crédito.** Qualquer uso futuro exige metodologia, base legal, revisão de vieses, governança humana e aprovação explícita.
+5. **Backend por contrato.** Navegador não recebe acesso privilegiado ao banco, storage ou integrações.
+6. **Segredo não é dado de aplicação.** Somente referências e metadados governados podem ser persistidos.
+7. **Defesa em profundidade.** Autorização server-side, RLS, RBAC, constraints, idempotência e auditoria se complementam.
+8. **Evidência append-only.** Consentimentos, solicitações, incidentes e ações administrativas preservam histórico.
+9. **Redaction antes da saída.** Logs e eventos removem tokens, cookies, CPF e payload proibido antes de persistir.
+10. **Produção falha fechada.** Ausência de arquitetura ou prova mantém readiness e deploy bloqueados.
 
-## Camadas
+## Camadas lógicas
 
-| Camada | Implementação |
+| Camada | Responsabilidade |
 |---|---|
-| Catálogo jurídico | bases legais, classificações, políticas versionadas e designação do encarregado |
-| ROPA técnico | atividades, ativos, partes, operações, titulares, destinatários e limitações |
-| Direitos dos titulares | intake, verificação, escopo, eventos, evidências e resolução |
-| Retenção | políticas, execuções, ações, anonimização e legal hold |
-| Segurança | incidentes, timeline, inventário de segredos, revisão de acesso e restore tests |
-| Observabilidade segura | redaction recursiva e recomputação do hash de payload |
-| Autorização | RLS em 156/156 tabelas e nenhuma tabela diretamente legível pelo cliente |
-| Gate de produção | 24 controles, somente dois comprovados e 22 ainda bloqueantes |
+| catálogo jurídico | bases legais, classificações, políticas e responsáveis |
+| ROPA | atividades, ativos, operações, titulares, destinatários e transferências |
+| direitos dos titulares | intake, verificação, escopo, evidência, prazo e resolução |
+| retenção | políticas versionadas, legal hold, anonimização e exclusão |
+| identidade e autorização | vínculo externo–interno, sessão, RLS, RBAC e auditoria |
+| proteção de dados | criptografia, chaves, minimização e segregação |
+| observabilidade segura | logs, métricas e tracing com redaction e acesso governado |
+| incidentes e continuidade | detecção, resposta, backup, restore, rollback e comunicação |
+| gate de produção | controles técnicos, jurídicos, operacionais, editoriais e de acessibilidade |
 
-## Limites atuais
+## Estado atual do software
 
-- o scanner de arquivos continua sendo uma prova técnica e não proteção antimalware de produção;
-- não foram definidos controlador jurídico, encarregado/dispensa, bases legais finais ou prazos de retenção;
-- não foi avaliado o contrato, região, DPA ou transferência internacional de Supabase, AWS e HubSpot;
-- não foi comprovado backup, PITR, restore, KMS, TLS ou audit trail no ambiente AWS;
-- a integração HubSpot continua sem inventário real;
-- nenhum sinal comportamental pode produzir efeito em crédito.
+O código e as migrations incluem estruturas para classificação, consentimento, direitos, retenção, legal hold, incidentes, RLS, RBAC, auditoria e proteção do CPF. A conformidade de cada SHA é comprovada pelos workflows e testes, não por números copiados neste documento.
 
-## Estado verificável
+O runtime atual não possui proteção antimalware de produção, plataforma operacional AWS ou integração externa aprovada. Estruturas históricas ou fixtures não constituem capacidade ativa.
 
-- 156 tabelas com RLS;
-- 0 tabelas sem policy;
-- 0 tabelas legíveis diretamente por `anon` ou `authenticated`;
-- 0 FKs sem índice;
-- 6 RPCs do E13 exclusivas de `service_role`;
-- 8/8 provas transacionais aprovadas e revertidas;
-- 0 registros residuais de consentimento, solicitações ou incidentes;
-- produção: `ready=false`, 2 controles aprovados, 22 bloqueantes.
+## Limites e bloqueadores
+
+- controlador, operadores, encarregado ou dispensa e canais públicos ainda exigem decisão institucional;
+- bases legais, avisos, consentimentos e prazos finais precisam de aprovação;
+- fornecedores, contratos, subprocessadores e transferências precisam de avaliação;
+- custódia e rotação das chaves do CPF precisam de operação institucional;
+- integração externa precisa de inventário, escopo e sandbox;
+- proteção distribuída contra abuso depende da futura arquitetura;
+- observabilidade, incidente, backup, restore e rollback precisam ser exercitados no ambiente AWS aprovado;
+- conteúdo, diagnóstico, metodologia e acessibilidade precisam de homologação;
+- nenhum sinal comportamental pode produzir efeito em crédito sem governança específica.
+
+## Evidência
+
+A evidência técnica pertence aos workflows e artefatos do SHA avaliado. A evidência operacional pertence ao staging e à produção aprovados. Documentos permanentes não mantêm contagens de tabelas, policies, RPCs, controles, testes ou resultados `passed`.
+
+Consulte:
+
+- [`PRODUCTION_READINESS_GATE.md`](PRODUCTION_READINESS_GATE.md);
+- [`DELIVERY_BLOCKERS.md`](../implementation/DELIVERY_BLOCKERS.md);
+- [`FINAL_RELEASE_RUNBOOK.md`](../operations/FINAL_RELEASE_RUNBOOK.md).

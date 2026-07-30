@@ -1,142 +1,124 @@
-# Arquitetura de armazenamento de arquivos
+# Contrato lógico de armazenamento de arquivos
 
-**Versão:** 1.0  
-**Data:** 2026-07-08  
-**Status:** implementada e comprovada no Supabase de teste; paridade AWS pendente
+**Revisado em:** 2026-07-30  
+**Estado:** adapter Supabase de teste ativo; provider e operação de produção pendentes
 
 ## Objetivo
 
-Permitir upload e download de arquivos privados sem transformar o banco em depósito de binários, sem expor credenciais privilegiadas ao navegador e sem acoplar o domínio ao Supabase Storage. O mesmo contrato deverá ser implementado por S3 em staging e produção.
+Permitir upload e download de arquivos privados sem transformar o banco em depósito de binários, sem expor credenciais privilegiadas ao navegador e sem acoplar o domínio ao SDK do provider.
 
-## Invariantes
+Este documento não escolhe o serviço de objetos da produção AWS, o mecanismo de upload, scanner, lifecycle ou distribuição. Essas decisões exigem ADR próprio.
 
-1. O binário é manipulado exclusivamente pela API do provedor de objetos.
-2. PostgreSQL mantém metadados governados, autorização, lifecycle, hash e evidência do scan.
-3. Nenhum arquivo enviado por participante nasce liberado: a chave inicial usa `quarantine/`.
-4. URLs assinadas são efêmeras e nunca são persistidas como identidade do arquivo.
-5. A identidade persistida é `storage_provider + bucket + object_key`, complementada por versão/ETag quando disponíveis.
-6. A confirmação é server-side: MIME, tamanho e SHA-256 são derivados do objeto efetivamente armazenado.
-7. Apenas um resultado `clean` promove o arquivo para `protected/` e permite download.
-8. Resultados de scan são append-only.
-9. O navegador não recebe `service_role` nem acesso SQL aos schemas internos.
-10. Regras de produto são perfis versionáveis; o perfil `e12_storage_proof` existe somente para prova técnica.
+## Estado atual
 
-## Componentes
+No ambiente de desenvolvimento, teste e preview:
 
-### `core.file_upload_profiles`
+- bytes são armazenados pelo adapter Supabase autorizado;
+- operações passam por rotas e módulos server-only;
+- PostgreSQL preserva metadados, vínculo de domínio, autorização e auditoria;
+- uploads de credenciais externas, materiais e evidências usam contratos específicos;
+- URLs ou tokens de acesso são efêmeros e não constituem identidade persistente;
+- o navegador não recebe `service_role` nem acesso direto aos schemas internos.
 
-Política lógica de upload independente do provedor:
+O runtime versionado não contém Edge Function `file-storage`, worker de scan, scheduler de scan ou pipeline de quarentena aprovado. Nenhuma documentação ou teste pode apresentá-los como ativos.
 
-- MIME permitidos;
-- extensões permitidas;
-- limite máximo;
-- classe de retenção;
-- necessidade de scanner;
-- estado ativo/desabilitado.
+## Identidade persistente
 
-### `core.file_upload_intents`
+A identidade lógica de um arquivo deve separar:
 
-Autorização curta e de uso único para uma chave imutável. Registra solicitante, organização, perfil, objeto esperado, expiração e resultado da confirmação.
+- identificador interno estável;
+- organização e proprietário lógico;
+- finalidade e vínculo com o domínio;
+- provider e localização física abstrata;
+- nome original e tipo declarado;
+- tamanho e checksum quando calculados;
+- estado, retenção e timestamps;
+- referências a uploads, revisões ou credenciais relacionadas.
 
-Estados:
+URLs assinadas, cookies, tokens e paths temporários nunca são a identidade do arquivo.
 
-```text
-pending_upload -> confirmed
-pending_upload -> aborted | expired | rejected
-```
-
-### `core.file_objects`
-
-Registro governado do arquivo confirmado. Guarda provedor, bucket, chave, MIME, tamanho, SHA-256, versão física, ETag, lifecycle de segurança e retenção.
-
-Estados principais:
+## Fluxo do ambiente de teste
 
 ```text
-quarantined -> release_pending -> clean
-quarantined -> infected
-quarantined -> manual_review
-clean -> deleted
+usuário autenticado
+→ autorização server-side
+→ validação de finalidade, tamanho e tipo
+→ upload pelo adapter de teste
+→ confirmação e metadados PostgreSQL
+→ vínculo com a entidade de domínio
+→ download autorizado por prazo curto
 ```
 
-### `core.file_security_scans`
-
-Histórico append-only normalizado do scanner. Não conserva payload arbitrário do provedor como fonte decisória; registra status, ameaças, razões, versão do scanner e referência externa.
-
-### Edge Function `file-storage`
-
-Fronteira HTTP autenticada, atualmente na versão 3 e com `verify_jwt=true`.
-
-Rotas:
-
-| Rota | Função |
-|---|---|
-| `POST /upload-intents` | Autoriza e emite upload assinado para chave em quarentena. |
-| `POST /upload-intents/{id}/confirm` | Inspeciona objeto, baixa bytes no servidor, calcula SHA-256 e confirma metadados. |
-| `POST /files/{id}/download-intents` | Emite download assinado somente para arquivo `clean` e autorizado. |
-| `POST /worker/files/{id}/scan-results` | Normaliza scan, promove arquivo limpo e conclui o release. |
-
-A rota de scan foi removida do serviço de storage. O scan é executado exclusivamente pelo `file-scan-worker`, ativado por token de dispatch de uso único.
-
-### `SupabaseStorageProvider`
-
-Adapter local que implementa o contrato `ObjectStorageProvider`:
-
-- criação/verificação de bucket privado;
-- upload assinado;
-- upload por token;
-- leitura de metadados;
-- SHA-256;
-- validação de limite e MIME;
-- movimentação de quarentena;
-- download assinado;
-- remoção.
-
-## Fluxo ponta a ponta
-
-```text
-Cliente autenticado
-  -> Edge Function valida JWT e e-mail verificado
-  -> RPC cria file_upload_intent
-  -> Storage emite URL/token assinado
-  -> Cliente envia bytes direto ao provedor
-  -> Cliente solicita confirmação
-  -> Edge Function lê metadata + bytes
-  -> valida MIME/tamanho + calcula SHA-256
-  -> RPC cria file_object em quarantined
-  -> fila envia trabalho de scan
-  -> scanner retorna resultado normalizado
-  -> clean: move quarantine/ para protected/
-  -> RPC conclui file_object como clean
-  -> download autorizado recebe URL assinada curta
-```
+A confirmação deve ser idempotente. Repetição não pode criar dois arquivos lógicos nem dois vínculos para a mesma operação.
 
 ## Autorização
 
-- A identidade externa é resolvida por `issuer + subject` para `iam.user_accounts`.
-- Upload próprio exige empreendedor ativo vinculado a uma jornada da organização, ou permissão `file.manage`.
-- Confirmação exige o mesmo solicitante ou operador autorizado.
-- Download exige acesso ao `file_object` e estado `clean`.
-- As RPCs públicas revogam `anon/authenticated`; somente a função server-side com `service_role` pode executá-las.
-- Tabelas internas mantêm RLS para runtime/worker e defesa em profundidade.
+- toda operação resolve identidade externa para conta interna;
+- acesso é limitado por organização, proprietário e capacidades RBAC;
+- upload e confirmação exigem finalidade permitida;
+- download exige acesso ao objeto e ao vínculo de domínio;
+- remoção ou arquivamento respeita dependências e retenção;
+- funções privilegiadas não são executáveis por `anon` ou diretamente pelo navegador;
+- logs não contêm bytes, URL assinada, token ou dado pessoal desnecessário.
 
-## Portabilidade
+## Validação de arquivos
 
-O domínio não conhece SDK, URL ou semântica proprietária. O adapter AWS deverá preservar:
+Controles atualmente esperados no software:
 
-- chave imutável;
-- prefixos `quarantine/` e `protected/`;
-- upload/download assinados;
-- leitura de tamanho/MIME/versão/ETag;
-- cálculo/verificação de checksum;
-- move lógico, que no S3 pode ser `CopyObject + DeleteObject`;
-- exclusão idempotente;
-- mesmos estados e RPCs PostgreSQL.
+- limite de tamanho;
+- lista de tipos e extensões conforme o caso de uso;
+- nome e metadados normalizados;
+- checksum quando disponível no fluxo;
+- confirmação server-side;
+- idempotência;
+- autorização de upload e download;
+- tratamento explícito de falha e limpeza do upload não persistido.
 
-## Fora do escopo concluído
+**Verificação antimalware não está implementada no runtime atual.** Produção não pode afirmar inspeção, quarentena ou liberação por scanner até que arquitetura, provider, política, operação e testes tenham sido aprovados.
 
-- perfis reais para evidência prática, conteúdo editorial e certificados;
-- scanner real no Supabase;
-- fila e worker de scan;
-- lifecycle/expurgo automático;
-- teste E2E com sessão real de participante;
-- prova S3/GuardDuty no AWS staging.
+## Fronteira portável
+
+O domínio deve conhecer somente operações equivalentes a:
+
+- criar intenção ou autorização curta;
+- enviar bytes;
+- confirmar metadados;
+- consultar objeto;
+- emitir acesso temporário;
+- arquivar ou remover de forma idempotente;
+- aplicar retenção e legal hold;
+- reconciliar objeto físico e registro lógico.
+
+SDK, bucket, chave física, versionamento, checksum nativo, criptografia, upload multipart e lifecycle permanecem dentro do adapter escolhido.
+
+## Requisitos do futuro provider AWS
+
+A decisão arquitetural deve definir, sem ser inferida deste documento:
+
+- serviço e topologia de armazenamento;
+- upload direto ou mediado;
+- criptografia e gestão de chaves;
+- versionamento, retenção e exclusão;
+- verificação de conteúdo e resposta a ameaça;
+- URLs temporárias e proteção contra replay;
+- limites, custos e lifecycle;
+- observabilidade, auditoria e reconciliação;
+- backup, restore e disaster recovery;
+- migração do adapter de teste.
+
+## Gate B
+
+Antes de produção, o ambiente aprovado deve comprovar:
+
+1. upload e confirmação idempotentes;
+2. autorização positiva e negativa entre usuários e organizações;
+3. download temporário sem vazamento;
+4. arquivos incompletos ou órfãos reconciliados;
+5. retenção, exclusão e legal hold;
+6. falha e recuperação do provider;
+7. capacidade com arquivos representativos;
+8. observabilidade e alertas;
+9. controles de segurança definidos pela análise de risco;
+10. rollback e recuperação exercitados.
+
+Até essa prova, operações de produção permanecem bloqueadas e fail-closed.

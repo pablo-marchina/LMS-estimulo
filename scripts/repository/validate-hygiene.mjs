@@ -23,6 +23,8 @@ const forbiddenExactFiles = new Set([
   "apps/web/.env.example",
   "apps/web/app/api/e2e/session/route.ts",
   "docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
+  "docs/implementation/RUNTIME_GAP.md",
+  "docs/implementation/SCHEMA_DELTA.md",
   "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
   "premissas-desenvolvimento.md",
 ]);
@@ -34,6 +36,8 @@ const forbiddenReferences = [
   "premissas-desenvolvimento.md",
   "SOURCE_AUTHORITY_HIERARCHY.md",
   "ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
+  "RUNTIME_GAP.md",
+  "SCHEMA_DELTA.md",
   "BROWSER_E2E_MODE",
   "@/lib/browser-e2e/",
   "scripts/browser-e2e/",
@@ -45,8 +49,10 @@ const requiredFiles = [
   "PROJECT_INDEX.md",
   "CONTRIBUTING.md",
   ".env.example",
+  "docs/architecture/AWS_ARCHITECTURE_STATUS.md",
   "docs/implementation/APPLICATION_FOUNDATION.md",
   "docs/implementation/DELIVERY_BLOCKERS.md",
+  "docs/operations/FINAL_RELEASE_RUNBOOK.md",
   "scripts/database/run-gates.mjs",
   "scripts/verification/verify-deployment.mjs",
 ];
@@ -165,8 +171,12 @@ async function validateRequiredFiles() {
 
   const blockers = await readFile(path.join(root, "docs/implementation/DELIVERY_BLOCKERS.md"), "utf8");
   if (/#[0-9]+/.test(blockers)) errors.push("DELIVERY_BLOCKERS.md must not depend on transient issue or PR numbers");
+  if (/\b[0-9a-f]{40}\b/i.test(blockers)) errors.push("DELIVERY_BLOCKERS.md must not freeze a transient commit SHA");
   if (/total_migration_count|active_migration_count|recovered_migration_count/.test(blockers)) {
     errors.push("DELIVERY_BLOCKERS.md must not maintain migration counts manually");
+  }
+  if (/software_release_candidate_sha|canonical_database_replay\s*=|lambda_container_test_(?:rps|error_rate|p95_ms|p99_ms)/.test(blockers)) {
+    errors.push("DELIVERY_BLOCKERS.md must not duplicate transient release evidence");
   }
 }
 

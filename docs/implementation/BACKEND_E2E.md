@@ -1,84 +1,70 @@
 # Backend E2E reproduzível
 
-**Data:** 2026-07-10  
-**Estado:** concluído  
-**Ambiente:** PostgreSQL 17.6 efêmero no GitHub Actions
+**Revisado em:** 2026-07-30  
+**Estado:** suíte permanente; resultado avaliado por SHA em PostgreSQL efêmero
 
-## Resultado
+## Finalidade
 
-A vertical técnica atual foi reproduzida depois do replay das 244 migrations, sem consultar nem alterar o Supabase remoto durante a execução comportamental.
+O backend E2E comprova o comportamento transacional da vertical técnica depois do replay integral do histórico Git. A execução usa PostgreSQL efêmero e não consulta nem altera o Supabase remoto.
 
-```text
-clean_replay_passed = true
-schema_equivalence_passed = true
-public_rpc_contracts_passed = true
-backend_e2e_replayed = true
-transaction_model = one_transaction_per_rpc
-cleanup = ephemeral_postgres_container
-```
+Resultados, contagens e tempos pertencem aos logs e artefatos do workflow do SHA avaliado.
 
-## Fluxo comprovado
+## Pré-condições
 
-1. publicação imutável da versão da jornada;
-2. replay da publicação sem novos efeitos;
-3. matrícula sintética;
-4. início da jornada;
-5. diagnóstico com quatro respostas;
-6. atribuição do caminho `standard`;
-7. início de atividade;
-8. confirmação de quatro seções sem duplicação;
-9. primeira tentativa de quick check reprovada;
-10. segunda tentativa aprovada;
-11. conclusão de etapa, caminho e jornada;
-12. projeção final para participante e operador.
+1. banco vazio iniciado na versão suportada;
+2. replay integral de `supabase/migrations/`;
+3. equivalência de schema aprovada;
+4. contratos públicos de RPC aprovados;
+5. fixtures sintéticas criadas dentro da execução comportamental.
 
-## Invariantes comprovados
+## Fluxo exercitado
 
-```text
-journey_events = 35
-total_event_delta = 39
-outbox_delta = 39
-successful_submission_correlated_events = 8
-point_ledger_entries = 2
-point_ledger_sum = 7
-final_progress = 1
-final_point_balance = 7
-accepted_sections = 4
-passing_attempt_number = 2
-```
+1. publicação e replay idempotente de uma versão de jornada;
+2. matrícula sintética;
+3. início da jornada;
+4. diagnóstico e respostas;
+5. atribuição de caminho;
+6. início e progresso de atividade;
+7. avaliação com tentativa reprovada e aprovada;
+8. conclusão de etapa, caminho e jornada;
+9. eventos, outbox e projeções finais;
+10. consultas de participante e operador.
 
-O replay da submissão aprovada preserva o mesmo resultado e não cria novos eventos, outbox ou lançamentos de pontos.
+As fixtures existem apenas no banco efêmero e não representam conteúdo oficial.
+
+## Invariantes obrigatórios
+
+- um comando com a mesma idempotency key e o mesmo payload não duplica efeitos;
+- reutilização da chave com payload diferente é rejeitada;
+- versão agregada obsoleta é rejeitada;
+- mutação direta de versão publicada é bloqueada;
+- ator sem permissão recebe `FORBIDDEN`;
+- participante não acessa contexto de outro usuário ou organização;
+- `authenticated` não executa RPCs exclusivas do servidor;
+- eventos, outbox, ledger e projeções permanecem coerentes;
+- falha intermediária não confirma escrita parcial;
+- o resultado final pode ser reproduzido desde banco vazio.
 
 ## Provas negativas
 
-- `IDEMPOTENCY_KEY_REUSED` para mesma chave com payload diferente;
-- `AGGREGATE_VERSION_CONFLICT` para versão agregada obsoleta;
-- `PUBLISHED_VERSION_IMMUTABLE` para mutação de versão publicada;
-- `FORBIDDEN` para ator sem permissão;
-- participante não acessa estado de outro contexto;
-- ator não relacionado não lê nem altera empreendedor ou instância de jornada por RLS;
-- role `authenticated` não executa RPCs exclusivos do servidor.
+A suíte deve cobrir, conforme o contrato vigente:
 
-## Dados de referência ausentes do histórico original
-
-O replay estrutural revelou configurações no Supabase de teste que não foram criadas pelo histórico original:
-
-- quatro itens diagnósticos;
-- dezesseis opções;
-- dois caminhos;
-- duas etapas de caminho;
-- vinte e nove IDs canônicos de schemas de eventos.
-
-Esses registros são materializados como fixtures explícitas em `scripts/database/backend-e2e`, somente no PostgreSQL efêmero. Eles não foram transformados retroativamente em migrations.
+- `IDEMPOTENCY_KEY_REUSED`;
+- `AGGREGATE_VERSION_CONFLICT`;
+- `PUBLISHED_VERSION_IMMUTABLE`;
+- `FORBIDDEN`;
+- RLS e RBAC negativos;
+- ausência de execução direta pelo navegador;
+- isolamento entre atores e organizações sintéticas.
 
 ## Execução
 
 ```bash
-npm run test:database-gates
+npm run test:database
 ```
 
-O comando valida os quatro manifests, reproduz as 244 migrations, compara o schema, congela os 18 RPCs e executa este E2E.
+O entrypoint reconstrói o banco, valida equivalência e contratos e executa o E2E junto das demais suítes de domínio. A execução deve ocorrer uma única vez por banco efêmero.
 
 ## Limite
 
-Esta prova fecha o bloqueio de fonte, replay, contratos e comportamento do runtime atual. Ela não autoriza automaticamente migrations funcionais nem transforma o PostgreSQL em autoridade dos dados de negócio.
+Essa prova valida o domínio e o banco reproduzível do software. Ela não substitui E2E no ambiente AWS definitivo, integração externa em sandbox, capacidade multiusuário, observabilidade, backup, restore ou rollback.
