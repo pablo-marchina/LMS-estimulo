@@ -22,7 +22,14 @@ test("role actions require explicit permission, UUID validation and typed confir
   assert.match(actions, /confirmation\("REMOVER"\)/u);
   assert.match(actions, /ROLE_MANAGEMENT_FORBIDDEN/u);
   assert.match(actions, /validUntil:\s*null/u);
-  assert.doesNotMatch(actions, /@estimulo\.org/u);
+});
+
+test("password recovery keeps corporate Google accounts on the federated access path", () => {
+  assert.match(actions, /targetEmail\.endsWith\("@estimulo\.org"\)/u);
+  assert.match(actions, /status=acesso_google/u);
+  assert.match(actions, /resetPasswordForEmail/u);
+  assert.match(actions, /\/auth\/password-recovery/u);
+  assert.doesNotMatch(actions, /temporaryPassword|senha temporária|password:\s*[^=]/iu);
 });
 
 test("admin page exposes permission-gated and accessible grant and revoke controls", () => {
