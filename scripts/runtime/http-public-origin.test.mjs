@@ -57,9 +57,9 @@ test("production rejects a local configured origin", () => {
   );
 });
 
-test("admin login starts OAuth through a native GET navigation", () => {
-  assert.match(administrativeLoginPage, /<form action="\/auth\/admin\/start" method="get">/);
-  assert.doesNotMatch(administrativeLoginPage, /ButtonLink href="\/auth\/admin\/start"/);
+test("admin login starts OAuth through a browser-native GET link", () => {
+  assert.match(administrativeLoginPage, /ButtonLink href="\/auth\/admin\/start"/);
+  assert.doesNotMatch(administrativeLoginPage, /<form action="\/auth\/admin\/start" method="get">/);
 });
 
 test("admin OAuth callback is bound to the actual request origin", () => {
