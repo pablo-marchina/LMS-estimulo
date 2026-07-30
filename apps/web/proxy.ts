@@ -1,9 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  ADMIN_LOCAL_OAUTH_RETURN_COOKIE,
+  decodeLocalAdminCallback,
+} from "@/lib/auth/admin-oauth-bridge-core.mjs";
 import { encodeFirstTouch, FIRST_TOUCH_COOKIE, firstTouchFromUrl } from "@/lib/auth/first-touch";
 import { assertPlatformRuntimePolicy } from "@/lib/platform/runtime-provider";
 
 const requestIdPattern = /^[A-Za-z0-9._:-]{1,128}$/u;
+const oauthResultParameters = ["code", "error", "error_code", "error_description"] as const;
 
 function requestId(request: NextRequest): string {
   const candidate = request.headers.get("x-request-id") ?? request.headers.get("x-vercel-id") ?? "";
@@ -22,10 +27,39 @@ function finalize(response: NextResponse, id: string, startedAt: number): NextRe
   return response;
 }
 
+function clearLocalOAuthReturnCookie(response: NextResponse): void {
+  response.cookies.set(ADMIN_LOCAL_OAUTH_RETURN_COOKIE, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: true,
+    path: "/",
+    expires: new Date(0),
+    maxAge: 0,
+  });
+}
+
 function adminOAuthFallback(request: NextRequest): NextResponse | null {
-  if (request.nextUrl.pathname !== "/" || !request.nextUrl.searchParams.get("code")) return null;
+  if (request.nextUrl.pathname !== "/") return null;
+  const hasOAuthResult = oauthResultParameters.some((parameter) => request.nextUrl.searchParams.has(parameter));
+  if (!hasOAuthResult) return null;
+
+  const localCallback = decodeLocalAdminCallback(request.cookies.get(ADMIN_LOCAL_OAUTH_RETURN_COOKIE)?.value);
+  if (localCallback) {
+    for (const parameter of oauthResultParameters) {
+      const value = request.nextUrl.searchParams.get(parameter);
+      if (value) localCallback.searchParams.set(parameter, value);
+    }
+    const response = NextResponse.redirect(localCallback);
+    response.headers.set("cache-control", "no-store");
+    clearLocalOAuthReturnCookie(response);
+    return response;
+  }
+
   const callback = new URL("/auth/admin/callback", request.url);
-  callback.search = request.nextUrl.search;
+  for (const parameter of oauthResultParameters) {
+    const value = request.nextUrl.searchParams.get(parameter);
+    if (value) callback.searchParams.set(parameter, value);
+  }
   return NextResponse.redirect(callback);
 }
 
