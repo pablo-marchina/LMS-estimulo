@@ -10,7 +10,10 @@ export async function GET(request: NextRequest) {
   const client = await createSessionClient();
   await client.auth.signOut();
 
-  const callback = new URL("/auth/admin/callback", publicApplicationOrigin()).toString();
+  const callback = new URL(
+    "/auth/admin/callback",
+    publicApplicationOrigin(request.nextUrl.origin),
+  ).toString();
   const { data, error } = await client.auth.signInWithOAuth({
     provider: "google",
     options: {
