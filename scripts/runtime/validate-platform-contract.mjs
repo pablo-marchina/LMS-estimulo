@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertPlatformRuntimePolicyFor } from "../../apps/web/lib/platform/runtime-provider-core.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url), "../.."));
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 async function read(relativePath) {
   return readFile(path.join(root, relativePath), "utf8");
