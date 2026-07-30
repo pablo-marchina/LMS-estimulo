@@ -10,25 +10,31 @@ const mediaViewer = await readFile("apps/web/components/content-asset-viewer.tsx
 const nextConfig = await readFile("apps/web/next.config.ts", "utf8");
 const migration = await readFile("supabase/migrations/20260730150000_openai_official_drive_videos.sql", "utf8");
 
-test("administrative Google login hints the requested corporate account and still requires domain plus RBAC", () => {
-  assert.match(adminStart, /requestedEmail/u);
-  assert.match(adminStart, /isEstimuloAdministrativeEmail\(requestedEmail\)/u);
+test("administrative Google login starts in one click and validates domain plus RBAC after OAuth", () => {
+  assert.match(adminStart, /signInWithOAuth/u);
   assert.match(adminStart, /hd:\s*"estimulo\.org"/u);
   assert.match(adminStart, /prompt:\s*"select_account"/u);
-  assert.match(adminStart, /login_hint:\s*requestedEmail/u);
+  assert.doesNotMatch(adminStart, /client\.auth\.signOut/u);
+  assert.doesNotMatch(adminStart, /requestedEmail/u);
+  assert.doesNotMatch(adminStart, /login_hint/u);
   assert.match(adminCallback, /isEstimuloAdministrativeEmail\(user\.email\)/u);
   assert.match(adminCallback, /administrativeOrganization\(identity\)/u);
-  assert.match(adminPage, /name="email"/u);
-  assert.match(adminPage, /Continuar com Google/u);
+  assert.match(adminPage, /action="\/auth\/admin\/start"/u);
+  assert.match(adminPage, /PendingSubmitButton/u);
+  assert.match(adminPage, /Abrindo o Google…/u);
+  assert.doesNotMatch(adminPage, /name="email"/u);
 });
 
-test("participant login presents signup and team access as distinct visual actions", () => {
-  assert.match(participantLogin, /Ainda não tem conta\?/u);
+test("participant login keeps signup visible and team access discreet in the footer", () => {
+  assert.match(participantLogin, /Não tem conta\?/u);
   assert.match(participantLogin, /Criar minha conta/u);
   assert.match(participantLogin, /Sou da equipe Estímulo/u);
-  assert.match(participantLogin, /Acessar área administrativa/u);
-  assert.match(participantLogin, /sm:grid-cols-2/u);
-  assert.match(participantLogin, /bg-primary-soft\/55/u);
+  assert.match(participantLogin, /Contas da equipe Estímulo entram exclusivamente pela área administrativa\./u);
+  assert.match(participantLogin, /text-xs/u);
+  assert.match(participantLogin, /border-t border-border\/70/u);
+  assert.doesNotMatch(participantLogin, /sm:grid-cols-2/u);
+  assert.doesNotMatch(participantLogin, /Acessar área administrativa/u);
+  assert.doesNotMatch(participantLogin, /bg-primary-soft\/55/u);
 });
 
 test("official OpenAI Drive videos are embedded safely and remain completable", () => {
