@@ -9,7 +9,8 @@ Este repositório é a fonte oficial do código da Plataforma Estímulo. O escop
 3. Alterar juntos código, migrations, contratos, testes e documentação da capacidade.
 4. Abrir PR com título Conventional Commits.
 5. Diferenciar código presente, teste local, evidência de ambiente e aprovação de produção.
-6. Preferir squash merge e excluir a branch após o merge.
+6. Não mesclar enquanto qualquer workflow obrigatório do SHA atual estiver ausente, cancelado, ignorado ou vermelho.
+7. Preferir squash merge e excluir a branch após o merge.
 
 Tipos permitidos:
 
@@ -31,7 +32,16 @@ Formato:
 - provider afetado: `supabase`, `aws` ou ambos;
 - testes executados e limitações da evidência;
 - riscos e rollback;
-- documentação e contrato de plataforma atualizados.
+- documentação e contrato de plataforma atualizados;
+- lista dos workflows obrigatórios e estado no SHA final.
+
+## Evidência e estado
+
+- o status de release pertence aos workflows e artefatos do SHA avaliado;
+- documentos permanentes não congelam SHA, contagem de migrations, quantidade de RPCs ou métricas de carga;
+- aprovação de um commit anterior não cobre alterações posteriores;
+- preview pronto não substitui replay, testes, typecheck, build, scan ou Gate B;
+- um merge não pode ser justificado por evidência de outro SHA.
 
 ## Nomenclatura
 
@@ -43,7 +53,18 @@ Formato:
 - contratos legíveis por máquina: kebab-case e versão explícita;
 - migrations: `YYYYMMDDHHMMSS_<descricao_em_snake_case>.sql`, preservando nomes já aplicados.
 
-Migrations aplicadas nunca são editadas. Correções criam novas migrations. Validações comportamentais que dependem de conteúdo usam fixtures controladas depois do replay estrutural.
+### Imutabilidade de migrations
+
+Uma migration que pertence a um candidato já aprovado por replay canônico nunca é editada. Correções criam migrations aditivas.
+
+Uma migration recém-integrada que nunca passou pelo replay canônico do Gate A pode ser corrigida antes do próximo release somente quando:
+
+1. o arquivo atual impede a reconstrução desde zero;
+2. a causa e a alteração estão documentadas no PR;
+3. existe migration aditiva e idempotente para alinhar ambientes de teste onde a versão defeituosa já foi aplicada;
+4. todo o Gate A é repetido no SHA corrigido.
+
+Validações comportamentais que dependem de conteúdo usam fixtures controladas depois do replay estrutural.
 
 ## Arquitetura de plataforma
 
