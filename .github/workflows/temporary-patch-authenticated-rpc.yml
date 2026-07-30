@@ -28,20 +28,30 @@ jobs:
           text = path.read_text(encoding='utf-8')
 
           allowed_marker = 'const allowedRpcs = new Set(`'
-          allowed_additions = (
-              'archive_admin_track archive_library_content '
-              'award_participant_action_points list_operator_certificate_templates '
-          )
+          allowed_additions = [
+              'archive_admin_interface_content',
+              'archive_admin_track',
+              'archive_library_content',
+              'award_participant_action_points',
+              'list_operator_certificate_templates',
+              'publish_admin_track',
+              'register_admin_interface_content',
+              'save_admin_journey',
+              'save_admin_lesson',
+              'save_admin_track',
+          ]
           participant_marker = 'const participantOnlyRpcs = new Set(`'
-          participant_additions = 'award_participant_action_points '
+          participant_additions = ['award_participant_action_points']
 
           allowed_line = next(line for line in text.splitlines() if line.startswith(allowed_marker))
-          if 'archive_admin_track' not in allowed_line:
-              text = text.replace(allowed_marker, allowed_marker + allowed_additions, 1)
+          missing_allowed = [name for name in allowed_additions if name not in allowed_line]
+          if missing_allowed:
+              text = text.replace(allowed_marker, allowed_marker + ' '.join(missing_allowed) + ' ', 1)
 
           participant_line = next(line for line in text.splitlines() if line.startswith(participant_marker))
-          if 'award_participant_action_points' not in participant_line:
-              text = text.replace(participant_marker, participant_marker + participant_additions, 1)
+          missing_participant = [name for name in participant_additions if name not in participant_line]
+          if missing_participant:
+              text = text.replace(participant_marker, participant_marker + ' '.join(missing_participant) + ' ', 1)
 
           path.write_text(text, encoding='utf-8')
           PY
