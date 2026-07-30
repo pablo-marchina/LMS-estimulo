@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -75,7 +76,7 @@ function categoryDiff(expected, actual) {
       category: name,
       expected: expected[name] ?? null,
       actual: actual[name] ?? null,
-      matches: JSON.stringify(expected[name] ?? null) === JSON.stringify(actual[name] ?? null),
+      matches: isDeepStrictEqual(expected[name] ?? null, actual[name] ?? null),
     }))
     .filter((item) => !item.matches);
 }
