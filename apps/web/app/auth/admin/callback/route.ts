@@ -28,15 +28,14 @@ export async function GET(request: NextRequest) {
     || claimsError
     || !user
     || !claimsData?.claims
+    || !user.email
     || !user.email_confirmed_at
     || !isGoogleAuthProvider(user, claimsData.claims.amr)
   ) {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=conta_google_necessaria");
   }
-
-  const email = user.email?.trim().toLowerCase() ?? "";
-  if (!isEstimuloAdministrativeEmail(email)) {
+  if (!isEstimuloAdministrativeEmail(user.email)) {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=dominio_invalido");
   }

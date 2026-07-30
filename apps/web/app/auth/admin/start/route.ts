@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import {
   adminOAuthPreparationTarget,
   adminOAuthRedirectTarget,
@@ -7,14 +8,19 @@ import {
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
 
-function signInError(request: NextRequest) {
-  return NextResponse.redirect(new URL("/entrar/administracao?erro=oauth_indisponivel", request.url));
+function signInError(request: NextRequest, error = "oauth_indisponivel") {
+  return NextResponse.redirect(new URL(`/entrar/administracao?erro=${encodeURIComponent(error)}`, request.url));
 }
 
 export async function GET(request: NextRequest) {
   const applicationOrigin = publicApplicationOrigin(request.nextUrl.origin);
   const localRequest = isLocalApplicationOrigin(request.nextUrl.origin);
   const bridgeReady = request.nextUrl.searchParams.get("bridge_ready") === "1";
+  const requestedEmail = request.nextUrl.searchParams.get("email")?.trim().toLowerCase() ?? "";
+
+  if (!bridgeReady && !isEstimuloAdministrativeEmail(requestedEmail)) {
+    return signInError(request, "dominio_invalido");
+  }
 
   if (localRequest && !bridgeReady) {
     const preparation = adminOAuthPreparationTarget({
@@ -42,6 +48,7 @@ export async function GET(request: NextRequest) {
       queryParams: {
         hd: "estimulo.org",
         prompt: "select_account",
+        ...(requestedEmail ? { login_hint: requestedEmail } : {}),
       },
     },
   });
