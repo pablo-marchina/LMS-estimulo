@@ -1,3 +1,27 @@
 # Historical acceptance-flow identifier, not a credential.
 # Classified from redacted metadata only: requiredFlow, UPPER_SNAKE_IDENTIFIER, 31 chars.
 1a3924c932379662893f2cdcabf78acc025dd6ca:scripts/e14/validate-step2-acceptance.mjs:generic-api-key:28
+
+# Exact historical fingerprints for synthetic Supabase CI placeholders and local
+# authenticated-rpc URLs. The original commits were reviewed before inclusion;
+# no real credential is authorized by these exceptions. New occurrences remain blocked.
+1137ba1b22ded22fcab18f0befede9543ce8f61e:.github/workflows/temporary-admin-local-oauth-validation.yml:generic-api-key:32
+1137ba1b22ded22fcab18f0befede9543ce8f61e:.github/workflows/temporary-admin-local-oauth-validation.yml:generic-api-key:33
+d4e3c8d32de685033899a66fd3c5dfefd47d610c:.github/workflows/temporary-typecheck.yml:generic-api-key:24
+d4e3c8d32de685033899a66fd3c5dfefd47d610c:.github/workflows/temporary-typecheck.yml:generic-api-key:25
+ee4586c28bfc7c6fd1e820fb63ab6778ef75c39b:.github/workflows/temporary-admin-interface-validation.yml:generic-api-key:31
+ee4586c28bfc7c6fd1e820fb63ab6778ef75c39b:.github/workflows/temporary-admin-interface-validation.yml:generic-api-key:32
+6c350fc790b9ba386d6fd85478e5b3e3cc8867b3:.github/workflows/temporary-admin-ui-validation.yml:generic-api-key:24
+6c350fc790b9ba386d6fd85478e5b3e3cc8867b3:.github/workflows/temporary-admin-ui-validation.yml:generic-api-key:25
+fb6c40a65acde8b07faeeda250ce8f55c601a1fb:.github/workflows/reproducibility.yml:generic-api-key:23
+fb6c40a65acde8b07faeeda250ce8f55c601a1fb:.github/workflows/reproducibility.yml:generic-api-key:24
+0e54d68b847db29fc787037acdd569618cc3396c:.github/workflows/web-ci.yml:generic-api-key:36
+0e54d68b847db29fc787037acdd569618cc3396c:.github/workflows/web-ci.yml:generic-api-key:37
+897c4b7f81966a1f0dec36760ecb2c323c8923ff:.github/workflows/browser-e2e.yml:generic-api-key:39
+897c4b7f81966a1f0dec36760ecb2c323c8923ff:.github/workflows/browser-e2e.yml:generic-api-key:40
+897c4b7f81966a1f0dec36760ecb2c323c8923ff:.github/workflows/web-ci.yml:generic-api-key:36
+897c4b7f81966a1f0dec36760ecb2c323c8923ff:.github/workflows/web-ci.yml:generic-api-key:37
+77de99455eb6db6fead0fa1a575e8b47b8b4b95e:.github/workflows/experience-validation.yml:generic-api-key:31
+77de99455eb6db6fead0fa1a575e8b47b8b4b95e:.github/workflows/experience-validation.yml:generic-api-key:32
+1c2b3008e1c63c6eeaec339d9950ea140adce658:.github/workflows/frontend-experience-validation.yml:generic-api-key:21
+1c2b3008e1c63c6eeaec339d9950ea140adce658:.github/workflows/frontend-experience-validation.yml:22
