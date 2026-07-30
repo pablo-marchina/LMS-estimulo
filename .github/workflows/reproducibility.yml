@@ -104,19 +104,27 @@ jobs:
     timeout-minutes: 35
     services:
       postgres:
-        image: supabase/postgres:17.6.1.141
+        image: supabase/postgres:17.6.1.136
         env:
+          POSTGRES_HOST: /var/run/postgresql
+          PGPORT: 5432
+          POSTGRES_PORT: 5432
+          PGPASSWORD: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: lms_replay
+          PGDATABASE: postgres
+          POSTGRES_DB: postgres
+          JWT_SECRET: local-replay-jwt-secret-with-at-least-thirty-two-characters
+          JWT_EXP: 3600
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d lms_replay"
+          --health-cmd "pg_isready -U postgres -h localhost -p 5432"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+          --health-start-period 20s
     env:
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/lms_replay
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
@@ -139,6 +147,13 @@ jobs:
 
       - name: Install from lockfile
         run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Confirm database version and extensions
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select version();"
+          psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "select name, default_version from pg_available_extensions where name in ('pgcrypto','pg_cron','pg_net','supabase_vault') order by name;"
 
       - name: Validate migration inventory
         run: npm run validate:migration-history
