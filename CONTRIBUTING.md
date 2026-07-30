@@ -1,11 +1,11 @@
 # Guia de contribuição
 
-Este repositório é a fonte oficial do código da Plataforma Estímulo. O escopo HubSpot segue a [`DEC-070`](docs/decisions/HUBSPOT_SCOPE_DECISION.md), e a arquitetura de produção segue a [`DEC-075`](docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md).
+Este repositório é a fonte oficial do código da Plataforma Estímulo. O escopo HubSpot segue a [`DEC-070`](docs/decisions/HUBSPOT_SCOPE_DECISION.md), e o estado da produção segue [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md).
 
 ## Fluxo de mudança
 
 1. Não fazer commit direto em `main`.
-2. Criar branch coesa no formato `<tipo>/<escopo>-<descricao>`.
+2. Criar branch coesa no formato `<tipo>/<escopo>-<descricao>` ou `release/YYYY-MM-descricao`.
 3. Alterar juntos código, migrations, contratos, testes e documentação da capacidade.
 4. Abrir PR com título Conventional Commits.
 5. Diferenciar código presente, teste local, evidência de ambiente e aprovação de produção.
@@ -14,7 +14,7 @@ Este repositório é a fonte oficial do código da Plataforma Estímulo. O escop
 Tipos permitidos:
 
 ```text
-feat fix docs refactor test ci chore security hotfix
+feat fix docs refactor test ci chore security hotfix perf build release
 ```
 
 Formato:
@@ -27,7 +27,7 @@ Formato:
 
 - problema e comportamento esperado;
 - escopo e decisões não óbvias;
-- impacto em identidade, banco, arquivos, eventos, filas, HubSpot e ambientes;
+- impacto em identidade, banco, arquivos, eventos, filas, integrações e ambientes;
 - provider afetado: `supabase`, `aws` ou ambos;
 - testes executados e limitações da evidência;
 - riscos e rollback;
@@ -43,50 +43,43 @@ Formato:
 - contratos legíveis por máquina: kebab-case e versão explícita;
 - migrations: `YYYYMMDDHHMMSS_<descricao_em_snake_case>.sql`, preservando nomes já aplicados.
 
-Migrations aplicadas nunca são editadas. Correções criam novas migrations.
+Migrations aplicadas nunca são editadas. Correções criam novas migrations. Validações comportamentais que dependem de conteúdo usam fixtures controladas depois do replay estrutural.
 
 ## Arquitetura de plataforma
 
 ```text
-Supabase = desenvolvimento/teste
-AWS = staging/produção
+Supabase + Vercel = development, test e preview
+AWS                = staging e produção definitivos
 ```
 
-Produção usa:
+Decisões AWS vigentes:
 
-```text
-Lambda container
-API Gateway HTTP API
-Cognito/OIDC corporativo
-RDS Proxy + RDS PostgreSQL
-S3 privado com upload direto
-SQS + Lambdas consumidoras + DLQ
-Secrets Manager/KMS
-CloudWatch/tracing
-```
+- AWS será o ambiente definitivo de produção;
+- a aplicação será empacotada por `Dockerfile.lambda`;
+- Supabase e Vercel não podem ser produção nem fallback.
+
+As demais escolhas — entrada pública, identidade, banco, armazenamento, assíncrono, rede, segredos, observabilidade, deploy e continuidade — permanecem pendentes e exigem ADR aprovado.
 
 Regras obrigatórias:
 
-- `APP_ENV=production` exige `PLATFORM_RUNTIME_PROVIDER=aws`;
+- `APP_ENV=staging|production` exige `PLATFORM_RUNTIME_PROVIDER=aws`;
 - nenhum adapter AWS pode fazer fallback para Supabase;
-- adapters ainda não implementados falham fechado;
-- módulos de domínio não importam SDKs Supabase ou AWS diretamente;
-- identidade, PostgreSQL, storage e async ficam atrás das fronteiras de plataforma;
-- buckets AWS são provisionados por infraestrutura, não por requisição;
-- arquivos não atravessam o Lambda web em produção;
-- trabalho assíncrono não depende do tempo de vida da requisição;
-- recursos AWS corporativos existentes são inventariados antes de criar equivalentes.
+- fronteira ainda não decidida ou implementada falha fechado;
+- módulos de domínio não importam SDKs de provider diretamente;
+- `Dockerfile.lambda` não é tratado como arquitetura completa;
+- preview Vercel não é promovido ou descrito como produção;
+- serviço AWS específico não entra em código, configuração ou documentação como decisão vigente antes do ADR.
 
-Mudanças de arquitetura atualizam, conforme aplicável:
+Mudanças da fronteira de produção atualizam, conforme aplicável:
 
 ```text
 config/platform/aws-production.json
-docs/decisions/AWS_PRODUCTION_ARCHITECTURE.md
-docs/architecture/AWS_TARGET_ARCHITECTURE.md
+docs/architecture/AWS_ARCHITECTURE_STATUS.md
 docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md
+docs/decisions/DECISION_LOG.md
 docs/implementation/APPLICATION_FOUNDATION.md
 docs/implementation/DELIVERY_BLOCKERS.md
-infra/aws/PLATFORM_INTEGRATION_REQUIREMENTS.md
+docs/operations/FINAL_RELEASE_RUNBOOK.md
 ```
 
 ## Qualidade mínima
@@ -106,21 +99,22 @@ documentação sincronizada
 Comandos principais:
 
 ```bash
-npm run validate:repository
-npm run validate:dependency-lock
-npm run validate:platform-contract
+npm run validate:release-candidate
+npm run test:repository-tooling
 npm run test:application
 npm run test:product
 npm run test:integrations
+npm run test:database
 npm run typecheck:web
 npm run build:web
+npm run scan:secrets
 ```
 
-Mudanças de banco também executam `npm run test:database`. Mudanças AWS precisam construir `Dockerfile.lambda` e manter a readiness fail-closed.
+Mudanças de produção precisam construir `Dockerfile.lambda` e manter `/api/health/ready` fail-closed enquanto a arquitetura estiver pendente.
 
 ## Scripts e testes
 
-Um script permanente deve ter consumidor explícito em `package.json`, workflow, Docker, infraestrutura ou runbook. Um teste deve proteger lógica, contrato, segurança, compatibilidade ou comportamento observável.
+Um script permanente deve ter consumidor explícito em `package.json`, workflow, Docker ou runbook. Um teste deve proteger lógica, contrato, segurança, compatibilidade ou comportamento observável.
 
 Scripts órfãos e testes que apenas congelam copy, CSS ou detalhes transitórios não pertencem ao repositório.
 
@@ -128,13 +122,13 @@ Verificações de ambiente implantado ficam em `scripts/verification/` e nunca i
 
 ## Ambientes e dados
 
-- Supabase é desenvolvimento/teste somente.
-- AWS é staging/produção somente.
+- Supabase e Vercel são desenvolvimento, teste e preview somente.
+- AWS é staging e produção somente, após decisão e gates.
 - Não declarar adapter, recurso ou portabilidade como implementado sem evidência.
 - Dados reais não entram em fixtures, logs, documentos ou testes locais.
 - HubSpot recebe somente dados autorizados pela DEC-070.
-- Secrets ficam em Secrets Manager/KMS ou solução corporativa equivalente.
-- Não criar infraestrutura paralela antes do inventário corporativo.
+- Segredos ficam no mecanismo institucional aprovado; nenhum serviço específico é presumido antes do ADR.
+- Não criar infraestrutura paralela antes das decisões arquiteturais.
 
 ## Artefatos proibidos
 
@@ -153,4 +147,4 @@ payloads de produção
 credenciais, tokens ou chaves
 ```
 
-O histórico Git e os PRs preservam o desenvolvimento; a árvore ativa contém apenas produto, código, infraestrutura, operação, testes permanentes e documentação vigente.
+O histórico Git e os PRs preservam o desenvolvimento; a árvore ativa contém apenas produto, código, operação, testes permanentes e documentação vigente.
