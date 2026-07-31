@@ -42,10 +42,6 @@ function quizQuestionsFromForm(formData: FormData) {
   return questions;
 }
 
-function contentSectionsFromForm(formData: FormData) {
-  return [0, 1, 2, 3].map((index) => ({ code: `parte_${index + 1}`, heading: text(formData, `section_heading_${index}`), body: text(formData, `section_body_${index}`) })).filter((section) => section.heading && section.body);
-}
-
 async function authorize() {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
@@ -138,15 +134,13 @@ export async function saveAulaAction(formData: FormData) {
   const title = text(formData, "title");
   const position = positiveInteger(text(formData, "position"));
   const isClosing = checked(formData, "is_closing");
-  const prompts = [0, 1, 2, 3, 4, 5].map((index) => ({ title: text(formData, `prompt_title_${index}`), text: text(formData, `prompt_text_${index}`) })).filter((prompt) => prompt.title && prompt.text);
-  const sections = contentSectionsFromForm(formData);
   const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
   const questions = quizQuestionsFromForm(formData);
   const contentSource = text(formData, "content_source") || (activityVersionId ? "current" : "none");
   const previousConfiguration = objectSnapshot(formData, "configuration_snapshot");
   const previousMetadata = objectSnapshot(formData, "metadata_snapshot");
   const { content_sections: _oldSections, prompts: _oldPrompts, practice_checklist: _oldChecklist, ...preservedConfiguration } = previousConfiguration;
-  const configuration = { ...preservedConfiguration, ...(sections.length ? { content_sections: sections } : {}), ...(prompts.length ? { prompts } : {}), ...(checklist.length ? { practice_checklist: checklist } : {}) };
+  const configuration = { ...preservedConfiguration, ...(checklist.length ? { practice_checklist: checklist } : {}) };
   const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
   if (!title || !pathTemplateId || (isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
 
