@@ -11,10 +11,11 @@ import {
 } from "../../apps/web/lib/auth/admin-oauth-bridge-core.mjs";
 
 const read = (path) => readFile(new URL(`../../${path}`, import.meta.url), "utf8");
-const [adminShell, experiencePage, visualSelector, nextConfig, startRoute, bridgeRoute, prepareRoute, proxy] = await Promise.all([
+const [adminShell, experiencePage, visualSelector, previewBridge, nextConfig, startRoute, bridgeRoute, prepareRoute, proxy] = await Promise.all([
   read("apps/web/components/admin-shell.tsx"),
   read("apps/web/app/admin/experiencia/page.tsx"),
   read("apps/web/app/admin/experiencia/visual-interface-selector.tsx"),
+  read("apps/web/components/interface-preview-bridge.tsx"),
   read("apps/web/next.config.ts"),
   read("apps/web/app/auth/admin/start/route.ts"),
   read("apps/web/app/auth/admin/local-bridge/route.ts"),
@@ -61,9 +62,9 @@ test("bridge accepts and encodes only the exact local admin callback", () => {
   assert.equal(localAdminCallbackUrl("http://localhost:3000/outro"), null);
 });
 
-test("admin navigation exposes the dedicated configuration and growth sections", () => {
+test("admin navigation exposes consolidated configuration and growth sections", () => {
   for (const [label, href] of [
-    ["Diagnóstico principal", "/admin/diagnostico"],
+    ["Diagnósticos", "/admin/diagnostico"],
     ["Pontuação", "/admin/gamificacao"],
     ["Anúncios", "/admin/engajamento"],
     ["B2B", "/admin/b2b"],
@@ -75,16 +76,23 @@ test("admin navigation exposes the dedicated configuration and growth sections",
     assert.match(adminShell, new RegExp(label));
     assert.match(adminShell, new RegExp(href.replaceAll("/", "\\/")));
   }
+  assert.doesNotMatch(adminShell, /\/admin\/diagnosticos-opcionais/u);
+  assert.doesNotMatch(adminShell, /\/admin\/certificados/u);
+  assert.match(adminShell, /AdminProgramManager/u);
 });
 
-test("interface administration is driven by a session-independent visual selector", () => {
+test("interface administration uses a same-origin clickable visual selector", () => {
   assert.match(experiencePage, /VisualInterfaceSelector/);
-  assert.match(visualSelector, /Selecione o elemento que deseja alterar/);
+  assert.match(visualSelector, /Clique diretamente no que deseja editar/);
   assert.match(visualSelector, /Página exibida/);
   assert.match(visualSelector, /entryMatchesRoute/);
   assert.match(visualSelector, /params\.set\("edit", contentKey\)/);
-  assert.doesNotMatch(visualSelector, /<iframe/);
-  assert.doesNotMatch(visualSelector, /interface_preview=1/);
+  assert.match(visualSelector, /<iframe/);
+  assert.match(visualSelector, /interface_preview/u);
+  assert.match(visualSelector, /event\.origin !== window\.location\.origin/u);
+  assert.match(previewBridge, /window\.parent\.postMessage/u);
+  assert.match(previewBridge, /data-interface-content-key/u);
+  assert.doesNotMatch(visualSelector, /srcDoc=/u);
 });
 
 test("visual pages remain protected from cross-origin framing", () => {
