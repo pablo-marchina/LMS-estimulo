@@ -16,7 +16,8 @@ const [
   journeyPage,
   journeyAction,
   settingsPage,
-  certificatePage,
+  certificateRedirect,
+  certificateManager,
   certificateUpload,
   credentialFiles,
   campaignsPage,
@@ -27,11 +28,13 @@ const [
   b2bParticipant,
   rewardsAdmin,
   rewardsParticipant,
+  rewardsExperience,
   deliveriesAdmin,
   deliveriesParticipant,
   deliveryUploadRoute,
   aiGrader,
-  optionalAdmin,
+  diagnosticsAdmin,
+  optionalForm,
   optionalParticipant,
   optionalActions,
   behaviorAdmin,
@@ -55,6 +58,7 @@ const [
   read("apps/web/app/admin/produto/journey-action.ts"),
   read("apps/web/app/admin/configuracoes/page.tsx"),
   read("apps/web/app/admin/certificados/page.tsx"),
+  read("apps/web/app/admin/gamificacao/certificate-template-manager.tsx"),
   read("apps/web/app/api/certificate-template-uploads/route.ts"),
   read("apps/web/lib/storage/credential-files.ts"),
   read("apps/web/app/admin/campanhas/page.tsx"),
@@ -65,11 +69,13 @@ const [
   read("apps/web/app/empreendedor/b2b/[slug]/page.tsx"),
   read("apps/web/app/admin/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/page.tsx"),
+  read("apps/web/app/empreendedor/recompensas/rewards-experience.tsx"),
   read("apps/web/app/admin/entregas/page.tsx"),
   read("apps/web/app/empreendedor/entregas/page.tsx"),
   read("apps/web/app/api/delivery-uploads/route.ts"),
   read("supabase/functions/ai-grade-submission/index.ts"),
-  read("apps/web/app/admin/diagnosticos-opcionais/page.tsx"),
+  read("apps/web/app/admin/diagnostico/page.tsx"),
+  read("apps/web/app/admin/diagnosticos-opcionais/optional-diagnostic-form.tsx"),
   read("apps/web/app/empreendedor/perfil/diagnosticos/[availabilityId]/page.tsx"),
   read("apps/web/app/empreendedor/perfil/diagnosticos/[availabilityId]/actions.ts"),
   read("apps/web/app/admin/comportamento/page.tsx"),
@@ -120,13 +126,14 @@ test("administrative library preview uses participant rendering without side eff
   assert.match(libraryContentPreview, /Na prévia, o link é aberto sem registrar acesso/u);
 });
 
-test("certificate templates accept PDF or image and support inherited scopes", () => {
+test("certificate templates accept PDF or image and support inherited scopes inside certificates", () => {
   assert.match(credentialFiles, /application\/pdf/u);
   assert.match(credentialFiles, /image\/png/u);
   assert.match(certificateUpload, /scopeSchema = z\.enum\(\["global", "program", "journey"\]\)/u);
-  assert.match(certificatePage, /Template global/u);
-  assert.match(certificatePage, /Template por programa/u);
-  assert.match(certificatePage, /Template por jornada/u);
+  assert.match(certificateManager, /Modelo geral/u);
+  assert.match(certificateManager, /Modelo de um programa/u);
+  assert.match(certificateManager, /Modelo de uma jornada/u);
+  assert.match(certificateRedirect, /\/admin\/gamificacao\?tipo=certificados/u);
   assert.match(adminRuntimeMigration, /certificate_template_assignment/u);
 });
 
@@ -152,8 +159,9 @@ test("B2B access is selected by users or groups and enforced in the participant 
 
 test("reward cancellation refunds points and stock transactionally", () => {
   assert.match(rewardsAdmin, /redemption_status/u);
-  assert.match(rewardsParticipant, /reward_convert/u);
-  assert.match(rewardsParticipant, /reward_redeem/u);
+  assert.match(rewardsParticipant, /RewardsExperience/u);
+  assert.match(rewardsExperience, /reward_convert/u);
+  assert.match(rewardsExperience, /reward_redeem/u);
   assert.match(adminRuntimeMigration, /redemption_refund/u);
   assert.match(adminRuntimeMigration, /stock_quantity\+v_redemption\.quantity/u);
   assert.match(adminRuntimeMigration, /balance=balance\+v_redemption\.points_spent/u);
@@ -172,8 +180,10 @@ test("deliveries support library content, activities and safe AI review modes", 
   assert.doesNotMatch(aiGrader, /child_process|\bexec\(|\bspawn\(/u);
 });
 
-test("optional diagnostics never update archetype or journey eligibility", () => {
-  assert.match(optionalAdmin, /optional_diagnostic/u);
+test("optional diagnostics remain inside diagnostics and never update archetype or journey eligibility", () => {
+  assert.match(diagnosticsAdmin, /Opcionais no perfil/u);
+  assert.match(diagnosticsAdmin, /OptionalDiagnosticForm/u);
+  assert.match(optionalForm, /resource_type" value="optional_diagnostic"/u);
   assert.match(optionalParticipant, /startOptionalDiagnosticAction/u);
   assert.match(optionalActions, /optional_start/u);
   assert.match(optionalActions, /optional_answer/u);
