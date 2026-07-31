@@ -1,30 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import {
-  Activity,
-  BarChart3,
-  BookOpen,
-  Building2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ClipboardList,
-  FileImage,
-  FileUp,
-  Gauge,
-  Gift,
-  LayoutDashboard,
-  Megaphone,
-  Menu,
-  Settings,
-  SlidersHorizontal,
-  Tags,
-  Trophy,
-  Users,
-  X,
-} from "lucide-react";
+import { Activity, BarChart3, BookOpen, Building2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FileImage, FileUp, Gauge, Gift, LayoutDashboard, Megaphone, Menu, Settings, SlidersHorizontal, Tags, Trophy, Users, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
@@ -34,14 +13,7 @@ import { Button } from "@/components/ui/button";
 import { NavItem } from "@/components/ui/nav-item";
 import { interfaceHref, interfaceOrder, interfaceText, interfaceVisible } from "@/lib/interface-content/contracts";
 
-type ShellLink = {
-  href: string;
-  label: string;
-  contentKey: string;
-  icon: LucideIcon;
-  exact?: boolean;
-  order: number;
-};
+type ShellLink = { href: string; label: string; contentKey: string; icon: LucideIcon; exact?: boolean; order: number };
 
 const navigationDefinitions: ShellLink[] = [
   { href: "/admin", label: "Visão geral", contentKey: "admin.nav.overview", icon: Gauge, exact: true, order: 10 },
@@ -68,9 +40,10 @@ const settingsDefinitions: ShellLink[] = [
 ];
 
 export function AdminShell({ email, children }: { email: string; children: React.ReactNode }) {
+  const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(() => settingsDefinitions.some((item) => pathname.startsWith(item.href)));
   const content = useInterfaceContent();
   const skipLabel = interfaceText(content, "shared.skip_to_content", "Pular para o conteúdo");
   const signOutLabel = interfaceText(content, "shared.sign_out", "Sair");
@@ -78,99 +51,41 @@ export function AdminShell({ email, children }: { email: string; children: React
   const prepareLinks = (definitions: ShellLink[]) => definitions
     .filter((link) => interfaceVisible(content, link.contentKey))
     .sort((a, b) => interfaceOrder(content, a.contentKey, a.order) - interfaceOrder(content, b.contentKey, b.order))
-    .map((link) => ({
-      ...link,
-      href: interfaceHref(content, link.contentKey, link.href),
-      label: interfaceText(content, link.contentKey, link.label),
-    }));
+    .map((link) => ({ ...link, href: interfaceHref(content, link.contentKey, link.href), label: interfaceText(content, link.contentKey, link.label) }));
 
   const links = prepareLinks(navigationDefinitions);
   const settingsLinks = prepareLinks(settingsDefinitions);
 
   const renderLink = (link: ShellLink, nested = false) => {
     const Icon = link.icon;
-    return (
-      <NavItem
-        key={link.contentKey}
-        href={link.href}
-        variant="dark"
-        exact={link.exact}
-        icon={<Icon size={nested ? 16 : 18} aria-hidden="true" />}
-        interfaceContentKey={link.contentKey}
-        className={`${collapsed ? "justify-center px-2" : ""} ${nested && !collapsed ? "ml-3 border-l border-white/15 pl-4 text-sm" : ""}`}
-      >
-        <span className={collapsed ? "sr-only" : ""}>{link.label}</span>
-      </NavItem>
-    );
+    return <NavItem key={link.contentKey} href={link.href} variant="dark" exact={link.exact} icon={<Icon size={nested ? 14 : 15} aria-hidden="true" />} interfaceContentKey={link.contentKey} className={`${collapsed ? "justify-center px-1.5" : ""} min-h-8 gap-2 px-2 py-1.5 text-xs ${nested ? "rounded-lg" : ""}`}><span className={collapsed ? "sr-only" : ""}>{link.label}</span></NavItem>;
   };
 
-  const settingsButton = (
-    <button
-      type="button"
-      onClick={() => {
-        if (collapsed) setCollapsed(false);
-        setSettingsOpen((open) => !open);
-      }}
-      className={`flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-semibold text-white/85 transition hover:bg-white/10 hover:text-white ${collapsed ? "justify-center px-2" : "gap-3"}`}
-      aria-expanded={settingsOpen}
-      aria-controls="admin-settings-links"
-      title={collapsed ? "Mais configurações" : undefined}
-    >
-      <Settings size={18} aria-hidden="true" />
-      <span className={collapsed ? "sr-only" : "flex-1 text-left"}>Mais configurações</span>
-      {!collapsed ? <ChevronDown size={16} className={`transition-transform ${settingsOpen ? "rotate-180" : ""}`} aria-hidden="true" /> : null}
-    </button>
-  );
+  const settingsButton = <button type="button" onClick={() => { if (collapsed) setCollapsed(false); setSettingsOpen((open) => !open); }} className={`flex min-h-8 w-full items-center rounded-lg px-2 py-1.5 text-xs font-semibold text-white/85 transition hover:bg-white/10 hover:text-white ${collapsed ? "justify-center" : "gap-2"}`} aria-expanded={settingsOpen} aria-controls="admin-settings-links" title={collapsed ? "Mais configurações" : undefined}><Settings size={15} aria-hidden="true" /><span className={collapsed ? "sr-only" : "flex-1 text-left"}>Mais configurações</span>{!collapsed ? <ChevronDown size={14} className={`transition-transform ${settingsOpen ? "rotate-180" : ""}`} aria-hidden="true" /> : null}</button>;
 
-  return (
-    <div className="min-h-screen bg-background lg:grid" style={{ gridTemplateColumns: collapsed ? "76px minmax(0,1fr)" : "248px minmax(0,1fr)" }}>
-      <InterfacePreviewBridge />
-      <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
-      <aside className="no-print sticky top-0 hidden h-screen flex-col border-r border-primary-active bg-primary text-white shadow-sm lg:flex">
-        <div className={`flex min-h-17 items-center border-b border-white/15 ${collapsed ? "justify-center px-2" : "justify-between px-4"}`}>
-          <div className={collapsed ? "scale-90" : ""}><EstimuloBrand href="/admin" compact /></div>
-          {!collapsed ? <span className="rounded-full border border-white/25 px-2.5 py-1 text-[11px] font-semibold text-white/85">Admin</span> : null}
+  return <div className="min-h-screen bg-background lg:grid" style={{ gridTemplateColumns: collapsed ? "64px minmax(0,1fr)" : "224px minmax(0,1fr)" }}>
+    <InterfacePreviewBridge />
+    <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
+    <aside className="no-print sticky top-0 hidden h-screen flex-col overflow-visible border-r border-primary-active bg-primary text-white shadow-sm lg:flex">
+      <div className={`flex min-h-14 items-center border-b border-white/15 ${collapsed ? "justify-center px-1" : "justify-between px-3"}`}><div className={collapsed ? "scale-75" : "scale-90 origin-left"}><EstimuloBrand href="/admin" compact /></div>{!collapsed ? <span className="rounded-full border border-white/25 px-2 py-0.5 text-[10px] font-semibold text-white/85">Admin</span> : null}</div>
+      <nav className="grid flex-1 content-start gap-0.5 overflow-visible p-2" aria-label="Navegação administrativa">
+        {links.map((link) => renderLink(link))}
+        <div className="relative mt-1 border-t border-white/10 pt-1.5">
+          {settingsButton}
+          {settingsOpen && !collapsed ? <div id="admin-settings-links" className="absolute bottom-0 left-full z-[70] ml-2 grid w-64 gap-1 rounded-2xl border border-white/15 bg-primary p-2 shadow-2xl"><p className="px-2 py-1 text-[10px] font-bold uppercase tracking-[.12em] text-white/55">Mais configurações</p>{settingsLinks.map((link) => renderLink(link, true))}</div> : null}
         </div>
-        <nav className="grid flex-1 content-start gap-1 overflow-y-auto p-3" aria-label="Navegação administrativa">
-          {links.map((link) => renderLink(link))}
-          <div className="mt-1 border-t border-white/10 pt-2">
-            {settingsButton}
-            {settingsOpen ? <div id="admin-settings-links" className="mt-1 grid gap-1">{settingsLinks.map((link) => renderLink(link, true))}</div> : null}
-          </div>
-        </nav>
-        <div className="border-t border-white/15 p-3">
-          {!collapsed ? <p className="mb-2 truncate px-2 text-xs text-white/65" title={email}>{email}</p> : null}
-          <form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className={`w-full !text-white hover:!bg-white/10 ${collapsed ? "px-2" : ""}`}>{signOutLabel}</Button></form>
-          <button type="button" onClick={() => setCollapsed((value) => !value)} className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white/75 hover:bg-white/10 hover:text-white" aria-label={collapsed ? "Expandir menu" : "Recolher menu"}>
-            {collapsed ? <ChevronRight size={17} /> : <><ChevronLeft size={17} /> Recolher menu</>}
-          </button>
-        </div>
-      </aside>
-      <div className="min-w-0">
-        <header className="no-print sticky top-0 z-50 flex min-h-16 items-center border-b border-primary-active bg-primary px-4 text-white shadow-sm lg:hidden">
-          <div className="brand-logo-capsule"><EstimuloBrand href="/admin" compact /></div>
-          <button type="button" className="ml-auto grid size-10 place-items-center rounded-lg hover:bg-white/10" aria-expanded={mobileOpen} aria-controls="admin-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>
-          {mobileOpen ? (
-            <div id="admin-mobile-nav" className="absolute inset-x-0 top-full max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-white/15 bg-primary p-4 shadow-xl">
-              <nav className="grid gap-1">
-                {links.map((link) => renderLink(link))}
-                <div className="mt-1 border-t border-white/10 pt-2">
-                  {settingsButton}
-                  {settingsOpen ? <div className="mt-1 grid gap-1">{settingsLinks.map((link) => renderLink(link, true))}</div> : null}
-                </div>
-              </nav>
-              <div className="mt-3 border-t border-white/15 pt-3">
-                <p className="mb-2 truncate text-xs text-white/65">{email}</p>
-                <form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="w-full !text-white hover:!bg-white/10">{signOutLabel}</Button></form>
-              </div>
-            </div>
-          ) : null}
-        </header>
-        <InterfaceSlot area="admin" placement="before_content" />
-        <main id="conteudo-principal" className="mx-auto w-full max-w-[1500px] px-4 py-7 sm:px-6 sm:py-9" tabIndex={-1}>{children}</main>
-        <InterfaceSlot area="admin" placement="after_content" />
-        <InterfaceSlot area="admin" placement="footer" />
+      </nav>
+      <div className="border-t border-white/15 p-2">
+        {!collapsed ? <p className="mb-1 truncate px-2 text-[10px] text-white/60" title={email}>{email}</p> : null}
+        <div className={`grid ${collapsed ? "gap-1" : "grid-cols-2 gap-1"}`}><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="min-h-8 w-full px-2 text-xs !text-white hover:!bg-white/10">{collapsed ? "S" : signOutLabel}</Button></form><button type="button" onClick={() => setCollapsed((value) => !value)} className="flex min-h-8 items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold text-white/70 hover:bg-white/10 hover:text-white" aria-label={collapsed ? "Expandir menu" : "Recolher menu"}>{collapsed ? <ChevronRight size={15} /> : <><ChevronLeft size={14} /> Recolher</>}</button></div>
       </div>
+    </aside>
+    <div className="min-w-0">
+      <header className="no-print sticky top-0 z-50 flex min-h-14 items-center border-b border-primary-active bg-primary px-4 text-white shadow-sm lg:hidden"><div className="brand-logo-capsule scale-90 origin-left"><EstimuloBrand href="/admin" compact /></div><button type="button" className="ml-auto grid size-9 place-items-center rounded-lg hover:bg-white/10" aria-expanded={mobileOpen} aria-controls="admin-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={19} /> : <Menu size={19} />}</button>{mobileOpen ? <div id="admin-mobile-nav" className="absolute inset-x-0 top-full max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-white/15 bg-primary p-3 shadow-xl"><nav className="grid gap-0.5">{links.map((link) => renderLink(link))}<div className="mt-1 border-t border-white/10 pt-1.5">{settingsButton}{settingsOpen ? <div className="mt-1 grid gap-0.5 rounded-xl bg-white/5 p-1.5">{settingsLinks.map((link) => renderLink(link, true))}</div> : null}</div></nav><div className="mt-2 border-t border-white/15 pt-2"><p className="mb-1 truncate text-[10px] text-white/60">{email}</p><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="w-full !text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}</header>
+      <InterfaceSlot area="admin" placement="before_content" />
+      <main id="conteudo-principal" className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 sm:py-7" tabIndex={-1}>{children}</main>
+      <InterfaceSlot area="admin" placement="after_content" />
+      <InterfaceSlot area="admin" placement="footer" />
     </div>
-  );
+  </div>;
 }
