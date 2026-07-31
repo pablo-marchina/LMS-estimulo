@@ -1,6 +1,6 @@
 # Guia de contribuição
 
-Este repositório é a fonte oficial do código da Plataforma Estímulo. O escopo HubSpot segue a [`DEC-070`](docs/decisions/HUBSPOT_SCOPE_DECISION.md), e o estado da produção segue [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md).
+Este repositório é a fonte oficial do código da Plataforma Estímulo. O estado da arquitetura de produção segue [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md). PostgreSQL é a fonte operacional; integrações futuras consomem contratos e outbox genéricos, sem acoplamento a um CRM específico.
 
 ## Fluxo de mudança
 
@@ -57,14 +57,7 @@ Formato:
 
 Uma migration que pertence a um candidato já aprovado por replay canônico nunca é editada. Correções criam migrations aditivas.
 
-Uma migration recém-integrada que nunca passou pelo replay canônico do Gate A pode ser corrigida antes do próximo release somente quando:
-
-1. o arquivo atual impede a reconstrução desde zero;
-2. a causa e a alteração estão documentadas no PR;
-3. existe migration aditiva e idempotente para alinhar ambientes de teste onde a versão defeituosa já foi aplicada;
-4. todo o Gate A é repetido no SHA corrigido.
-
-Validações comportamentais que dependem de conteúdo usam fixtures controladas depois do replay estrutural.
+Uma migration recém-integrada que nunca passou pelo replay canônico pode ser corrigida antes do próximo release somente quando o arquivo impede reconstrução desde zero, a causa está registrada, existe alinhamento aditivo para ambientes que já receberam a versão e todo o Gate A é repetido.
 
 ## Arquitetura de plataforma
 
@@ -73,23 +66,15 @@ Supabase + Vercel = development, test e preview
 AWS                = staging e produção definitivos
 ```
 
-Decisões AWS vigentes:
-
-- AWS será o ambiente definitivo de produção;
-- a aplicação será empacotada por `Dockerfile.lambda`;
-- Supabase e Vercel não podem ser produção nem fallback.
-
-As demais escolhas — entrada pública, identidade, banco, armazenamento, assíncrono, rede, segredos, observabilidade, deploy e continuidade — permanecem pendentes e exigem ADR aprovado.
-
 Regras obrigatórias:
 
 - `APP_ENV=staging|production` exige `PLATFORM_RUNTIME_PROVIDER=aws`;
 - nenhum adapter AWS pode fazer fallback para Supabase;
-- fronteira ainda não decidida ou implementada falha fechado;
+- fronteira não decidida ou implementada falha fechado;
 - módulos de domínio não importam SDKs de provider diretamente;
-- `Dockerfile.lambda` não é tratado como arquitetura completa;
-- preview Vercel não é promovido ou descrito como produção;
-- serviço AWS específico não entra em código, configuração ou documentação como decisão vigente antes do ADR.
+- `Dockerfile.lambda` não é arquitetura completa;
+- preview Vercel não é descrito como produção;
+- serviço AWS específico exige ADR aprovado.
 
 Mudanças da fronteira de produção atualizam, conforme aplicável:
 
@@ -131,24 +116,16 @@ npm run build:web
 npm run scan:secrets
 ```
 
-Mudanças de produção precisam construir `Dockerfile.lambda` e manter `/api/health/ready` fail-closed enquanto a arquitetura estiver pendente.
+## Scripts, dados e integrações
 
-## Scripts e testes
+Um script permanente deve ter consumidor explícito em `package.json`, workflow, Docker ou runbook. Testes protegem lógica, contrato, segurança, compatibilidade ou comportamento observável.
 
-Um script permanente deve ter consumidor explícito em `package.json`, workflow, Docker ou runbook. Um teste deve proteger lógica, contrato, segurança, compatibilidade ou comportamento observável.
-
-Scripts órfãos e testes que apenas congelam copy, CSS ou detalhes transitórios não pertencem ao repositório.
-
-Verificações de ambiente implantado ficam em `scripts/verification/` e nunca introduzem backend, autenticação, banco ou storage sintéticos.
-
-## Ambientes e dados
-
-- Supabase e Vercel são desenvolvimento, teste e preview somente.
-- AWS é staging e produção somente, após decisão e gates.
-- Não declarar adapter, recurso ou portabilidade como implementado sem evidência.
-- Dados reais não entram em fixtures, logs, documentos ou testes locais.
-- HubSpot recebe somente dados autorizados pela DEC-070.
-- Segredos ficam no mecanismo institucional aprovado; nenhum serviço específico é presumido antes do ADR.
+- Supabase e Vercel são desenvolvimento, teste e preview.
+- AWS é staging e produção após decisão e gates.
+- Dados reais não entram em fixtures, logs, documentos ou testes.
+- Estado operacional permanece no PostgreSQL.
+- Produtores escrevem eventos e outbox genérica; destinos ETL são substituíveis.
+- Segredos ficam no mecanismo institucional aprovado.
 - Não criar infraestrutura paralela antes das decisões arquiteturais.
 
 ## Artefatos proibidos
