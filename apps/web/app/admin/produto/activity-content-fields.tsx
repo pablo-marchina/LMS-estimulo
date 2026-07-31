@@ -31,7 +31,6 @@ type ActivityContentFieldsProps = {
   currentLibraryItemVersionId?: string | null;
   currentAsset?: CurrentActivityAsset | null;
   currentContentRequired?: boolean;
-  currentConfiguration?: Record<string, unknown>;
 };
 
 function recordValue(value: unknown): Record<string, unknown> {
@@ -42,23 +41,11 @@ function textValue(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
-function ConfigurationPreview({ configuration }: { configuration: Record<string, unknown> }) {
-  const sections = Array.isArray(configuration.content_sections) ? configuration.content_sections.map(recordValue).filter((item) => textValue(item.heading) || textValue(item.body)) : [];
-  const prompts = Array.isArray(configuration.prompts) ? configuration.prompts.map(recordValue).filter((item) => textValue(item.title) || textValue(item.text)) : [];
-  if (!sections.length && !prompts.length) return null;
-  return <div className="grid gap-3 rounded-xl border border-border bg-white p-3">
-    <strong className="text-sm text-secondary">Texto e recursos salvos na atividade</strong>
-    {sections.map((section, index) => <div key={`section-${index}`} className="rounded-lg bg-surface-muted p-3"><p className="text-sm font-bold text-ink">{textValue(section.heading) || `Parte ${index + 1}`}</p>{textValue(section.body) ? <p className="mt-1 whitespace-pre-line text-xs leading-5 text-muted">{textValue(section.body)}</p> : null}</div>)}
-    {prompts.length ? <div className="grid gap-2"><p className="text-xs font-black uppercase tracking-wide text-primary">Prompts</p>{prompts.map((prompt, index) => <div key={`prompt-${index}`} className="rounded-lg border border-border p-3"><p className="text-xs font-bold text-secondary">{textValue(prompt.title) || `Prompt ${index + 1}`}</p><p className="mt-1 whitespace-pre-line text-xs leading-5 text-muted">{textValue(prompt.text)}</p></div>)}</div> : null}
-  </div>;
-}
-
 export function ActivityContentFields({
   items,
   currentLibraryItemVersionId,
   currentAsset = null,
   currentContentRequired = false,
-  currentConfiguration = {},
 }: ActivityContentFieldsProps) {
   const initialSource = currentLibraryItemVersionId ? "library" : currentAsset ? "current" : "none";
   const [source, setSource] = useState(initialSource);
@@ -76,8 +63,6 @@ export function ActivityContentFields({
         {textValue(metadata.summary) ? <p className="text-xs leading-5 text-muted">{textValue(metadata.summary)}</p> : null}
         {currentAsset.external_url ? <a href={currentAsset.external_url} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-1.5 text-xs font-bold text-primary hover:underline"><ExternalLink size={13} />Abrir conteúdo atual</a> : currentAsset.file_object_id ? <p className="text-xs font-semibold text-primary">Arquivo armazenado na plataforma</p> : null}
       </div> : null}
-
-      <ConfigurationPreview configuration={currentConfiguration} />
 
       <label className="grid gap-1 text-sm font-medium text-ink">Origem
         <Select name="content_source" value={source} onChange={(event) => setSource(event.target.value)}>
