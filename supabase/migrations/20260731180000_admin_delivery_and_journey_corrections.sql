@@ -94,6 +94,7 @@ declare
   v_provider text:=coalesce(nullif(btrim(p_payload->>'provider_name'),''),'Provedor compatível com OpenAI');
   v_status text:=coalesce(nullif(p_payload->>'status',''),'active');
   v_last_four text;
+  v_ciphertext bytea;
   v_result jsonb;
 begin
   if not app_private.e14_actor_has_permission(p_actor_user_account_id,p_organization_id,'assessment.review') then
@@ -132,24 +133,27 @@ begin
   end if;
 
   if v_api_key is null then
-    select api_key_last_four into v_last_four from assessment.ai_grading_provider_settings where organization_id=p_organization_id;
+    select api_key_last_four,api_key_ciphertext into v_last_four,v_ciphertext
+    from assessment.ai_grading_provider_settings
+    where organization_id=p_organization_id;
   else
     v_last_four:=right(v_api_key,4);
+    v_ciphertext:=extensions.pgp_sym_encrypt(v_api_key,v_secret);
   end if;
 
   insert into assessment.ai_grading_provider_settings(
     organization_id,provider_name,endpoint_url,model_name,api_style,api_key_ciphertext,api_key_last_four,status,metadata,updated_by
   ) values (
     p_organization_id,v_provider,v_endpoint,v_model,'openai_chat_completions',
-    extensions.pgp_sym_encrypt(v_api_key,v_secret),v_last_four,v_status,coalesce(p_payload->'metadata','{}'::jsonb),p_actor_user_account_id
+    v_ciphertext,v_last_four,v_status,coalesce(p_payload->'metadata','{}'::jsonb),p_actor_user_account_id
   )
   on conflict(organization_id) do update set
     provider_name=excluded.provider_name,
     endpoint_url=excluded.endpoint_url,
     model_name=excluded.model_name,
     api_style=excluded.api_style,
-    api_key_ciphertext=case when v_api_key is null then assessment.ai_grading_provider_settings.api_key_ciphertext else excluded.api_key_ciphertext end,
-    api_key_last_four=case when v_api_key is null then assessment.ai_grading_provider_settings.api_key_last_four else excluded.api_key_last_four end,
+    api_key_ciphertext=excluded.api_key_ciphertext,
+    api_key_last_four=excluded.api_key_last_four,
     status=excluded.status,
     metadata=excluded.metadata,
     updated_by=excluded.updated_by,
@@ -362,7 +366,7 @@ begin
 end;
 $function$;
 
-perform set_config('app.admin_live_edit','on',true);
+select set_config('app.admin_live_edit','on',true);
 update catalog.activity_versions
 set configuration=coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts'
 where coalesce(configuration,'{}'::jsonb) ?| array['content_sections','prompts'];
