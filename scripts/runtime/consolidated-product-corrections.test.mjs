@@ -165,7 +165,7 @@ test("participant journeys, library formats and administrative user discovery fo
   assert.match(users, /membershipMatches/u);
 });
 
-test("migration boundary preserves release hardening and consolidated corrections", async () => {
+test("migration boundary preserves release hardening and growth extensions", async () => {
   const validator = await source("scripts/database/migration-history/validate-active-migrations.mjs");
   for (const migration of [
     "20260729235959_release_readiness_fk_indexes.sql",
@@ -183,8 +183,13 @@ test("migration boundary preserves release hardening and consolidated correction
     "20260730183100_admin_journey_and_diagnostic_lifecycle.sql",
     "20260730183200_route_admin_lifecycle_through_product_rpc.sql",
     "20260730211500_platform_growth_engagement_tables.sql",
+    "20260730211600_platform_growth_engagement_helpers.sql",
+    "20260730211700_get_admin_extensions_workspace.sql",
+    "20260730211800_get_participant_extensions.sql",
+    "20260730211900_perform_participant_extension.sql",
+    "20260730212000_save_admin_extension.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260730211500_platform_growth_engagement_tables\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260730212000_save_admin_extension\.sql'/u);
 });
