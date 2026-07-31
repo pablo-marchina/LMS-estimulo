@@ -30,6 +30,11 @@ function failure(error: { code?: string | null; message?: string | null } | null
   return { status: 500, code, message: "The operation could not be completed." };
 }
 
+async function fingerprint(value: unknown) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(value)));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (request: Request) => {
   const requestIdCandidate = request.headers.get("x-request-id") ?? "";
   const requestId = requestIdPattern.test(requestIdCandidate) ? requestIdCandidate : crypto.randomUUID();
@@ -73,24 +78,42 @@ Deno.serve(async (request: Request) => {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
   const { data: userData, error: userError } = await userClient.auth.getUser(token);
-  if (userError || !userData.user?.email_confirmed_at) {
+  const user = userData.user;
+  const email = user?.email?.trim().toLowerCase() ?? "";
+  const provider = typeof user?.app_metadata?.provider === "string" ? user.app_metadata.provider : "";
+  if (userError || !user?.email_confirmed_at || !email || !["email", "google"].includes(provider)) {
     return response(401, { ok: false, code: "AUTHENTICATED_SESSION_REQUIRED", message: "A confirmed session is required" }, requestId);
   }
 
   const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
-  const { data: account, error: accountError } = await serviceClient
-    .schema("iam")
-    .from("user_accounts")
-    .select("id,status")
-    .eq("auth_user_id", userData.user.id)
-    .maybeSingle();
-  if (accountError || !account || account.status !== "active") {
-    return response(403, { ok: false, code: "IDENTITY_NOT_LINKED", message: "The authenticated identity is not active" }, requestId);
+  const issuer = `${supabaseUrl.replace(/\/$/, "")}/auth/v1`;
+  const claimsFingerprint = await fingerprint({
+    issuer,
+    subject: user.id,
+    email,
+    provider,
+    audience: user.aud,
+    appMetadata: user.app_metadata,
+  });
+  const { data: identityData, error: identityError } = await serviceClient.rpc("e14_resolve_identity", {
+    p_provider: provider,
+    p_issuer: issuer,
+    p_subject: user.id,
+    p_email_normalized: email,
+    p_email_verified: true,
+    p_claims_fingerprint: claimsFingerprint,
+  });
+  const identity = identityData && typeof identityData === "object" && !Array.isArray(identityData)
+    ? identityData as Record<string, unknown>
+    : null;
+  const userAccountId = typeof identity?.user_account_id === "string" ? identity.user_account_id : "";
+  if (identityError || !userAccountId) {
+    return response(403, { ok: false, code: identityError?.code ?? "IDENTITY_NOT_LINKED", message: "The authenticated identity is not active" }, requestId);
   }
 
-  args.p_actor_user_account_id = account.id;
+  args.p_actor_user_account_id = userAccountId;
   const { data, error } = await serviceClient.rpc(name, args);
   if (error) {
     const mapped = failure(error);
