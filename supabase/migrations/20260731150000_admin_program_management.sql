@@ -1,57 +1,3 @@
-create or replace function public.get_admin_programs(
-  p_actor_user_account_id uuid,
-  p_organization_id uuid
-)
-returns jsonb
-language plpgsql
-stable
-security definer
-set search_path to 'pg_catalog'
-as $function$
-begin
-  if not app_private.e14_actor_has_permission(
-    p_actor_user_account_id,
-    p_organization_id,
-    'journey.definition.manage'
-  ) then
-    raise exception 'FORBIDDEN' using errcode = '42501';
-  end if;
-
-  return jsonb_build_object(
-    'programs',
-    (
-      select coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'id', p.id,
-            'code', p.code,
-            'name', p.name,
-            'description', p.description,
-            'status', p.status,
-            'journey_count', (
-              select count(*)
-                from catalog.journey_definitions jd
-               where jd.program_id = p.id
-                 and jd.owner_organization_id = p_organization_id
-                 and jd.status <> 'retired'
-            )
-          ) order by p.name
-        ),
-        '[]'::jsonb
-      )
-      from catalog.programs p
-      where p.owner_organization_id = p_organization_id
-        and p.status <> 'retired'
-    )
-  );
-end;
-$function$;
-
-revoke all on function public.get_admin_programs(uuid, uuid) from public, anon, authenticated;
-grant execute on function public.get_admin_programs(uuid, uuid) to service_role;
-comment on function public.get_admin_programs(uuid, uuid) is
-  'Lists active programs and their journey counts for the authenticated administrative organizer.';
-
 create or replace function public.save_admin_program(
   p_actor_user_account_id uuid,
   p_organization_id uuid,
@@ -67,7 +13,6 @@ declare
   v_program_id uuid;
   v_code text;
   v_name text;
-  v_description text;
   v_status text;
   v_request_hash text;
   v_event_id uuid;
@@ -89,7 +34,6 @@ begin
   end if;
 
   v_name := btrim(coalesce(p_payload ->> 'name', ''));
-  v_description := nullif(btrim(coalesce(p_payload ->> 'description', '')), '');
   v_code := lower(btrim(coalesce(p_payload ->> 'code', '')));
   v_status := case when p_payload ->> 'status' = 'retired' then 'retired' else 'active' end;
 
@@ -100,9 +44,7 @@ begin
     raise exception 'PROGRAM_CODE_INVALID' using errcode = '22023';
   end if;
 
-  v_request_hash := app_private.e14_request_hash(
-    jsonb_build_object('program', p_payload)
-  );
+  v_request_hash := app_private.e14_request_hash(jsonb_build_object('program', p_payload));
   v_event_id := app_private.e14_command_event_id(
     'save_admin_program',
     p_actor_user_account_id,
@@ -139,7 +81,7 @@ begin
       p_organization_id,
       v_code,
       v_name,
-      v_description,
+      null,
       'active',
       now(),
       now()
@@ -159,7 +101,6 @@ begin
     update catalog.programs
        set code = v_code,
            name = v_name,
-           description = v_description,
            status = v_status,
            updated_at = now()
      where id = v_program_id
@@ -170,11 +111,7 @@ begin
     end if;
   end if;
 
-  v_result := jsonb_build_object(
-    'id', v_program_id,
-    'name', v_name,
-    'status', v_status
-  );
+  v_result := jsonb_build_object('id', v_program_id, 'name', v_name, 'status', v_status);
 
   perform app_private.e14_lock_scope('program|' || v_program_id::text);
   select coalesce(max(aggregate_version), 0) + 1
@@ -211,4 +148,58 @@ $function$;
 revoke all on function public.save_admin_program(uuid, uuid, jsonb, text) from public, anon, authenticated;
 grant execute on function public.save_admin_program(uuid, uuid, jsonb, text) to service_role;
 comment on function public.save_admin_program(uuid, uuid, jsonb, text) is
-  'Creates, edits or safely retires programs through the authenticated server gateway.';
+  'Creates, renames or safely retires programs through the existing administrative product gateway.';
+
+create or replace function public.save_admin_product_resource(
+  p_actor_user_account_id uuid,
+  p_organization_id uuid,
+  p_resource_type text,
+  p_payload jsonb,
+  p_idempotency_key text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'pg_catalog'
+as $function$
+begin
+  if p_resource_type = 'journey_retire' then
+    return public.retire_admin_journey(
+      p_actor_user_account_id,
+      p_organization_id,
+      nullif(p_payload ->> 'journey_definition_id', '')::uuid,
+      p_idempotency_key
+    );
+  end if;
+
+  if p_resource_type = 'diagnostic_transition' then
+    return public.publish_admin_diagnostic_transition(
+      p_actor_user_account_id,
+      p_organization_id,
+      nullif(p_payload ->> 'diagnostic_version_id', '')::uuid,
+      coalesce(p_payload -> 'archetype_mapping', '{}'::jsonb),
+      p_idempotency_key
+    );
+  end if;
+
+  if p_resource_type = 'program' then
+    return public.save_admin_program(
+      p_actor_user_account_id,
+      p_organization_id,
+      p_payload,
+      p_idempotency_key
+    );
+  end if;
+
+  return public.save_admin_product_resource_base(
+    p_actor_user_account_id,
+    p_organization_id,
+    p_resource_type,
+    p_payload,
+    p_idempotency_key
+  );
+end;
+$function$;
+
+comment on function public.save_admin_product_resource(uuid, uuid, text, jsonb, text) is
+  'Routes product administration commands, including programs, through one authenticated gateway surface.';
