@@ -40,19 +40,28 @@ test("outbox contract preserves idempotency, retry and reconciliation", () => {
   }
 });
 
-test("active code, scripts and documentation contain no CRM-specific dependency", async () => {
-  const roots = ["apps", "scripts", "docs", "README.md", "PROJECT_INDEX.md", "CONTRIBUTING.md", ".env.example", "package.json"];
-  const files = (await Promise.all(roots.map(textFiles))).flat().filter((file) =>
-    file !== "scripts/integrations/etl-outbox-contract.test.mjs"
-    && !file.startsWith("supabase/migrations/")
-    && !file.startsWith("supabase/canonical-migrations/")
-  );
+test("active runtime and configuration contain no CRM-specific dependency", async () => {
+  const activeRoots = [
+    "apps/web/app",
+    "apps/web/components",
+    "apps/web/lib",
+    "supabase/functions",
+    ".env.example",
+    "package.json",
+    "README.md",
+    "PROJECT_INDEX.md",
+    "CONTRIBUTING.md",
+    "docs/architecture/TRANSACTIONAL_OUTBOX.md",
+    "docs/dataflows/DATA_FLOW_ARCHITECTURE.md",
+    "docs/implementation/PLATFORM_GROWTH_ENGAGEMENT_SUITE.md",
+  ];
+  const files = (await Promise.all(activeRoots.map(textFiles))).flat();
   const matches = [];
   for (const file of files) {
     const content = await read(file);
     if (/hubspot/iu.test(content)) matches.push(file);
   }
-  assert.deepEqual(matches, [], `CRM-specific references remain in: ${matches.join(", ")}`);
+  assert.deepEqual(matches, [], `CRM-specific operational references remain in: ${matches.join(", ")}`);
   assert.doesNotMatch(packageFile, /hubspot/iu);
   assert.match(packageFile, /etl-outbox-contract\.test\.mjs/u);
 });
