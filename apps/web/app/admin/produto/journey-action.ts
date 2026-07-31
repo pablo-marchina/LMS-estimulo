@@ -7,6 +7,7 @@ import { saveAdminJourney } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
+import { extensionsRuntime } from "@/lib/extensions/runtime";
 import { libraryRuntime } from "@/lib/library/runtime";
 import { validateAnnouncementBanner } from "@/lib/storage/announcement-banners";
 import { libraryContentBucket, removeLibraryContent, uploadLibraryContent } from "@/lib/storage/library-content";
@@ -52,11 +53,13 @@ export async function saveJourneyAction(formData: FormData) {
   const existingCode = text(formData, "definition_code");
   const code = existingCode || deriveCode(publicTitle, `jornada_${randomUUID().slice(0, 8)}`);
   const versionId = nullable(formData, "version_id");
+  const themeIds = [...new Set(formData.getAll("theme_ids").map(String).filter(Boolean))];
   let savedVersionId = versionId ?? "";
   let liveUpdate = false;
   const previousConfiguration = configuration(formData);
   const previousPresentation = previousConfiguration.presentation && typeof previousConfiguration.presentation === "object" && !Array.isArray(previousConfiguration.presentation) ? previousConfiguration.presentation as Record<string, unknown> : {};
   const tags = text(formData, "presentation_tags").split(/[\n,]/).map((item) => item.trim()).filter(Boolean).slice(0, 8);
+  const commandKey = randomUUID();
 
   try {
     const cardFile = selectedFile(formData, "card_background_file");
@@ -95,7 +98,14 @@ export async function saveJourneyAction(formData: FormData) {
         configuration: { ...previousConfiguration, presentation },
         eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
       },
-      idempotencyKey: randomUUID(),
+      idempotencyKey: commandKey,
+    });
+    await extensionsRuntime.saveAdmin({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId: organization.organization_id,
+      resourceType: "journey_themes_set",
+      payload: { journey_definition_id: result.definition_id, theme_ids: themeIds },
+      idempotencyKey: `${commandKey}:themes`,
     });
     savedVersionId = result.version_id;
     liveUpdate = result.live_update;
