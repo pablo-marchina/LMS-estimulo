@@ -182,8 +182,9 @@ test("migration boundary preserves release hardening and consolidated correction
     "20260730183000_optional_journey_program.sql",
     "20260730183100_admin_journey_and_diagnostic_lifecycle.sql",
     "20260730183200_route_admin_lifecycle_through_product_rpc.sql",
+    "20260730211500_platform_growth_engagement_tables.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260730183200_route_admin_lifecycle_through_product_rpc\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260730211500_platform_growth_engagement_tables\.sql'/u);
 });
