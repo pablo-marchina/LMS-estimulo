@@ -13,6 +13,8 @@
 - A captura comportamental começa na implantação desta suíte; não existe reconstrução de eventos antigos.
 - Links de aquisição nunca contornam autenticação, autorização, RBAC ou regras B2B.
 - Prévia administrativa não registra progresso, pontos, visualizações, respostas ou entregas.
+- Estruturas internas como JSON, UUID, bytes, hashes e objetos de entrega não são campos de edição para administradores; a interface traduz essas estruturas em perguntas, opções e unidades compreensíveis.
+- Recursos relacionados permanecem consolidados nas telas que já representam o domínio, evitando menus e páginas independentes desnecessárias.
 
 ## 2. Superfícies administrativas
 
@@ -22,12 +24,15 @@
 | Campanhas | `/admin/campanhas` | links UTM, destino, validade, público e etapas ignoráveis |
 | B2B | `/admin/b2b` | páginas por blocos, publicação, usuários e grupos |
 | Recompensas | `/admin/recompensas` | catálogo, estoque, período, regulamento e resgates |
-| Entregas | `/admin/entregas` | configurações, rubricas, tentativas, IA e revisão humana |
-| Diagnósticos opcionais | `/admin/diagnosticos-opcionais` | publicação no perfil sem efeito sobre arquétipo |
+| Entregas | `/admin/entregas` | configurações guiadas, critérios, tentativas, IA e revisão humana |
+| Diagnósticos | `/admin/diagnostico` | diagnóstico principal e diagnósticos opcionais no perfil, separados por abas |
 | Comportamento | `/admin/comportamento` | eventos, dimensões e snapshots analíticos |
-| Certificados | `/admin/certificados` | templates globais, por programa ou por jornada |
+| Pontuação e certificados | `/admin/gamificacao` | pontos, selos, emissão e modelos de certificados em uma única área |
 | Biblioteca | `/admin/biblioteca` | conteúdo, temas, entregas e prévia participante |
-| Produto | `/admin/produto` | jornadas, trilhas, aulas, atividades e temas |
+| Jornadas | `/admin/produto` | programas, jornadas, trilhas, aulas, atividades e temas |
+| Interface | `/admin/experiencia` | CMS visual com seleção direta de páginas e elementos |
+
+As rotas antigas `/admin/certificados` e `/admin/diagnosticos-opcionais` permanecem somente como redirecionamentos de compatibilidade. Elas não aparecem na navegação nem mantêm uma segunda interface de edição.
 
 O botão global de ajuda é ocultado apenas nas rotas `/admin`; os participantes continuam recebendo os contatos configurados.
 
@@ -37,13 +42,23 @@ A área **Mais configurações** concentra nome da plataforma, telefone, WhatsAp
 
 Termos de Uso e Política de Privacidade usam definição de versão com estados `draft`, `published` e `retired`. Uma versão publicada pode exigir nova aceitação. Enquanto houver versão obrigatória pendente, o layout participante apresenta o gate legal antes da navegação normal. A aceitação registra usuário, versão, data, origem e metadados.
 
-## 4. Temas administrados
+## 4. CMS visual da interface
+
+A tela **Interface** carrega uma prévia autenticada e da mesma origem da página real. O parâmetro `interface_preview=1` ativa a ponte de seleção sem criar uma versão artificial da tela.
+
+Elementos registrados com `data-interface-content-key` recebem destaque visual. Ao clicar, a ponte `InterfacePreviewBridge` impede a ação normal do link ou botão e envia a chave selecionada à tela administrativa por `postMessage`. A tela pai aceita somente mensagens cuja origem seja a própria aplicação.
+
+Uma lista lateral dos elementos da página funciona como alternativa de seleção. O administrador nunca edita HTML, JSON ou chaves internas; ele escolhe o elemento visual e altera os campos compatíveis com aquele tipo.
+
+## 5. Programas, jornadas e temas
+
+Programas são organizados dentro da própria tela **Jornadas**, em uma seção recolhível. O administrador pode criar e renomear programas e arquivar somente grupos sem jornadas ativas. A operação usa o mesmo gateway autenticado de produto, com permissão, idempotência e auditoria.
 
 Temas são entidades da organização com código, nome, descrição, metadados visuais e estado. Conteúdos da biblioteca e jornadas aceitam múltiplos temas por relações próprias. Os formulários enviam IDs administrados; nomes livres não são fonte da taxonomia.
 
-A exclusão é recusada quando o tema possui vínculo. O administrador deve reclassificar os itens antes de retirá-lo.
+A exclusão de um tema é recusada quando possui vínculo. O administrador deve reclassificar os itens antes de retirá-lo.
 
-## 5. Biblioteca, aulas e mídia
+## 6. Biblioteca, aulas e mídia
 
 A biblioteca administrativa oferece uma prévia explícita que reutiliza os componentes participantes sem exigir `entrepreneur_id` e sem executar trackers ou mutações.
 
@@ -51,7 +66,9 @@ O player de mídia usa largura máxima de 960 px, respeita a largura do containe
 
 Perguntas rápidas têm contagem dinâmica. Cliente e servidor usam o campo `quiz_question_count`; não existe limite fixo de três perguntas.
 
-## 6. Certificados
+## 7. Certificados
+
+A aba **Certificados**, dentro de **Pontuação**, concentra tanto a regra de emissão quanto os fundos usados no documento. Não existe uma tela administrativa independente de templates.
 
 Templates aceitam PNG, JPG ou PDF e são armazenados como objetos verificados. A atribuição pode ter escopo:
 
@@ -61,7 +78,9 @@ Templates aceitam PNG, JPG ou PDF e são armazenados como objetos verificados. A
 
 A emissão resolve nessa ordem. O template configurado diretamente na versão antiga do certificado permanece apenas como fallback de compatibilidade. A associação ativa por escopo é única e pode possuir período de validade.
 
-## 7. Aquisição, UTM e redirecionamento
+Na interface, esses escopos aparecem como **modelo de uma jornada**, **modelo de um programa** e **modelo geral**. IDs de arquivos e objetos de armazenamento não são exibidos.
+
+## 8. Aquisição, UTM e redirecionamento
 
 Links públicos em `/r/<slug>` configuram:
 
@@ -76,13 +95,15 @@ A captura registra visita anônima, token com hash, sessão, landing page, refer
 
 O destino só é usado depois das validações normais. Uma URL B2B continua dependendo da concessão individual ou por grupo.
 
-## 8. B2B
+## 9. B2B
 
 Administradores criam páginas versionadas por blocos de título, texto rico, imagem, vídeo, arquivo, botão, link, aviso, cards, separador e incorporação autorizada. Versões possuem rascunho, publicação e período de disponibilidade.
 
+O editor apresenta blocos visuais, ordenação e campos comuns. O JSON usado para persistir a composição é gerado em campo oculto e não é uma superfície de edição.
+
 O acesso pode ser concedido diretamente a usuários ou por grupos. A função `get_participant_extensions` filtra a consulta com `b2b_page_user_access` e `b2b_page_group_access`/`b2b_group_members`; usuários não autorizados não recebem a página e a rota direta retorna indisponibilidade.
 
-## 9. Recompensas
+## 10. Recompensas
 
 A taxa inicial é `1 ponto de engajamento = 1 ponto de recompensa`, armazenada em configuração para conversões futuras. A carteira de recompensa é separada do ledger de engajamento.
 
@@ -92,13 +113,20 @@ O catálogo aceita recompensa física, digital, experiência ou serviço e confi
 - estoque opcional;
 - início e encerramento;
 - regulamento;
-- campos de entrega, código, link, arquivo, endereço, rastreamento ou comprovante.
+- dados necessários para entrega, como endereço, e-mail ou telefone;
+- código, link, rastreamento e orientações de recebimento.
+
+A interface administrativa transforma a configuração de entrega em caixas de seleção e campos nomeados. Objetos de fulfillment não são editados como JSON.
+
+A experiência participante usa saldo destacado, próximo objetivo, barra de progresso, estados bloqueado/desbloqueado, cartões de conquista e histórico em formato de jornada. A gamificação é apenas visual: saldo, elegibilidade e resgate continuam determinados pelas transações do servidor.
 
 Conversão e resgate usam idempotency key. O resgate bloqueia saldo e estoque na mesma transação. Estados administrativos cobrem pendência, aprovação, preparação, envio/disponibilização, entrega e cancelamento. Cancelar cria compensação no ledger, devolve saldo e restaura estoque quando aplicável.
 
-## 10. Entregas e avaliação por IA
+## 11. Entregas e avaliação por IA
 
-Entregas podem estar vinculadas a uma atividade ou a uma versão publicada da biblioteca. A configuração controla formatos, obrigatoriedade, quantidade e tamanho de arquivos, prazo, atraso, número de tentativas, reenvio, estratégia de nota, rubrica, referências, instruções de IA e pontos.
+Entregas podem estar vinculadas a uma atividade ou a uma versão publicada da biblioteca. A configuração controla formatos, obrigatoriedade, quantidade e tamanho de arquivos, prazo, atraso, número de tentativas, reenvio, estratégia de nota, critérios, referências, instruções de IA e pontos.
+
+O administrador define critérios por nome, descrição e importância; referências são informadas em linhas comuns; tamanho de arquivo é exibido em megabytes; e pontos usam campos separados. A aplicação converte esses dados para rubrica, material de referência, bytes e configuração de pontuação somente no servidor.
 
 A rota `/api/delivery-uploads` valida origem, identidade, UUID, quantidade, tipo e tamanho, armazena evidências e só então executa `delivery_submit`. Falhas removem objetos recém-enviados.
 
@@ -112,15 +140,15 @@ O avaliador produz nota por critério, justificativa, pontos fortes, lacunas, re
 
 Arquivos de código e ZIP recebem análise estática e nunca são executados. Áudio, vídeo, imagem e documento podem depender de extração/transcrição; quando a extração não é confiável, a plataforma não inventa nota.
 
-## 11. Diagnósticos
+## 12. Diagnósticos
 
-O diagnóstico principal continua sendo o único responsável por arquétipo e elegibilidade de jornadas. Sua publicação exige mapeamento transacional entre perfis antigos e novos.
+A tela **Diagnósticos** possui duas abas: **Diagnóstico principal** e **Opcionais no perfil**. Somente um diagnóstico principal permanece publicado por vez e continua sendo o único responsável por arquétipo e elegibilidade de jornadas. Sua publicação exige mapeamento transacional entre perfis antigos e novos.
 
 Diagnósticos opcionais são disponibilizados no perfil por público e período. Eles guardam sessões, tentativas, respostas, dimensões e resultados próprios. As ações `optional_start`, `optional_answer` e `optional_complete` não escrevem em `archetype_assignments` nem em `eligible_archetype_codes`.
 
 Perguntas, opções, dimensões e perfis são dinâmicos. Inclusão, exclusão e reordenação são permitidas somente no rascunho; respostas históricas continuam ligadas à versão publicada usada.
 
-## 12. Eventos e score comportamental
+## 13. Eventos e score comportamental
 
 O browser envia observações autenticadas para `/api/behavior-events`. O servidor valida origem, usuário participante, nome do evento, ID idempotente, tamanho do payload e horário antes de executar `behavior_event`.
 
@@ -130,7 +158,7 @@ O score multidimensional consolida engajamento, consistência, profundidade, con
 
 Uso permitido: análise administrativa, relatórios e ETL. Uso proibido: acesso, navegação, jornadas, conteúdo, B2B, recompensas, recomendações, mensagens, elegibilidade ou qualquer alteração da experiência do participante.
 
-## 13. ETL genérico
+## 14. ETL genérico
 
 Produtores persistem estado, evento e outbox sem conhecer o destino externo. Um consumidor futuro deve:
 
@@ -144,7 +172,7 @@ Produtores persistem estado, evento e outbox sem conhecer o destino externo. Um 
 
 `ETL_EXPORT_ENABLED=false` é o padrão. A troca de destino não exige alterar fluxos transacionais do LMS.
 
-## 14. Segurança e operação
+## 15. Segurança e operação
 
 As funções públicas de comando são `SECURITY DEFINER`, têm `search_path` fechado, validam ator, organização, permissão e idempotência e não concedem execução direta a `anon` ou `authenticated`. O frontend usa Edge Functions autenticadas como gateway.
 
@@ -152,22 +180,23 @@ As tabelas da suíte têm RLS habilitado e acesso direto de `public`, `anon` e `
 
 Arquivos usam buckets privados e objetos identificados por chave opaca. URLs assinadas são temporárias e não são persistidas em eventos. Operações administrativas e revisões humanas registram ator, horário e motivo.
 
-## 15. Configuração de IA
+## 16. Configuração de IA
 
 A Edge Function `ai-grade-submission` exige JWT válido. Quando `AI_GRADING_API_URL`, `AI_GRADING_API_KEY` e `AI_GRADING_MODEL` não estiverem configurados no ambiente do servidor, a entrega é preservada e encaminhada para revisão humana. Nenhum segredo é exposto por `NEXT_PUBLIC_*`.
 
-## 16. Componentes de runtime
+## 17. Componentes de runtime
 
 O runtime da suíte é composto por:
 
 - RPCs `get_admin_extensions_workspace`, `get_participant_extensions`, `perform_participant_extension` e `save_admin_extension`;
+- gateway de produto `save_admin_product_resource`, que também roteia a manutenção segura de programas;
 - captura pública controlada `capture_tracking_visit`;
 - resolução de certificados `get_certificate_render_payload`;
 - funções de correção `get_delivery_grading_payload` e `apply_ai_delivery_review`;
 - Edge Functions `platform-extensions-rpc` e `ai-grade-submission`;
-- migrations de estrutura, comandos, herança de certificados, UTM/IA e fechamento RLS.
+- migrations de estrutura, comandos, herança de certificados, UTM/IA, programas e fechamento RLS.
 
-## 17. Validação
+## 18. Validação
 
 A suíte é coberta por:
 
