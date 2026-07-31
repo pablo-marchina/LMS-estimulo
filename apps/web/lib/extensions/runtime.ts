@@ -1,6 +1,6 @@
 import "server-only";
 
-import { invokeServerRpc } from "@/lib/rpc/server-invoke";
+import { invokeExtensionsGateway } from "@/lib/extensions/gateway";
 
 export type JsonRecord = Record<string, unknown>;
 
@@ -57,7 +57,7 @@ export type ParticipantExtensionsWorkspace = {
 
 export const extensionsRuntime = {
   adminWorkspace(actorUserAccountId: string, organizationId: string) {
-    return invokeServerRpc<AdminExtensionsWorkspace>("get_admin_extensions_workspace", {
+    return invokeExtensionsGateway<AdminExtensionsWorkspace>("get_admin_extensions_workspace", {
       p_actor_user_account_id: actorUserAccountId,
       p_organization_id: organizationId,
     });
@@ -70,7 +70,7 @@ export const extensionsRuntime = {
     payload: JsonRecord;
     idempotencyKey: string;
   }) {
-    return invokeServerRpc<JsonRecord>("save_admin_extension", {
+    return invokeExtensionsGateway<JsonRecord>("save_admin_extension", {
       p_actor_user_account_id: input.actorUserAccountId,
       p_organization_id: input.organizationId,
       p_resource_type: input.resourceType,
@@ -80,7 +80,7 @@ export const extensionsRuntime = {
   },
 
   participantWorkspace(actorUserAccountId: string) {
-    return invokeServerRpc<ParticipantExtensionsWorkspace>("get_participant_extensions", {
+    return invokeExtensionsGateway<ParticipantExtensionsWorkspace>("get_participant_extensions", {
       p_actor_user_account_id: actorUserAccountId,
     });
   },
@@ -91,7 +91,7 @@ export const extensionsRuntime = {
     payload: JsonRecord;
     idempotencyKey: string;
   }) {
-    return invokeServerRpc<JsonRecord>("perform_participant_extension", {
+    return invokeExtensionsGateway<JsonRecord>("perform_participant_extension", {
       p_actor_user_account_id: input.actorUserAccountId,
       p_action: input.action,
       p_payload: input.payload,
