@@ -47,7 +47,6 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 ## Decisões e riscos
 
 - [Registro de decisões ativas](docs/decisions/DECISION_LOG.md)
-- [DEC-070 — escopo HubSpot](docs/decisions/HUBSPOT_SCOPE_DECISION.md)
 - [ADR-002 — rebaseline das premissas](docs/decisions/ADR-002-REBASELINE-NEW-PREMISES.md)
 - [Registro de riscos](docs/decisions/RISK_REGISTER.md)
 
@@ -97,20 +96,20 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 
 ## Integrações
 
-- [Contrato lógico do adapter HubSpot](docs/integrations/HUBSPOT_ADAPTER_CONTRACT.md)
-- [Fluxo lógico HubSpot](docs/integrations/HUBSPOT_LOGICAL_DATA_FLOW.md)
-- [Solicitação de inventário HubSpot](docs/integrations/HUBSPOT_INVENTORY_REQUEST.md)
 - [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
+- [Outbox transacional e destino substituível](docs/architecture/TRANSACTIONAL_OUTBOX.md)
 
 ## Estado da implementação
 
 - [Fundação atual da aplicação](docs/implementation/APPLICATION_FOUNDATION.md)
 - [Motor configurável](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
 - [Backend ponta a ponta](docs/implementation/BACKEND_E2E.md)
+- [Suíte de crescimento e engajamento](docs/implementation/PLATFORM_GROWTH_ENGAGEMENT_SUITE.md)
 - [Contenção de helpers opacos](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
 - [Contratos públicos de RPC](docs/implementation/PUBLIC_RPC_CONTRACTS.md)
 - [Contrato público de RPC v1](docs/implementation/public-rpc-contracts-v1.json)
 - [Bloqueadores da entrega](docs/implementation/DELIVERY_BLOCKERS.md)
+- [Registro das correções administrativas](docs/ADMIN_EDITOR_RELEASE_20260730.md)
 
 ## Operação e release
 
