@@ -1,35 +1,39 @@
-import type { Metadata } from "next";
-import "./globals.css";
-import "./responsive-media.css";
-import { Space_Grotesk, Manrope } from "next/font/google";
-import { AppProviders } from "@/components/app-providers";
+import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import { InterfaceContentProvider } from "@/components/interface-content-provider";
+import { NavigationFeedback } from "@/components/navigation-feedback";
 import { SupportButton } from "@/components/support-button";
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-display",
-  display: "swap",
-});
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-body",
-  display: "swap",
-});
+import { getPublishedInterfaceContent } from "@/lib/interface-content/runtime";
+import "./globals.css";
+import "./brand-motion.css";
+import "./responsive-media.css";
 
 export const metadata: Metadata = {
-  title: "Plataforma Estímulo",
-  description: "Capacitação para empreendedores da Estímulo",
+  title: { default: "Plataforma Estímulo", template: "%s | Estímulo" },
+  description: "Jornadas de desenvolvimento para pequenos empreendedores.",
+  icons: {
+    icon: "/brand/estimulo-symbol-color.svg",
+    apple: "/brand/estimulo-symbol-color.svg",
+  },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export const viewport: Viewport = {
+  themeColor: "#00008d",
+  colorScheme: "light",
+};
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const interfaceContent = await getPublishedInterfaceContent();
   return (
-    <html lang="pt-BR" className={`${spaceGrotesk.variable} ${manrope.variable}`}>
-      <body className="min-h-screen bg-background text-ink antialiased">
-        <AppProviders>
+    <html lang="pt-BR">
+      <body className="antialiased">
+        <InterfaceContentProvider content={interfaceContent}>
+          <Suspense fallback={null}>
+            <NavigationFeedback />
+          </Suspense>
           {children}
           <SupportButton />
-        </AppProviders>
+        </InterfaceContentProvider>
       </body>
     </html>
   );
