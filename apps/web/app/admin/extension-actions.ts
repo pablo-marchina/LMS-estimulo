@@ -23,6 +23,11 @@ function parseJson(raw: string, fallback: unknown) {
   try { return JSON.parse(raw) as unknown; } catch { return fallback; }
 }
 
+function checkbox(formData: FormData, name: string) {
+  const value = text(formData, name).toLowerCase();
+  return ["on", "true", "1", "yes"].includes(value);
+}
+
 function payloadFromForm(formData: FormData): JsonRecord {
   const jsonFields = names(formData, "json_fields");
   const arrayFields = names(formData, "array_fields");
@@ -47,6 +52,23 @@ function payloadFromForm(formData: FormData): JsonRecord {
       continue;
     }
     payload[key] = value;
+  }
+
+  if (text(formData, "resource_type") === "tracking_link") {
+    payload.skip_steps = {
+      profile: checkbox(formData, "skip_profile"),
+      onboarding: checkbox(formData, "skip_onboarding"),
+      diagnostic: checkbox(formData, "skip_diagnostic"),
+      home: checkbox(formData, "skip_home"),
+    };
+    delete payload.skip_profile;
+    delete payload.skip_onboarding;
+    delete payload.skip_diagnostic;
+    delete payload.skip_home;
+  }
+
+  for (const field of booleanFields) {
+    if (!(field in payload)) payload[field] = false;
   }
   return payload;
 }
