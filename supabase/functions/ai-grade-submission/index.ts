@@ -25,7 +25,7 @@ function compactEvidence(payload: Record<string, unknown>) {
   };
 }
 
-function fallbackReview(payload: Record<string, unknown>) {
+function fallbackReview(payload: Record<string, unknown>, reason = "AI_GRADING_PROVIDER_NOT_CONFIGURED") {
   const evidence = compactEvidence(payload);
   const available = Boolean(evidence.text_content || evidence.external_link || evidence.files.some((file) => file.extracted_content));
   return {
@@ -33,19 +33,38 @@ function fallbackReview(payload: Record<string, unknown>) {
     confidence: 0,
     criterion_scores: [],
     feedback: available
-      ? "A entrega foi recebida, mas o serviço de correção por IA não está configurado. Encaminhada para revisão humana."
+      ? "A entrega foi recebida, mas a correção automática não pôde ser concluída. Encaminhada para revisão humana."
       : "A entrega contém formatos que exigem extração, transcrição ou análise multimodal. Encaminhada para revisão humana sem executar arquivos enviados.",
-    metadata: { fallback: true, reason: "AI_GRADING_PROVIDER_NOT_CONFIGURED", safety: "no_code_execution" },
+    metadata: { fallback: true, reason, safety: "no_code_execution" },
   };
 }
 
-async function providerReview(payload: Record<string, unknown>) {
-  const endpoint = Deno.env.get("AI_GRADING_API_URL")?.trim();
-  const apiKey = Deno.env.get("AI_GRADING_API_KEY")?.trim();
-  const model = Deno.env.get("AI_GRADING_MODEL")?.trim();
+function safeProviderEndpoint(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const privateHost = host === "localhost" || host === "::1" || host.startsWith("127.") || host.startsWith("10.") || host.startsWith("192.168.") || /^172\.(1[6-9]|2\d|3[01])\./u.test(host);
+    return url.protocol === "https:" && !url.username && !url.password && !privateHost ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
+async function providerReview(payload: Record<string, unknown>, service: ReturnType<typeof createClient>) {
+  const configuration = asRecord(payload.configuration);
+  const organizationId = text(configuration.owner_organization_id);
+  let databaseProvider: Record<string, unknown> = {};
+  if (organizationId) {
+    const { data, error } = await service.rpc("get_ai_grading_provider_runtime", { p_organization_id: organizationId });
+    if (!error && data) databaseProvider = asRecord(data);
+  }
+
+  const endpoint = safeProviderEndpoint(text(databaseProvider.endpoint_url) || Deno.env.get("AI_GRADING_API_URL")?.trim() || "");
+  const apiKey = text(databaseProvider.api_key) || Deno.env.get("AI_GRADING_API_KEY")?.trim() || "";
+  const model = text(databaseProvider.model_name) || Deno.env.get("AI_GRADING_MODEL")?.trim() || "";
+  const providerName = text(databaseProvider.provider_name) || "Provedor configurado por ambiente";
   if (!endpoint || !apiKey || !model) return fallbackReview(payload);
 
-  const configuration = asRecord(payload.configuration);
   const rubric = asRecord(configuration.rubric);
   const evidence = compactEvidence(payload);
   const prompt = {
@@ -64,21 +83,26 @@ async function providerReview(payload: Record<string, unknown>) {
     },
   };
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      model,
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: "Retorne somente JSON válido. Nunca execute nem instrua a execução de arquivos enviados." },
-        { role: "user", content: JSON.stringify(prompt) },
-      ],
-    }),
-    signal: AbortSignal.timeout(45_000),
-  });
-  if (!response.ok) return { ...fallbackReview(payload), metadata: { fallback: true, reason: `AI_PROVIDER_HTTP_${response.status}`, safety: "no_code_execution" } };
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: "POST",
+      headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: "Retorne somente JSON válido. Nunca execute nem instrua a execução de arquivos enviados." },
+          { role: "user", content: JSON.stringify(prompt) },
+        ],
+      }),
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch {
+    return fallbackReview(payload, "AI_PROVIDER_CONNECTION_FAILED");
+  }
+  if (!response.ok) return fallbackReview(payload, `AI_PROVIDER_HTTP_${response.status}`);
   const providerPayload = asRecord(await response.json());
   const choices = Array.isArray(providerPayload.choices) ? providerPayload.choices : [];
   const content = text(asRecord(asRecord(choices[0]).message).content);
@@ -91,10 +115,10 @@ async function providerReview(payload: Record<string, unknown>) {
       confidence,
       criterion_scores: Array.isArray(parsed.criterion_scores) ? parsed.criterion_scores : [],
       feedback: text(parsed.feedback) || "Correção sem feedback textual.",
-      metadata: { ...asRecord(parsed.metadata), provider: endpoint, model, safety: "no_code_execution" },
+      metadata: { ...asRecord(parsed.metadata), provider: providerName, model, safety: "no_code_execution" },
     };
   } catch {
-    return { ...fallbackReview(payload), metadata: { fallback: true, reason: "AI_PROVIDER_INVALID_JSON", safety: "no_code_execution" } };
+    return fallbackReview(payload, "AI_PROVIDER_INVALID_JSON");
   }
 }
 
@@ -126,11 +150,13 @@ Deno.serve(async (request: Request) => {
   if (text(submission.user_account_id) !== account.id) return json(403, { ok: false, code: "DELIVERY_SUBMISSION_FORBIDDEN" });
   if (!["processing", "submitted"].includes(text(submission.status))) return json(409, { ok: false, code: "DELIVERY_SUBMISSION_NOT_PROCESSABLE" });
 
-  const review = await providerReview(asRecord(payload));
+  const review = await providerReview(asRecord(payload), service);
+  const configuration = asRecord(asRecord(payload).configuration);
+  const providerModel = text(review.metadata && asRecord(review.metadata).model) || text(configuration.grading_model) || "human-review-fallback-v1";
   const { data: result, error: applyError } = await service.rpc("apply_ai_delivery_review", {
     p_submission_id: submissionId,
     p_result: review,
-    p_model_reference: Deno.env.get("AI_GRADING_MODEL")?.trim() || "human-review-fallback-v1",
+    p_model_reference: providerModel,
   });
   if (applyError) return json(500, { ok: false, code: applyError.code || "AI_REVIEW_APPLY_FAILED" });
   return json(200, { ok: true, data: result });
