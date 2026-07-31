@@ -1,3 +1,57 @@
+create or replace function public.get_admin_programs(
+  p_actor_user_account_id uuid,
+  p_organization_id uuid
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path to 'pg_catalog'
+as $function$
+begin
+  if not app_private.e14_actor_has_permission(
+    p_actor_user_account_id,
+    p_organization_id,
+    'journey.definition.manage'
+  ) then
+    raise exception 'FORBIDDEN' using errcode = '42501';
+  end if;
+
+  return jsonb_build_object(
+    'programs',
+    (
+      select coalesce(
+        jsonb_agg(
+          jsonb_build_object(
+            'id', p.id,
+            'code', p.code,
+            'name', p.name,
+            'description', p.description,
+            'status', p.status,
+            'journey_count', (
+              select count(*)
+                from catalog.journey_definitions jd
+               where jd.program_id = p.id
+                 and jd.owner_organization_id = p_organization_id
+                 and jd.status <> 'retired'
+            )
+          ) order by p.name
+        ),
+        '[]'::jsonb
+      )
+      from catalog.programs p
+      where p.owner_organization_id = p_organization_id
+        and p.status <> 'retired'
+    )
+  );
+end;
+$function$;
+
+revoke all on function public.get_admin_programs(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.get_admin_programs(uuid, uuid) to service_role;
+comment on function public.get_admin_programs(uuid, uuid) is
+  'Lists active programs and their journey counts for the authenticated administrative organizer.';
+
 create or replace function public.save_admin_program(
   p_actor_user_account_id uuid,
   p_organization_id uuid,
