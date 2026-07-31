@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Activity, BarChart3, BookOpen, Building2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FileUp, Gauge, Gift, LayoutDashboard, LogOut, Megaphone, Menu, Settings, SlidersHorizontal, Tags, Trophy, Users, X } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Building2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, Gauge, Gift, LayoutDashboard, LogOut, Megaphone, Menu, Settings, SlidersHorizontal, Tags, Trophy, Users, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { AdminProgramManager } from "@/components/admin-program-manager";
 import { EstimuloBrand } from "@/components/estimulo-brand";
@@ -31,7 +31,6 @@ const navigationDefinitions: ShellLink[] = [
 
 const settingsDefinitions: ShellLink[] = [
   { href: "/admin/configuracoes", label: "Configurações gerais", contentKey: "admin.nav.settings", icon: Settings, order: 110 },
-  { href: "/admin/entregas", label: "Entregas", contentKey: "admin.nav.deliveries", icon: FileUp, order: 111 },
   { href: "/admin/comportamento", label: "Comportamento", contentKey: "admin.nav.behavior", icon: Activity, order: 112 },
   { href: "/admin/recompensas", label: "Recompensas", contentKey: "admin.nav.rewards", icon: Gift, order: 115 },
   { href: "/admin/campanhas", label: "Campanhas e UTM", contentKey: "admin.nav.campaigns", icon: Tags, order: 116 },
