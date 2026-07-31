@@ -19,6 +19,7 @@ function positiveInteger(value: string, fallback = 9999) { const parsed = Number
 function deriveCode(source: string, fallback: string) { const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60); return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback; }
 function configuration(formData: FormData) { const raw = text(formData, "configuration_snapshot"); if (!raw) return {} as Record<string, unknown>; try { const parsed = JSON.parse(raw) as unknown; return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}; } catch { return {}; } }
 function selectedFile(formData: FormData, name: string) { const entry = formData.get(name); return entry instanceof File && entry.size > 0 ? entry : null; }
+function recordText(value: unknown, field: string) { return value && typeof value === "object" && !Array.isArray(value) && typeof (value as Record<string, unknown>)[field] === "string" ? String((value as Record<string, unknown>)[field]) : ""; }
 
 async function uploadJourneyCover(input: { actor: string; organizationId: string; file: File; role: "card" | "featured" }) {
   validateAnnouncementBanner(input.file);
@@ -58,10 +59,12 @@ export async function saveJourneyAction(formData: FormData) {
   let liveUpdate = false;
   const previousConfiguration = configuration(formData);
   const previousPresentation = previousConfiguration.presentation && typeof previousConfiguration.presentation === "object" && !Array.isArray(previousConfiguration.presentation) ? previousConfiguration.presentation as Record<string, unknown> : {};
-  const tags = text(formData, "presentation_tags").split(/[\n,]/).map((item) => item.trim()).filter(Boolean).slice(0, 8);
   const commandKey = randomUUID();
 
   try {
+    const extensionWorkspace = await extensionsRuntime.adminWorkspace(auth.identity.user_account_id, organization.organization_id);
+    const themeNameById = new Map(extensionWorkspace.themes.filter((theme) => recordText(theme, "status") === "active").map((theme) => [recordText(theme, "id"), recordText(theme, "name")]));
+    const tags = themeIds.map((id) => themeNameById.get(id) ?? "").filter(Boolean).slice(0, 8);
     const cardFile = selectedFile(formData, "card_background_file");
     const featuredFile = selectedFile(formData, "featured_background_file");
     const cardBackgroundId = cardFile ? await uploadJourneyCover({ actor: auth.identity.user_account_id, organizationId: organization.organization_id, file: cardFile, role: "card" }) : text(formData, "current_card_background_file_object_id") || previousPresentation.card_background_file_object_id;
