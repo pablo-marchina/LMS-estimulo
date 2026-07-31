@@ -64,11 +64,12 @@ test("bridge accepts and encodes only the exact local admin callback", () => {
 
 test("admin navigation exposes consolidated configuration and growth sections", () => {
   for (const [label, href] of [
+    ["Biblioteca", "/admin/biblioteca"],
+    ["Operação", "/admin/operacao"],
     ["Diagnósticos", "/admin/diagnostico"],
     ["Pontuação", "/admin/gamificacao"],
     ["Anúncios", "/admin/engajamento"],
     ["B2B", "/admin/b2b"],
-    ["Entregas", "/admin/entregas"],
     ["Recompensas", "/admin/recompensas"],
     ["Campanhas e UTM", "/admin/campanhas"],
     ["Mais configurações", "/admin/configuracoes"],
@@ -76,6 +77,7 @@ test("admin navigation exposes consolidated configuration and growth sections", 
     assert.match(adminShell, new RegExp(label));
     assert.match(adminShell, new RegExp(href.replaceAll("/", "\\/")));
   }
+  assert.doesNotMatch(adminShell, /\/admin\/entregas/u);
   assert.doesNotMatch(adminShell, /\/admin\/diagnosticos-opcionais/u);
   assert.doesNotMatch(adminShell, /\/admin\/certificados/u);
   assert.match(adminShell, /AdminProgramManager/u);
@@ -83,7 +85,7 @@ test("admin navigation exposes consolidated configuration and growth sections", 
 
 test("interface administration uses a same-origin clickable visual selector", () => {
   assert.match(experiencePage, /VisualInterfaceSelector/);
-  assert.match(visualSelector, /Clique diretamente no que deseja editar/);
+  assert.match(visualSelector, /Clique nos contornos para editar/);
   assert.match(visualSelector, /Página exibida/);
   assert.match(visualSelector, /entryMatchesRoute/);
   assert.match(visualSelector, /params\.set\("edit", contentKey\)/);
