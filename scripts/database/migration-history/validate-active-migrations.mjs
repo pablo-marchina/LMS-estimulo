@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const migrationsDirectory = path.join(repositoryRoot, 'supabase/migrations');
 const recoveredHistoryLastVersion = '20260714161338';
-const expectedLastMigration = '20260730212200_tracking_and_ai_delivery_support.sql';
+const expectedLastMigration = '20260730212300_enable_extension_rls.sql';
 const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
   '20260729190353_generic_journey_editor_assessment_details.sql',
@@ -50,6 +50,7 @@ const requiredFinalReleaseMigrations = Object.freeze([
   '20260730211900_perform_participant_extension.sql',
   '20260730212000_save_admin_extension.sql',
   '20260730212100_certificate_template_inheritance.sql',
+  '20260730212200_tracking_and_ai_delivery_support.sql',
   expectedLastMigration,
 ]);
 
