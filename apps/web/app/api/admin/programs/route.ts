@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { getAdminProductWorkspace } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
@@ -30,17 +29,11 @@ export async function GET() {
   const context = await authorize();
   if (!context) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
 
-  const workspace = await getAdminProductWorkspace(context.actor, context.organizationId);
-  const journeys = workspace.journeys.filter((journey) => journey.status !== "retired");
-  const programs = workspace.programs.map((program) => ({
-    ...program,
-    description: typeof (program as Record<string, unknown>).description === "string"
-      ? String((program as Record<string, unknown>).description)
-      : "",
-    journey_count: journeys.filter((journey) => String(journey.program_id ?? "") === program.id).length,
-  }));
-
-  return NextResponse.json({ programs });
+  const result = await invokeServerRpc<{ programs: Array<{ id: string; code: string; name: string; description: string | null; status: string; journey_count: number }> }>("get_admin_programs", {
+    p_actor_user_account_id: context.actor,
+    p_organization_id: context.organizationId,
+  });
+  return NextResponse.json(result);
 }
 
 export async function POST(request: Request) {
