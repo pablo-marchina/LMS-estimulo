@@ -9,6 +9,7 @@ const interfaceBridge = await readFile("apps/web/components/interface-preview-br
 const journeyPage = await readFile("apps/web/app/admin/produto/page.tsx", "utf8");
 const participantJourneys = await readFile("apps/web/app/empreendedor/jornadas/page.tsx", "utf8");
 const activityFields = await readFile("apps/web/app/admin/produto/activity-content-fields.tsx", "utf8");
+const lessonBuilder = await readFile("apps/web/app/admin/produto/trilha-aula-builder.tsx", "utf8");
 const deleteJourneyAction = await readFile("apps/web/app/admin/produto/delete-journey-action.ts", "utf8");
 const diagnosticPage = await readFile("apps/web/app/admin/diagnostico/page.tsx", "utf8");
 const diagnosticBuilder = await readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8");
@@ -51,11 +52,14 @@ test("participant journey covers preserve their original colors", () => {
   assert.match(participantJourneys, /bg-gradient-to-r from-black\/75/u);
 });
 
-test("lesson editor shows the configured content rather than only its source", () => {
+test("lesson editor keeps the main content visible without supplemental text or prompt editors", () => {
   assert.match(activityFields, /Conteúdo atual/u);
-  assert.match(activityFields, /Texto e recursos salvos na atividade/u);
   assert.match(activityFields, /selectedLibraryItem\.body/u);
   assert.match(activityFields, /Abrir conteúdo atual/u);
+  assert.doesNotMatch(activityFields, /Texto e recursos salvos na atividade/u);
+  assert.doesNotMatch(activityFields, /ConfigurationPreview/u);
+  assert.doesNotMatch(lessonBuilder, /Texto complementar/u);
+  assert.doesNotMatch(lessonBuilder, /Prompts prontos/u);
 });
 
 test("diagnostics support dynamic profiles and dimensions with mandatory publication mapping", () => {
