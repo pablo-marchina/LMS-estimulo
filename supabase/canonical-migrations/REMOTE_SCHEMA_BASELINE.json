@@ -8,14 +8,14 @@
     "postgres_major": 17,
     "categories": {
       "types": { "count": 0, "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" },
-      "columns": { "count": 2080, "sha256": "9842dbd7721bd75bf49b78bf0582d1130918464424e30f8b662eb60b4825d0e5" },
-      "indexes": { "count": 646, "sha256": "aa57dc13bdbd1e15f2eca8dd64d103b95dabd960e45048dbc5ddae4b6e054ca8" },
+      "columns": { "count": 2095, "sha256": "0cc5258178e4c32a864b2eb4c6381b6a420a3a0802310e62c7cfd9caa2524ec3" },
+      "indexes": { "count": 648, "sha256": "a9edb98337d0765822cbfdd2bf02691f44c127121c558e787c92a022a58c1149" },
       "schemas": { "count": 14, "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344" },
       "policies": { "count": 622, "sha256": "063a0f31004017b207b3ffaddce320e9efe0f1f5723604092c66b1fb82215248" },
       "routines": { "count": 237, "sha256": "0ff0456da6078b80dff5b0697bfc37b8ab73247aa2fa7bc1783c05aff5e4e2c7" },
       "triggers": { "count": 80, "sha256": "207889dcef9b8ff5848a8578d18a6acfa66a0d82dadeb78b3d1b192b9c07ea76" },
-      "relations": { "count": 199, "sha256": "96ae8ba21303a1a4d5c74b64c17796e5a4630aceb57e22d40ac004731a398e6b" },
-      "constraints": { "count": 1053, "sha256": "55f0d7a1be3d2a6233f0a5fba522f31c21d93aea45ae7c2d38a2ab6cf7220341" }
+      "relations": { "count": 201, "sha256": "db1dec46e529f8d2c34ee30b88207bdfe0899af62238693851c0d2e37914be18" },
+      "constraints": { "count": 1062, "sha256": "75a9c6af054df277bfe2894278d9b879a2ff8373a83e29ada4eb68196b200024" }
     }
   }
 }
