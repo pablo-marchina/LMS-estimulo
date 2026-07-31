@@ -167,7 +167,8 @@ test("deliveries support library content, activities and safe AI review modes", 
   assert.match(deliveryUploadRoute, /action:\s*"delivery_submit"/u);
   assert.match(participantRuntimeMigration, /target_type='library'/u);
   assert.match(participantRuntimeMigration, /target_type='activity'/u);
-  assert.match(aiGrader, /awaiting_human_review/u);
+  assert.match(aiGrader, /Encaminhada para revisão humana/u);
+  assert.match(aiGrader, /apply_ai_delivery_review/u);
   assert.doesNotMatch(aiGrader, /child_process|\bexec\(|\bspawn\(/u);
 });
 
