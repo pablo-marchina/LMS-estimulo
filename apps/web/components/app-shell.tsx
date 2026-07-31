@@ -3,10 +3,22 @@ import { AdminShell } from "@/components/admin-shell";
 import { IdempotentSubmitBoundary } from "@/components/idempotent-submit-guard";
 import { ParticipantShell } from "@/components/participant-shell";
 
-export function AppShell({ area, email, children }: { area: "empreendedor" | "admin"; email: string; children: ReactNode }) {
+export function AppShell({
+  area,
+  email,
+  children,
+  participantHasB2B = false,
+}: {
+  area: "empreendedor" | "admin";
+  email: string;
+  children: ReactNode;
+  participantHasB2B?: boolean;
+}) {
   return (
     <IdempotentSubmitBoundary>
-      {area === "admin" ? <AdminShell email={email}>{children}</AdminShell> : <ParticipantShell email={email}>{children}</ParticipantShell>}
+      {area === "admin"
+        ? <AdminShell email={email}>{children}</AdminShell>
+        : <ParticipantShell email={email} hasB2BAccess={participantHasB2B}>{children}</ParticipantShell>}
     </IdempotentSubmitBoundary>
   );
 }
