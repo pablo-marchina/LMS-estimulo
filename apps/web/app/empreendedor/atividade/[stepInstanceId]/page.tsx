@@ -60,11 +60,13 @@ function fileSize(value: number | null): string | null {
 }
 
 function SectionHeading({
+  id,
   icon,
   eyebrow,
   title,
   description,
 }: {
+  id: string;
   icon: React.ReactNode;
   eyebrow: string;
   title: string;
@@ -77,7 +79,9 @@ function SectionHeading({
       </span>
       <div className="min-w-0">
         <p className="text-[11px] font-bold uppercase tracking-[.14em] text-primary">{eyebrow}</p>
-        <h2 className="mt-0.5 text-lg font-black text-secondary sm:text-xl">{title}</h2>
+        <h2 id={id} className="mt-0.5 text-lg font-black text-secondary sm:text-xl">
+          {title}
+        </h2>
         <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">{description}</p>
       </div>
     </div>
@@ -161,6 +165,7 @@ export default async function ActivityPage({
             className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
           >
             <SectionHeading
+              id="conteudo-titulo"
               icon={<BookOpen size={19} />}
               eyebrow="Conteúdo da aula"
               title="Aprenda no seu ritmo"
@@ -198,6 +203,7 @@ export default async function ActivityPage({
             <section id="avaliacao" aria-labelledby="avaliacao-titulo" className="scroll-mt-24 grid gap-4">
               <div className="rounded-2xl border border-border bg-white shadow-sm">
                 <SectionHeading
+                  id="avaliacao-titulo"
                   icon={<Brain size={19} />}
                   eyebrow="Etapa 2"
                   title="Verifique o que aprendeu"
@@ -234,6 +240,7 @@ export default async function ActivityPage({
               className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
             >
               <SectionHeading
+                id="pratica-titulo"
                 icon={<UploadCloud size={19} />}
                 eyebrow={hasAssessment ? "Etapa 3" : "Etapa 2"}
                 title="Aplique e envie sua evidência"
@@ -372,6 +379,7 @@ export default async function ActivityPage({
             className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
           >
             <SectionHeading
+              id="comentarios-titulo"
               icon={<MessageCircle size={19} />}
               eyebrow={practice ? (hasAssessment ? "Etapa 4" : "Etapa 3") : hasAssessment ? "Etapa 3" : "Etapa 2"}
               title="Discuta a aula"
