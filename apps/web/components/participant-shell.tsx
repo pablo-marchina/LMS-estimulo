@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, Menu, Trophy, User, X } from "lucide-react";
+import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, LogOut, Menu, Trophy, User, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { BehaviorEventTracker } from "@/components/behavior-event-tracker";
 import { EstimuloBrand } from "@/components/estimulo-brand";
@@ -24,15 +24,7 @@ const linkDefinitions = [
   { href: "/empreendedor/perfil", label: "Perfil", contentKey: "participant.nav.profile", icon: User, order: 70 },
 ];
 
-export function ParticipantShell({
-  email,
-  children,
-  hasB2BAccess = false,
-}: {
-  email: string;
-  children: React.ReactNode;
-  hasB2BAccess?: boolean;
-}) {
+export function ParticipantShell({ email, children, hasB2BAccess = false }: { email: string; children: React.ReactNode; hasB2BAccess?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const content = useInterfaceContent();
   const skipLabel = interfaceText(content, "shared.skip_to_content", "Pular para o conteúdo");
@@ -41,70 +33,36 @@ export function ParticipantShell({
     .filter((link) => link.contentKey === "participant.nav.home" || interfaceVisible(content, link.contentKey))
     .filter((link) => link.contentKey !== "participant.nav.b2b" || hasB2BAccess)
     .sort((a, b) => interfaceOrder(content, a.contentKey, a.order) - interfaceOrder(content, b.contentKey, b.order))
-    .map((link) => ({
-      ...link,
-      href: interfaceHref(content, link.contentKey, link.href),
-      label: interfaceText(content, link.contentKey, link.label),
-    }));
-  const nav = links.map((link) => {
+    .map((link) => ({ ...link, href: interfaceHref(content, link.contentKey, link.href), label: interfaceText(content, link.contentKey, link.label) }));
+
+  const desktopNav = links.map((link) => {
     const Icon = link.icon;
-    return (
-      <NavItem
-        key={link.contentKey}
-        href={link.href}
-        exact={link.exact}
-        variant="top"
-        icon={<Icon size={15} aria-hidden="true" />}
-        interfaceContentKey={link.contentKey}
-        className="shrink-0 px-2.5 text-xs"
-      >
-        {link.label}
-      </NavItem>
-    );
+    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={12} aria-hidden="true" />} interfaceContentKey={link.contentKey} className="min-h-8 shrink-0 gap-1 whitespace-nowrap px-1.5 py-1 text-[10px] font-semibold xl:px-2 xl:text-[11px]">{link.label}</NavItem>;
   });
 
-  return (
-    <div className="participant-stage min-h-screen bg-background">
-      <BehaviorEventTracker />
-      <InterfacePreviewBridge />
-      <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
-      <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
-        <div className="mx-auto flex min-h-16 w-full max-w-[1400px] items-center gap-2 px-4 lg:px-7">
-          <div className="brand-logo-capsule shrink-0 scale-[.9]"><EstimuloBrand href="/empreendedor" compact /></div>
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 2xl:flex" aria-label="Navegação principal">{nav}</nav>
-          <div className="ml-auto hidden shrink-0 items-center gap-1.5 2xl:flex">
-            <span className="max-w-32 truncate text-[11px] text-white/70" title={email}>{email}</span>
-            <form action={signOutAction} data-interface-content-key="shared.sign_out">
-              <Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button>
-            </form>
-          </div>
-          <button
-            type="button"
-            className="ml-auto grid size-10 place-items-center rounded-xl text-white hover:bg-white/10 2xl:hidden"
-            aria-expanded={mobileOpen}
-            aria-controls="participant-mobile-nav"
-            aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
-            onClick={() => setMobileOpen((open) => !open)}
-          >
-            {mobileOpen ? <X size={19} /> : <Menu size={19} />}
-          </button>
-        </div>
-        {mobileOpen ? (
-          <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 2xl:hidden">
-            <nav className="grid gap-1 pt-3 sm:grid-cols-2 lg:grid-cols-3">{nav}</nav>
-            <div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3">
-              <span className="truncate text-xs text-white/70">{email}</span>
-              <form action={signOutAction} data-interface-content-key="shared.sign_out">
-                <Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button>
-              </form>
-            </div>
-          </div>
-        ) : null}
-      </header>
-      <InterfaceSlot area="participant" placement="before_content" />
-      <main id="conteudo-principal" className="mx-auto w-full max-w-[1400px]" tabIndex={-1}>{children}</main>
-      <InterfaceSlot area="participant" placement="after_content" />
-      <InterfaceSlot area="participant" placement="footer" />
-    </div>
-  );
+  const mobileNav = links.map((link) => {
+    const Icon = link.icon;
+    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={15} aria-hidden="true" />} interfaceContentKey={link.contentKey}>{link.label}</NavItem>;
+  });
+
+  return <div className="participant-stage min-h-screen bg-background">
+    <BehaviorEventTracker />
+    <InterfacePreviewBridge />
+    <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
+    <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
+      <div className="mx-auto flex min-h-14 w-full max-w-[1500px] items-center gap-1.5 px-3 lg:px-4">
+        <div className="brand-logo-capsule shrink-0 scale-[.78] origin-left xl:scale-[.84]"><EstimuloBrand href="/empreendedor" compact /></div>
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0 lg:flex" aria-label="Navegação principal">{desktopNav}</nav>
+        <form action={signOutAction} data-interface-content-key="shared.sign_out" className="hidden shrink-0 lg:block">
+          <Button variant="ghost" size="sm" type="submit" className="size-8 px-0 !text-white hover:!bg-white/10" aria-label={signOutLabel} title={`${signOutLabel} · ${email}`}><LogOut size={14} aria-hidden="true" /></Button>
+        </form>
+        <button type="button" className="ml-auto grid size-9 place-items-center rounded-lg text-white hover:bg-white/10 lg:hidden" aria-expanded={mobileOpen} aria-controls="participant-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={18} /> : <Menu size={18} />}</button>
+      </div>
+      {mobileOpen ? <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 lg:hidden"><nav className="grid gap-1 pt-3 sm:grid-cols-2">{mobileNav}</nav><div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3"><span className="truncate text-xs text-white/70">{email}</span><form action={signOutAction} data-interface-content-key="shared.sign_out"><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}
+    </header>
+    <InterfaceSlot area="participant" placement="before_content" />
+    <main id="conteudo-principal" className="mx-auto w-full max-w-[1400px]" tabIndex={-1}>{children}</main>
+    <InterfaceSlot area="participant" placement="after_content" />
+    <InterfaceSlot area="participant" placement="footer" />
+  </div>;
 }
