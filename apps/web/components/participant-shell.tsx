@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, Menu, Trophy, User, X } from "lucide-react";
+import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, LogOut, Menu, Trophy, User, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { BehaviorEventTracker } from "@/components/behavior-event-tracker";
 import { EstimuloBrand } from "@/components/estimulo-brand";
@@ -17,7 +17,7 @@ const linkDefinitions = [
   { href: "/empreendedor/jornadas", label: "Jornadas", contentKey: "participant.nav.journeys", icon: Compass, order: 20 },
   { href: "/empreendedor/biblioteca", label: "Biblioteca", contentKey: "participant.nav.library", icon: BookOpen, order: 30 },
   { href: "/empreendedor/entregas", label: "Entregas", contentKey: "participant.nav.submissions", icon: FileUp, order: 40 },
-  { href: "/empreendedor/engajamento", label: "Pontuação", contentKey: "participant.nav.points", icon: Trophy, order: 50 },
+  { href: "/empreendedor/engajamento", label: "Pontos", contentKey: "participant.nav.points", icon: Trophy, order: 50 },
   { href: "/empreendedor/recompensas", label: "Recompensas", contentKey: "participant.nav.rewards", icon: Gift, order: 55 },
   { href: "/empreendedor/conquistas", label: "Conquistas", contentKey: "participant.nav.achievements", icon: Award, order: 60 },
   { href: "/empreendedor/b2b", label: "B2B", contentKey: "participant.nav.b2b", icon: Building2, order: 65 },
@@ -46,6 +46,7 @@ export function ParticipantShell({
       href: interfaceHref(content, link.contentKey, link.href),
       label: interfaceText(content, link.contentKey, link.label),
     }));
+
   const nav = links.map((link) => {
     const Icon = link.icon;
     return (
@@ -54,11 +55,11 @@ export function ParticipantShell({
         href={link.href}
         exact={link.exact}
         variant="top"
-        icon={<Icon size={15} aria-hidden="true" />}
+        icon={<Icon size={12} strokeWidth={2.2} aria-hidden="true" />}
         interfaceContentKey={link.contentKey}
-        className="shrink-0 px-2.5 text-xs"
+        className="min-w-0 shrink gap-1 rounded-lg px-1.5 py-1.5 text-[10px] leading-none xl:px-2 xl:text-[11px]"
       >
-        {link.label}
+        <span className="truncate">{link.label}</span>
       </NavItem>
     );
   });
@@ -69,29 +70,26 @@ export function ParticipantShell({
       <InterfacePreviewBridge />
       <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
       <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
-        <div className="mx-auto flex min-h-16 w-full max-w-[1400px] items-center gap-2 px-4 lg:px-7">
-          <div className="brand-logo-capsule shrink-0 scale-[.9]"><EstimuloBrand href="/empreendedor" compact /></div>
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 2xl:flex" aria-label="Navegação principal">{nav}</nav>
-          <div className="ml-auto hidden shrink-0 items-center gap-1.5 2xl:flex">
-            <span className="max-w-32 truncate text-[11px] text-white/70" title={email}>{email}</span>
-            <form action={signOutAction} data-interface-content-key="shared.sign_out">
-              <Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button>
-            </form>
-          </div>
+        <div className="mx-auto flex min-h-14 w-full max-w-[1400px] items-center gap-1.5 px-3 xl:px-5">
+          <div className="brand-logo-capsule shrink-0 scale-[.78] xl:scale-[.84]"><EstimuloBrand href="/empreendedor" compact /></div>
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0 lg:flex" aria-label="Navegação principal">{nav}</nav>
+          <form action={signOutAction} data-interface-content-key="shared.sign_out" className="hidden shrink-0 lg:block">
+            <Button variant="ghost" size="sm" type="submit" aria-label={signOutLabel} title={signOutLabel} className="size-8 !p-0 !text-white hover:!bg-white/10"><LogOut size={14} aria-hidden="true" /></Button>
+          </form>
           <button
             type="button"
-            className="ml-auto grid size-10 place-items-center rounded-xl text-white hover:bg-white/10 2xl:hidden"
+            className="ml-auto grid size-9 place-items-center rounded-lg text-white hover:bg-white/10 lg:hidden"
             aria-expanded={mobileOpen}
             aria-controls="participant-mobile-nav"
             aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
             onClick={() => setMobileOpen((open) => !open)}
           >
-            {mobileOpen ? <X size={19} /> : <Menu size={19} />}
+            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
         {mobileOpen ? (
-          <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 2xl:hidden">
-            <nav className="grid gap-1 pt-3 sm:grid-cols-2 lg:grid-cols-3">{nav}</nav>
+          <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 lg:hidden">
+            <nav className="grid gap-1 pt-3 sm:grid-cols-2">{nav}</nav>
             <div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3">
               <span className="truncate text-xs text-white/70">{email}</span>
               <form action={signOutAction} data-interface-content-key="shared.sign_out">
