@@ -11,11 +11,13 @@ const participantJourneys = await readFile("apps/web/app/empreendedor/jornadas/p
 const activityFields = await readFile("apps/web/app/admin/produto/activity-content-fields.tsx", "utf8");
 const lessonBuilder = await readFile("apps/web/app/admin/produto/trilha-aula-builder.tsx", "utf8");
 const deleteJourneyAction = await readFile("apps/web/app/admin/produto/delete-journey-action.ts", "utf8");
+const unpublishJourneyAction = await readFile("apps/web/app/admin/produto/unpublish-action.ts", "utf8");
 const diagnosticPage = await readFile("apps/web/app/admin/diagnostico/page.tsx", "utf8");
 const diagnosticBuilder = await readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8");
 const diagnosticActions = await readFile("apps/web/app/admin/diagnostico/actions.ts", "utf8");
 const optionalProgramMigration = await readFile("supabase/migrations/20260730183000_optional_journey_program.sql", "utf8");
 const lifecycleMigration = await readFile("supabase/migrations/20260730183100_admin_journey_and_diagnostic_lifecycle.sql", "utf8");
+const correctionMigration = await readFile("supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql", "utf8");
 
 test("interface editor uses the effective permission and a same-origin clickable preview", () => {
   assert.match(interfacePage, /journey\.definition\.manage/u);
@@ -32,7 +34,7 @@ test("interface editor uses the effective permission and a same-origin clickable
   assert.match(interfaceBridge, /data-interface-content-key/u);
 });
 
-test("journeys have an optional program, one visible lifecycle state, image guidance and deletion", () => {
+test("journeys have an optional program, one visible lifecycle state, image guidance and safe draft deletion", () => {
   assert.match(journeyPage, /Programa <span[^>]*>\(opcional\)/u);
   assert.match(journeyPage, /<option value="">Sem programa<\/option>/u);
   assert.doesNotMatch(journeyPage, /name="program_id" required/u);
@@ -40,10 +42,15 @@ test("journeys have an optional program, one visible lifecycle state, image guid
   assert.match(journeyPage, /1200 × 1200 px/u);
   assert.match(journeyPage, /1920 × 900 px/u);
   assert.match(journeyPage, /deleteJourneyAction/u);
-  assert.match(deleteJourneyAction, /retireAdminJourney/u);
+  assert.match(journeyPage, /unpublishJourneyAction/u);
+  assert.match(deleteJourneyAction, /deleteAdminJourneyDraft/u);
+  assert.doesNotMatch(deleteJourneyAction, /retireAdminJourney/u);
+  assert.match(unpublishJourneyAction, /unpublishAdminJourneyToDraft/u);
   assert.match(optionalProgramMigration, /alter column program_id drop not null/u);
   assert.doesNotMatch(optionalProgramMigration, /PROGRAM_REQUIRED/u);
   assert.match(lifecycleMigration, /create or replace function public\.retire_admin_journey/u);
+  assert.match(correctionMigration, /create or replace function public\.delete_admin_journey_draft/u);
+  assert.match(correctionMigration, /create or replace function public\.unpublish_admin_journey_to_draft/u);
 });
 
 test("participant journey covers preserve their original colors", () => {
