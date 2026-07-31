@@ -1,274 +1,182 @@
-# Modelo completo do banco — Plataforma Estímulo
+# Modelo do banco — Plataforma Estímulo
 
-**Versão:** 0.1  
-**Data:** 2026-07-08  
-**Status:** baseline lógica e física preliminar — E10  
-**Banco de referência:** PostgreSQL compatível; provedor gerenciado e adaptador de autenticação serão decididos no E12.
+**Revisado em:** 2026-07-31  
+**Status:** modelo PostgreSQL executável e reproduzível por migrations  
+**Ambiente implementado:** Supabase para desenvolvimento, teste e preview
 
-## 1. Objetivo
+## 1. Organização
 
-Transformar o modelo de domínio, o catálogo de 118 eventos e os fluxos ponta a ponta em uma estrutura relacional capaz de operar uma plataforma SaaS/LMS multi-jornada em produção.
-
-O modelo precisa simultaneamente:
-
-- executar jornadas e conteúdos;
-- preservar versões editoriais e históricas;
-- registrar fatos comportamentais imutáveis;
-- permitir personalização sem arquétipos obrigatórios;
-- processar integrações de forma idempotente;
-- sustentar gamificação sem confundir recompensa com evidência;
-- calcular features e scores experimentais com linhagem;
-- aplicar autorização, LGPD, retenção e auditoria;
-- acomodar novas jornadas sem novas tabelas específicas.
-
-## 2. Decisão estrutural
-
-O banco será organizado em schemas por contexto delimitado dentro de um monólito modular:
+O banco é um monólito modular dividido por contexto:
 
 ```text
-iam
-core
-catalog
-orchestration
-diagnostics
-assessment
-engagement
-intervention
-eventing
-integration
-intelligence
-governance
-reporting
+iam             identidade, organizações, papéis e permissões
+core            empreendedores, negócios, arquivos e aquisição
+catalog         jornadas, atividades, biblioteca, temas e versões
+orchestration   inscrições, instâncias, passos e progressão
+diagnostics     diagnósticos principal e opcionais
+assessment      avaliações, entregas, rubricas e revisões
+engagement      pontos, carteira, recompensas, certificados e ledgers
+experience      CMS, configurações gerais, páginas B2B e comandos
+intervention    intervenções e segmentos
+behavior        eventos comportamentais e modelos de score
+eventing        eventos, outbox e inbox
+integration     mapeamentos e estado de integrações genéricas
+governance      documentos legais, aceites, auditoria e retenção
+reporting       projeções e superfícies analíticas
+app_private     helpers internos não expostos à Data API
+public          RPCs autenticadas e fronteiras estáveis
 ```
 
-Essa separação é lógica e de segurança; não implica bancos ou microserviços diferentes.
+A separação é lógica e de segurança; não implica microserviços ou bancos separados.
 
-## 3. Camadas de dados
+## 2. Padrões estruturais
 
-```text
-Identidade e cadastro
-        ↓
-Definições/versionamento editorial
-        ↓
-Execução operacional da jornada
-        ↓
-Fatos canônicos e ledgers imutáveis
-        ↓
-Projeções e integrações
-        ↓
-Features comportamentais
-        ↓
-Score experimental e validações
-```
+### Definição → versão → execução
 
-### 3.1 Estado operacional
+Jornadas, atividades, conteúdos, diagnósticos, certificados, páginas B2B e regras editoriais usam definição estável, versões em rascunho/publicadas/retiradas e instâncias históricas. Publicar uma versão não reescreve execuções anteriores.
 
-Tabelas como `orchestration.journey_instances`, `step_instances`, `assessment.attempts` e `intervention.instances` representam o estado atual e aplicam invariantes de negócio.
+### Ledgers e compensação
 
-### 3.2 Fatos imutáveis
+Pontos de engajamento e pontos de recompensa são movimentações imutáveis. Correções e cancelamentos criam compensações; o histórico não é sobrescrito.
 
-`eventing.events`, `diagnostics.responses`, `engagement.point_ledger`, `governance.consent_records` e `governance.audit_log` preservam história. Correções ocorrem por novos registros, compensação ou supersessão, não por reescrita silenciosa.
+### Comandos idempotentes
 
-### 3.3 Projeções
+`experience.extension_commands` registra ator, escopo, idempotency key, hash da requisição e resultado. Repetir a mesma chave com payload divergente é recusado.
 
-`progress_projections`, `point_balance_projections` e `streak_projections` existem para leitura eficiente. Elas não são fontes primárias e devem ser reconstruíveis.
+### Eventos e outbox
 
-### 3.4 Inteligência derivada
+A transação de domínio grava estado, evento, outbox e auditoria juntos. Consumidores deduplicam por evento/idempotency key e usam checkpoint próprio.
 
-Features e scores nunca são gravados no perfil principal. Cada resultado aponta para definição, versão, execução, janela, qualidade, inputs e linhagem.
+## 3. Identidade e escopo
 
-## 4. Padrão definição–versão–instância
+- `iam.user_accounts`: conta autenticável;
+- `core.entrepreneurs`: pessoa participante;
+- `core.businesses`: negócio atendido;
+- `core.business_memberships`: relação pessoa–negócio;
+- `iam.organizations`: Estímulo e organizações operadoras;
+- `iam.organization_memberships`: conta–organização;
+- papéis e permissões: RBAC com validade e auditoria.
 
-O padrão é aplicado a:
+IDs externos nunca são chaves primárias do domínio. Mapeamentos futuros permanecem na camada de integração.
 
-- jornada;
-- curso;
-- atividade;
-- diagnóstico;
-- regra;
-- segmento;
-- avaliação e rubrica;
-- regra de pontos;
-- selo;
-- certificado;
-- intervenção;
-- feature;
-- score;
-- mapeamento de integração.
+## 4. Configurações e documentos legais
 
-```text
-Definição estável
-→ versão editável
-→ versão publicada e imutável
-→ instância de execução ou resultado
-```
+- `experience.platform_settings`: identidade, contatos, links e rodapé por organização;
+- `governance.legal_document_versions`: Termos e Política versionados;
+- `governance.legal_acceptances`: versão aceita, usuário, data, origem e metadados.
 
-Participações permanecem associadas à versão publicada recebida. Publicar uma nova versão não altera execuções históricas.
+A unicidade parcial garante no máximo uma versão publicada por tipo e organização.
 
-## 5. Identidade e escopo
+## 5. Temas, biblioteca e jornadas
 
-O modelo separa:
+- `catalog.themes`: taxonomia administrada;
+- `catalog.library_item_theme_links`: relação N:N com conteúdos;
+- `catalog.journey_theme_links`: relação N:N com jornadas;
+- definições e versões de biblioteca, jornada, curso e atividade preservam publicação e histórico.
 
-- `iam.user_accounts`: identidade autenticável;
-- `core.entrepreneurs`: pessoa atendida;
-- `core.businesses`: negócio beneficiário;
-- `core.business_memberships`: vínculo pessoa–negócio;
-- `iam.organizations`: Estímulo e parceiros operadores;
-- `iam.organization_memberships`: vínculo conta–organização.
+A FK com `ON DELETE RESTRICT` impede excluir tema em uso.
 
-Nenhum ID do HubSpot ou de crédito é chave primária. IDs externos ficam em `integration.external_object_mappings`.
+## 6. Templates de certificados
 
-## 6. Catálogo multi-jornada
+- `engagement.certificate_template_assets`: imagem/PDF e metadados do objeto;
+- `engagement.certificate_template_assignments`: escopo `global`, `program` ou `journey`, período e estado.
 
-A Jornada OpenAI é carregada como dados em:
+Índice parcial garante uma atribuição ativa por escopo. A resolução segue jornada → programa → global.
 
-- `catalog.journey_definitions` e `journey_versions`;
-- `orchestration.path_templates`, `path_steps` e `path_transitions`;
-- `catalog.course_definitions`, `course_versions`, `modules`;
-- `catalog.activity_definitions`, `activity_versions`, `content_assets`;
-- tabelas especializadas de avaliação, prática e gamificação.
+## 7. Aquisição e UTM
 
-Uma segunda jornada usa as mesmas tabelas, os mesmos eventos e o mesmo orquestrador.
+- `core.tracking_links`: slug, destino, público, UTMs, parâmetros, validade, limite e etapas ignoráveis;
+- `core.tracking_visits`: visita, token com hash, sessão, dispositivo, referenciador e associação posterior;
+- `core.acquisition_touchpoints`: first touch, last touch, signup e conversion.
 
-## 7. Regras e ramificações
+O token bruto não é persistido; a associação pós-login usa hash e idempotência.
 
-Regras não são texto livre. `orchestration.rule_versions` armazena:
+## 8. B2B
 
-- linguagem de regra aprovada;
-- expressão estruturada;
-- schema de entrada;
-- schema de saída;
-- hash de conteúdo;
-- estado de publicação.
+- `experience.b2b_pages` e `b2b_page_versions`: página e conteúdo por blocos;
+- `experience.b2b_access_groups` e `b2b_group_members`: grupos administrados;
+- `experience.b2b_page_user_access`: concessão direta;
+- `experience.b2b_page_group_access`: concessão por grupo.
 
-A linguagem concreta será escolhida no E12. Regras publicadas precisam ser determinísticas, testáveis, limitadas e sem execução arbitrária de código.
+A leitura participante aplica a autorização no banco antes de devolver a página.
 
-## 8. Eventos e atomicidade
+## 9. Recompensas
 
-Para uma ação interna válida, a mesma transação deverá gravar:
+- `engagement.reward_settings`: taxa de conversão;
+- `engagement.reward_wallets`: saldo materializado e bloqueado transacionalmente;
+- `engagement.reward_ledger`: origem, débito, crédito e compensação;
+- `engagement.rewards`: catálogo, tipo, custo, estoque, período e regulamento;
+- `engagement.reward_redemptions`: solicitação, estado, entrega e cancelamento.
 
-1. estado operacional;
-2. incremento de `aggregate_version`;
-3. evento em `eventing.events`;
-4. item em `eventing.outbox`;
-5. auditoria mínima quando aplicável.
+Saldo e estoque são alterados na mesma transação. Cancelamento restaura ambos e registra motivo.
 
-Consumidores deduplicam por `(consumer_id, event_id)` em `eventing.consumer_inbox`.
+## 10. Entregas e IA
 
-## 9. Diagnóstico e personalização
+- `assessment.delivery_configurations`: alvo biblioteca/atividade, formatos, prazo, tentativas, estratégia e modo de correção;
+- `assessment.delivery_submissions`: tentativa e estado;
+- `assessment.delivery_submission_files`: evidências em `core.file_objects`;
+- rubricas e critérios: pesos, escala, aprovação e referências;
+- `assessment.delivery_reviews`: avaliação da IA ou humana, confiança, modelo, versão e feedback.
 
-O banco suporta:
+A entrega original permanece imutável. Reenvios criam nova tentativa. Código e ZIP são apenas analisados estaticamente.
 
-- dimensões contínuas;
-- prontidão operacional;
-- respostas revisáveis com histórico;
-- resultados versionados;
-- segmentos temporários;
-- decisões de personalização explicáveis;
-- estrutura futura para arquétipos probabilísticos.
+## 11. Diagnósticos
 
-Arquétipos permanecem desativados. Nenhuma coluna ou enum pressupõe exatamente quatro perfis.
+O diagnóstico principal usa definições, versões, dimensões, itens, opções, sessões, respostas, resultados e atribuições de arquétipo. A publicação principal pode mapear perfis antigos para novos e atualizar elegibilidade transacionalmente.
 
-## 10. Avaliações e práticas
+Diagnósticos opcionais acrescentam:
 
-Avaliações e atividades práticas são tipos de atividade, mas possuem tabelas especializadas para integridade:
+- disponibilidade por público e período;
+- sessões e tentativas próprias;
+- resultados exibíveis conforme configuração.
 
-- especificação da avaliação;
-- questões e opções;
-- tentativas, respostas e resultados;
-- especificação da prática;
-- submissões e arquivos protegidos;
-- rubricas, revisões e notas.
+Não existe FK ou comando opcional que atualize arquétipo principal ou acesso a jornadas.
 
-Arquivos ficam em object storage e são referenciados por `core.file_objects`.
+## 12. Eventos e score comportamental
 
-## 11. Gamificação e credenciais
+- eventos estruturados guardam ID idempotente, versão de schema, usuário, sessão, entidade, horário e propriedades;
+- definições de dimensão e modelo são versionadas;
+- snapshots de score guardam inputs, hash, cobertura, confiança, dimensões e explicação.
 
-Pontos são ledger, não saldo mutável. Selos e certificados guardam:
+O score permanece em tabelas analíticas e não é referenciado por políticas de acesso, jornadas, recompensas ou navegação.
 
-- versão da regra;
-- evento causal;
-- snapshot das evidências;
-- contexto da jornada;
-- histórico de revogação.
+## 13. Integração e ETL
 
-Pontos, selos e certificados não são entradas diretas de score por padrão.
+Produtores não armazenam contratos de um destino específico. A saída é preparada por eventos e outbox com:
 
-## 12. Integrações
+- rota lógica;
+- schema/versionamento;
+- cursor e checkpoint;
+- payload hash;
+- idempotency key;
+- tentativa, retry e dead letter;
+- reconciliação.
 
-O modelo separa:
+A exportação externa permanece desligada por padrão.
 
-- configuração não secreta da conexão;
-- referência ao segredo externo;
-- contrato de mapeamento versionado;
-- jobs idempotentes;
-- tentativas;
-- conflitos;
-- reconciliações;
-- webhooks recebidos.
+## 14. Segurança
 
-HubSpot receberá somente propriedades e fatos selecionados. O event store detalhado permanece interno.
+- RLS e privilégios seguem menor privilégio;
+- comandos sensíveis usam RPCs `SECURITY DEFINER` com `search_path` fechado;
+- `anon` e `authenticated` não executam diretamente as RPCs administrativas;
+- o gateway valida o usuário autenticado e impede `actor` divergente;
+- tabelas privadas e helpers internos não são superfícies da Data API;
+- arquivos usam objetos opacos e buckets privados;
+- auditoria registra alterações administrativas e revisões humanas.
 
-## 13. Features e score
+## 15. Reprodutibilidade
 
-### Features
+`supabase/migrations` é a fonte executável. O CI:
 
-Cada feature registra:
+1. inicia PostgreSQL limpo;
+2. aplica todo o histórico na ordem;
+3. valida fronteira e imutabilidade das migrations;
+4. compara o inventário com `REMOTE_SCHEMA_BASELINE.json`;
+5. executa contratos públicos e contenção de RPCs legadas;
+6. repete a reconstrução no gate de reprodutibilidade.
 
-- definição e uso permitido;
-- fórmula/versionamento;
-- eventos ou features de origem;
-- janela temporal;
-- política de ausência;
-- política de qualidade;
-- execução de cálculo;
-- valor, contexto, evidência e hash de linhagem.
+Contagens transitórias de tabelas, colunas ou funções pertencem aos artefatos de CI e não são congeladas neste documento.
 
-### Score
+## 16. Limites de produção
 
-Scores possuem:
-
-- definição e propósito;
-- versão do modelo;
-- schema de inputs/outputs;
-- execução;
-- resultado;
-- incerteza;
-- contribuições explicativas;
-- validações;
-- aprovação de uso.
-
-A estrutura não autoriza uso em crédito. Essa autorização depende de validação e governança posteriores.
-
-## 14. Governança
-
-O schema `governance` registra:
-
-- finalidades;
-- consentimentos/supersessões;
-- solicitações de titulares;
-- retenção;
-- linhagem;
-- aprovações de modelos;
-- auditoria privilegiada.
-
-Prazos reais de retenção continuam pendentes das políticas internas.
-
-## 15. Quantidade e escopo
-
-O baseline contém **121 tabelas**. Esse número não significa que todas precisarão ser implementadas na primeira migration. O plano de migrations organiza sua criação em camadas e diferencia:
-
-- núcleo necessário para produção inicial;
-- estruturas necessárias antes de ativar uma funcionalidade;
-- estruturas futuras já modeladas, mas desativadas, como arquétipos e score.
-
-## 16. Artefatos relacionados
-
-- `database-model-v0.1.yaml`: fonte máquina-legível;
-- `DATA_DICTIONARY.md`: tabela por tabela;
-- `database-target-v0.1.sql`: DDL preliminar;
-- `DATABASE_ERD.md`: relações principais;
-- `DATABASE_CONSTRAINTS_AND_INTEGRITY.md`;
-- `DATABASE_RLS_AND_SECURITY.md`;
-- `DATABASE_INDEXING_PARTITIONING.md`;
-- `DATABASE_MIGRATION_STRATEGY.md`.
+O modelo lógico e o runtime Supabase estão implementados para desenvolvimento, teste e preview. Escolha do banco gerenciado AWS, estratégia de backup, DR, storage, filas, workers, observabilidade e capacidade de produção depende de ADR e Gate B.
