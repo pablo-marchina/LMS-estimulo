@@ -21,7 +21,7 @@ function objectSnapshot(formData: FormData, name: string): Record<string, unknow
 
 const questionTypes = new Set(["single_choice", "multiple_choice", "true_false", "open_text"]);
 function quizQuestionsFromForm(formData: FormData) {
-  const count = Math.min(3, Math.max(0, Number.parseInt(text(formData, "quiz_question_count"), 10) || 0));
+  const count = Math.max(0, Number.parseInt(text(formData, "quiz_question_count"), 10) || 0);
   const questions: Array<{ code: string; prompt: string; question_type: string; position: number; options: Array<{ code: string; label: string; is_correct: boolean; position: number }> }> = [];
   for (let questionIndex = 0; questionIndex < count; questionIndex += 1) {
     const prompt = text(formData, `quiz_prompt_${questionIndex}`);
