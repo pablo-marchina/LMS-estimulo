@@ -7,7 +7,9 @@ import { BehaviorEventTracker } from "@/components/behavior-event-tracker";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
 import { InterfacePreviewBridge } from "@/components/interface-preview-bridge";
+import { InterfacePreviewGuard } from "@/components/interface-preview-guard";
 import { InterfaceSlot } from "@/components/interface-slot";
+import { ParticipantNavigationProgress } from "@/components/participant-navigation-progress";
 import { Button } from "@/components/ui/button";
 import { NavItem } from "@/components/ui/nav-item";
 import { interfaceHref, interfaceOrder, interfaceText, interfaceVisible } from "@/lib/interface-content/contracts";
@@ -46,6 +48,8 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
   });
 
   return <div className="participant-stage min-h-screen bg-background">
+    <InterfacePreviewGuard />
+    <ParticipantNavigationProgress />
     <BehaviorEventTracker />
     <InterfacePreviewBridge />
     <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>

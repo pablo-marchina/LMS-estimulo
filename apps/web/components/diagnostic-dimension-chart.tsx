@@ -1,11 +1,5 @@
 import type { DiagnosticDimensionSummary } from "@/lib/engagement/contracts";
 
-function qualitativeLabel(percentage: number) {
-  if (percentage >= 75) return "Ponto forte";
-  if (percentage >= 50) return "Em desenvolvimento";
-  return "Oportunidade de evolução";
-}
-
 export function DiagnosticDimensionChart({ dimensions }: { dimensions: DiagnosticDimensionSummary[] }) {
   if (!dimensions.length) return null;
 
@@ -21,30 +15,32 @@ export function DiagnosticDimensionChart({ dimensions }: { dimensions: Diagnosti
           Seu momento por área
         </h3>
         <p className="mt-1 text-sm text-muted">
-          As barras mostram, de forma qualitativa, onde você está mais preparado e onde pode evoluir.
+          Cada percentual representa o resultado normalizado usado para compor sua recomendação.
         </p>
       </div>
 
       <div className="grid gap-4 rounded-2xl border border-primary/15 bg-primary-soft/35 p-4 sm:p-5">
         {normalized.map((dimension) => (
           <div key={dimension.code} className="grid gap-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <strong className="text-secondary">{dimension.name}</strong>
-              <span className="text-xs font-semibold text-primary">{qualitativeLabel(dimension.percentage)}</span>
-            </div>
-            <div
-              className="h-3 overflow-hidden rounded-full bg-white shadow-inner"
-              role="progressbar"
-              aria-label={dimension.name}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={dimension.percentage}
-              aria-valuetext={qualitativeLabel(dimension.percentage)}
-            >
+            <strong className="text-sm text-secondary">{dimension.name}</strong>
+            <div className="flex items-center gap-3">
               <div
-                className="h-full rounded-full bg-primary transition-[width] duration-500"
-                style={{ width: `${Math.max(4, dimension.percentage)}%` }}
-              />
+                className="h-3 flex-1 overflow-hidden rounded-full bg-white shadow-inner"
+                role="progressbar"
+                aria-label={dimension.name}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={dimension.percentage}
+                aria-valuetext={`${dimension.percentage}%`}
+              >
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-500 motion-reduce:transition-none"
+                  style={{ width: `${dimension.percentage}%` }}
+                />
+              </div>
+              <strong className="w-12 text-right text-sm tabular-nums text-primary">
+                {dimension.percentage}%
+              </strong>
             </div>
           </div>
         ))}

@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ExternalLink, MousePointerClick, PanelTop } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/input";
 import type { AdminInterfaceContentEntry } from "@/lib/interface-content/contracts";
 
 function entryMatchesRoute(entry: AdminInterfaceContentEntry, route: string) {
   const pattern = entry.route_pattern;
   if (!pattern) return entry.area === "shared";
-  if (pattern.endsWith("/*")) return route === pattern.slice(0,-2) || route.startsWith(pattern.slice(0,-1));
+  if (pattern.endsWith("/*")) return route === pattern.slice(0, -2) || route.startsWith(pattern.slice(0, -1));
   return route === pattern;
 }
 
@@ -19,23 +18,43 @@ function previewUrl(route: string) {
   return `${route}${separator}interface_preview=1`;
 }
 
+const participantRoutes = [
+  ["/empreendedor", "Participante — Início"],
+  ["/empreendedor/jornadas", "Participante — Jornadas"],
+  ["/empreendedor/biblioteca", "Participante — Biblioteca"],
+  ["/empreendedor/entregas", "Participante — Entregas"],
+  ["/empreendedor/engajamento", "Participante — Pontuação"],
+  ["/empreendedor/recompensas", "Participante — Recompensas"],
+  ["/empreendedor/conquistas", "Participante — Conquistas"],
+  ["/empreendedor/perfil", "Participante — Perfil"],
+  ["/empreendedor/diagnostico", "Participante — Diagnóstico"],
+  ["/empreendedor/resultado", "Participante — Resultado do diagnóstico"],
+] as const;
+
+const adminRoutes = [
+  ["/admin", "Administrador — Visão geral"],
+  ["/admin/produto", "Administrador — Jornadas"],
+  ["/admin/biblioteca", "Administrador — Biblioteca"],
+  ["/admin/operacao", "Administrador — Operação"],
+  ["/admin/diagnostico", "Administrador — Diagnósticos"],
+  ["/admin/comportamento", "Administrador — Comportamento"],
+  ["/admin/configuracoes", "Administrador — Configurações"],
+] as const;
+
+function inferredLabel(route: string, page: string, area: string) {
+  const prefix = route.startsWith("/empreendedor") || area === "participant" ? "Participante" : "Administrador";
+  const words = page.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return `${prefix} — ${words}`;
+}
+
 function routeOptions(entries: AdminInterfaceContentEntry[]) {
-  const values = new Map<string,string>();
-  values.set("/empreendedor", "Início do participante");
-  values.set("/empreendedor/jornadas", "Jornadas do participante");
-  values.set("/empreendedor/biblioteca", "Biblioteca do participante");
-  values.set("/empreendedor/entregas", "Entregas do participante");
-  values.set("/empreendedor/perfil", "Perfil do participante");
-  values.set("/admin", "Visão geral administrativa");
-  values.set("/admin/produto", "Jornadas administrativas");
-  values.set("/admin/biblioteca", "Biblioteca administrativa");
-  values.set("/admin/operacao", "Operação administrativa");
+  const values = new Map<string, string>([...participantRoutes, ...adminRoutes]);
   for (const entry of entries) {
     const pattern = entry.route_pattern;
     if (!pattern || pattern.includes("*") || pattern.includes("[") || pattern === "/admin/experiencia") continue;
-    values.set(pattern, entry.page.replaceAll("_"," "));
+    values.set(pattern, inferredLabel(pattern, entry.page, entry.area));
   }
-  return Array.from(values, ([route,label]) => ({ route, label })).sort((a,b) => a.label.localeCompare(b.label,"pt-BR"));
+  return Array.from(values, ([route, label]) => ({ route, label })).sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
 }
 
 export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: { entries: AdminInterfaceContentEntry[]; selectedKey: string; initialRoute: string }) {
@@ -62,7 +81,7 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
       if (!entry) return;
       const params = new URLSearchParams(window.location.search);
       params.set("edit", payload.contentKey);
-      params.set("preview_route", payload.pathname && payload.pathname.startsWith("/") ? payload.pathname : route);
+      params.set("preview_route", payload.pathname?.startsWith("/") ? payload.pathname : route);
       router.replace(`/admin/experiencia?${params.toString()}#editor-elemento`, { scroll: false });
     };
     window.addEventListener("message", listener);
@@ -88,15 +107,15 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
 
   return <section className="grid gap-4 rounded-2xl border border-border bg-white p-4 shadow-sm lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
     <aside className="grid content-start gap-4">
-      <div><p className="brand-kicker">Navegação visual</p><h2 className="mt-1 text-lg font-black text-secondary">Página exibida</h2><p className="mt-1 text-sm text-muted">Troque a página abaixo. A prévia muda imediatamente sem recarregar o editor.</p></div>
+      <div><p className="brand-kicker">Navegação visual</p><h2 className="mt-1 text-lg font-black text-secondary">Página exibida</h2><p className="mt-1 text-sm text-muted">A prévia do participante é isolada: navegar, responder ou clicar não salva progresso, eventos ou score.</p></div>
       <Select value={route} onChange={(event) => changeRoute(event.target.value)} aria-label="Página exibida na prévia">{options.map((option) => <option key={option.route} value={option.route}>{option.label}</option>)}</Select>
-      <a href={route} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"><ExternalLink size={15} /> Abrir página em nova aba</a>
-      <div className="grid gap-2"><p className="text-xs font-bold uppercase tracking-wide text-muted">Elementos nesta página</p>{visibleEntries.length ? visibleEntries.map((entry) => <button key={entry.content_key} type="button" onClick={() => selectEntry(entry.content_key)} className={`rounded-xl border p-3 text-left transition ${selectedKey === entry.content_key ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40 hover:bg-surface-muted"}`}><strong className="block text-sm text-secondary">{entry.element_name}</strong><span className="mt-1 block text-xs text-muted">{entry.placement.replaceAll("_"," ")} · {entry.element_type}</span></button>) : <p className="rounded-xl bg-surface-muted p-3 text-sm text-muted">Nenhum elemento registrado especificamente para esta página.</p>}</div>
+      <a href={previewUrl(route)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"><ExternalLink size={15} /> Abrir prévia isolada</a>
+      <div className="grid gap-2"><p className="text-xs font-bold uppercase tracking-wide text-muted">Elementos nesta página</p>{visibleEntries.length ? visibleEntries.map((entry) => <button key={entry.content_key} type="button" onClick={() => selectEntry(entry.content_key)} className={`rounded-xl border p-3 text-left transition ${selectedKey === entry.content_key ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40 hover:bg-surface-muted"}`}><strong className="block text-sm text-secondary">{entry.element_name}</strong><span className="mt-1 block text-xs text-muted">{entry.placement.replaceAll("_", " ")} · {entry.element_type}</span></button>) : <p className="rounded-xl bg-surface-muted p-3 text-sm text-muted">Nenhum elemento registrado especificamente para esta página.</p>}</div>
     </aside>
     <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface-muted">
       <div className="flex items-center justify-between gap-3 border-b border-border bg-white px-4 py-3"><span className="inline-flex items-center gap-2 text-sm font-bold text-secondary"><PanelTop size={16} /> Prévia clicável</span><span className="inline-flex items-center gap-1.5 text-xs text-muted"><MousePointerClick size={14} /> Clique nos contornos para editar</span></div>
       <div className="relative min-h-[640px] bg-white">
-        {!ready ? <div className="absolute inset-0 z-10 grid place-items-center bg-white"><p className="text-sm font-semibold text-muted">Carregando {route}…</p></div> : null}
+        {!ready ? <div className="absolute inset-0 z-10 grid place-items-center bg-white"><div className="w-56"><p className="text-center text-sm font-semibold text-muted">Carregando prévia…</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div className="h-full wi-2/3 animate-pulse rounded-full bg-primary" /></div></div></div> : null}
         <iframe key={`${src}:${frameKey}`} name="estimulo-interface-preview" src={src} title={`Prévia da interface: ${route}`} className="h-[760px] w-full bg-white" onLoad={() => setReady(true)} referrerPolicy="same-origin" />
       </div>
     </div>
