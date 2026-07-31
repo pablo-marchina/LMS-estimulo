@@ -1,0 +1,52 @@
+import { FileImage, FileText, ImageUp } from "lucide-react";
+import { saveExtensionAction } from "@/app/admin/extension-actions";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input, Label, Select } from "@/components/ui/input";
+import { requireAdminExtensionsWorkspace } from "@/lib/extensions/admin-context";
+import type { JsonRecord } from "@/lib/extensions/runtime";
+
+function text(value: unknown) { return typeof value === "string" ? value : ""; }
+function assetName(asset: JsonRecord | undefined) { return text(asset?.name) || text(asset?.original_filename) || "Fundo do certificado"; }
+const returnTo = "/admin/gamificacao?tipo=certificados#templates-certificado";
+
+export async function CertificateTemplateManager() {
+  const { organization, workspace } = await requireAdminExtensionsWorkspace();
+  const assets = workspace.certificate_templates.assets;
+  const assignments = workspace.certificate_templates.assignments;
+  const assetById = new Map(assets.map((asset) => [text(asset.id), asset]));
+
+  return <section id="templates-certificado" className="grid scroll-mt-24 gap-4">
+    <Card className="grid gap-4">
+      <div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary"><ImageUp size={20} /></span><div><h2 className="text-lg font-black text-secondary">Fundo dos certificados</h2><p className="text-sm text-muted">Defina um modelo geral e crie exceções somente quando um programa ou uma jornada precisar de outra aparência.</p></div></div>
+      <div className="grid gap-3 lg:grid-cols-3">
+        <UploadCard organizationId={organization.organization_id} scopeType="global" title="Modelo geral" description="Usado automaticamente quando não existe uma escolha mais específica." />
+        <UploadCard organizationId={organization.organization_id} scopeType="program" title="Modelo de um programa" description="Substitui o modelo geral nas jornadas desse programa." options={workspace.programs.map((item) => ({ id: text(item.id), name: text(item.name) }))} />
+        <UploadCard organizationId={organization.organization_id} scopeType="journey" title="Modelo de uma jornada" description="Tem prioridade e vale somente para a jornada escolhida." options={workspace.journeys.map((item) => ({ id: text(item.id), name: text(item.name) }))} />
+      </div>
+    </Card>
+
+    <Card className="grid gap-3">
+      <div><h3 className="font-black text-secondary">Modelos em uso</h3><p className="text-sm text-muted">A plataforma escolhe automaticamente nesta ordem: jornada, programa e modelo geral.</p></div>
+      {assignments.map((assignment) => {
+        const scopeType = text(assignment.scope_type);
+        const scopeId = text(assignment.scope_id);
+        const asset = assetById.get(text(assignment.template_asset_id));
+        const scopeName = scopeType === "global"
+          ? "Modelo geral"
+          : scopeType === "program"
+            ? text(workspace.programs.find((item) => text(item.id) === scopeId)?.name) || "Programa"
+            : text(workspace.journeys.find((item) => text(item.id) === scopeId)?.name) || "Jornada";
+        return <article key={text(assignment.id)} className="flex flex-col gap-3 rounded-xl border border-border p-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3">{text(asset?.media_type) === "pdf" ? <FileText className="text-primary" /> : <FileImage className="text-primary" />}<div><strong className="block text-ink">{scopeName}</strong><span className="text-sm text-muted">{assetName(asset)}</span></div></div><form action={saveExtensionAction}><input type="hidden" name="resource_type" value="certificate_template_assignment" /><input type="hidden" name="return_to" value={returnTo} /><input type="hidden" name="scope_type" value={scopeType} /><input type="hidden" name="scope_id" value={scopeId} /><input type="hidden" name="template_asset_id" value="" /><Button variant="secondary" size="sm" type="submit">Remover modelo</Button></form></article>;
+      })}
+      {assignments.length === 0 ? <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted">Nenhum modelo definido. Envie o modelo geral para começar.</p> : null}
+    </Card>
+
+    <details className="rounded-2xl border border-border bg-white shadow-sm"><summary className="cursor-pointer p-4 font-bold text-secondary">Arquivos já enviados</summary><div className="grid gap-2 border-t border-border p-4 sm:grid-cols-2 xl:grid-cols-3">{assets.map((asset) => <article key={text(asset.id)} className="rounded-xl bg-surface-muted p-3"><strong className="block text-ink">{assetName(asset)}</strong><span className="text-xs text-muted">{text(asset.media_type) === "pdf" ? "PDF" : "Imagem"} · {Math.max(1, Math.round(Number(asset.size_bytes ?? 0) / 1024))} KB</span></article>)}{assets.length === 0 ? <p className="text-sm text-muted">Nenhum arquivo enviado.</p> : null}</div></details>
+  </section>;
+}
+
+function UploadCard({ organizationId, scopeType, title, description, options = [] }: { organizationId: string; scopeType: "global" | "program" | "journey"; title: string; description: string; options?: { id: string; name: string }[] }) {
+  return <div className="grid content-start gap-3 rounded-xl border border-border p-4"><div><h3 className="font-black text-secondary">{title}</h3><p className="mt-1 text-xs leading-5 text-muted">{description}</p></div><form action="/api/certificate-template-uploads" method="post" encType="multipart/form-data" className="grid gap-3"><input type="hidden" name="organization_id" value={organizationId} /><input type="hidden" name="return_to" value={returnTo} /><input type="hidden" name="scope_type" value={scopeType} /><Label>Nome do modelo<Input name="name" placeholder="Ex.: Certificado institucional" required /></Label>{scopeType !== "global" ? <Label>{scopeType === "program" ? "Programa" : "Jornada"}<Select name="scope_id" required><option value="">Selecione</option>{options.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</Select></Label> : null}<Label>PDF ou imagem<Input name="file" type="file" accept="application/pdf,image/png,image/jpeg,image/webp,.pdf,.png,.jpg,.jpeg,.webp" required /></Label><PendingSubmitButton pendingLabel="Enviando…" className="w-fit">Salvar modelo</PendingSubmitButton></form></div>;
+}

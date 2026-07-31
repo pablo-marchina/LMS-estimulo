@@ -28,6 +28,19 @@ function checkbox(formData: FormData, name: string) {
   return ["on", "true", "1", "yes"].includes(value);
 }
 
+function numeric(formData: FormData, name: string, fallback = 0) {
+  const parsed = Number(text(formData, name));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function lines(formData: FormData, name: string) {
+  return text(formData, name).split("\n").map((value) => value.trim()).filter(Boolean);
+}
+
+function deleteKeys(payload: JsonRecord, keys: string[]) {
+  for (const key of keys) delete payload[key];
+}
+
 function payloadFromForm(formData: FormData): JsonRecord {
   const jsonFields = names(formData, "json_fields");
   const arrayFields = names(formData, "array_fields");
@@ -54,17 +67,71 @@ function payloadFromForm(formData: FormData): JsonRecord {
     payload[key] = value;
   }
 
-  if (text(formData, "resource_type") === "tracking_link") {
+  const resourceType = text(formData, "resource_type");
+
+  if (resourceType === "tracking_link") {
     payload.skip_steps = {
       profile: checkbox(formData, "skip_profile"),
       onboarding: checkbox(formData, "skip_onboarding"),
       diagnostic: checkbox(formData, "skip_diagnostic"),
       home: checkbox(formData, "skip_home"),
     };
-    delete payload.skip_profile;
-    delete payload.skip_onboarding;
-    delete payload.skip_diagnostic;
-    delete payload.skip_home;
+    deleteKeys(payload, ["skip_profile", "skip_onboarding", "skip_diagnostic", "skip_home"]);
+  }
+
+  if (resourceType === "delivery_configuration") {
+    const criteria = [0, 1, 2, 3]
+      .map((index) => ({
+        code: `criterio_${index + 1}`,
+        name: text(formData, `criterion_name_${index}`),
+        description: text(formData, `criterion_description_${index}`),
+        weight: Math.max(1, numeric(formData, `criterion_weight_${index}`, 1)),
+      }))
+      .filter((criterion) => criterion.name);
+
+    payload.rubric = {
+      criteria: criteria.length ? criteria : [{ code: "qualidade", name: "Qualidade da resposta", description: "Avalie se a resposta atende ao que foi solicitado.", weight: 1 }],
+      scale: { minimum: 0, maximum: 100 },
+      passing_score: numeric(formData, "passing_score", 0),
+    };
+    payload.reference_material = lines(formData, "reference_material_text").map((content, index) => ({
+      title: `Referência ${index + 1}`,
+      content,
+    }));
+    payload.points_configuration = {
+      on_submit: Math.max(0, numeric(formData, "points_on_submit", 0)),
+      on_approve: Math.max(0, numeric(formData, "points_on_approve", 0)),
+      proportional_to_score: checkbox(formData, "points_proportional"),
+      max_points: Math.max(0, numeric(formData, "points_maximum", 0)),
+    };
+    payload.max_file_size_bytes = Math.round(Math.max(1, numeric(formData, "max_file_size_mb", 25)) * 1024 * 1024);
+    deleteKeys(payload, [
+      "reference_material_text", "points_on_submit", "points_on_approve", "points_proportional", "points_maximum", "max_file_size_mb",
+      ...[0, 1, 2, 3].flatMap((index) => [`criterion_name_${index}`, `criterion_description_${index}`, `criterion_weight_${index}`]),
+    ]);
+  }
+
+  if (resourceType === "reward") {
+    const fields = [
+      checkbox(formData, "request_address") ? { key: "address", label: "Endereço para entrega", required: true } : null,
+      checkbox(formData, "request_email") ? { key: "email", label: "E-mail para recebimento", required: true } : null,
+      checkbox(formData, "request_phone") ? { key: "phone", label: "Telefone para contato", required: true } : null,
+    ].filter(Boolean);
+    payload.fulfillment_configuration = {
+      instructions: text(formData, "delivery_instructions"),
+      fields,
+    };
+    deleteKeys(payload, ["request_address", "request_email", "request_phone", "delivery_instructions"]);
+  }
+
+  if (resourceType === "redemption_status") {
+    payload.fulfillment_details = Object.fromEntries([
+      ["code", text(formData, "delivery_code")],
+      ["link", text(formData, "delivery_link")],
+      ["tracking", text(formData, "delivery_tracking")],
+      ["instructions", text(formData, "delivery_notes")],
+    ].filter(([, value]) => value));
+    deleteKeys(payload, ["delivery_code", "delivery_link", "delivery_tracking", "delivery_notes"]);
   }
 
   for (const field of booleanFields) {

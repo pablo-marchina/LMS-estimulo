@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
-import { Activity, BarChart3, BookOpen, Building2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FileImage, FileUp, Gauge, Gift, LayoutDashboard, LogOut, Megaphone, Menu, Settings, SlidersHorizontal, Tags, Trophy, Users, X } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Building2, ChevronDown, ChevronLeft, ChevronRight, ClipboardList, FileUp, Gauge, Gift, LayoutDashboard, LogOut, Megaphone, Menu, Settings, SlidersHorizontal, Tags, Trophy, Users, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
+import { AdminProgramManager } from "@/components/admin-program-manager";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
 import { InterfacePreviewBridge } from "@/components/interface-preview-bridge";
@@ -23,7 +24,7 @@ const navigationDefinitions: ShellLink[] = [
   { href: "/admin/usuarios", label: "Usuários", contentKey: "admin.nav.users", icon: Users, order: 50 },
   { href: "/admin/operacao", label: "Operação", contentKey: "admin.nav.operation", icon: LayoutDashboard, order: 60 },
   { href: "/admin/relatorios", label: "Relatórios", contentKey: "admin.nav.reports", icon: BarChart3, order: 70 },
-  { href: "/admin/diagnostico", label: "Diagnóstico principal", contentKey: "admin.nav.diagnostics", icon: ClipboardList, order: 80 },
+  { href: "/admin/diagnostico", label: "Diagnósticos", contentKey: "admin.nav.diagnostics", icon: ClipboardList, order: 80 },
   { href: "/admin/gamificacao", label: "Pontuação", contentKey: "admin.nav.points", icon: Trophy, order: 90 },
   { href: "/admin/engajamento", label: "Anúncios", contentKey: "admin.nav.announcements", icon: Megaphone, order: 100 },
 ];
@@ -32,8 +33,6 @@ const settingsDefinitions: ShellLink[] = [
   { href: "/admin/configuracoes", label: "Configurações gerais", contentKey: "admin.nav.settings", icon: Settings, order: 110 },
   { href: "/admin/entregas", label: "Entregas", contentKey: "admin.nav.deliveries", icon: FileUp, order: 111 },
   { href: "/admin/comportamento", label: "Comportamento", contentKey: "admin.nav.behavior", icon: Activity, order: 112 },
-  { href: "/admin/diagnosticos-opcionais", label: "Diagnósticos opcionais", contentKey: "admin.nav.optional_diagnostics", icon: Tags, order: 113 },
-  { href: "/admin/certificados", label: "Templates de certificados", contentKey: "admin.nav.certificate_templates", icon: FileImage, order: 114 },
   { href: "/admin/recompensas", label: "Recompensas", contentKey: "admin.nav.rewards", icon: Gift, order: 115 },
   { href: "/admin/campanhas", label: "Campanhas e UTM", contentKey: "admin.nav.campaigns", icon: Tags, order: 116 },
   { href: "/admin/b2b", label: "B2B", contentKey: "admin.nav.b2b", icon: Building2, order: 117 },
@@ -84,7 +83,10 @@ export function AdminShell({ email, children }: { email: string; children: React
     <div className="min-w-0">
       <header className="no-print sticky top-0 z-50 flex min-h-14 items-center border-b border-primary-active bg-primary px-4 text-white shadow-sm lg:hidden"><div className="brand-logo-capsule scale-90 origin-left"><EstimuloBrand href="/admin" compact /></div><button type="button" className="ml-auto grid size-9 place-items-center rounded-lg hover:bg-white/10" aria-expanded={mobileOpen} aria-controls="admin-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={20} /> : <Menu size={20} />}</button>{mobileOpen ? <div id="admin-mobile-nav" className="absolute inset-x-0 top-full max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-white/15 bg-primary p-3 shadow-xl"><nav className="grid gap-0.5">{links.map((link) => renderLink(link))}<div className="mt-1 border-t border-white/10 pt-1.5">{settingsButton}{settingsOpen ? <div className="mt-1 grid gap-0.5 rounded-xl bg-white/5 p-1.5">{settingsLinks.map((link) => renderLink(link, true))}</div> : null}</div></nav><div className="mt-2 border-t border-white/15 pt-2"><p className="mb-1 truncate text-xs text-white/65">{email}</p><form action={signOutAction}><Button variant="ghost" size="sm" type="submit" className="w-full !text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}</header>
       <InterfaceSlot area="admin" placement="before_content" />
-      <main id="conteudo-principal" className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 sm:py-7" tabIndex={-1}>{children}</main>
+      <main id="conteudo-principal" className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 sm:py-7" tabIndex={-1}>
+        {children}
+        {pathname === "/admin/produto" ? <AdminProgramManager /> : null}
+      </main>
       <InterfaceSlot area="admin" placement="after_content" />
       <InterfaceSlot area="admin" placement="footer" />
     </div>

@@ -18,126 +18,39 @@ type CertificateVersion = {
   validity_policy?: Record<string, unknown>;
   template_layout?: Record<string, unknown>;
 };
-
-type CertificateDefinition = {
-  definition_id: string;
-  name: string;
-  versions: CertificateVersion[];
-};
-
+type CertificateDefinition = { definition_id: string; name: string; versions: CertificateVersion[] };
 type NamedVersion = { id: string; definitionName: string; version_number: number };
-type TemplateOption = { file_object_id: string; original_filename: string | null; created_at: string };
 
-function objectValue(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
+function objectValue(value: unknown): Record<string, unknown> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
+function numberValue(value: unknown, fallback: number) { return typeof value === "number" && Number.isFinite(value) ? value : fallback; }
 
-function numberValue(value: unknown, fallback: number) {
-  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-}
-
-export function CertificateEditor({
-  certificates,
-  journeyVersions,
-  ruleVersions,
-  templates,
-  uploadedTemplateId,
-}: {
-  certificates: CertificateDefinition[];
-  journeyVersions: NamedVersion[];
-  ruleVersions: NamedVersion[];
-  templates: TemplateOption[];
-  uploadedTemplateId?: string;
-}) {
+export function CertificateEditor({ certificates, journeyVersions, ruleVersions }: { certificates: CertificateDefinition[]; journeyVersions: NamedVersion[]; ruleVersions: NamedVersion[] }) {
   const [selectedDefinitionId, setSelectedDefinitionId] = useState("");
   const selected = useMemo(() => certificates.find((item) => item.definition_id === selectedDefinitionId) ?? null, [certificates, selectedDefinitionId]);
-  const version = selected
-    ? [...selected.versions].sort((a, b) => b.version_number - a.version_number).find((item) => item.status === "draft")
-      ?? [...selected.versions].sort((a, b) => b.version_number - a.version_number)[0]
-      ?? null
-    : null;
+  const version = selected ? [...selected.versions].sort((a, b) => b.version_number - a.version_number).find((item) => item.status === "draft") ?? [...selected.versions].sort((a, b) => b.version_number - a.version_number)[0] ?? null : null;
   const validity = objectValue(version?.validity_policy);
   const layout = objectValue(version?.template_layout);
-  const templateId = uploadedTemplateId || version?.template_file_object_id || "";
-  const layoutKey = `${selectedDefinitionId}:${version?.id ?? "new"}`;
 
-  return (
-    <Card>
-      <div>
-        <h2 className="text-lg font-black text-secondary">Configurar certificado</h2>
-        <p className="mt-1 text-sm text-muted">Abra um certificado salvo para carregar sua jornada, regra, validade, template e posicionamento atuais.</p>
+  return <Card>
+    <div><h2 className="text-lg font-black text-secondary">Regra de emissão</h2><p className="mt-1 text-sm text-muted">Escolha qual jornada gera o certificado e qual condição precisa ser cumprida. O fundo é escolhido automaticamente pelos modelos definidos acima.</p></div>
+    <form key={`${selectedDefinitionId}:${version?.id ?? "new"}`} action={saveGamificationResourceAction} className="mt-5 grid gap-4">
+      <input type="hidden" name="resource_type" value="certificate" />
+      <input type="hidden" name="template_file_object_id" value={version?.template_file_object_id ?? ""} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Label>Certificado existente<Select name="definition_id" value={selectedDefinitionId} onChange={(event) => setSelectedDefinitionId(event.target.value)}><option value="">Criar novo</option>{certificates.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select></Label>
+        <Label>Nome do certificado<Input name="name" required defaultValue={selected?.name ?? ""} placeholder="Ex.: Certificado de conclusão" /></Label>
+        <Label className="sm:col-span-2">Jornada<Select name="journey_version_id" required defaultValue={version?.journey_version_id ?? ""}><option value="">Selecione</option>{journeyVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select></Label>
       </div>
-
-      <form key={`${layoutKey}:${uploadedTemplateId ?? ""}`} action={saveGamificationResourceAction} className="mt-5 grid gap-4">
-        <input type="hidden" name="resource_type" value="certificate" />
+      <AdminDisclosure title="Condição, validade e posição dos textos" description="Abra somente quando precisar ajustar a emissão ou o PDF.">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Label>
-            Certificado existente
-            <Select name="definition_id" value={selectedDefinitionId} onChange={(event) => setSelectedDefinitionId(event.target.value)}>
-              <option value="">Criar novo</option>
-              {certificates.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}
-            </Select>
-          </Label>
-          <Label>
-            Nome do certificado
-            <Input name="name" required defaultValue={selected?.name ?? ""} />
-          </Label>
-          <Label>
-            Jornada
-            <Select name="journey_version_id" required defaultValue={version?.journey_version_id ?? ""}>
-              <option value="">Selecione</option>
-              {journeyVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName} · versão {item.version_number}</option>)}
-            </Select>
-          </Label>
-          <Label>
-            Template salvo
-            <Select name="template_file_object_id" defaultValue={templateId}>
-              <option value="">Sem imagem de fundo</option>
-              {templates.map((item) => <option value={item.file_object_id} key={item.file_object_id}>{item.original_filename ?? "Template sem nome"}</option>)}
-            </Select>
-            <span className="text-[11px] font-normal text-muted">Todo template preparado permanece nesta lista após recarregar ou sair da página.</span>
-          </Label>
+          <Label>Condição para receber<Select name="requirements_rule_version_id" required defaultValue={version?.requirements_rule_version_id ?? ""}><option value="">Selecione</option>{ruleVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select></Label>
+          <Label>Validade<Select name="validity_mode" defaultValue={validity.expires === true ? "months" : "never"}><option value="never">Não expira</option><option value="months">Expira depois de alguns meses</option></Select></Label>
+          <Label>Meses de validade<Input name="validity_months" type="number" min="1" max="120" defaultValue={String(numberValue(validity.duration_months, 12))} /></Label>
+          <Label>Disponibilidade<Select name="status" defaultValue={version?.status === "published" ? "published" : "draft"}><option value="draft">Preparar sem emitir</option><option value="published">Ativar emissão</option></Select></Label>
+          <div className="sm:col-span-2"><CertificateTemplatePositioning initialNameY={Math.round(numberValue(layout.name_y, 0.53) * 100)} initialJourneyY={Math.round(numberValue(layout.journey_y, 0.4) * 100)} initialTextColor={String(layout.text_color ?? "primary")} /></div>
         </div>
-
-        <AdminDisclosure title="Regra, posicionamento e validade" description="Configurações avançadas do PDF e da emissão.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Label>
-              Condição para receber
-              <Select name="requirements_rule_version_id" required defaultValue={version?.requirements_rule_version_id ?? ""}>
-                <option value="">Selecione</option>
-                {ruleVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName} · versão {item.version_number}</option>)}
-              </Select>
-            </Label>
-            <Label>
-              Validade
-              <Select name="validity_mode" defaultValue={validity.expires === true ? "months" : "never"}>
-                <option value="never">Não expira</option>
-                <option value="months">Expira em meses</option>
-              </Select>
-            </Label>
-            <Label>
-              Meses de validade
-              <Input name="validity_months" type="number" min="1" max="120" defaultValue={String(numberValue(validity.duration_months, 12))} />
-            </Label>
-            <Label>
-              Estado
-              <Select name="status" defaultValue={version?.status === "published" ? "published" : "draft"}>
-                <option value="draft">Salvar rascunho</option>
-                <option value="published">Publicar agora</option>
-              </Select>
-            </Label>
-            <div className="sm:col-span-2">
-              <CertificateTemplatePositioning
-                initialNameY={Math.round(numberValue(layout.name_y, 0.53) * 100)}
-                initialJourneyY={Math.round(numberValue(layout.journey_y, 0.4) * 100)}
-                initialTextColor={String(layout.text_color ?? "primary")}
-              />
-            </div>
-          </div>
-        </AdminDisclosure>
-
-        <PendingSubmitButton pendingLabel="Salvando certificado…" className="w-fit">Salvar certificado</PendingSubmitButton>
-      </form>
-    </Card>
-  );
+      </AdminDisclosure>
+      <PendingSubmitButton pendingLabel="Salvando certificado…" className="w-fit">Salvar certificado</PendingSubmitButton>
+    </form>
+  </Card>;
 }
