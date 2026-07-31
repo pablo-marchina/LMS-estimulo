@@ -11,6 +11,31 @@ export type ExtensionParticipant = {
   name: string;
 };
 
+export type BehaviorScoreDimensionConfiguration = {
+  code: string;
+  name: string;
+  metric: "event_count" | "active_days" | "depth_events" | "completion_events" | "autonomy_events" | "quality_average" | "active_weeks";
+  weight: number;
+  multiplier: number;
+  offset: number;
+  cap: number;
+};
+
+export type BehaviorScoreClassificationConfiguration = {
+  code: string;
+  label: string;
+  minimum: number;
+  maximum: number;
+};
+
+export type BehaviorScoreConfiguration = {
+  formula: "weighted_average" | "weighted_sum";
+  normalization: { minimum: number; maximum: number };
+  confidence: { events_for_full_confidence: number };
+  dimensions: BehaviorScoreDimensionConfiguration[];
+  classifications: BehaviorScoreClassificationConfiguration[];
+};
+
 export type AdminAiGradingProvider = {
   configured: boolean;
   provider_name: string;
@@ -39,6 +64,7 @@ export type AdminExtensionsWorkspace = {
   optional_diagnostics: JsonRecord[];
   diagnostic_versions: JsonRecord[];
   behavior_scores: JsonRecord[];
+  behavior_score_configuration: BehaviorScoreConfiguration;
   participants: ExtensionParticipant[];
   programs: JsonRecord[];
   journeys: JsonRecord[];
