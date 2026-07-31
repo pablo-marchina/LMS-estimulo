@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth/context";
+import { triggerDeliveryGrading } from "@/lib/extensions/delivery-grading";
 import { extensionsRuntime } from "@/lib/extensions/runtime";
 import {
   deliveryEvidenceBucket,
@@ -99,13 +100,7 @@ export async function POST(request: NextRequest) {
 
     const submissionId = typeof result.submission_id === "string" ? result.submission_id : null;
     if (submissionId && result.status === "processing") {
-      const url = new URL("/api/delivery-grading", request.url);
-      fetch(url, {
-        method: "POST",
-        headers: { cookie: request.headers.get("cookie") ?? "", "content-type": "application/json", origin: request.nextUrl.origin },
-        body: JSON.stringify({ submission_id: submissionId }),
-        cache: "no-store",
-      }).catch(() => undefined);
+      await triggerDeliveryGrading(submissionId).catch(() => undefined);
     }
 
     return redirectTo(request, "success");
