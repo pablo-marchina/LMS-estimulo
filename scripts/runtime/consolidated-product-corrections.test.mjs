@@ -189,8 +189,9 @@ test("migration boundary preserves release hardening and growth extensions", asy
     "20260730211900_perform_participant_extension.sql",
     "20260730212000_save_admin_extension.sql",
     "20260730212100_certificate_template_inheritance.sql",
+    "20260730212200_tracking_and_ai_delivery_support.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260730212100_certificate_template_inheritance\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260730212200_tracking_and_ai_delivery_support\.sql'/u);
 });
