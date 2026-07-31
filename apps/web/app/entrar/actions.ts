@@ -26,6 +26,7 @@ export async function signInAction(formData: FormData) {
 
   const cookieStore = await cookies();
   const trackingToken = cookieStore.get("estimulo_tracking_visit")?.value;
+  let trackedDestination: string | null = null;
   if (trackingToken) {
     try {
       const result = await extensionsRuntime.performParticipant({
@@ -34,13 +35,13 @@ export async function signInAction(formData: FormData) {
         payload: { visit_token: trackingToken },
         idempotencyKey: `tracking-login:${randomUUID()}`,
       });
-      cookieStore.delete("estimulo_tracking_visit");
-      const destination = safeDestination(result.destination_path);
-      if (destination) redirect(destination);
+      trackedDestination = safeDestination(result.destination_path);
     } catch {
-      cookieStore.delete("estimulo_tracking_visit");
+      trackedDestination = null;
     }
+    cookieStore.delete("estimulo_tracking_visit");
   }
+  if (trackedDestination) redirect(trackedDestination);
 
   if (auth.identity.entrepreneur_id) redirect("/empreendedor");
   redirect("/cadastro/concluir");
