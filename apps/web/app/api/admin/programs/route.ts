@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { getAdminProductWorkspace } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
@@ -29,11 +30,15 @@ export async function GET() {
   const context = await authorize();
   if (!context) return NextResponse.json({ error: "Acesso não autorizado." }, { status: 403 });
 
-  const result = await invokeServerRpc<{ programs: Array<{ id: string; code: string; name: string; description: string | null; status: string; journey_count: number }> }>("get_admin_programs", {
-    p_actor_user_account_id: context.actor,
-    p_organization_id: context.organizationId,
-  });
-  return NextResponse.json(result);
+  const workspace = await getAdminProductWorkspace(context.actor, context.organizationId);
+  const journeys = workspace.journeys.filter((journey) => journey.status !== "retired");
+  const programs = workspace.programs.filter((program) => program.status !== "retired").map((program) => ({
+    id: program.id,
+    name: program.name,
+    status: program.status,
+    journey_count: journeys.filter((journey) => String(journey.program_id ?? "") === program.id).length,
+  }));
+  return NextResponse.json({ programs });
 }
 
 export async function POST(request: Request) {
@@ -49,16 +54,11 @@ export async function POST(request: Request) {
   const code = `${slug(name)}_${(id || randomUUID()).replaceAll("-", "").slice(0, 8)}`.slice(0, 79);
 
   try {
-    const result = await invokeServerRpc<Record<string, unknown>>("save_admin_program", {
+    const result = await invokeServerRpc<Record<string, unknown>>("save_admin_product_resource", {
       p_actor_user_account_id: context.actor,
       p_organization_id: context.organizationId,
-      p_payload: {
-        id: id || null,
-        code,
-        name,
-        description: String(body.description ?? "").trim() || null,
-        status,
-      },
+      p_resource_type: "program",
+      p_payload: { id: id || null, code, name, status },
       p_idempotency_key: randomUUID(),
     });
     return NextResponse.json({ program: result });
