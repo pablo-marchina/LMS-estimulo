@@ -1,19 +1,40 @@
 # Matriz de acessos
 
-| ID | Recurso | Ambiente | Nível necessário | Status | Observação segura |
+**Revisado em:** 2026-07-31
+
+A matriz registra somente acessos necessários ao software atual ou dependências explicitamente aprovadas. Serviços AWS específicos permanecem fora do escopo até ADR de arquitetura.
+
+| ID | Recurso | Ambiente | Nível necessário | Estado | Regra segura |
 |---|---|---|---|---|---|
-| ACC-001 | Repositório GitHub | Código | Leitura/ZIP | DISPONÍVEL | ZIP recebido e extraído em 2026-07-08. |
-| ACC-002 | HubSpot | Sandbox | Leitura de configuração e API de teste | PENDENTE | Não enviar token no chat. |
-| ACC-003 | Supabase | Local/Test | Admin de projeto de teste e CLI | PENDENTE | Criar projeto compartilhado; migrations vêm do repositório. |
-| ACC-004 | Supabase Auth / Amazon Cognito | Test / AWS staging | Admin restrito | PENDENTE | Dois provedores atrás do mesmo adapter OIDC. |
-| ACC-005 | Conta AWS | Staging/Produção | Deploy controlado por IAM | PENDENTE | AWS definida como nuvem final; criar contas/ambientes segregados. |
-| ACC-006 | OpenAI | Projeto de desenvolvimento | Chave restrita e orçamento limitado | PENDENTE | Guardar em secret manager. |
-| ACC-007 | DNS/domínio | Staging/Produção | Gerenciamento limitado | FUTURO | Não necessário para auditoria inicial. |
-| ACC-008 | Observabilidade | Sandbox/Staging | Projeto e ingestão | NÃO DEFINIDO | Depende da stack. |
-| ACC-009 | E-mail/notificações | Sandbox | Envio restrito | NÃO DEFINIDO | Não necessário no primeiro passo. |
-| ACC-010 | Amazon RDS PostgreSQL | AWS staging | Admin via migration role | PENDENTE | Não fornecer credencial ao frontend. |
-| ACC-011 | Amazon S3 | AWS staging | Bucket e IAM de teste | PENDENTE | Buckets privados e URLs assinadas. |
-| ACC-012 | Amazon SQS/DLQ | AWS staging | Publish/consume restrito | PENDENTE | Validar outbox, retry e DLQ. |
-| ACC-013 | Amazon ECR/ECS/Fargate | AWS staging | Build/deploy controlado | PENDENTE | Mesmo container que seguirá para produção. |
-| ACC-014 | AWS Secrets Manager/SSM | AWS staging | Leitura por task role | PENDENTE | Segredos nunca no repositório. |
-| ACC-015 | CloudWatch/X-Ray/ADOT | AWS staging | Escrita de telemetria e leitura operacional | PENDENTE | OpenTelemetry como contrato comum. |
+| ACC-001 | Repositório GitHub | Código/CI | leitura e escrita via PR | disponível | `main` somente por merge após gates verdes |
+| ACC-002 | Supabase | desenvolvimento/teste/preview | administração restrita de projeto | disponível no projeto conectado | migrations vêm do repositório; não editar schema manualmente |
+| ACC-003 | Supabase Auth | desenvolvimento/teste/preview | configuração de providers e URLs | disponível | service role somente no servidor/gateway |
+| ACC-004 | Supabase Storage | desenvolvimento/teste/preview | buckets privados e políticas | disponível | arquivos por objetos opacos; URL assinada temporária |
+| ACC-005 | Google OAuth corporativo | administração em teste/preview | client OAuth autorizado | configurado no ambiente | domínio e RBAC são validados no callback |
+| ACC-006 | Provedor de IA | desenvolvimento/teste controlado | segredo restrito e orçamento limitado | opcional | sem segredo válido, entregas seguem para revisão humana |
+| ACC-007 | Vercel | preview | deploy e leitura de logs | disponível com limites da conta | não é produção oficial |
+| ACC-008 | AWS | staging/produção futura | contas e IAM segregados | pendente | somente AWS como destino e `Dockerfile.lambda` estão aprovados; serviços dependem de ADR |
+| ACC-009 | DNS/domínio | staging/produção futura | gerenciamento limitado | futuro | configurar somente após arquitetura e ownership aprovados |
+| ACC-010 | Consumidor ETL | ambiente futuro | identidade de workload e destino aprovado | não implementado | exportação permanece desabilitada por padrão |
+| ACC-011 | Observabilidade | staging/produção futura | ingestão e leitura operacional | não definido | contrato lógico existe; provider depende de ADR |
+| ACC-012 | E-mail/notificações | ambiente futuro | envio restrito | não definido | não inserir credenciais no frontend ou repositório |
+
+## Segredos
+
+- nunca enviar tokens, service roles, chaves de IA ou credenciais no chat, issue ou PR;
+- nenhuma chave secreta pode usar prefixo `NEXT_PUBLIC_*`;
+- ambientes devem ter credenciais distintas;
+- rotação e revogação precisam de registro operacional;
+- CI usa apenas segredos mínimos e escopados.
+
+## Acesso administrativo
+
+O acesso à interface administrativa exige simultaneamente:
+
+1. sessão Google válida;
+2. domínio corporativo aceito;
+3. conta interna ativa;
+4. membership organizacional ativa;
+5. papel com a permissão necessária.
+
+Concessões B2B não concedem acesso administrativo e links UTM não alteram permissões.

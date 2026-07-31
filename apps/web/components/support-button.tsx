@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { CircleHelp } from "lucide-react";
 
 export function SupportButton() {
+  const pathname = usePathname();
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
+
   return (
     <Link
       href="/ajuda"

@@ -1,59 +1,72 @@
-# Motor configurável de diagnóstico e ativação
+# Motor configurável de diagnóstico
 
-**Revisado em:** 2026-07-29  
-**Status:** integrado ao runtime de desenvolvimento/teste; configuração oficial pendente
+**Revisado em:** 2026-07-31  
+**Status:** implementado no runtime PostgreSQL e nas interfaces administrativa/participante
 
-## Escopo implementado
+## Escopo
 
-O motor suporta:
+O diagnóstico principal suporta:
 
-- formulários, perguntas e opções versionados;
-- arquétipos e políticas de classificação configuráveis;
-- score mínimo, margem, prioridade e abstenção;
-- histórico append-only, recálculo e override auditável;
-- ativações versionadas;
-- persistência transacional de submissão, resultado, atribuição, eventos e outbox;
-- editor administrativo;
-- resolução do diagnóstico disponível ao participante;
-- fallback de configuração no ambiente de desenvolvimento/teste.
+- definições e versões em rascunho, publicadas ou retiradas;
+- quantidade dinâmica de perguntas, opções, dimensões e perfis;
+- inclusão, exclusão e reordenação no rascunho;
+- pesos e limites configuráveis por perfil e dimensão;
+- sessões e respostas ligadas à versão utilizada;
+- resultado e atribuição de arquétipo auditáveis;
+- publicação transacional com mapeamento completo entre arquétipos antigos e novos;
+- atualização das atribuições existentes e da elegibilidade das jornadas na mesma transação;
+- preservação de respostas e resultados históricos;
+- editor administrativo e fluxo guiado do participante.
 
-O núcleo está em `apps/web/lib/configurable-product`, e o runtime do participante usa os módulos de diagnóstico e RPC server-only.
+A implementação ativa usa páginas em `apps/web/app/admin/diagnostico`, fluxos participantes e RPCs PostgreSQL versionadas. Não existe um motor paralelo dependente de CRM.
 
-## Estado real
+## Diagnóstico principal
 
-A plataforma possui uma configuração de desenvolvimento com 12 perguntas, cinco dimensões e quatro arquétipos. Isso comprova a capacidade técnica, não a aprovação metodológica ou editorial.
+Somente uma versão principal fica ativa. Ela é a única funcionalidade autorizada a:
 
-Ainda não estão aprovados:
+- definir o arquétipo principal;
+- recalcular ou migrar atribuições;
+- alterar os códigos de arquétipo elegíveis nas jornadas.
 
-- texto final das perguntas e alternativas;
-- condicionais e randomização;
-- pesos, normalização, cortes e empate;
-- tratamento de respostas ausentes;
-- textos dos resultados;
-- matriz de ativações;
-- casos oficiais de entrada e saída;
-- finalidade e destino HubSpot para resultados.
+Ao publicar uma nova versão, todo arquétipo da versão anterior precisa ser mapeado para um perfil da nova versão. A transação valida a completude antes de retirar a versão antiga.
 
-`confidence` não deve ser fabricada quando não existe metodologia aprovada.
+## Diagnósticos opcionais
+
+Diagnósticos opcionais podem ser publicados no Perfil por público, período, tentativas, intervalo e visibilidade do resultado. Eles usam sessões e resultados próprios e nunca escrevem em atribuições de arquétipo ou elegibilidade de jornadas.
+
+## Versionamento e histórico
+
+```text
+definição estável
+→ versão em rascunho
+→ validação estrutural
+→ versão publicada e imutável
+→ sessões, respostas e resultados históricos
+```
+
+Editar um diagnóstico publicado cria ou atualiza um rascunho. Não existe alteração retroativa das perguntas respondidas.
+
+## Score e abstenção
+
+A configuração não pressupõe quantidade ou nomes fixos de perfis e dimensões. Limites, pesos e critérios pertencem à versão. Quando a evidência não satisfaz as regras, o resultado pode abster-se em vez de fabricar confiança.
 
 ## Persistência
 
-O fluxo operacional grava de forma atômica:
+O fluxo principal grava de forma transacional:
 
 ```text
 sessão e respostas
 → resultado
-→ atribuição
-→ ativações
-→ eventos
-→ outbox
+→ atribuição principal
+→ migração de referências quando houver nova publicação
+→ evento, auditoria e outbox
 ```
 
-Replays idempotentes não duplicam os registros, e uma chave reutilizada com payload divergente é rejeitada.
+Idempotency keys impedem duplicação; a mesma chave com payload divergente é recusada.
 
-## HubSpot
+## Integração externa
 
-A classificação semântica segue a DEC-070. O motor pode produzir candidatos de projeção, mas nenhum resultado é sincronizado enquanto não houver destino físico e finalidade aprovados. O worker assíncrono e a prova em sandbox permanecem pendentes.
+Resultados permanecem no PostgreSQL. Exportações futuras usam eventos e outbox genérica. A classificação não conhece nem exige destino externo específico.
 
 ## Validação
 
@@ -61,21 +74,8 @@ A classificação semântica segue a DEC-070. O motor pode produzir candidatos d
 npm run test:product
 npm run test:database
 npm run test:application
+npm run typecheck:web
+npm run build:web
 ```
 
-A prova no ambiente implantado usa `npm run verify:deployment` e não altera o runtime com dados ou serviços falsos.
-
-## Gate oficial
-
-```text
-engine_implemented = true
-admin_editor_implemented = true
-participant_flow_integrated = true
-transactional_persistence_implemented = true
-development_configuration_present = true
-official_wording_approved = false
-official_scoring_approved = false
-official_activation_matrix_approved = false
-real_browser_verification_passed = false
-hubspot_destination_approved = false
-```
+A aprovação técnica não substitui validação metodológica, editorial, jurídica ou de acessibilidade das perguntas e textos publicados.

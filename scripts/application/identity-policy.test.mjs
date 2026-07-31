@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { isValidCpf, normalizeCpf, protectCpfWithKeys } from "../../apps/web/lib/identity/cpf-core.mjs";
 
-const [adminEmailPolicy, adminLayout, participantSignIn, adminStart, adminCallback, completionPage, completionAction, migration, hubSpotPolicy] = await Promise.all([
+const [adminEmailPolicy, adminLayout, participantSignIn, adminStart, adminCallback, completionPage, completionAction, migration] = await Promise.all([
   readFile("apps/web/lib/auth/administrative-email.ts", "utf8"),
   readFile("apps/web/app/admin/layout.tsx", "utf8"),
   readFile("apps/web/app/entrar/actions.ts", "utf8"),
@@ -12,7 +12,6 @@ const [adminEmailPolicy, adminLayout, participantSignIn, adminStart, adminCallba
   readFile("apps/web/app/cadastro/concluir/page.tsx", "utf8"),
   readFile("apps/web/app/cadastro/concluir/actions.ts", "utf8"),
   readFile("supabase/migrations/20260720190000_protected_cpf_signup.sql", "utf8"),
-  readFile("apps/web/lib/hubspot/sync-policy.ts", "utf8"),
 ]);
 
 test("administrative entry requires Google, verified claims, the exact Estímulo domain and active RBAC", () => {
@@ -64,12 +63,4 @@ test("verified signup requires CPF and sends only a protected payload to the RPC
   assert.match(migration, /enable row level security/u);
   assert.match(migration, /revoke all on table iam\.user_cpf_identifiers from public,anon,authenticated/u);
   assert.doesNotMatch(migration, /cpf_raw|cpf_normalized|payload'.*cpf_lookup_hmac/su);
-});
-
-test("HubSpot remains restricted to approved classifications", () => {
-  assert.match(hubSpotPolicy, /classification: "linking_identifier"/u);
-  assert.match(hubSpotPolicy, /classification: "engagement_signal"/u);
-  assert.match(hubSpotPolicy, /classification: "not_synced"/u);
-  assert.match(hubSpotPolicy, /blocked_pending_hubspot_destination_inventory/u);
-  assert.doesNotMatch(hubSpotPolicy, /classification: "raw_payload"|classification: "full_mirror"/u);
 });

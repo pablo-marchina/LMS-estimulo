@@ -61,9 +61,20 @@ test("bridge accepts and encodes only the exact local admin callback", () => {
   assert.equal(localAdminCallbackUrl("http://localhost:3000/outro"), null);
 });
 
-test("admin navigation no longer hides sections under more settings", () => {
-  assert.doesNotMatch(adminShell, /Mais configurações/);
-  for (const label of ["Diagnósticos", "Pontuação", "Anúncios"]) assert.match(adminShell, new RegExp(label));
+test("admin navigation exposes the dedicated configuration and growth sections", () => {
+  for (const [label, href] of [
+    ["Diagnóstico principal", "/admin/diagnostico"],
+    ["Pontuação", "/admin/gamificacao"],
+    ["Anúncios", "/admin/engajamento"],
+    ["B2B", "/admin/b2b"],
+    ["Entregas", "/admin/entregas"],
+    ["Recompensas", "/admin/recompensas"],
+    ["Campanhas e UTM", "/admin/campanhas"],
+    ["Mais configurações", "/admin/configuracoes"],
+  ]) {
+    assert.match(adminShell, new RegExp(label));
+    assert.match(adminShell, new RegExp(href.replaceAll("/", "\\/")));
+  }
 });
 
 test("interface administration is driven by a session-independent visual selector", () => {

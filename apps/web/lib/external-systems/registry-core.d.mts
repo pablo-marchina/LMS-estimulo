@@ -6,10 +6,10 @@ export const externalSystems: Readonly<{
     accessModel: "public_signup_manual_admin";
   }>;
   interviewAi: Readonly<{
-    code: "hubspot_interview_ai";
+    code: "interview_analysis_ai";
     name: "IA de análise de entrevista";
     baseUrl: string;
-    identifierSemantics: "owner_reported_external_business_lead_id_unverified";
+    identifierSemantics: "owner_reported_external_business_identifier_unverified";
   }>;
   dataHub: Readonly<{
     code: "estimulo_data_hub";

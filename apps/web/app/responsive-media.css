@@ -1,0 +1,73 @@
+.participant-stage video,
+.participant-stage iframe[allow*="picture-in-picture"],
+.participant-stage iframe[src*="youtube"],
+.participant-stage iframe[src*="vimeo"] {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  max-height: min(70dvh, 720px);
+  object-fit: contain;
+}
+
+.participant-stage .aspect-video:has(> video),
+.participant-stage .aspect-video:has(> iframe) {
+  width: min(100%, 960px);
+  max-width: calc(100vw - 2rem);
+  max-height: min(70dvh, 720px);
+  margin-inline: auto;
+  overflow: hidden;
+}
+
+.participant-stage .aspect-video:has(> video) > video,
+.participant-stage .aspect-video:has(> iframe) > iframe {
+  width: 100%;
+  height: 100%;
+  max-height: inherit;
+}
+
+.participant-stage [data-minimized-video],
+.participant-stage [data-floating-player],
+.participant-stage [class*="fixed"]:has(> video),
+.participant-stage [class*="fixed"]:has(> iframe) {
+  width: min(420px, calc(100vw - 1rem)) !important;
+  height: auto !important;
+  max-width: calc(100vw - 1rem) !important;
+  max-height: calc(100dvh - 1rem) !important;
+  inset-inline: auto 0.5rem !important;
+  bottom: 0.5rem !important;
+  overflow: hidden !important;
+}
+
+.participant-stage [data-minimized-video] video,
+.participant-stage [data-minimized-video] iframe,
+.participant-stage [data-floating-player] video,
+.participant-stage [data-floating-player] iframe {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16 / 9;
+  max-height: calc(100dvh - 1rem) !important;
+  object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  .participant-stage video,
+  .participant-stage iframe[allow*="picture-in-picture"],
+  .participant-stage iframe[src*="youtube"],
+  .participant-stage iframe[src*="vimeo"] {
+    max-height: min(56.25vw, calc(100dvh - 7rem));
+  }
+
+  .participant-stage .aspect-video:has(> video),
+  .participant-stage .aspect-video:has(> iframe) {
+    width: 100%;
+    max-width: 100%;
+    max-height: min(56.25vw, calc(100dvh - 7rem));
+  }
+
+  .participant-stage [data-minimized-video],
+  .participant-stage [data-floating-player],
+  .participant-stage [class*="fixed"]:has(> video),
+  .participant-stage [class*="fixed"]:has(> iframe) {
+    width: min(320px, calc(100vw - 1rem)) !important;
+  }
+}

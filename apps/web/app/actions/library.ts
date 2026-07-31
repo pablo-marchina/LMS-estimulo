@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
+import { extensionsRuntime } from "@/lib/extensions/runtime";
 import { libraryRuntime } from "@/lib/library/runtime";
 import { invokeServerRpc, ServerRpcError } from "@/lib/rpc/server-invoke";
 
@@ -34,15 +35,16 @@ export async function saveLibraryContentAction(formData: FormData) {
   const actor = await actorId();
   const organizationId = uuid.parse(formData.get("organization_id"));
   const kind = contentKind.parse(formData.get("content_kind"));
-  const topics = String(formData.get("topics") ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+  const themeIds = [...new Set(formData.getAll("theme_ids").map((value) => uuid.parse(value)))];
   const journeyVersionIds = formData.getAll("journey_version_ids").map((value) => uuid.parse(value));
   const body = String(formData.get("body") ?? "").trim();
   const externalUrl = String(formData.get("external_url") ?? "").trim();
   const title = z.string().trim().min(3).max(200).parse(formData.get("title"));
   const existingSlug = String(formData.get("existing_slug") ?? "").trim();
   const fileObjectId = optionalUuid(formData.get("file_object_id"));
+  const commandKey = String(formData.get("idempotency_key") || randomUUID());
 
-  await libraryRuntime.saveDraft({
+  const saved = await libraryRuntime.saveDraft({
     actorUserAccountId: actor,
     organizationId,
     libraryItemId: optionalUuid(formData.get("library_item_id")),
@@ -58,12 +60,23 @@ export async function saveLibraryContentAction(formData: FormData) {
     sourceName: z.string().trim().min(2).max(120).parse(formData.get("source_name")),
     externalUrl: kind === "external_link" ? z.string().url().startsWith("https://").parse(externalUrl) : null,
     languageCode: z.string().trim().regex(/^[a-z]{2}(?:-[A-Z]{2})?$/).parse(formData.get("language_code")),
-    topics,
+    topics: [],
     visibility: visibility.parse(formData.get("visibility")),
     journeyVersionIds,
     discoverableInLibrary: formData.get("discoverable_in_library") === "on",
     fileObjectId: kind === "file" ? uuid.parse(fileObjectId) : null,
-    idempotencyKey: String(formData.get("idempotency_key") || randomUUID()),
+    idempotencyKey: commandKey,
+  });
+
+  await extensionsRuntime.saveAdmin({
+    actorUserAccountId: actor,
+    organizationId,
+    resourceType: "library_themes_set",
+    payload: {
+      library_item_id: saved.data.library_item_id,
+      theme_ids: themeIds,
+    },
+    idempotencyKey: `${commandKey}:themes`,
   });
 
   redirect(`/admin/biblioteca?organization=${organizationId}&salvo=1`);

@@ -6,11 +6,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Select } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill } from "@/components/ui/status-pill";
+import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import type { LibraryItemSummary } from "@/lib/library/contracts";
+import type { LibraryItemSummary, LibraryListing } from "@/lib/library/contracts";
 import { libraryRuntime } from "@/lib/library/runtime";
 
-const formatLabels: Record<string, string> = { article: "Artigo", video: "Vídeo", podcast: "Podcast", guide: "Guia", tool: "Ferramenta", course: "Curso", other: "Outro" };
+const formatLabels: Record<string, string> = { article: "Artigo", video: "Vídeo", podcast: "Podcast", guide: "Guia", tool: "Ferramenta", course: "Curso", image: "Imagem", pdf: "PDF", audio: "Áudio", other: "Outro" };
 const levelLabels: Record<string, string> = { introductory: "Introdutório", intermediate: "Intermediário", advanced: "Avançado", all: "Todos os níveis" };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -19,7 +20,7 @@ function formatIcon(format: string, kind: string) {
   const props = { size: 21, "aria-hidden": true } as const;
   if (format === "article") return <Newspaper {...props} />;
   if (format === "video") return <Video {...props} />;
-  if (format === "podcast") return <Podcast {...props} />;
+  if (format === "podcast" || format === "audio") return <Podcast {...props} />;
   if (format === "guide") return <BookOpen {...props} />;
   if (format === "tool") return <Wrench {...props} />;
   if (format === "course") return <GraduationCap {...props} />;
@@ -28,29 +29,77 @@ function formatIcon(format: string, kind: string) {
   return <BookOpen {...props} />;
 }
 
+async function adminPreviewListing(actorUserAccountId: string, organizationId: string): Promise<LibraryListing> {
+  const data = await libraryRuntime.listOperator(actorUserAccountId, organizationId);
+  const journeyById = new Map(data.journey_versions.map((journey) => [journey.journey_version_id, journey]));
+  const items: LibraryItemSummary[] = data.items
+    .filter((item) => item.status === "published" && item.discoverable_in_library)
+    .map((item) => ({
+      library_item_id: item.library_item_id,
+      library_item_version_id: item.library_item_version_id,
+      slug: item.slug,
+      version_number: item.version_number,
+      title: item.title,
+      summary: item.summary,
+      content_kind: item.content_kind,
+      content_format: item.content_format,
+      level: item.level,
+      estimated_minutes: item.estimated_minutes,
+      source_type: item.source_type,
+      source_name: item.source_name,
+      external_url: item.external_url,
+      language_code: item.language_code,
+      topics: item.topics,
+      visibility: item.visibility,
+      published_at: item.published_at ?? new Date(0).toISOString(),
+      journeys: item.journey_version_ids.map((id) => ({ journey_version_id: id, relation_type: "supplemental" as const, journey_title: journeyById.get(id)?.title ?? "Jornada" })),
+      rank: 0,
+      file_object_id: item.file_object_id,
+      original_filename: item.original_filename,
+      file_content_type: item.file_content_type,
+    }));
+  return {
+    items,
+    total: items.length,
+    limit: items.length,
+    offset: 0,
+    facets: {
+      topics: [...new Set(items.flatMap((item) => item.topics))].sort((a, b) => a.localeCompare(b, "pt-BR")),
+      formats: [...new Set(items.map((item) => item.content_format))].sort(),
+      levels: [...new Set(items.map((item) => item.level))].sort(),
+    },
+  };
+}
+
 export async function ParticipantLibraryPage({ searchParams, basePath }: { searchParams: SearchParams; basePath: string }) {
   const query = await searchParams;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar");
-  if (!auth.identity.entrepreneur_id) redirect("/cadastro/concluir");
+  const adminOrganization = administrativeOrganization(auth.identity);
+  const previewMode = !auth.identity.entrepreneur_id && Boolean(adminOrganization);
+  if (!auth.identity.entrepreneur_id && !adminOrganization) redirect("/cadastro/concluir");
 
   const selectedTopic = typeof query.tema === "string" ? query.tema : "";
   const selectedFormat = typeof query.formato === "string" ? query.formato : "";
   const selectedLevel = typeof query.nivel === "string" ? query.nivel : "";
   const rawSearch = typeof query.q === "string" ? query.q : "";
-  const data = await libraryRuntime.list({
-    actorUserAccountId: auth.identity.user_account_id,
-    query: rawSearch || null,
-    topic: selectedTopic || null,
-    contentFormat: selectedFormat || null,
-    level: selectedLevel || null,
+  const rawData = previewMode && adminOrganization
+    ? await adminPreviewListing(auth.identity.user_account_id, adminOrganization.organization_id)
+    : await libraryRuntime.list({ actorUserAccountId: auth.identity.user_account_id, query: rawSearch || null, topic: selectedTopic || null, contentFormat: selectedFormat || null, level: selectedLevel || null });
+  const normalizedSearch = rawSearch.trim().toLocaleLowerCase("pt-BR");
+  const items = rawData.items.filter((item) => {
+    if (normalizedSearch && ![item.title, item.summary, ...item.topics].join(" ").toLocaleLowerCase("pt-BR").includes(normalizedSearch)) return false;
+    if (selectedTopic && !item.topics.includes(selectedTopic)) return false;
+    if (selectedFormat && item.content_format !== selectedFormat) return false;
+    if (selectedLevel && item.level !== selectedLevel) return false;
+    return true;
   });
-  const topics = data.facets.topics.length ? data.facets.topics : [...new Set(data.items.flatMap((item) => item.topics))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const topics = rawData.facets.topics.length ? rawData.facets.topics : [...new Set(rawData.items.flatMap((item) => item.topics))].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-    <PageHeader eyebrow="Conteúdo complementar" title="Biblioteca" description="Artigos, vídeos, podcasts, guias, ferramentas e cursos para consultar no seu ritmo." />
-    <Card><form method="get" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><Label className="sm:col-span-2">Buscar<Input name="q" defaultValue={rawSearch} placeholder="Título, resumo ou tema" /></Label><Label>Tema<Select name="tema" defaultValue={selectedTopic}><option value="">Todos</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</Select></Label><Label>Formato<Select name="formato" defaultValue={selectedFormat}><option value="">Todos</option>{data.facets.formats.map((format) => <option value={format} key={format}>{formatLabels[format] ?? format}</option>)}</Select></Label><Label>Nível<Select name="nivel" defaultValue={selectedLevel}><option value="">Todos</option>{data.facets.levels.map((level) => <option value={level} key={level}>{levelLabels[level] ?? level}</option>)}</Select></Label><div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-5"><Button type="submit" size="sm">Aplicar filtros</Button><ButtonLink href={basePath} variant="secondary" size="sm">Limpar</ButtonLink></div></form></Card>
-    {data.items.length ? <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Materiais da biblioteca">{data.items.map((item) => <LibraryCard item={item} basePath={basePath} key={item.library_item_version_id} />)}</section> : <EmptyState icon={<BookOpen size={24} />} title="Nenhum material encontrado" tone="info">Ajuste os filtros ou volte mais tarde para consultar novos conteúdos.</EmptyState>}
+    <PageHeader eyebrow={previewMode ? "Prévia administrativa" : "Conteúdo complementar"} title="Biblioteca" description={previewMode ? "Visualização com o mesmo layout do participante. Esta prévia não registra acesso, progresso, pontos ou entregas." : "Artigos, vídeos, podcasts, guias, ferramentas e cursos para consultar no seu ritmo."} actions={previewMode ? <ButtonLink href="/admin/biblioteca?view=conteudos" variant="secondary">Voltar à administração</ButtonLink> : undefined} />
+    <Card><form method="get" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><Label className="sm:col-span-2">Buscar<Input name="q" defaultValue={rawSearch} placeholder="Título, resumo ou tema" /></Label><Label>Tema<Select name="tema" defaultValue={selectedTopic}><option value="">Todos</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</Select></Label><Label>Formato<Select name="formato" defaultValue={selectedFormat}><option value="">Todos</option>{rawData.facets.formats.map((format) => <option value={format} key={format}>{formatLabels[format] ?? format}</option>)}</Select></Label><Label>Nível<Select name="nivel" defaultValue={selectedLevel}><option value="">Todos</option>{rawData.facets.levels.map((level) => <option value={level} key={level}>{levelLabels[level] ?? level}</option>)}</Select></Label><div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-5"><Button type="submit" size="sm">Aplicar filtros</Button><ButtonLink href={basePath} variant="secondary" size="sm">Limpar</ButtonLink></div></form></Card>
+    {items.length ? <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Materiais da biblioteca">{items.map((item) => <LibraryCard item={item} basePath={basePath} key={item.library_item_version_id} />)}</section> : <EmptyState icon={<BookOpen size={24} />} title="Nenhum material encontrado" tone="info">Ajuste os filtros ou volte mais tarde para consultar novos conteúdos.</EmptyState>}
   </div>;
 }
 

@@ -1,6 +1,6 @@
 # Solicitações de informação para produção
 
-**Revisado em:** 2026-07-29  
+**Revisado em:** 2026-07-30  
 **Status:** ativo
 
 Este arquivo registra somente informações externas ou aprovações ainda necessárias para liberar o produto. Nunca registrar tokens, chaves, cookies, senhas ou dados pessoais reais no Git, issues, PRs ou chat.
@@ -17,15 +17,13 @@ Este arquivo registra somente informações externas ou aprovações ainda neces
 
 Entregar e aprovar:
 
-- versão, texto e instruções das 12 perguntas;
+- versão, texto e instruções das perguntas;
 - alternativas, condicionais e randomização;
-- vínculo com cinco dimensões;
-- pesos, normalização, cortes e empate;
+- dimensões, pesos, normalização, cortes e empate;
 - política de resposta ausente ou inconclusiva;
-- quatro textos de resultado;
+- textos de resultado;
 - ativações e casos oficiais de teste;
-- evidência metodológica, linguagem e privacidade;
-- decisão formal sobre qualquer questão adicional.
+- evidência metodológica, linguagem e privacidade.
 
 A configuração de desenvolvimento não é fonte oficial.
 
@@ -50,22 +48,24 @@ A configuração de desenvolvimento não é fonte oficial.
 - recuperação, merge, conflitos e suporte;
 - provedor de identidade de produção;
 - configuração de domínio e callbacks;
-- vínculo com contato, empresa e operação de crédito.
+- identificadores autorizados para integrações futuras.
 
-### IR-005 — HubSpot sandbox e inventário
+### IR-005 — Destino ETL futuro
 
-Usar [`HUBSPOT_INVENTORY_REQUEST.md`](../integrations/HUBSPOT_INVENTORY_REQUEST.md) para obter:
+A plataforma não depende de CRM ou destino externo específico. Antes de ativar um consumidor da outbox genérica, definir:
 
-- portal, licença, sandbox e scopes;
-- objetos, propriedades e associações;
-- identidade e deduplicação;
-- limites, workflows e integrações existentes;
-- catálogo `linking_identifier`;
-- catálogo `engagement_signal`;
-- catálogo `calculation_input_or_result`;
-- catálogo `not_synced`;
-- retry, readback e reconciliação;
-- acesso, retenção e privacidade.
+- finalidade e responsável pelo tratamento;
+- contrato de dados e versão;
+- identificadores mínimos;
+- eventos, projeções e agregações permitidos;
+- frequência, cursor e latência máxima;
+- autenticação, scopes e rotação de segredo;
+- idempotência, retry, dead letter e reconciliação;
+- retenção, exclusão e direitos do titular;
+- limites de volume e custo;
+- ambiente de teste e evidência de escrita e leitura.
+
+Até essa aprovação, os dados permanecem no PostgreSQL e a exportação fica inativa.
 
 ### IR-006 — Segurança, privacidade e operação
 
@@ -85,9 +85,9 @@ O scanner de malware foi removido por decisão vigente e não é uma solicitaç�
 ### IR-007 — AWS staging
 
 - conta, região e responsáveis;
-- rede, domínio, Route 53 e ACM;
-- secrets e KMS;
-- decisão de identidade, RDS e S3;
+- rede, domínio e certificados;
+- segredos e chaves;
+- decisão de identidade, banco e armazenamento;
 - capacidade e custos;
 - logs, métricas e alarmes;
 - processo de plan/apply e rollback;

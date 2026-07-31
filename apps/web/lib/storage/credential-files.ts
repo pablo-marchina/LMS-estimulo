@@ -8,10 +8,10 @@ import {
 } from "@/lib/platform/object-storage";
 
 export const EXTERNAL_CREDENTIAL_MAX_BYTES = 8 * 1024 * 1024;
-export const CERTIFICATE_TEMPLATE_MAX_BYTES = 10 * 1024 * 1024;
+export const CERTIFICATE_TEMPLATE_MAX_BYTES = 15 * 1024 * 1024;
 
 const EXTERNAL_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"] as const;
-const TEMPLATE_TYPES = ["image/jpeg"] as const;
+const TEMPLATE_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"] as const;
 const EXTENSIONS: Record<string, string[]> = {
   "application/pdf": ["pdf"],
   "image/png": ["png"],
