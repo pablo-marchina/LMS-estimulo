@@ -13,6 +13,7 @@ import { StatusPill } from "@/components/ui/status-pill";
 import { TableScroll, Table, Th, Td } from "@/components/ui/table";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
+import { extensionsRuntime } from "@/lib/extensions/runtime";
 import type { OperatorLibraryItem } from "@/lib/library/contracts";
 import { libraryRuntime } from "@/lib/library/runtime";
 
@@ -21,6 +22,10 @@ export const dynamic = "force-dynamic";
 function editableItem(items: OperatorLibraryItem[], id: string | undefined) {
   if (!id) return null;
   return items.find((item) => item.library_item_version_id === id && item.status === "draft") ?? null;
+}
+
+function textValue(value: unknown) {
+  return typeof value === "string" ? value : "";
 }
 
 const kindLabels: Record<string, string> = { article: "Texto", external_link: "Link ou vídeo", file: "Arquivo" };
@@ -33,13 +38,22 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
 
   const canEdit = organization.permissions.includes("library.manage");
-  const data = await libraryRuntime.listOperator(auth.identity.user_account_id, organization.organization_id);
+  const [data, extensionWorkspace] = await Promise.all([
+    libraryRuntime.listOperator(auth.identity.user_account_id, organization.organization_id),
+    extensionsRuntime.adminWorkspace(auth.identity.user_account_id, organization.organization_id),
+  ]);
   const editing = editableItem(data.items, query.edit);
+  const managedThemes = extensionWorkspace.themes
+    .filter((theme) => textValue(theme.status) === "active")
+    .map((theme) => ({ id: textValue(theme.id), name: textValue(theme.name) }))
+    .filter((theme) => theme.id && theme.name)
+    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const selectedThemeIds = new Set(managedThemes.filter((theme) => editing?.topics.includes(theme.name)).map((theme) => theme.id));
   const view = query.view === "conteudos" || !canEdit ? "conteudos" : "novo";
   const currentFileObjectId = query.arquivo ?? editing?.file_object_id ?? "";
   const currentFilename = query.nomeArquivo ?? editing?.original_filename ?? "";
   const hasPreparedUpload = Boolean(query.arquivo);
-  const topics = [...new Set(data.items.flatMap((item) => item.topics))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const topics = managedThemes.map((theme) => theme.name);
   const normalizedQuery = (query.q ?? "").trim().toLocaleLowerCase("pt-BR");
   const filteredItems = data.items.filter((item) => {
     if (normalizedQuery && ![item.title, item.summary, ...item.topics].join(" ").toLocaleLowerCase("pt-BR").includes(normalizedQuery)) return false;
@@ -91,7 +105,18 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
                   </div>
                 </AdminDisclosure>
                 <AdminDisclosure title="Organização e visibilidade" description="Campos opcionais usados para busca, recomendação e tempo estimado.">
-                  <div className="grid gap-4 sm:grid-cols-2"><Label>Formato<Select name="content_format" defaultValue={editing?.content_format ?? (currentFileObjectId ? "other" : "article")}><option value="article">Artigo</option><option value="video">Vídeo</option><option value="podcast">Podcast</option><option value="audio">Áudio</option><option value="image">Imagem</option><option value="pdf">PDF</option><option value="guide">Guia</option><option value="tool">Ferramenta</option><option value="course">Curso</option><option value="other">Outro</option></Select></Label><Label>Nível<Select name="level" defaultValue={editing?.level ?? "all"}><option value="all">Todos</option><option value="introductory">Introdutório</option><option value="intermediate">Intermediário</option><option value="advanced">Avançado</option></Select></Label><Label>Duração em minutos<Input name="estimated_minutes" type="number" min={1} max={600} required defaultValue={editing?.estimated_minutes ?? 10} /></Label><Label>Temas<Input name="topics" defaultValue={editing?.topics.join(", ") ?? ""} placeholder="gestão, vendas" /></Label></div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Label>Formato<Select name="content_format" defaultValue={editing?.content_format ?? (currentFileObjectId ? "other" : "article")}><option value="article">Artigo</option><option value="video">Vídeo</option><option value="podcast">Podcast</option><option value="audio">Áudio</option><option value="image">Imagem</option><option value="pdf">PDF</option><option value="guide">Guia</option><option value="tool">Ferramenta</option><option value="course">Curso</option><option value="other">Outro</option></Select></Label>
+                    <Label>Nível<Select name="level" defaultValue={editing?.level ?? "all"}><option value="all">Todos</option><option value="introductory">Introdutório</option><option value="intermediate">Intermediário</option><option value="advanced">Avançado</option></Select></Label>
+                    <Label>Duração em minutos<Input name="estimated_minutes" type="number" min={1} max={600} required defaultValue={editing?.estimated_minutes ?? 10} /></Label>
+                    <Label>Temas administrados
+                      <select name="theme_ids" multiple size={Math.min(7, Math.max(3, managedThemes.length))} defaultValue={[...selectedThemeIds]} className="min-h-28 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15">
+                        {managedThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}
+                      </select>
+                      <span className="text-[11px] font-normal text-muted">Selecione vários com Ctrl ou Cmd. Novos temas são criados em Mais configurações.</span>
+                    </Label>
+                  </div>
+                  {managedThemes.length === 0 ? <p className="mt-3 rounded-lg bg-warning-soft p-3 text-xs text-warning">Cadastre ao menos um tema em Mais configurações para classificar conteúdos.</p> : null}
                   <label className="mt-4 flex items-start gap-3 rounded-lg bg-primary-soft p-3 text-sm text-ink"><input type="checkbox" name="discoverable_in_library" defaultChecked={editing?.discoverable_in_library ?? true} className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Mostrar na biblioteca do participante</strong><small className="text-muted">Desmarque para disponibilizar o material apenas dentro de aulas.</small></span></label>
                 </AdminDisclosure>
                 <Button type="submit" className="w-fit">Salvar rascunho</Button>
