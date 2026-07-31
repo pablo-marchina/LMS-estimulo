@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Award, BookOpen, Compass, FileUp, Home, Menu, Trophy, User, X } from "lucide-react";
+import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, Menu, Trophy, User, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
+import { BehaviorEventTracker } from "@/components/behavior-event-tracker";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
 import { InterfacePreviewBridge } from "@/components/interface-preview-bridge";
@@ -17,7 +18,9 @@ const linkDefinitions = [
   { href: "/empreendedor/biblioteca", label: "Biblioteca", contentKey: "participant.nav.library", icon: BookOpen, order: 30 },
   { href: "/empreendedor/entregas", label: "Entregas", contentKey: "participant.nav.submissions", icon: FileUp, order: 40 },
   { href: "/empreendedor/engajamento", label: "Pontuação", contentKey: "participant.nav.points", icon: Trophy, order: 50 },
+  { href: "/empreendedor/recompensas", label: "Recompensas", contentKey: "participant.nav.rewards", icon: Gift, order: 55 },
   { href: "/empreendedor/conquistas", label: "Conquistas", contentKey: "participant.nav.achievements", icon: Award, order: 60 },
+  { href: "/empreendedor/b2b", label: "B2B", contentKey: "participant.nav.b2b", icon: Building2, order: 65 },
   { href: "/empreendedor/perfil", label: "Perfil", contentKey: "participant.nav.profile", icon: User, order: 70 },
 ];
 
@@ -37,6 +40,7 @@ export function ParticipantShell({ email, children }: { email: string; children:
 
   return (
     <div className="participant-stage min-h-screen bg-background">
+      <BehaviorEventTracker />
       <InterfacePreviewBridge />
       <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
       <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
