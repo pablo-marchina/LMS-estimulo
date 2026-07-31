@@ -9,8 +9,20 @@ import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import type { ExtensionParticipant, JsonRecord } from "@/lib/extensions/runtime";
 
 type Block = { type: string; title?: string; body?: string; url?: string; label?: string; tone?: string };
-
 type Option = { id: string; name: string };
+
+const blockLabels: Record<string, string> = {
+  heading: "Título",
+  rich_text: "Texto",
+  image: "Imagem",
+  video: "Vídeo",
+  download: "Arquivo",
+  button: "Botão",
+  notice: "Aviso",
+  cards: "Lista de cards",
+  divider: "Separador",
+  embed: "Conteúdo incorporado",
+};
 
 function stringValue(value: unknown) { return typeof value === "string" ? value : ""; }
 function arrayValue(value: unknown) { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []; }
@@ -37,6 +49,9 @@ export function B2bPageEditor({ page, participants, groups }: { page?: JsonRecor
     });
   }
 
+  const selectedUsers = arrayValue(page?.user_ids);
+  const selectedGroups = arrayValue(page?.group_ids);
+
   return <form action={saveExtensionAction} className="grid gap-5">
     <input type="hidden" name="resource_type" value="b2b_page" />
     <input type="hidden" name="return_to" value="/admin/b2b" />
@@ -45,40 +60,45 @@ export function B2bPageEditor({ page, participants, groups }: { page?: JsonRecor
     <input type="hidden" name="id" value={stringValue(page?.id)} />
     <input type="hidden" name="version_id" value={stringValue(current.id)} />
     <input type="hidden" name="blocks" value={JSON.stringify(blocks)} />
+    <input type="hidden" name="code" value={stringValue(page?.code)} />
+    <input type="hidden" name="slug" value={stringValue(page?.slug)} />
 
-    <div className="grid gap-3 sm:grid-cols-2">
-      <Label>Nome interno<Input name="name" defaultValue={stringValue(page?.name)} required /></Label>
-      <Label>Código<Input name="code" defaultValue={stringValue(page?.code)} pattern="[a-z][a-z0-9_-]{1,79}" required /></Label>
-      <Label>Slug da página<Input name="slug" defaultValue={stringValue(page?.slug)} pattern="[a-z0-9][a-z0-9_-]{2,99}" required /></Label>
-      <Label>Título para o participante<Input name="title" defaultValue={stringValue(current.title)} required /></Label>
-      <Label className="sm:col-span-2">Descrição<Textarea name="description" rows={3} defaultValue={stringValue(current.description)} /></Label>
-      <Label>Disponível a partir de<Input name="starts_at" type="datetime-local" defaultValue={stringValue(current.starts_at).slice(0, 16)} /></Label>
-      <Label>Disponível até<Input name="ends_at" type="datetime-local" defaultValue={stringValue(current.ends_at).slice(0, 16)} /></Label>
-      <Label>Estado<Select name="status" defaultValue={stringValue(current.status) === "published" ? "published" : "draft"}><option value="draft">Rascunho</option><option value="published">Publicada</option></Select></Label>
+    <div className="grid gap-4 sm:grid-cols-2">
+      <Label>Nome da página<Input name="name" defaultValue={stringValue(page?.name)} placeholder="Conteúdo exclusivo para parceiros" required /></Label>
+      <Label>Estado<Select name="status" defaultValue={stringValue(current.status) === "published" ? "published" : "draft"}><option value="draft">Salvar como rascunho</option><option value="published">Publicar para autorizados</option></Select></Label>
+      <Label className="sm:col-span-2">Título mostrado ao participante<Input name="title" defaultValue={stringValue(current.title)} required /></Label>
+      <Label className="sm:col-span-2">Descrição curta<Textarea name="description" rows={2} defaultValue={stringValue(current.description)} /></Label>
     </div>
 
     <fieldset className="grid gap-3 rounded-2xl border border-border p-4">
-      <legend className="px-2 text-sm font-black text-secondary">Conteúdo em blocos</legend>
+      <legend className="px-2 text-sm font-black text-secondary">Monte o conteúdo</legend>
       <div className="flex flex-wrap gap-2">{[
-        ["heading", "Título"], ["rich_text", "Texto"], ["image", "Imagem"], ["video", "Vídeo"], ["download", "Arquivo"],
-        ["button", "Botão"], ["notice", "Aviso"], ["cards", "Cards"], ["divider", "Separador"], ["embed", "Incorporação"],
+        ["heading", "Título"], ["rich_text", "Texto"], ["image", "Imagem"], ["video", "Vídeo"], ["button", "Botão"], ["download", "Arquivo"],
       ].map(([type, label]) => <Button key={type} type="button" variant="secondary" size="sm" icon={<Plus size={14} />} onClick={() => add(type)}>{label}</Button>)}</div>
+      <details className="rounded-xl bg-surface-muted/50"><summary className="cursor-pointer px-3 py-2 text-xs font-bold text-secondary">Outros tipos de bloco</summary><div className="flex flex-wrap gap-2 border-t border-border p-3">{[["notice","Aviso"],["cards","Lista de cards"],["divider","Separador"],["embed","Incorporação"]].map(([type,label]) => <Button key={type} type="button" variant="ghost" size="sm" icon={<Plus size={14} />} onClick={() => add(type)}>{label}</Button>)}</div></details>
       <div className="grid gap-3">{blocks.map((block, index) => <article key={`${block.type}-${index}`} className="grid gap-3 rounded-xl bg-surface-muted p-3">
-        <div className="flex items-center justify-between gap-2"><strong className="text-sm text-secondary">{index + 1}. {block.type}</strong><div className="flex gap-1"><Button type="button" variant="ghost" size="sm" aria-label="Mover para cima" onClick={() => move(index, -1)} disabled={index === 0}><ArrowUp size={15} /></Button><Button type="button" variant="ghost" size="sm" aria-label="Mover para baixo" onClick={() => move(index, 1)} disabled={index === blocks.length - 1}><ArrowDown size={15} /></Button><Button type="button" variant="ghost" size="sm" aria-label="Excluir bloco" onClick={() => remove(index)}><Trash2 size={15} /></Button></div></div>
-        {block.type !== "divider" ? <Input value={block.title ?? ""} onChange={(event) => update(index, { title: event.target.value })} placeholder="Título do bloco" /> : null}
-        {["rich_text", "notice", "cards", "heading"].includes(block.type) ? <Textarea value={block.body ?? ""} onChange={(event) => update(index, { body: event.target.value })} rows={4} placeholder={block.type === "cards" ? "Um card por linha: Título | descrição | URL" : "Conteúdo"} /> : null}
-        {["image", "video", "download", "button", "embed"].includes(block.type) ? <Input value={block.url ?? ""} onChange={(event) => update(index, { url: event.target.value })} type="url" placeholder="https://..." /> : null}
+        <div className="flex items-center justify-between gap-2"><strong className="text-sm text-secondary">{index + 1}. {blockLabels[block.type] ?? "Bloco"}</strong><div className="flex gap-1"><Button type="button" variant="ghost" size="sm" aria-label="Mover para cima" onClick={() => move(index, -1)} disabled={index === 0}><ArrowUp size={15} /></Button><Button type="button" variant="ghost" size="sm" aria-label="Mover para baixo" onClick={() => move(index, 1)} disabled={index === blocks.length - 1}><ArrowDown size={15} /></Button><Button type="button" variant="ghost" size="sm" aria-label="Excluir bloco" onClick={() => remove(index)}><Trash2 size={15} /></Button></div></div>
+        {block.type !== "divider" ? <Input value={block.title ?? ""} onChange={(event) => update(index, { title: event.target.value })} placeholder="Título opcional" /> : null}
+        {["rich_text", "notice", "cards", "heading"].includes(block.type) ? <Textarea value={block.body ?? ""} onChange={(event) => update(index, { body: event.target.value })} rows={3} placeholder={block.type === "cards" ? "Um item por linha: Título | descrição | link" : "Escreva o conteúdo"} /> : null}
+        {["image", "video", "download", "button", "embed"].includes(block.type) ? <Input value={block.url ?? ""} onChange={(event) => update(index, { url: event.target.value })} type="url" placeholder="Cole o link aqui" /> : null}
         {["download", "button"].includes(block.type) ? <Input value={block.label ?? ""} onChange={(event) => update(index, { label: event.target.value })} placeholder="Texto do botão" /> : null}
         {block.type === "notice" ? <Select value={block.tone ?? "info"} onChange={(event) => update(index, { tone: event.target.value })}><option value="info">Informativo</option><option value="success">Sucesso</option><option value="warning">Atenção</option></Select> : null}
       </article>)}</div>
-      {blocks.length === 0 ? <p className="text-sm text-muted">Adicione blocos para construir a página.</p> : null}
+      {blocks.length === 0 ? <p className="text-sm text-muted">Use os botões acima para adicionar o primeiro conteúdo.</p> : null}
     </fieldset>
 
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Label>Usuários com acesso<Select name="user_ids" multiple className="min-h-48" defaultValue={arrayValue(page?.user_ids)}>{participants.map((participant) => <option key={participant.user_account_id} value={participant.user_account_id}>{participant.name} · {participant.email}</option>)}</Select><span className="text-[11px] font-normal text-muted">Use Ctrl/Cmd para selecionar vários usuários.</span></Label>
-      <Label>Grupos com acesso<Select name="group_ids" multiple className="min-h-48" defaultValue={arrayValue(page?.group_ids)}>{groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}</Select></Label>
-    </div>
+    <fieldset className="grid gap-3 rounded-2xl border border-border p-4">
+      <legend className="px-2 text-sm font-black text-secondary">Quem pode acessar?</legend>
+      <p className="text-sm text-muted">Marque pessoas ou grupos. Sem seleção, ninguém verá a página.</p>
+      {groups.length ? <div><p className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">Grupos</p><div className="grid gap-2 sm:grid-cols-2">{groups.map((group) => <label key={group.id} className="flex items-center gap-2 rounded-lg bg-surface-muted p-2 text-sm"><input type="checkbox" name="group_ids" value={group.id} defaultChecked={selectedGroups.includes(group.id)} className="accent-primary" />{group.name}</label>)}</div></div> : null}
+      <details className="rounded-xl border border-border"><summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-secondary">Selecionar pessoas individualmente</summary><div className="grid max-h-56 gap-2 overflow-y-auto border-t border-border p-3 sm:grid-cols-2">{participants.map((participant) => <label key={participant.user_account_id} className="flex items-start gap-2 rounded-lg p-2 text-sm hover:bg-surface-muted"><input type="checkbox" name="user_ids" value={participant.user_account_id} defaultChecked={selectedUsers.includes(participant.user_account_id)} className="mt-0.5 accent-primary" /><span><strong className="block text-ink">{participant.name}</strong><small className="text-muted">{participant.email}</small></span></label>)}</div></details>
+    </fieldset>
 
-    <PendingSubmitButton pendingLabel="Salvando página…" className="w-fit">Salvar página B2B</PendingSubmitButton>
+    <details className="rounded-xl border border-border bg-surface-muted/40">
+      <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-secondary">Agendar disponibilidade</summary>
+      <div className="grid gap-4 border-t border-border p-4 sm:grid-cols-2"><Label>Disponível a partir de<Input name="starts_at" type="datetime-local" defaultValue={stringValue(current.starts_at).slice(0, 16)} /></Label><Label>Disponível até<Input name="ends_at" type="datetime-local" defaultValue={stringValue(current.ends_at).slice(0, 16)} /></Label></div>
+    </details>
+
+    <PendingSubmitButton pendingLabel="Salvando página…" className="w-fit">Salvar página</PendingSubmitButton>
   </form>;
 }
