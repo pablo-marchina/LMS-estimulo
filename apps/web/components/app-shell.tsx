@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AdminShell } from "@/components/admin-shell";
+import { AdminShellBoundary } from "@/components/admin-shell";
 import { IdempotentSubmitBoundary } from "@/components/idempotent-submit-guard";
 import { ParticipantShell } from "@/components/participant-shell";
 
@@ -17,7 +17,7 @@ export function AppShell({
   return (
     <IdempotentSubmitBoundary>
       {area === "admin"
-        ? <AdminShell email={email}>{children}</AdminShell>
+        ? <AdminShellBoundary email={email}>{children}</AdminShellBoundary>
         : <ParticipantShell email={email} hasB2BAccess={participantHasB2B}>{children}</ParticipantShell>}
     </IdempotentSubmitBoundary>
   );
