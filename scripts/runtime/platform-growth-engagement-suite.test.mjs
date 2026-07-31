@@ -29,7 +29,7 @@ const [
   rewardsAdmin,
   rewardsParticipant,
   rewardsExperience,
-  deliveriesAdmin,
+  deliveryConfigurationManager,
   deliveriesParticipant,
   deliveryUploadRoute,
   aiGrader,
@@ -70,7 +70,7 @@ const [
   read("apps/web/app/admin/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/rewards-experience.tsx"),
-  read("apps/web/app/admin/entregas/page.tsx"),
+  read("apps/web/components/admin-delivery-configuration-manager.tsx"),
   read("apps/web/app/empreendedor/entregas/page.tsx"),
   read("apps/web/app/api/delivery-uploads/route.ts"),
   read("supabase/functions/ai-grade-submission/index.ts"),
@@ -168,9 +168,9 @@ test("reward cancellation refunds points and stock transactionally", () => {
 });
 
 test("deliveries support library content, activities and safe AI review modes", () => {
-  assert.match(deliveriesAdmin, /target_type/u);
-  assert.match(deliveriesAdmin, /ai_assistant/u);
-  assert.match(deliveriesAdmin, /ai_human_review/u);
+  assert.match(deliveryConfigurationManager, /target_type/u);
+  assert.match(deliveryConfigurationManager, /ai_assistant/u);
+  assert.match(deliveryConfigurationManager, /ai_human_review/u);
   assert.match(deliveriesParticipant, /\/api\/delivery-uploads/u);
   assert.match(deliveryUploadRoute, /action:\s*"delivery_submit"/u);
   assert.match(participantRuntimeMigration, /target_type='library'/u);
