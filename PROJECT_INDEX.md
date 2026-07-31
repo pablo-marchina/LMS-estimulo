@@ -4,7 +4,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 
 ## Entrada
 
-- [README](README.md) — execução, estado e arquitetura resumida.
+- [README](README.md) — execução, estado, superfícies e arquitetura resumida.
 - [Guia de contribuição](CONTRIBUTING.md) — fluxo de mudanças e padrões.
 
 ## Produto
@@ -58,7 +58,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - [Migrations executáveis](docs/architecture/EXECUTABLE_MIGRATIONS.md)
 - [Observabilidade e alertas](docs/architecture/OBSERVABILITY_AND_ALERTS.md)
 - [Contrato lógico de processamento assíncrono](docs/architecture/QUEUE_ARCHITECTURE.md)
-- [Outbox transacional](docs/architecture/TRANSACTIONAL_OUTBOX.md)
+- [Outbox transacional e exportação ETL substituível](docs/architecture/TRANSACTIONAL_OUTBOX.md)
 - [Reconciliação e recuperação](docs/architecture/RECONCILIATION_AND_RECOVERY.md)
 - [Implementação de RLS](docs/architecture/RLS_IMPLEMENTATION.md)
 - [Contrato lógico de armazenamento](docs/architecture/STORAGE_ARCHITECTURE.md)
@@ -78,7 +78,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 
 ## Fluxos de dados
 
-- [Arquitetura de fluxos](docs/dataflows/DATA_FLOW_ARCHITECTURE.md)
+- [Arquitetura de fluxos atual](docs/dataflows/DATA_FLOW_ARCHITECTURE.md)
 - [Catálogo de famílias de fluxo](docs/dataflows/FLOW_FAMILY_CATALOG.md)
 - [Matriz de linhagem](docs/dataflows/DATA_LINEAGE_MATRIX.md)
 - [Falhas, recuperação e reconciliação](docs/dataflows/FAILURE_RECOVERY_RECONCILIATION.md)
@@ -102,9 +102,9 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 ## Estado da implementação
 
 - [Fundação atual da aplicação](docs/implementation/APPLICATION_FOUNDATION.md)
-- [Motor configurável](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
+- [Motor configurável do diagnóstico](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
 - [Backend ponta a ponta](docs/implementation/BACKEND_E2E.md)
-- [Suíte de crescimento e engajamento](docs/implementation/PLATFORM_GROWTH_ENGAGEMENT_SUITE.md)
+- [Suíte de crescimento, engajamento e extensões](docs/implementation/PLATFORM_GROWTH_ENGAGEMENT_SUITE.md)
 - [Contenção de helpers opacos](docs/implementation/OPAQUE_HELPER_CONTAINMENT.md)
 - [Contratos públicos de RPC](docs/implementation/PUBLIC_RPC_CONTRACTS.md)
 - [Contrato público de RPC v1](docs/implementation/public-rpc-contracts-v1.json)
@@ -145,6 +145,7 @@ Este índice aponta para a documentação permanente. Requisitos, decisões, est
 - especificações de produto descrevem requisitos aprovados ou propostas identificadas;
 - decisões registram apenas escolhas vigentes;
 - documentos de implementação descrevem somente o código versionado;
+- migrations são a fonte executável do banco; DDL preliminar paralelo não é mantido;
 - bloqueadores descrevem lacunas ativas, sem congelar SHAs, contagens ou resultados transitórios;
 - evidências de um candidato pertencem aos workflows, manifestos e pull request daquele SHA;
 - Supabase e Vercel são evidência de desenvolvimento, teste e preview, não de produção;
