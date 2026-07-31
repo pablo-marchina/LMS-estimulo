@@ -42,7 +42,7 @@ function visibleText(entry: AdminInterfaceContentEntry) {
 }
 
 function previewUrl(route: string) {
-  const url = new URL(route, window.location.origin);
+  const url = new URL(route, "https://preview.invalid");
   url.searchParams.set("interface_preview", "1");
   return `${url.pathname}${url.search}${url.hash}`;
 }
@@ -86,7 +86,7 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
 
   useEffect(() => {
     function receive(event: MessageEvent) {
-      if (event.origin !== window.location.origin || !event.data || typeof event.data !== "object") return;
+      if (event.origin !== window.location.origin || event.source === window || !event.data || typeof event.data !== "object") return;
       const data = event.data as { type?: string; contentKey?: string };
       if (data.type === READY_MESSAGE) setReady(true);
       if (data.type === SELECT_MESSAGE && data.contentKey) selectEntry(data.contentKey);
@@ -95,7 +95,7 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
     return () => window.removeEventListener("message", receive);
   });
 
-  const src = typeof window === "undefined" ? route : previewUrl(route);
+  const src = previewUrl(route);
 
   return <section className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm" aria-labelledby="visual-interface-title">
     <div className="flex flex-col gap-4 border-b border-border bg-surface-muted p-4 lg:flex-row lg:items-end lg:justify-between">
@@ -107,7 +107,7 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
       <div className="min-w-0 bg-[#e9edf1] p-3 sm:p-5">
         <div className="overflow-hidden rounded-xl border border-black/10 bg-white shadow-xl">
           <div className="flex items-center gap-3 border-b border-border bg-surface-muted px-3 py-2"><div className="flex gap-1.5" aria-hidden="true"><span className="size-2.5 rounded-full bg-danger/70" /><span className="size-2.5 rounded-full bg-warning/70" /><span className="size-2.5 rounded-full bg-success/70" /></div><div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-white px-3 py-1.5 text-xs text-muted"><Monitor size={13} /><span className="truncate">{route}</span></div><a href={route} target="_blank" rel="noreferrer" className="grid size-8 place-items-center rounded-lg text-muted hover:bg-white hover:text-primary" aria-label="Abrir página em nova aba"><ExternalLink size={15} /></a></div>
-          <div className="relative h-[650px] bg-white"><iframe key={`${src}:${frameKey}`} src={src} title={`Prévia de ${route}`} className="size-full border-0" onLoad={() => setTimeout(() => setReady(true), 500)} />{!ready ? <div className="pointer-events-none absolute inset-0 grid place-items-center bg-white/80"><div className="text-center"><RefreshCw className="mx-auto animate-spin text-primary" /><p className="mt-2 text-sm font-semibold text-secondary">Carregando a página…</p></div></div> : null}</div>
+          <div className="relative h-[650px] bg-white"><iframe key={`${src}:${frameKey}`} src={src} title={`Prévia de ${route}`} className="size-full border-0" referrerPolicy="same-origin" onLoad={() => setTimeout(() => setReady(true), 500)} />{!ready ? <div className="pointer-events-none absolute inset-0 grid place-items-center bg-white/80"><div className="text-center"><RefreshCw className="mx-auto animate-spin text-primary" /><p className="mt-2 text-sm font-semibold text-secondary">Carregando a página…</p></div></div> : null}</div>
         </div>
         <p className="mt-3 text-xs text-muted">Cliques em elementos contornados abrem a edição abaixo. Links e botões não executam ações durante a seleção.</p>
       </div>
