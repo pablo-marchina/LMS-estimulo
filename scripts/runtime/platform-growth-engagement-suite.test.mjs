@@ -70,7 +70,7 @@ const [
   read("apps/web/app/admin/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/rewards-experience.tsx"),
-  read("apps/web/app/admin/entregas/page.tsx"),
+  read("apps/web/components/admin-delivery-configuration-manager.tsx"),
   read("apps/web/app/empreendedor/entregas/page.tsx"),
   read("apps/web/app/api/delivery-uploads/route.ts"),
   read("supabase/functions/ai-grade-submission/index.ts"),
