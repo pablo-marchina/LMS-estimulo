@@ -42,7 +42,7 @@ function emit(interactionType: string, input: { entityType?: string; entityId?: 
 export function BehaviorEventTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const enteredAt = useRef<number>(performance.now());
+  const enteredAt = useRef(0);
 
   useEffect(() => {
     enteredAt.current = performance.now();
@@ -58,22 +58,23 @@ export function BehaviorEventTracker() {
       const target = event.target instanceof Element ? event.target.closest("a,button,[role='button']") : null;
       if (!target) return;
       const href = target instanceof HTMLAnchorElement ? target.getAttribute("href") : null;
+      const identifier = target.getAttribute("data-behavior-id") || target.id || cleanText(target.textContent, 80) || "anonymous_control";
       emit("control_activate", {
         entityType: target instanceof HTMLAnchorElement ? "link" : "button",
-        entityId: target.getAttribute("data-behavior-id") ?? target.id ?? cleanText(target.textContent, 80) || "anonymous_control",
+        entityId: identifier,
         properties: { label: cleanText(target.textContent, 100), href: href?.startsWith("/") ? href.slice(0, 300) : href ? "external" : null },
       });
     };
     const submit = (event: SubmitEvent) => {
       const form = event.target instanceof HTMLFormElement ? event.target : null;
       if (!form) return;
-      emit("form_submit", { entityType: "form", entityId: form.getAttribute("data-behavior-id") ?? form.id ?? form.action.split("?")[0]?.slice(-200) ?? "form", properties: { method: form.method.toUpperCase() } });
+      emit("form_submit", { entityType: "form", entityId: form.getAttribute("data-behavior-id") || form.id || form.action.split("?")[0]?.slice(-200) || "form", properties: { method: form.method.toUpperCase() } });
     };
     const media = (event: Event) => {
       const element = event.target instanceof HTMLMediaElement ? event.target : null;
       if (!element) return;
       if (event.type === "play" || event.type === "pause" || event.type === "ended") {
-        emit(`media_${event.type}`, { entityType: element.tagName.toLowerCase(), entityId: element.dataset.behaviorId ?? element.currentSrc.slice(-200), properties: { current_time: Math.round(element.currentTime), duration: Number.isFinite(element.duration) ? Math.round(element.duration) : null } });
+        emit(`media_${event.type}`, { entityType: element.tagName.toLowerCase(), entityId: element.dataset.behaviorId || element.currentSrc.slice(-200), properties: { current_time: Math.round(element.currentTime), duration: Number.isFinite(element.duration) ? Math.round(element.duration) : null } });
         return;
       }
       if (event.type === "timeupdate" && Number.isFinite(element.duration) && element.duration > 0) {
@@ -82,7 +83,7 @@ export function BehaviorEventTracker() {
         if (!threshold) return;
         const seen = progress.get(element) ?? new Set<number>();
         seen.add(threshold); progress.set(element, seen);
-        emit("media_progress", { entityType: element.tagName.toLowerCase(), entityId: element.dataset.behaviorId ?? element.currentSrc.slice(-200), properties: { percentage: threshold } });
+        emit("media_progress", { entityType: element.tagName.toLowerCase(), entityId: element.dataset.behaviorId || element.currentSrc.slice(-200), properties: { percentage: threshold } });
       }
     };
     document.addEventListener("click", click, true);
