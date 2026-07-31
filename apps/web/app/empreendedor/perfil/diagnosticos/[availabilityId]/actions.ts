@@ -15,6 +15,8 @@ function safeUuid(value: FormDataEntryValue | null) {
 export async function startOptionalDiagnosticAction(formData: FormData) {
   const auth = await requireParticipantContext();
   const availabilityId = safeUuid(formData.get("availability_id"));
+  let sessionId: string | null = null;
+  let failure: string | null = null;
   try {
     const result = await extensionsRuntime.performParticipant({
       actorUserAccountId: auth.identity.user_account_id,
@@ -22,12 +24,12 @@ export async function startOptionalDiagnosticAction(formData: FormData) {
       payload: { availability_id: availabilityId },
       idempotencyKey: randomUUID(),
     });
-    const sessionId = typeof result.session_id === "string" ? result.session_id : "";
-    redirect(`/empreendedor/perfil/diagnosticos/${availabilityId}?sessao=${encodeURIComponent(sessionId)}`);
+    sessionId = typeof result.session_id === "string" ? result.session_id : null;
   } catch (error) {
-    const code = error instanceof Error ? error.message.split(":",1)[0] : "OPTIONAL_START_FAILED";
-    redirect(`/empreendedor/perfil/diagnosticos/${availabilityId}?erro=${encodeURIComponent(code)}`);
+    failure = error instanceof Error ? error.message.split(":",1)[0] : "OPTIONAL_START_FAILED";
   }
+  if (failure || !sessionId) redirect(`/empreendedor/perfil/diagnosticos/${availabilityId}?erro=${encodeURIComponent(failure ?? "OPTIONAL_START_FAILED")}`);
+  redirect(`/empreendedor/perfil/diagnosticos/${availabilityId}?sessao=${encodeURIComponent(sessionId)}`);
 }
 
 export async function completeOptionalDiagnosticAction(formData: FormData) {
@@ -35,6 +37,7 @@ export async function completeOptionalDiagnosticAction(formData: FormData) {
   const availabilityId = safeUuid(formData.get("availability_id"));
   const sessionId = safeUuid(formData.get("session_id"));
   const questionIds = String(formData.get("question_ids") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+  let failure: string | null = null;
   try {
     for (const itemId of questionIds) {
       const optionId = String(formData.get(`question_${itemId}`) ?? "").trim();
@@ -53,9 +56,9 @@ export async function completeOptionalDiagnosticAction(formData: FormData) {
       idempotencyKey: `optional-complete:${sessionId}`,
     });
     revalidatePath("/empreendedor/perfil");
-    redirect("/empreendedor/perfil?diagnostico=concluido");
   } catch (error) {
-    const code = error instanceof Error ? error.message.split(":",1)[0] : "OPTIONAL_COMPLETE_FAILED";
-    redirect(`/empreendedor/perfil/diagnosticos/${availabilityId}?sessao=${sessionId}&erro=${encodeURIComponent(code)}`);
+    failure = error instanceof Error ? error.message.split(":",1)[0] : "OPTIONAL_COMPLETE_FAILED";
   }
+  if (failure) redirect(`/empreendedor/perfil/diagnosticos/${availabilityId}?sessao=${sessionId}&erro=${encodeURIComponent(failure)}`);
+  redirect("/empreendedor/perfil?diagnostico=concluido");
 }
