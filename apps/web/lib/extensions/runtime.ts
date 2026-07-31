@@ -11,6 +11,17 @@ export type ExtensionParticipant = {
   name: string;
 };
 
+export type AdminAiGradingProvider = {
+  configured: boolean;
+  provider_name: string;
+  endpoint_url: string;
+  model_name: string;
+  api_style: "openai_chat_completions";
+  api_key_last_four: string;
+  status: "active" | "inactive";
+  updated_at?: string;
+};
+
 export type AdminExtensionsWorkspace = {
   organization_id: string;
   settings: JsonRecord | null;
@@ -60,6 +71,27 @@ export const extensionsRuntime = {
     return invokeExtensionsGateway<AdminExtensionsWorkspace>("get_admin_extensions_workspace", {
       p_actor_user_account_id: actorUserAccountId,
       p_organization_id: organizationId,
+    });
+  },
+
+  getAiGradingProvider(actorUserAccountId: string, organizationId: string) {
+    return invokeExtensionsGateway<AdminAiGradingProvider>("get_admin_ai_grading_provider", {
+      p_actor_user_account_id: actorUserAccountId,
+      p_organization_id: organizationId,
+    });
+  },
+
+  saveAiGradingProvider(input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    payload: JsonRecord;
+    idempotencyKey: string;
+  }) {
+    return invokeExtensionsGateway<JsonRecord>("save_ai_grading_provider", {
+      p_actor_user_account_id: input.actorUserAccountId,
+      p_organization_id: input.organizationId,
+      p_payload: input.payload,
+      p_idempotency_key: input.idempotencyKey,
     });
   },
 
