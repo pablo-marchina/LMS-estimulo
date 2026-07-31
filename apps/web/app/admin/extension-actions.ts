@@ -71,6 +71,7 @@ function payloadFromForm(formData: FormData): JsonRecord {
   }
 
   if (resourceType === "tracking_link") {
+    payload.slug = String(payload.slug || slugify(payload.name));
     payload.skip_steps = {
       profile: checkbox(formData, "skip_profile"),
       onboarding: checkbox(formData, "skip_onboarding"),
@@ -155,6 +156,11 @@ function payloadFromForm(formData: FormData): JsonRecord {
     delete payload.points_on_approve;
     delete payload.points_proportional;
     delete payload.max_points;
+  }
+
+  if (resourceType === "b2b_page") {
+    payload.code = String(payload.code || slugify(payload.name || payload.title));
+    payload.slug = String(payload.slug || slugify(payload.title || payload.name));
   }
 
   if ((resourceType === "theme" || resourceType === "b2b_group") && !payload.code && payload.name) {
