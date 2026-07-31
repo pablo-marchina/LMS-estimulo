@@ -37,12 +37,12 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
 
   const desktopNav = links.map((link) => {
     const Icon = link.icon;
-    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={12} aria-hidden="true" />} interfaceContentKey={link.contentKey} className="min-h-8 shrink-0 gap-1 whitespace-nowrap px-1.5 py-1 text-[10px] font-semibold xl:px-2 xl:text-[11px]">{link.label}</NavItem>;
+    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={21} strokeWidth={2.1} aria-hidden="true" />} interfaceContentKey={link.contentKey} className="min-h-12 min-w-0 flex-1 flex-col justify-center gap-0.5 overflow-hidden px-1 py-1 text-[10px] font-semibold leading-none xl:text-[11px]"><span className="max-w-full truncate whitespace-nowrap">{link.label}</span></NavItem>;
   });
 
   const mobileNav = links.map((link) => {
     const Icon = link.icon;
-    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={15} aria-hidden="true" />} interfaceContentKey={link.contentKey}>{link.label}</NavItem>;
+    return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={20} strokeWidth={2.1} aria-hidden="true" />} interfaceContentKey={link.contentKey} className="min-h-11 gap-3 text-sm">{link.label}</NavItem>;
   });
 
   return <div className="participant-stage min-h-screen bg-background">
@@ -50,13 +50,13 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
     <InterfacePreviewBridge />
     <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
     <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
-      <div className="mx-auto flex min-h-14 w-full max-w-[1500px] items-center gap-1.5 px-3 lg:px-4">
-        <div className="brand-logo-capsule shrink-0 scale-[.78] origin-left xl:scale-[.84]"><EstimuloBrand href="/empreendedor" compact /></div>
-        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0 lg:flex" aria-label="Navegação principal">{desktopNav}</nav>
+      <div className="mx-auto flex min-h-16 w-full max-w-[1500px] items-center gap-2 px-3 lg:px-4">
+        <div className="brand-logo-capsule shrink-0 scale-[.82] origin-left xl:scale-90"><EstimuloBrand href="/empreendedor" compact /></div>
+        <nav className="hidden min-w-0 flex-1 items-stretch gap-0.5 lg:flex" aria-label="Navegação principal">{desktopNav}</nav>
         <form action={signOutAction} data-interface-content-key="shared.sign_out" className="hidden shrink-0 lg:block">
-          <Button variant="ghost" size="sm" type="submit" className="size-8 px-0 !text-white hover:!bg-white/10" aria-label={signOutLabel} title={`${signOutLabel} · ${email}`}><LogOut size={14} aria-hidden="true" /></Button>
+          <Button variant="ghost" size="sm" type="submit" className="size-10 px-0 !text-white hover:!bg-white/10" aria-label={signOutLabel} title={`${signOutLabel} · ${email}`}><LogOut size={20} strokeWidth={2.1} aria-hidden="true" /></Button>
         </form>
-        <button type="button" className="ml-auto grid size-9 place-items-center rounded-lg text-white hover:bg-white/10 lg:hidden" aria-expanded={mobileOpen} aria-controls="participant-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={18} /> : <Menu size={18} />}</button>
+        <button type="button" className="ml-auto grid size-10 place-items-center rounded-lg text-white hover:bg-white/10 lg:hidden" aria-expanded={mobileOpen} aria-controls="participant-mobile-nav" aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"} onClick={() => setMobileOpen((open) => !open)}>{mobileOpen ? <X size={22} /> : <Menu size={22} />}</button>
       </div>
       {mobileOpen ? <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 lg:hidden"><nav className="grid gap-1 pt-3 sm:grid-cols-2">{mobileNav}</nav><div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3"><span className="truncate text-xs text-white/70">{email}</span><form action={signOutAction} data-interface-content-key="shared.sign_out"><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}
     </header>
