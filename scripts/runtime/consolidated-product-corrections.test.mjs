@@ -64,21 +64,26 @@ test("diagnostic completion persists answers, result navigation and transactiona
   assert.match(gateway, /complete_participant_diagnostic_with_points/u);
 });
 
-test("certificate wallet and templates remain discoverable after upload", async () => {
-  const [upload, page, runtime, migration, editor] = await Promise.all([
+test("certificate wallet and consolidated templates remain discoverable after upload", async () => {
+  const [upload, page, templateManager, runtime, migration, editor, redirect] = await Promise.all([
     source("apps/web/app/api/external-credential-uploads/route.ts"),
     source("apps/web/app/admin/gamificacao/page.tsx"),
+    source("apps/web/app/admin/gamificacao/certificate-template-manager.tsx"),
     source("apps/web/lib/credentials/extended-runtime.ts"),
     source("supabase/migrations/20260730021001_operator_certificate_template_catalog.sql"),
     source("apps/web/app/admin/gamificacao/certificate-editor.tsx"),
+    source("apps/web/app/admin/certificados/page.tsx"),
   ]);
 
   assert.match(upload, /waitForProjection/u);
   assert.match(upload, /\[0, 100, 250, 500\]/u);
   assert.match(runtime, /list_operator_certificate_templates/u);
   assert.match(migration, /metadata->>'category' = 'certificate_template'/u);
-  assert.match(page, /Templates salvos/u);
-  assert.match(editor, /Template salvo/u);
+  assert.match(page, /CertificateTemplateManager/u);
+  assert.match(templateManager, /Modelos em uso/u);
+  assert.match(templateManager, /Modelo geral/u);
+  assert.match(editor, /O fundo é escolhido automaticamente/u);
+  assert.match(redirect, /\/admin\/gamificacao\?tipo=certificados/u);
 });
 
 test("administrative destructive actions are dependency-safe", async () => {
@@ -142,11 +147,13 @@ test("gateway, actionable help, legal and admin recovery contracts are versioned
 });
 
 test("participant journeys, library formats and administrative user discovery follow the consolidated UX", async () => {
-  const [catalog, journey, library, users] = await Promise.all([
+  const [catalog, journey, library, users, adminShell, programManager] = await Promise.all([
     source("apps/web/app/empreendedor/jornadas/page.tsx"),
     source("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx"),
     source("apps/web/components/participant-library-page.tsx"),
     source("apps/web/app/admin/usuarios/page.tsx"),
+    source("apps/web/components/admin-shell.tsx"),
+    source("apps/web/components/admin-program-manager.tsx"),
   ]);
 
   assert.doesNotMatch(catalog, /Jornada em destaque/iu);
@@ -163,6 +170,8 @@ test("participant journeys, library formats and administrative user discovery fo
   assert.match(users, /membership\.membership_id/u);
   assert.match(users, /role\.role_name/u);
   assert.match(users, /membershipMatches/u);
+  assert.match(adminShell, /pathname === "\/admin\/produto" \? <AdminProgramManager/u);
+  assert.match(programManager, /Organizar programas/u);
 });
 
 test("migration boundary preserves release hardening and growth extensions", async () => {
@@ -191,8 +200,9 @@ test("migration boundary preserves release hardening and growth extensions", asy
     "20260730212100_certificate_template_inheritance.sql",
     "20260730212200_tracking_and_ai_delivery_support.sql",
     "20260730212300_enable_extension_rls.sql",
+    "20260731150000_admin_program_management.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260730212300_enable_extension_rls\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260731150000_admin_program_management\.sql'/u);
 });
