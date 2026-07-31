@@ -6,10 +6,12 @@ import { openLibraryContentAction } from "@/app/actions/library";
 import { ContentAssetViewer } from "@/components/content-asset-viewer";
 import { LibraryAccessTracker } from "@/components/library-access-tracker";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
+import type { LibraryContent } from "@/lib/library/contracts";
 import { libraryRuntime } from "@/lib/library/runtime";
 
 const formatLabels: Record<string, string> = { article: "Artigo", video: "Vídeo", podcast: "Podcast", audio: "Áudio", image: "Imagem", pdf: "PDF", guide: "Guia", tool: "Ferramenta", course: "Curso", other: "Outro" };
@@ -25,12 +27,51 @@ function viewerType(format: string, contentType: string | null) {
   return "external_link";
 }
 
+async function adminPreviewContent(actorUserAccountId: string, organizationId: string, slug: string): Promise<LibraryContent | null> {
+  const data = await libraryRuntime.listOperator(actorUserAccountId, organizationId);
+  const item = data.items.find((entry) => entry.slug === slug && entry.status === "published");
+  if (!item) return null;
+  const journeyById = new Map(data.journey_versions.map((journey) => [journey.journey_version_id, journey]));
+  return {
+    library_item_id: item.library_item_id,
+    library_item_version_id: item.library_item_version_id,
+    slug: item.slug,
+    version_number: item.version_number,
+    title: item.title,
+    summary: item.summary,
+    body: item.body,
+    content_kind: item.content_kind,
+    content_format: item.content_format,
+    level: item.level,
+    estimated_minutes: item.estimated_minutes,
+    source_type: item.source_type,
+    source_name: item.source_name,
+    external_url: item.external_url,
+    language_code: item.language_code,
+    topics: item.topics,
+    visibility: item.visibility,
+    published_at: item.published_at ?? new Date(0).toISOString(),
+    journeys: item.journey_version_ids.map((id) => ({ journey_version_id: id, relation_type: "supplemental", journey_title: journeyById.get(id)?.title ?? "Jornada" })),
+    rank: 0,
+    file_object_id: item.file_object_id,
+    original_filename: item.original_filename,
+    file_content_type: item.file_content_type,
+    accessibility_metadata: {},
+    has_external_link: Boolean(item.external_url),
+    has_file: Boolean(item.file_object_id),
+  };
+}
+
 export async function ParticipantLibraryContentPage({ params, basePath }: { params: Promise<{ slug: string }>; basePath: string }) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar");
-  if (!auth.identity.entrepreneur_id) redirect("/cadastro/concluir");
+  const adminOrganization = administrativeOrganization(auth.identity);
+  const previewMode = !auth.identity.entrepreneur_id && Boolean(adminOrganization);
+  if (!auth.identity.entrepreneur_id && !adminOrganization) redirect("/cadastro/concluir");
   const { slug } = await params;
-  const content = await libraryRuntime.get(auth.identity.user_account_id, slug).catch(() => null);
+  const content = previewMode && adminOrganization
+    ? await adminPreviewContent(auth.identity.user_account_id, adminOrganization.organization_id, slug)
+    : await libraryRuntime.get(auth.identity.user_account_id, slug).catch(() => null);
   if (!content) notFound();
 
   const downloadHref = content.has_file ? `/api/library-content/${content.library_item_version_id}/download` : null;
@@ -38,12 +79,12 @@ export async function ParticipantLibraryContentPage({ params, basePath }: { para
   const hasPlayableContent = Boolean(content.external_url || downloadHref);
 
   return (
-    <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-      <LibraryAccessTracker libraryItemVersionId={content.library_item_version_id} />
+    <div className="participant-stage mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
+      {!previewMode ? <LibraryAccessTracker libraryItemVersionId={content.library_item_version_id} /> : null}
       <Link href={basePath} className="brand-button inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-white px-4 py-2 text-sm font-bold text-primary shadow-sm hover:bg-primary hover:text-white">← Voltar à biblioteca</Link>
 
       <article className="grid gap-8" aria-labelledby="library-content-title">
-        <PageHeader eyebrow={formatLabels[content.content_format] ?? content.content_format} title={<span id="library-content-title">{content.title}</span>} description={content.summary} />
+        <PageHeader eyebrow={previewMode ? `Prévia · ${formatLabels[content.content_format] ?? content.content_format}` : formatLabels[content.content_format] ?? content.content_format} title={<span id="library-content-title">{content.title}</span>} description={previewMode ? `${content.summary} Esta visualização não registra progresso, pontos, respostas ou entregas.` : content.summary} />
 
         <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm" aria-label="Informações do conteúdo">
           <span className="inline-flex items-center gap-2 text-sm font-semibold text-muted"><BookOpen size={16} className="text-primary" /> {levelLabels[content.level] ?? content.level}</span>
@@ -61,7 +102,7 @@ export async function ParticipantLibraryContentPage({ params, basePath }: { para
         ) : <Card><p className="text-sm text-muted">O material está temporariamente indisponível.</p></Card>}
 
         {content.content_kind === "external_link" && content.external_url && type === "external_link" ? (
-          <Card className="flex flex-wrap items-center justify-between gap-4 border-primary/20 bg-primary-soft/45"><div><h2 className="font-black text-secondary">Continuar no site da fonte</h2><p className="mt-1 text-sm text-muted">O acesso é registrado para medir o uso da Biblioteca, sem enviar o conteúdo da sua navegação ao parceiro.</p></div><form action={openLibraryContentAction}><input type="hidden" name="library_item_version_id" value={content.library_item_version_id} /><input type="hidden" name="slug" value={content.slug} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" icon={<ExternalLink size={15} />}>Abrir material de {content.source_name}</Button></form></Card>
+          <Card className="flex flex-wrap items-center justify-between gap-4 border-primary/20 bg-primary-soft/45"><div><h2 className="font-black text-secondary">Continuar no site da fonte</h2><p className="mt-1 text-sm text-muted">{previewMode ? "Na prévia, o link é aberto sem registrar acesso." : "O acesso é registrado para medir o uso da Biblioteca, sem enviar o conteúdo da sua navegação ao parceiro."}</p></div>{previewMode ? <ButtonLink href={content.external_url} target="_blank" rel="noreferrer" icon={<ExternalLink size={15} />}>Abrir material</ButtonLink> : <form action={openLibraryContentAction}><input type="hidden" name="library_item_version_id" value={content.library_item_version_id} /><input type="hidden" name="slug" value={content.slug} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" icon={<ExternalLink size={15} />}>Abrir material de {content.source_name}</Button></form>}</Card>
         ) : null}
       </article>
     </div>
