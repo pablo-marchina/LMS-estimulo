@@ -18,7 +18,7 @@ test("the only application image is pinned, standalone and non-root", () => {
   assert.match(dockerfile, /PLATFORM_RUNTIME_PROVIDER=aws/u);
   assert.match(dockerfile, /USER 10001:10001/u);
   assert.match(dockerfile, /AWS_LWA_READINESS_CHECK_PATH=\/api\/health\/live/u);
-  assert.doesNotMatch(dockerfile, /NEXT_PUBLIC_SUPABASE|SUPABASE_SERVICE_ROLE_KEY|CPF_ENCRYPTION_KEY|HUBSPOT_PRIVATE_APP_TOKEN/u);
+  assert.doesNotMatch(dockerfile, /NEXT_PUBLIC_SUPABASE|SUPABASE_SERVICE_ROLE_KEY|CPF_ENCRYPTION_KEY|ETL_DESTINATION_TOKEN/u);
   assert.match(nextConfig, /output: "standalone"/u);
 });
 
