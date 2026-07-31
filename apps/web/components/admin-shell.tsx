@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Activity, BarChart3, BookOpen, Building2, ChevronLeft, ChevronRight, ClipboardList, FileUp, Gauge, Gift, LayoutDashboard, Megaphone, Menu, Settings, SlidersHorizontal, Tags, Trophy, Users, X } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Building2, ChevronLeft, ChevronRight, ClipboardList, FileImage, FileUp, Gauge, Gift, LayoutDashboard, Megaphone, Menu, Settings, SlidersHorizontal, Tags, Trophy, Users, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { useInterfaceContent } from "@/components/interface-content-provider";
@@ -25,6 +25,7 @@ const navigationDefinitions = [
   { href: "/admin/diagnostico", label: "Diagnóstico principal", contentKey: "admin.nav.diagnostics", icon: ClipboardList, order: 80 },
   { href: "/admin/diagnosticos-opcionais", label: "Diagnósticos opcionais", contentKey: "admin.nav.optional_diagnostics", icon: Tags, order: 85 },
   { href: "/admin/gamificacao", label: "Pontuação", contentKey: "admin.nav.points", icon: Trophy, order: 90 },
+  { href: "/admin/certificados", label: "Templates de certificados", contentKey: "admin.nav.certificate_templates", icon: FileImage, order: 92 },
   { href: "/admin/recompensas", label: "Recompensas", contentKey: "admin.nav.rewards", icon: Gift, order: 95 },
   { href: "/admin/engajamento", label: "Anúncios", contentKey: "admin.nav.announcements", icon: Megaphone, order: 100 },
   { href: "/admin/campanhas", label: "Campanhas e UTM", contentKey: "admin.nav.campaigns", icon: Tags, order: 105 },
