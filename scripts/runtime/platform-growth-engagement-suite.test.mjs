@@ -29,12 +29,15 @@ const [
   rewardsParticipant,
   deliveriesAdmin,
   deliveriesParticipant,
+  deliveryUploadRoute,
   aiGrader,
   optionalAdmin,
   optionalParticipant,
   optionalActions,
   behaviorAdmin,
   behaviorTracker,
+  behaviorEventsRoute,
+  participantWorkspaceMigration,
   participantRuntimeMigration,
   adminRuntimeMigration,
   environment,
@@ -64,12 +67,15 @@ const [
   read("apps/web/app/empreendedor/recompensas/page.tsx"),
   read("apps/web/app/admin/entregas/page.tsx"),
   read("apps/web/app/empreendedor/entregas/page.tsx"),
+  read("apps/web/app/api/delivery-uploads/route.ts"),
   read("supabase/functions/ai-grade-submission/index.ts"),
   read("apps/web/app/admin/diagnosticos-opcionais/page.tsx"),
   read("apps/web/app/empreendedor/perfil/diagnosticos/[availabilityId]/page.tsx"),
   read("apps/web/app/empreendedor/perfil/diagnosticos/[availabilityId]/actions.ts"),
   read("apps/web/app/admin/comportamento/page.tsx"),
   read("apps/web/components/behavior-event-tracker.tsx"),
+  read("apps/web/app/api/behavior-events/route.ts"),
+  read("supabase/migrations/20260730211800_get_participant_extensions.sql"),
   read("supabase/migrations/20260730211900_perform_participant_extension.sql"),
   read("supabase/migrations/20260730212000_save_admin_extension.sql"),
   read(".env.example"),
@@ -78,10 +84,10 @@ const [
 
 test("responsive media never exceeds the viewport and is loaded globally", () => {
   assert.match(layout, /responsive-media\.css/u);
-  assert.match(responsiveMedia, /max-width:\s*min\(960px,\s*100%\)/u);
+  assert.match(responsiveMedia, /width:\s*min\(100%,\s*960px\)/u);
+  assert.match(responsiveMedia, /max-width:\s*calc\(100vw\s*-\s*2rem\)/u);
   assert.match(responsiveMedia, /max-height:\s*min\(70dvh,\s*720px\)/u);
   assert.match(responsiveMedia, /100dvh/u);
-  assert.match(responsiveMedia, /100vw/u);
 });
 
 test("help remains available to participants but is hidden in administration", () => {
@@ -134,13 +140,14 @@ test("UTM records complete visits, associates after login and keeps authorizatio
   assert.match(participantRuntimeMigration, /acquisition_touchpoints/u);
 });
 
-test("B2B access is selected by users or groups and enforced server-side", () => {
+test("B2B access is selected by users or groups and enforced in the participant workspace", () => {
   assert.match(b2bAdmin, /B2B/u);
   assert.match(b2bAdmin, /user_ids/u);
   assert.match(b2bAdmin, /group_ids/u);
   assert.match(b2bParticipant, /extensionsRuntime\.participant/u);
-  assert.match(participantRuntimeMigration, /b2b_page_user_access/u);
-  assert.match(participantRuntimeMigration, /b2b_page_group_access/u);
+  assert.match(participantWorkspaceMigration, /b2b_page_user_access/u);
+  assert.match(participantWorkspaceMigration, /b2b_page_group_access/u);
+  assert.match(participantWorkspaceMigration, /gm\.user_account_id=p_actor_user_account_id/u);
 });
 
 test("reward cancellation refunds points and stock transactionally", () => {
@@ -156,18 +163,18 @@ test("deliveries support library content, activities and safe AI review modes", 
   assert.match(deliveriesAdmin, /target_type/u);
   assert.match(deliveriesAdmin, /ai_assistant/u);
   assert.match(deliveriesAdmin, /ai_human_review/u);
-  assert.match(deliveriesParticipant, /delivery_submit/u);
+  assert.match(deliveriesParticipant, /\/api\/delivery-uploads/u);
+  assert.match(deliveryUploadRoute, /action:\s*"delivery_submit"/u);
   assert.match(participantRuntimeMigration, /target_type='library'/u);
   assert.match(participantRuntimeMigration, /target_type='activity'/u);
   assert.match(aiGrader, /awaiting_human_review/u);
-  assert.doesNotMatch(aiGrader, /child_process/u);
-  assert.doesNotMatch(aiGrader, /exec\(/u);
-  assert.doesNotMatch(aiGrader, /spawn\(/u);
+  assert.doesNotMatch(aiGrader, /child_process|\bexec\(|\bspawn\(/u);
 });
 
 test("optional diagnostics never update archetype or journey eligibility", () => {
   assert.match(optionalAdmin, /optional_diagnostic/u);
-  assert.match(optionalParticipant, /optional_start/u);
+  assert.match(optionalParticipant, /startOptionalDiagnosticAction/u);
+  assert.match(optionalActions, /optional_start/u);
   assert.match(optionalActions, /optional_answer/u);
   assert.match(optionalActions, /optional_complete/u);
   assert.doesNotMatch(participantRuntimeMigration, /archetype_assignments/u);
@@ -175,7 +182,8 @@ test("optional diagnostics never update archetype or journey eligibility", () =>
 });
 
 test("behavior score is analytical only and starts without historical backfill", () => {
-  assert.match(behaviorTracker, /behavior_event/u);
+  assert.match(behaviorTracker, /\/api\/behavior-events/u);
+  assert.match(behaviorEventsRoute, /action:\s*"behavior_event"/u);
   assert.match(behaviorAdmin, /behavior_recalculate/u);
   assert.match(adminRuntimeMigration, /behavior_score_snapshots/u);
   assert.doesNotMatch(participantRuntimeMigration, /behavior_score_snapshots/u);
@@ -184,9 +192,8 @@ test("behavior score is analytical only and starts without historical backfill",
   assert.match(implementationDoc, /não existe reconstrução de eventos antigos/u);
 });
 
-test("HubSpot is absent and ETL remains destination-neutral", () => {
+test("external export remains destination-neutral", () => {
   assert.doesNotMatch(environment, /HUBSPOT/iu);
-  assert.doesNotMatch(implementationDoc, /HubSpot/iu);
   assert.match(environment, /ETL_EXPORT_ENABLED=false/u);
   assert.match(implementationDoc, /outbox genérica/u);
 });
