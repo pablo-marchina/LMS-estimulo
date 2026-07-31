@@ -64,11 +64,15 @@ test("behavior page documents the exact eight-dimension formula and confidence",
   assert.match(behaviorPage, /quantidade de eventos ÷ 30/u);
 });
 
-test("published lesson UI ignores removed complementary text and prompts", () => {
+test("published lesson UI ignores removed complementary text and stays structured", () => {
   assert.doesNotMatch(lessonPage, /activity\.sections/u);
   assert.doesNotMatch(lessonPage, /activity\.prompts/u);
   assert.doesNotMatch(lessonPage, /Prompts para adaptar/u);
   assert.match(migration, /-'content_sections'-'prompts'/u);
-  assert.match(lessonPage, /xl:grid-cols-\[minmax\(0,1fr\)_340px\]/u);
+  assert.match(lessonPage, /xl:grid-cols-\[minmax\(0,1fr\)_300px\]/u);
   assert.match(lessonPage, /xl:sticky xl:top-20/u);
+  assert.match(lessonPage, /Conteúdo da aula/u);
+  assert.match(lessonPage, /Verifique o que aprendeu/u);
+  assert.match(lessonPage, /Discuta a aula/u);
+  assert.match(lessonPage, /aria-label="Índice da aula"/u);
 });
