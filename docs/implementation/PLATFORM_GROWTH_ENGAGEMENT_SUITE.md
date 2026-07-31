@@ -1,6 +1,6 @@
 # Suíte de crescimento, engajamento e extensões
 
-**Status:** implementada no código versionado e no banco de desenvolvimento/teste conectado  
+**Status:** implementada no código versionado; migrations e Edge Functions aplicadas no ambiente Supabase conectado de desenvolvimento, teste e preview  
 **Escopo:** administração, aquisição, biblioteca, jornadas, avaliações, recompensas, B2B, eventos e exportação futura
 
 ## 1. Princípios invariantes
@@ -148,13 +148,26 @@ Produtores persistem estado, evento e outbox sem conhecer o destino externo. Um 
 
 As funções públicas de comando são `SECURITY DEFINER`, têm `search_path` fechado, validam ator, organização, permissão e idempotência e não concedem execução direta a `anon` ou `authenticated`. O frontend usa Edge Functions autenticadas como gateway.
 
+As tabelas da suíte têm RLS habilitado e acesso direto de `public`, `anon` e `authenticated` revogado. A leitura e a escrita passam pelas funções autorizadas, mantendo isolamento por organização e participante.
+
 Arquivos usam buckets privados e objetos identificados por chave opaca. URLs assinadas são temporárias e não são persistidas em eventos. Operações administrativas e revisões humanas registram ator, horário e motivo.
 
 ## 15. Configuração de IA
 
-A Edge Function de avaliação requer segredo e modelo configurados no ambiente do servidor. Nenhum segredo é exposto por `NEXT_PUBLIC_*`. Sem configuração válida, a entrega é preservada e encaminhada para revisão humana.
+A Edge Function `ai-grade-submission` exige JWT válido. Quando `AI_GRADING_API_URL`, `AI_GRADING_API_KEY` e `AI_GRADING_MODEL` não estiverem configurados no ambiente do servidor, a entrega é preservada e encaminhada para revisão humana. Nenhum segredo é exposto por `NEXT_PUBLIC_*`.
 
-## 16. Validação
+## 16. Componentes de runtime
+
+O runtime da suíte é composto por:
+
+- RPCs `get_admin_extensions_workspace`, `get_participant_extensions`, `perform_participant_extension` e `save_admin_extension`;
+- captura pública controlada `capture_tracking_visit`;
+- resolução de certificados `get_certificate_render_payload`;
+- funções de correção `get_delivery_grading_payload` e `apply_ai_delivery_review`;
+- Edge Functions `platform-extensions-rpc` e `ai-grade-submission`;
+- migrations de estrutura, comandos, herança de certificados, UTM/IA e fechamento RLS.
+
+## 17. Validação
 
 A suíte é coberta por:
 
