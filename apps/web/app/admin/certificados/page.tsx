@@ -31,8 +31,8 @@ export default async function CertificateTemplatesPage({ searchParams }: { searc
       <div><h2 className="text-lg font-black text-secondary">1. Escolha o alcance</h2><p className="text-sm text-muted">Use o Template global na maioria dos casos. Programa ou jornada substituem o global somente quando necessário.</p></div>
       <div className="grid gap-3 lg:grid-cols-3">
         <UploadCard organizationId={organization.organization_id} scopeType="global" title="Template global" description="Opção recomendada para toda a plataforma." />
-        <UploadCard organizationId={organization.organization_id} scopeType="program" title="Um programa" description="Use um fundo diferente para um programa." options={workspace.programs.map((item) => ({ id: text(item.id), name: text(item.name) }))} />
-        <UploadCard organizationId={organization.organization_id} scopeType="journey" title="Uma jornada" description="Use um fundo exclusivo para uma jornada." options={workspace.journeys.map((item) => ({ id: text(item.id), name: text(item.name) }))} />
+        <UploadCard organizationId={organization.organization_id} scopeType="program" title="Template por programa" description="Use um fundo diferente para um programa." options={workspace.programs.map((item) => ({ id: text(item.id), name: text(item.name) }))} />
+        <UploadCard organizationId={organization.organization_id} scopeType="journey" title="Template por jornada" description="Use um fundo exclusivo para uma jornada." options={workspace.journeys.map((item) => ({ id: text(item.id), name: text(item.name) }))} />
       </div>
     </Card>
 
