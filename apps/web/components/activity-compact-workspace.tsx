@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BookOpen, Brain, MessageCircle, UploadCloud } from "lucide-react";
 
@@ -36,6 +36,15 @@ export function ActivityCompactWorkspace() {
   const [active, setActive] = useState<SectionId>("conteudo");
   const rootRef = useRef<HTMLElement | null>(null);
 
+  const selectSection = useCallback((section: SectionId, behavior: ScrollBehavior = "smooth") => {
+    setActive(section);
+    if (rootRef.current) rootRef.current.dataset.activeSection = section;
+    const url = new URL(window.location.href);
+    url.hash = section;
+    window.history.replaceState(window.history.state, "", url);
+    rootRef.current?.scrollIntoView({ block: "start", behavior });
+  }, []);
+
   useEffect(() => {
     const root = document.querySelector<HTMLElement>("[data-activity-workspace]");
     const main = root?.querySelector<HTMLElement>("main");
@@ -59,28 +68,29 @@ export function ActivityCompactWorkspace() {
 
     const syncHash = () => {
       const next = sectionFromLocation(detected);
-      setActive(next);
-      root.dataset.activeSection = next;
-      root.scrollIntoView({ block: "start", behavior: "smooth" });
+      selectSection(next);
+    };
+    const followSectionLink = (event: MouseEvent) => {
+      const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href^='#']") : null;
+      if (!target) return;
+      const section = target.getAttribute("href")?.slice(1) as SectionId | undefined;
+      if (!section || !detected.includes(section)) return;
+      event.preventDefault();
+      selectSection(section);
     };
 
     window.addEventListener("hashchange", syncHash);
+    document.addEventListener("click", followSectionLink, true);
+    if (window.location.hash) requestAnimationFrame(() => root.scrollIntoView({ block: "start" }));
+
     return () => {
       window.removeEventListener("hashchange", syncHash);
+      document.removeEventListener("click", followSectionLink, true);
       mount.remove();
       delete root.dataset.activeSection;
       rootRef.current = null;
     };
-  }, []);
-
-  function selectSection(section: SectionId) {
-    setActive(section);
-    if (rootRef.current) rootRef.current.dataset.activeSection = section;
-    const url = new URL(window.location.href);
-    url.hash = section;
-    window.history.replaceState(window.history.state, "", url);
-    rootRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-  }
+  }, [selectSection]);
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key) || available.length < 2) return;
@@ -118,11 +128,7 @@ export function ActivityCompactWorkspace() {
             aria-controls={section.id}
             tabIndex={selected ? 0 : -1}
             onClick={() => selectSection(section.id)}
-            className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${
-              selected
-                ? "bg-primary text-white shadow-sm"
-                : "text-muted hover:bg-primary-soft hover:text-primary"
-            }`}
+            className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${selected ? "bg-primary text-white shadow-sm" : "text-muted hover:bg-primary-soft hover:text-primary"}`}
           >
             <Icon size={16} aria-hidden="true" />
             <span>{section.label}</span>
