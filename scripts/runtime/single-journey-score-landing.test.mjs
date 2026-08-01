@@ -37,6 +37,7 @@ test('new migrations have unique ordered versions', async () => {
     '20260731221500_public_landing_journey.sql',
     '20260731221600_filter_public_landing_journey.sql',
     '20260731221700_behavior_score_fk_indexes.sql',
+    '20260731221800_secure_public_landing_rpc.sql',
   ]);
 });
 
@@ -78,11 +79,13 @@ test('behavior score is editable, continuous, indexed and ETL ready', async () =
   assert.match(editor, /Faixas de classificação/);
 });
 
-test('landing uses the approved copy and no OpenAI promotion', async () => {
-  const [landing, publicJourneyMigration, filterMigration] = await Promise.all([
+test('landing uses the approved copy and a secured edge projection', async () => {
+  const [landing, publicJourneyMigration, filterMigration, securityMigration, edgeFunction] = await Promise.all([
     read('apps/web/app/page.tsx'),
     read('supabase/migrations/20260731221500_public_landing_journey.sql'),
     read('supabase/migrations/20260731221600_filter_public_landing_journey.sql'),
+    read('supabase/migrations/20260731221800_secure_public_landing_rpc.sql'),
+    read('supabase/functions/public-landing-journey/index.ts'),
   ]);
 
   assert.match(landing, /Seu negócio evolui\. A forma de aprender também\./);
@@ -91,8 +94,13 @@ test('landing uses the approved copy and no OpenAI promotion', async () => {
   assert.match(landing, /O que você encontra na plataforma/);
   assert.match(landing, /Criar conta gratuitamente/);
   assert.match(landing, /Conhecer o curso/);
+  assert.match(landing, /functions\/v1\/public-landing-journey/);
   assert.doesNotMatch(landing, /OpenAI/i);
   assert.match(publicJourneyMigration, /get_public_landing_journey/);
   assert.match(publicJourneyMigration, /jv\.status='published'/);
   assert.match(filterMigration, /not like '%openai%'/i);
+  assert.match(securityMigration, /grant execute on function public\.get_public_landing_journey\(\) to service_role/);
+  assert.match(securityMigration, /revoke all .* from public,anon,authenticated/);
+  assert.match(edgeFunction, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(edgeFunction, /METHOD_NOT_ALLOWED/);
 });
