@@ -1,6 +1,13 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { cookies, headers } from "next/headers";
 import { publicSupabaseEnv } from "@/lib/env";
+import { ExtensionsGatewayError, invokePlatformExtensionsGateway } from "@/lib/extensions/gateway";
+import {
+  INTERFACE_PREVIEW_COOKIE,
+  INTERFACE_PREVIEW_REQUEST_HEADER,
+  parseInterfacePreviewIdentity,
+} from "@/lib/interface-preview/constants";
 import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -19,6 +26,36 @@ type SlotWaiter = {
   reject: (error: AuthenticatedGatewayError) => void;
   timer: ReturnType<typeof setTimeout>;
 };
+
+const previewReadOnlyRpcs = new Set([
+  "e14_get_participant_experience",
+  "e14_get_participant_state",
+  "e14_list_eligible_journeys",
+  "e14_list_participant_journeys",
+  "get_activity_asset_download",
+  "get_activity_utility_rating",
+  "get_announcement_banner_download",
+  "get_business_maturity_draft",
+  "get_certificate_render_payload",
+  "get_external_credential_download",
+  "get_journey_cover_download",
+  "get_library_content",
+  "get_library_file_download",
+  "get_participant_diagnostic_summary",
+  "get_participant_engagement_hub",
+  "get_participant_experience_with_default_diagnostic",
+  "get_participant_journey_outline",
+  "get_participant_profile_summary",
+  "get_practice_download_descriptor",
+  "list_activity_comments",
+  "list_external_credential_issuers",
+  "list_library_content",
+  "list_participant_credentials",
+  "list_participant_external_credentials",
+  "list_participant_point_rules",
+  "list_practice_submissions",
+  "resolve_participant_diagnostic_entry",
+]);
 
 let activeGatewayRequests = 0;
 const gatewayWaiters: SlotWaiter[] = [];
@@ -105,11 +142,43 @@ function logGateway(
   else console.log(payload);
 }
 
+async function previewIdentity() {
+  const requestHeaders = await headers();
+  if (requestHeaders.get(INTERFACE_PREVIEW_REQUEST_HEADER) !== "1") return null;
+  const cookieStore = await cookies();
+  return parseInterfacePreviewIdentity(cookieStore.get(INTERFACE_PREVIEW_COOKIE)?.value);
+}
+
+async function invokePreviewGateway<T>(name: string, args: Record<string, unknown>): Promise<T | null> {
+  if (name === "e14_resolve_current_identity") return null;
+  const preview = await previewIdentity();
+  if (!preview) return null;
+  if (!previewReadOnlyRpcs.has(name)) {
+    throw new AuthenticatedGatewayError("INTERFACE_PREVIEW_WRITE_BLOCKED", "Preview requests are read-only.");
+  }
+  try {
+    return await invokePlatformExtensionsGateway<T>("preview_participant_rpc", {
+      p_organization_id: preview.organizationId,
+      p_preview_user_account_id: preview.participantUserAccountId,
+      p_operation: name,
+      p_args: args,
+    });
+  } catch (error) {
+    if (error instanceof ExtensionsGatewayError) {
+      throw new AuthenticatedGatewayError(error.code, error.message);
+    }
+    throw error;
+  }
+}
+
 async function invokeSupabaseGateway<T>(
   name: string,
   args: Record<string, unknown>,
   client?: SupabaseClient,
 ): Promise<T> {
+  const previewResult = await invokePreviewGateway<T>(name, args);
+  if (previewResult !== null) return previewResult;
+
   const startedAt = performance.now();
   const requestId = crypto.randomUUID();
   const sessionClient = client ?? await createSessionClient();
@@ -230,9 +299,6 @@ export async function invokeAuthenticatedGateway<T>(
   const provider = platformRuntimeProvider();
   if (provider === "supabase") return invokeSupabaseGateway<T>(name, args, client);
 
-  // The definitive AWS data and authorization boundary has not been selected.
-  // Production must remain unavailable instead of inferring a service topology
-  // or falling back to the Supabase test gateway.
   throw new AuthenticatedGatewayError(
     "AWS_DATA_ARCHITECTURE_PENDING",
     "The AWS authenticated data architecture is pending approval.",
