@@ -115,9 +115,9 @@ export async function saveJourneyAction(formData: FormData) {
     liveUpdate = result.live_update;
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
-    redirect(`/admin/produto?etapa=geral&jornada=${journeyId ?? ""}&erro=${reason}`);
+    redirect(`/admin/produto?etapa=geral&versao=${journeyId ?? ""}&erro=${reason}`);
   }
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
-  redirect(`/admin/produto?etapa=conteudo&jornada=${savedJourneyId}&sucesso=${liveUpdate ? "atualizado_ao_vivo" : "rascunho_salvo"}`);
+  redirect(`/admin/produto?etapa=conteudo&versao=${savedJourneyId}&sucesso=${liveUpdate ? "atualizado_ao_vivo" : "rascunho_salvo"}`);
 }
