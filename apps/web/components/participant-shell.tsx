@@ -10,6 +10,7 @@ import { useInterfaceContent } from "@/components/interface-content-provider";
 import { InterfacePreviewBridge } from "@/components/interface-preview-bridge";
 import { InterfacePreviewGuard } from "@/components/interface-preview-guard";
 import { InterfaceSlot } from "@/components/interface-slot";
+import styles from "@/components/participant-density.module.css";
 import { Button } from "@/components/ui/button";
 import { NavItem } from "@/components/ui/nav-item";
 import { interfaceHref, interfaceOrder, interfaceText, interfaceVisible } from "@/lib/interface-content/contracts";
@@ -51,28 +52,10 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
     return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={20} strokeWidth={2.1} aria-hidden="true" />} interfaceContentKey={link.contentKey} className="min-h-11 gap-3 text-sm">{link.label}</NavItem>;
   });
 
-  return <div className="participant-stage min-h-screen bg-background" data-wide-lesson={wideLesson ? "true" : "false"}>
+  return <div className={`participant-stage min-h-screen bg-background ${styles.density}`} data-wide-lesson={wideLesson ? "true" : "false"}>
     <InterfacePreviewGuard />
     {!preview ? <BehaviorEventTracker /> : null}
     <InterfacePreviewBridge />
-    {wideLesson ? <style>{`
-      [data-wide-lesson="true"] #conteudo-principal > div {
-        max-width: none !important;
-      }
-      [data-wide-lesson="true"] #conteudo-principal > div > .grid.items-start.gap-5 {
-        grid-template-columns: minmax(0, 1fr) !important;
-      }
-      [data-wide-lesson="true"] #conteudo-principal > div > .grid.items-start.gap-5 > aside {
-        position: static !important;
-        order: -1;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-      @media (max-width: 900px) {
-        [data-wide-lesson="true"] #conteudo-principal > div > .grid.items-start.gap-5 > aside {
-          grid-template-columns: minmax(0, 1fr);
-        }
-      }
-    `}</style> : null}
     <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
     <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
       <div className="mx-auto flex min-h-16 w-full max-w-[1500px] items-center gap-2 px-3 lg:px-4">
