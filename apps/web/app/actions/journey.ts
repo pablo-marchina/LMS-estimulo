@@ -143,7 +143,7 @@ export async function rateActivityUtilityAction(formData: FormData) {
     rating,
     String(formData.get("idempotency_key") || randomUUID())
   );
-  redirect(`/empreendedor/atividade/${step}?journey=${journey}&utilidade=registrada#utilidade`);
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&utilidade=registrada#conteudo`);
 }
 
 export async function submitQuickCheckAction(formData: FormData) {
