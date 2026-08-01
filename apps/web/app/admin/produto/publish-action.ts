@@ -31,11 +31,11 @@ export async function publishJourneyAction(formData: FormData) {
     publishedId = result.journey_version_id;
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
-    const reason = raw.includes("FORBIDDEN") ? "sem_permissao" : raw.includes("PATH_GRAPH)" ? "grafo_invalido" : raw.includes("STALE_REVISION") ? "conteudo_desatualizado" : "falha_publicacao";
-    redirect(`/admin/produto?etapa=publicacao&jornada=${journeyId}&erro=${reason}`);
+    const reason = raw.includes("FORBIDDEN") ? "sem_permissao" : raw.includes("PATH_GRAPH") ? "grafo_invalido" : raw.includes("STALE_REVISION") ? "conteudo_desatualizado" : "falha_publicacao";
+    redirect(`/admin/produto?etapa=publicacao&versao=${journeyId}&erro=${reason}`);
   }
 
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
-  redirect(`/admin/produto?etapa=publicacao&jornada=${publishedId}&sucesso=jornada_publicada`);
+  redirect(`/admin/produto?etapa=publicacao&versao=${publishedId}&sucesso=jornada_publicada`);
 }
