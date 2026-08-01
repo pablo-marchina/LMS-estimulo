@@ -52,13 +52,11 @@ export function InterfacePreviewGuard() {
     }) as typeof XMLHttpRequest.prototype.send;
 
     const hadOwnBeacon = Object.prototype.hasOwnProperty.call(navigator, "sendBeacon");
-    const originalBeacon = navigator.sendBeacon?.bind(navigator);
-    if (originalBeacon) {
-      Object.defineProperty(navigator, "sendBeacon", {
-        configurable: true,
-        value: () => true,
-      });
-    }
+    const originalBeacon = navigator.sendBeacon.bind(navigator);
+    Object.defineProperty(navigator, "sendBeacon", {
+      configurable: true,
+      value: () => true,
+    });
 
     return () => {
       delete document.documentElement.dataset.interfacePreview;
@@ -66,12 +64,10 @@ export function InterfacePreviewGuard() {
       window.fetch = originalFetch;
       XMLHttpRequest.prototype.open = originalOpen;
       XMLHttpRequest.prototype.send = originalSend;
-      if (originalBeacon) {
-        if (hadOwnBeacon) {
-          Object.defineProperty(navigator, "sendBeacon", { configurable: true, value: originalBeacon });
-        } else {
-          delete (navigator as Navigator & { sendBeacon?: Navigator["sendBeacon"] }).sendBeacon;
-        }
+      if (hadOwnBeacon) {
+        Object.defineProperty(navigator, "sendBeacon", { configurable: true, value: originalBeacon });
+      } else {
+        delete (navigator as Navigator & { sendBeacon?: Navigator["sendBeacon"] }).sendBeacon;
       }
     };
   }, []);
