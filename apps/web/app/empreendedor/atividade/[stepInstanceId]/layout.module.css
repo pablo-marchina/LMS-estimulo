@@ -64,57 +64,50 @@
 
 @media (min-width: 1200px) {
   .activityLayout {
-    height: calc(100dvh - 4rem);
-    min-height: 38rem;
-    overflow: hidden;
+    min-height: calc(100dvh - 4rem);
+    overflow: visible;
   }
 
   .activityLayout > div {
     display: grid !important;
-    height: 100% !important;
     min-height: 0 !important;
-    grid-template-rows: auto minmax(0, 1fr) auto !important;
+    grid-template-rows: auto auto auto !important;
     gap: 0.75rem !important;
-    overflow: hidden;
-    padding: 0.75rem 1rem !important;
+    overflow: visible;
+    padding: 0.75rem 1rem 1.25rem !important;
   }
 
   .activityLayout > div > :global(.grid.items-start.gap-5) {
     display: grid !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 0 !important;
     max-width: none !important;
     grid-template-columns: minmax(0, 1fr) 18rem !important;
     gap: 0.75rem !important;
-    align-items: stretch !important;
-    overflow: hidden;
+    align-items: start !important;
+    overflow: visible;
   }
 
   .activityLayout > div > :global(.grid.items-start.gap-5) > main {
     display: grid !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 0 !important;
     max-width: none !important;
-    max-height: none !important;
     align-content: start;
     gap: 0 !important;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-    padding-right: 0.25rem;
+    overflow: visible;
+    padding-right: 0;
   }
 
   .activityLayout > div > :global(.grid.items-start.gap-5) > aside {
-    position: static !important;
-    inset: auto !important;
+    position: sticky !important;
+    top: 5rem !important;
+    inset-inline: auto !important;
     display: grid !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 0 !important;
     max-width: none !important;
-    max-height: none !important;
+    max-height: calc(100dvh - 6rem);
     grid-template-columns: minmax(0, 1fr) !important;
     align-content: start !important;
     gap: 0.75rem !important;
