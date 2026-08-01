@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, LogOut, Menu, Trophy, User, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
@@ -28,11 +28,13 @@ const linkDefinitions = [
 
 export function ParticipantShell({ email, children, hasB2BAccess = false }: { email: string; children: React.ReactNode; hasB2BAccess?: boolean }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const content = useInterfaceContent();
   const skipLabel = interfaceText(content, "shared.skip_to_content", "Pular para o conteúdo");
   const signOutLabel = interfaceText(content, "shared.sign_out", "Sair");
   const wideLesson = pathname.startsWith("/empreendedor/atividade/");
+  const preview = searchParams.get("interface_preview") === "1";
   const links = linkDefinitions
     .filter((link) => link.contentKey === "participant.nav.home" || interfaceVisible(content, link.contentKey))
     .filter((link) => link.contentKey !== "participant.nav.b2b" || hasB2BAccess)
@@ -51,8 +53,26 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
 
   return <div className="participant-stage min-h-screen bg-background" data-wide-lesson={wideLesson ? "true" : "false"}>
     <InterfacePreviewGuard />
-    <BehaviorEventTracker />
+    {!preview ? <BehaviorEventTracker /> : null}
     <InterfacePreviewBridge />
+    {wideLesson ? <style>{`
+      [data-wide-lesson="true"] #conteudo-principal > div {
+        max-width: none !important;
+      }
+      [data-wide-lesson="true"] #conteudo-principal > div > .grid.items-start.gap-5 {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+      [data-wide-lesson="true"] #conteudo-principal > div > .grid.items-start.gap-5 > aside {
+        position: static !important;
+        order: -1;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      @media (max-width: 900px) {
+        [data-wide-lesson="true"] #conteudo-principal > div > .grid.items-start.gap-5 > aside {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+    `}</style> : null}
     <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
     <header className="no-print sticky top-0 z-40 border-b border-primary-active bg-primary text-white shadow-sm">
       <div className="mx-auto flex min-h-16 w-full max-w-[1500px] items-center gap-2 px-3 lg:px-4">
