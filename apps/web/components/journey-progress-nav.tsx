@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Clock3, Flag, PlayCircl
 import { openJourneyActivityAction } from "@/app/empreendedor/jornada/[journeyInstanceId]/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getAuthContext } from "@/lib/auth/context";
+import { displayContentName } from "@/lib/content/display-name";
 import type { JourneyState } from "@/lib/journey-runtime/contracts";
 import { getParticipantJourneyOutline } from "@/lib/journey-runtime/outline-runtime";
 
@@ -46,15 +47,7 @@ function ActivityNavigationForm({
     <input type="hidden" name="step_aggregate_version" value={activity.step_aggregate_version} />
     <input type="hidden" name="step_status" value={activity.step_status} />
     <input type="hidden" name="idempotency_key" value={randomUUID()} />
-    <PendingSubmitButton
-      pendingLabel="Abrindo…"
-      variant="secondary"
-      size="sm"
-      type="submit"
-      disabled={!enabled}
-      className="max-w-full gap-1.5"
-      title={activity.activity_title}
-    >
+    <PendingSubmitButton pendingLabel="Abrindo…" variant="secondary" size="sm" type="submit" disabled={!enabled} className="max-w-full gap-1.5" title={activity.activity_title}>
       {direction === "previous" ? <ArrowLeft size={15} aria-hidden="true" /> : null}
       <span className="hidden sm:inline">{label}:</span>
       <span className="max-w-40 truncate">{activity.activity_title}</span>
@@ -68,20 +61,25 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
   const title = current === "activity" ? activityTitle ?? "Atividade da jornada" : current === "result" ? "Resultado da jornada" : "Conheça seu perfil";
   const Icon = current === "activity" ? PlayCircle : current === "result" ? Flag : CircleDot;
 
+  const auth = await getAuthContext();
+  const outline = auth.status === "authenticated"
+    ? await getParticipantJourneyOutline(auth.identity.user_account_id, state.journey_instance_id).catch(() => null)
+    : null;
+  const journeyLabel = displayContentName(
+    outline?.journey_title ?? state.journey_title,
+    displayContentName(state.journey_code, "Jornada"),
+  );
+
   let previousActivity: Parameters<typeof ActivityNavigationForm>[0]["activity"] | null = null;
   let nextActivity: Parameters<typeof ActivityNavigationForm>[0]["activity"] | null = null;
   if (current === "activity" && state.s?.step_instance_id) {
-    const auth = await getAuthContext();
-    if (auth.status === "authenticated") {
-      const outline = await getParticipantJourneyOutline(auth.identity.user_account_id, state.journey_instance_id).catch(() => null);
-      const activities = outline?.modules
-        .slice()
-        .sort((a, b) => a.module_position - b.module_position)
-        .flatMap((module) => module.activities.slice().sort((a, b) => a.position - b.position)) ?? [];
-      const currentIndex = activities.findIndex((activity) => activity.step_instance_id === state.s?.step_instance_id);
-      previousActivity = currentIndex > 0 ? activities[currentIndex - 1] : null;
-      nextActivity = currentIndex >= 0 && currentIndex < activities.length - 1 ? activities[currentIndex + 1] : null;
-    }
+    const activities = outline?.modules
+      .slice()
+      .sort((a, b) => a.module_position - b.module_position)
+      .flatMap((module) => module.activities.slice().sort((a, b) => a.position - b.position)) ?? [];
+    const currentIndex = activities.findIndex((activity) => activity.step_instance_id === state.s?.step_instance_id);
+    previousActivity = currentIndex > 0 ? activities[currentIndex - 1] : null;
+    nextActivity = currentIndex >= 0 && currentIndex < activities.length - 1 ? activities[currentIndex + 1] : null;
   }
 
   return (
@@ -92,7 +90,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
         </Link>
         <div className="grid size-10 place-items-center rounded-xl bg-primary text-white shadow-sm"><Icon size={19} aria-hidden="true" /></div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold uppercase tracking-[.13em] text-primary/70">{state.journey_title ?? state.journey_code}</p>
+          <p className="truncate text-xs font-bold uppercase tracking-[.13em] text-primary/70">{journeyLabel}</p>
           <p className="mt-0.5 truncate text-base font-black text-secondary">{title}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
