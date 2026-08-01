@@ -78,8 +78,16 @@ export async function saveExtensionAction(formData: FormData) {
   const resourceType = text(formData, "resource_type");
   const returnTo = safeAdminReturn(text(formData, "return_to"));
   if (!resourceType) redirect(`${returnTo}?erro=tipo_obrigatorio`);
+
+  let failureCode: string | null = null;
   try {
     await extensionsRuntime.saveAdmin({ actorUserAccountId, organizationId, resourceType, payload: payloadFromForm(formData), idempotencyKey: text(formData, "idempotency_key") || randomUUID() });
-    revalidatePath("/admin", "layout"); revalidatePath("/empreendedor", "layout"); redirect(`${returnTo}?sucesso=${encodeURIComponent(resourceType)}`);
-  } catch (error) { redirect(`${returnTo}?erro=${encodeURIComponent(errorCode(error))}`); }
+  } catch (error) {
+    failureCode = errorCode(error);
+  }
+
+  if (failureCode) redirect(`${returnTo}?erro=${encodeURIComponent(failureCode)}`);
+  revalidatePath("/admin", "layout");
+  revalidatePath("/empreendedor", "layout");
+  redirect(`${returnTo}?sucesso=${encodeURIComponent(resourceType)}`);
 }
