@@ -10,14 +10,17 @@ export function ParticipantNavigationProgress() {
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (!visible) return;
     setProgress(100);
     const timeout = window.setTimeout(() => {
       setVisible(false);
       setProgress(0);
+      if (timer.current) {
+        clearInterval(timer.current);
+        timer.current = null;
+      }
     }, 180);
     return () => window.clearTimeout(timeout);
-  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   useEffect(() => {
     function start() {
