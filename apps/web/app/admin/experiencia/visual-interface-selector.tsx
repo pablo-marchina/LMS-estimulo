@@ -13,7 +13,15 @@ function entryMatchesRoute(entry: AdminInterfaceContentEntry, route: string) {
   return route === pattern;
 }
 
+function isParticipantRoute(route: string) {
+  return route === "/empreendedor" || route.startsWith("/empreendedor/");
+}
+
 function previewUrl(route: string) {
+  if (isParticipantRoute(route)) {
+    const params = new URLSearchParams({ interface_preview: "1", route });
+    return `/interface-preview/participant?${params.toString()}`;
+  }
   const separator = route.includes("?") ? "&" : "?";
   return `${route}${separator}interface_preview=1`;
 }
@@ -42,7 +50,7 @@ const adminRoutes = [
 ] as const;
 
 function inferredLabel(route: string, page: string, area: string) {
-  const prefix = route.startsWith("/empreendedor") || area === "participant" ? "Participante" : "Administrador";
+  const prefix = isParticipantRoute(route) || area === "participant" ? "Participante" : "Administrador";
   const words = page.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
   return `${prefix} — ${words}`;
 }
@@ -76,12 +84,16 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
     const listener = (event: MessageEvent) => {
       if (event.origin !== window.location.origin || !event.data || typeof event.data !== "object") return;
       const payload = event.data as { type?: string; contentKey?: string; pathname?: string };
+      if (payload.type === "estimulo:interface-preview-ready") {
+        setReady(true);
+        return;
+      }
       if (payload.type !== "estimulo:interface-content-selected" || !payload.contentKey) return;
       const entry = entries.find((item) => item.content_key === payload.contentKey);
       if (!entry) return;
       const params = new URLSearchParams(window.location.search);
       params.set("edit", payload.contentKey);
-      params.set("preview_route", payload.pathname?.startsWith("/") ? payload.pathname : route);
+      params.set("preview_route", payload.pathname?.startsWith("/empreendedor") ? payload.pathname : route);
       router.replace(`/admin/experiencia?${params.toString()}#editor-elemento`, { scroll: false });
     };
     window.addEventListener("message", listener);
@@ -107,7 +119,7 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
 
   return <section className="grid gap-4 rounded-2xl border border-border bg-white p-4 shadow-sm lg:grid-cols-[minmax(220px,280px)_minmax(0,1fr)]">
     <aside className="grid content-start gap-4">
-      <div><p className="brand-kicker">Navegação visual</p><h2 className="mt-1 text-lg font-black text-secondary">Página exibida</h2><p className="mt-1 text-sm text-muted">A prévia do participante é isolada: navegar, responder ou clicar não salva progresso, eventos ou score.</p></div>
+      <div><p className="brand-kicker">Navegação visual</p><h2 className="mt-1 text-lg font-black text-secondary">Página exibida</h2><p className="mt-1 text-sm text-muted">As telas do participante usam uma prévia administrativa dedicada, sem matrícula, progresso, eventos ou score.</p></div>
       <Select value={route} onChange={(event) => changeRoute(event.target.value)} aria-label="Página exibida na prévia">{options.map((option) => <option key={option.route} value={option.route}>{option.label}</option>)}</Select>
       <a href={previewUrl(route)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"><ExternalLink size={15} /> Abrir prévia isolada</a>
       <div className="grid gap-2"><p className="text-xs font-bold uppercase tracking-wide text-muted">Elementos nesta página</p>{visibleEntries.length ? visibleEntries.map((entry) => <button key={entry.content_key} type="button" onClick={() => selectEntry(entry.content_key)} className={`rounded-xl border p-3 text-left transition ${selectedKey === entry.content_key ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40 hover:bg-surface-muted"}`}><strong className="block text-sm text-secondary">{entry.element_name}</strong><span className="mt-1 block text-xs text-muted">{entry.placement.replaceAll("_", " ")} · {entry.element_type}</span></button>) : <p className="rounded-xl bg-surface-muted p-3 text-sm text-muted">Nenhum elemento registrado especificamente para esta página.</p>}</div>
@@ -115,8 +127,17 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
     <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface-muted">
       <div className="flex items-center justify-between gap-3 border-b border-border bg-white px-4 py-3"><span className="inline-flex items-center gap-2 text-sm font-bold text-secondary"><PanelTop size={16} /> Prévia clicável</span><span className="inline-flex items-center gap-1.5 text-xs text-muted"><MousePointerClick size={14} /> Clique nos contornos para editar</span></div>
       <div className="relative min-h-[640px] bg-white">
-        {!ready ? <div className="absolute inset-0 z-10 grid place-items-center bg-white"><div className="w-56"><p className="text-center text-sm font-semibold text-muted">Carregando prévia…</p><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-muted"><div className="h-full wi-2/3 animate-pulse rounded-full bg-primary" /></div></div></div> : null}
-        <iframe key={`${src}:${frameKey}`} name="estimulo-interface-preview" src={src} title={`Prévia da interface: ${route}`} className="h-[760px] w-full bg-white" onLoad={() => setReady(true)} referrerPolicy="same-origin" />
+        {!ready ? <div className="absolute inset-x-0 top-0 z-10 h-1 overflow-hidden bg-primary-soft"><div className="h-full w-2/3 animate-pulse rounded-r-full bg-primary" /></div> : null}
+        <iframe
+          key={`${src}:${frameKey}`}
+          name="estimulo-interface-preview"
+          src={src}
+          title={`Prévia da interface: ${route}`}
+          className="h-[760px] w-full bg-white"
+          onLoad={() => setReady(true)}
+          referrerPolicy="same-origin"
+          sandbox="allow-same-origin allow-scripts"
+        />
       </div>
     </div>
   </section>;

@@ -1,74 +1,58 @@
-# Modelo de score comportamental experimental
+# Score comportamental configurável
 
-**Versão:** 0.1  
-**Status:** somente estrutura de pesquisa; sem autoridade para crédito.
+**Revisado em:** 2026-08-01  
+**Status:** implementado para análise educacional; proibido para decisão de crédito
 
-## 1. Guardrail principal
+## Guardrail principal
 
-O banco suporta score para permitir pesquisa futura, mas nenhum score pode ser usado em aprovação, preço, limite, cobrança ou priorização de crédito sem:
+O score comportamental é exclusivamente analítico. Ele não pode alterar aprovação, preço, limite, cobrança, elegibilidade, navegação, recomendação, pontos ou recompensas.
 
-- desfecho definido;
-- amostra suficiente;
-- desenho de validação;
-- validação temporal e fora da amostra;
-- análise de estabilidade e drift;
-- avaliação de equidade;
-- explicabilidade;
-- revisão jurídica/privacidade/risco;
-- aprovação registrada em `governance.model_approvals`.
+## Dados de entrada
 
-## 2. Estrutura
+O cálculo usa eventos brutos de interação e, quando disponível, qualidade de entregas. As métricas permitidas atualmente são:
 
-```text
-score_definition
-→ score_version
-→ score_run
-→ score_result
-→ score_contributions
-→ validation_runs/metrics
-→ model_approval
-```
+- quantidade de eventos;
+- dias ativos;
+- interações de profundidade;
+- conclusões;
+- ações autônomas;
+- média de qualidade das entregas;
+- semanas ativas.
 
-## 3. Reprodutibilidade
+## Configuração
 
-Um resultado precisa registrar:
+O administrador configura:
 
-- versão do score;
-- run;
-- sujeito e contexto;
-- timestamp;
-- hash do snapshot de inputs;
-- valor e incerteza;
-- status;
-- contribuições por feature.
+- fórmula `weighted_average` ou `weighted_sum`;
+- mínimo e máximo brutos para normalização;
+- número de eventos para confiança total;
+- dimensões, métricas, pesos, multiplicadores, ajustes e tetos;
+- faixas de classificação de 0 a 100.
 
-## 4. Estados propostos
+A configuração é validada em três fronteiras:
 
-### Definição/versão
+1. editor no navegador;
+2. RPC/gateway autenticado;
+3. função e trigger no PostgreSQL.
+
+São rejeitados códigos duplicados, números inválidos, peso total igual a zero, normalização invertida e faixas com lacunas ou sobreposição.
+
+## Persistência e reprodutibilidade
 
 ```text
-draft → research → validated_for_research → approved_for_limited_use → retired
+behavior_score_configurations
+→ behavior_score_configuration_history
+→ behavior_score_snapshots
+→ behavior_score_history
+→ behavior_score_etl
 ```
 
-Não haverá estado `approved_for_credit` até existir governança específica e dados suficientes.
+Cada snapshot registra configuração, score bruto, score normalizado, dimensões, classificação, confiança, contagem de eventos, hash dos inputs e horário do cálculo.
 
-### Resultado
+## Atualização
 
-```text
-calculated | insufficient_evidence | invalid_inputs | stale | failed
-```
+Salvar uma configuração recalcula os participantes da organização. Depois disso, cada novo evento comportamental relevante recalcula o participante afetado. Idempotência no registro do evento impede dupla aplicação.
 
-## 5. Evitar leakage
+## Uso futuro
 
-Features posteriores ao desfecho ou geradas por uma intervenção baseada no próprio risco não podem entrar no treino sem tratamento causal/temporal explícito.
-
-## 6. Separação de uso
-
-O mesmo modelo não deve simultaneamente servir a:
-
-- personalização educacional;
-- previsão de abandono;
-- risco de inadimplência;
-- priorização comercial.
-
-Cada finalidade exige definição e validação próprias.
+Qualquer uso fora da análise educacional exige finalidade separada, base legal, amostra, validação temporal e fora da amostra, análise de drift e equidade, explicabilidade e aprovação formal de governança.

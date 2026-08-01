@@ -1,140 +1,90 @@
 # Fundação atual da aplicação
 
-**Revisado em:** 2026-07-30  
-**Status:** implementação atual documentada; Gate A é avaliado por SHA; produção AWS bloqueada por arquitetura
+**Revisado em:** 2026-08-01  
+**Status:** implementação atual documentada; arquitetura AWS institucional ainda pendente
 
 ## Forma do sistema
 
-O repositório contém um monorepo npm com o workspace `apps/web/`. A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Server Components, route handlers, server actions e módulos server-only compõem os casos de uso; não existe backend de domínio paralelo.
+O repositório contém um monorepo npm com o workspace `apps/web/`. A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Server Components, route handlers, server actions e módulos server-only compõem os casos de uso.
 
-## Providers
+## Runtime ativo
 
-```text
-PLATFORM_RUNTIME_PROVIDER=supabase
-PLATFORM_RUNTIME_PROVIDER=aws
-```
-
-- `supabase` é permitido em development, test e preview;
-- `aws` é obrigatório em staging e production;
-- qualquer consulta ao provider aplica a política de ambiente;
-- os clientes Supabase rejeitam execução no provider AWS;
-- combinação inválida falha fechado;
-- o provider AWS permanece `not_ready` enquanto sua arquitetura estiver pendente.
-
-A política está em `apps/web/lib/platform/runtime-provider.ts` e é validada por `npm run validate:platform-contract`.
-
-## Runtime Supabase/Vercel de teste
-
-O caminho funcional de desenvolvimento, teste e preview usa:
+O caminho funcional atual usa:
 
 - Supabase Auth e cookies SSR;
-- Supabase Storage;
-- Edge Function `authenticated-rpc`;
-- RPC/PostgREST;
-- Supabase PostgreSQL como estado operacional, event store e outbox;
-- Vercel somente para previews controlados;
-- adapter HTTP HubSpot sem autorização de produção.
+- Supabase PostgreSQL, Storage e Edge Functions;
+- gateway autenticado para RPCs;
+- Vercel para build e implantação web;
+- PostgreSQL como estado operacional, event store, auditoria e outbox.
 
-O gateway autenticado valida sessão, identidade interna e correspondência do ator, aplica allowlist, limita payload e timeout e sanitiza erros. Toda RPC usada pela aplicação deve estar coberta pelo gate `validate:rpc-gateway-coverage`.
+O gateway valida sessão, identidade interna, allowlist, tamanho, timeout e sanitização de erros. Erros de domínio seguros, como validações do score, são preservados como códigos sem expor detalhes internos.
 
-O ambiente de teste pode ser verificado sem mutações por:
+## Jornadas
 
-```bash
-npm run verify:supabase
-```
+Cada jornada possui um único registro operacional e dois estados visíveis, `draft` e `published`.
 
-A verificação consulta Auth, readiness do PostgreSQL e a proteção do gateway autenticado. Isso não constitui prova de produção.
+- publicação não clona conteúdo;
+- jornada publicada pode ser editada diretamente;
+- despublicação retorna a mesma jornada a rascunho e encerra acessos ativos conforme o contrato;
+- somente rascunhos podem ser excluídos;
+- nomes internos legados são mantidos apenas onde a compatibilidade relacional exige.
 
-## Estado AWS
+Consulte [`JOURNEY_LIFECYCLE.md`](../journeys/JOURNEY_LIFECYCLE.md).
 
-As únicas decisões aprovadas são:
+## Experiência web
 
-1. AWS será o ambiente definitivo de produção;
-2. a aplicação será empacotada por `Dockerfile.lambda`;
-3. Supabase e Vercel não podem ser usados como fallback ou produção oficial.
+- a tela de aula usa toda a largura disponível do layout participante, preservando a estrutura de conteúdo e índice lateral;
+- a navegação de toda a plataforma usa uma barra global de progresso;
+- skeletons de página foram removidos do carregamento inicial e das transições;
+- a área de Interface possui preview administrativo dedicado das páginas participantes;
+- o preview não depende de uma identidade participante e não grava dados.
 
-Entrada pública, identidade, banco, conexão, armazenamento, processamento assíncrono, rede, segredos, observabilidade, deploy e continuidade ainda precisam de ADR. Consulte [`AWS_ARCHITECTURE_STATUS.md`](../architecture/AWS_ARCHITECTURE_STATUS.md).
+Consulte [`INTERFACE_PREVIEW_AND_LOADING.md`](INTERFACE_PREVIEW_AND_LOADING.md).
 
-No provider AWS:
+## Score comportamental
 
-- `/api/health/live` pode apenas comprovar que o processo HTTP iniciou;
-- `/api/health/ready` retorna `503` com `aws_architecture_pending`;
-- autenticação protegida retorna indisponibilidade;
-- operações de dados e armazenamento não executam em Supabase;
-- nenhum serviço AWS específico é presumido pelo código ou documentação.
+O score é configurável por organização e aceita somente métricas e operações permitidas. A configuração controla fórmula, normalização, confiança, dimensões, pesos e classificações.
+
+Validação ocorre no editor, no gateway e no PostgreSQL. O banco impede:
+
+- peso total igual a zero;
+- códigos duplicados;
+- normalização invertida;
+- classificações fora de 0–100;
+- lacunas ou sobreposição entre faixas.
+
+Eventos brutos, configuração, valores intermediários, snapshots e histórico são preservados para análise e ETL. O score não interfere na experiência ou em crédito.
 
 ## Superfícies funcionais
 
 ### Participante
 
-- cadastro, aceite versionado de termos e política, confirmação e login;
-- recuperação e redefinição de senha sem revelar existência de conta;
-- conclusão de perfil com CPF protegido;
-- home, jornadas, atividades, diagnóstico, resultado, perfil, biblioteca e conquistas;
-- diagnóstico guiado, uma pergunta por etapa, com conclusão e visualização acessível dos resultados;
+- cadastro, autenticação, termos e perfil;
+- home, jornadas, aula, diagnóstico, resultado, biblioteca, entregas, recompensas e conquistas;
 - progresso, avaliações, práticas, comentários e arquivos;
-- pontos, recompensas, selos, certificados internos e credenciais externas;
-- ajuda global, página de suporte e textos legais operacionais.
+- pontos, selos, certificados e páginas B2B.
 
 ### Administração
 
-- entrada separada pelo provider de teste e OAuth corporativo;
-- contas `@estimulo.org` orientadas ao acesso federado, sem senha temporária;
-- organização interna e capacidades RBAC;
-- produto, jornadas, trilhas, aulas, diagnóstico, CMS, gamificação, engajamento, biblioteca, usuários, relatórios e operação;
-- templates persistentes de certificado e posicionamento visual;
-- arquivamento seguro de conteúdos de biblioteca e trilhas, preservando histórico e bloqueando dependências;
-- recuperação de acesso por e-mail para contas não federadas;
-- diferenciação explícita entre catálogo vazio e indisponibilidade do backend.
-
-A existência das telas não aprova conteúdo, metodologia, identidade institucional, privacidade ou integração externa para usuários reais.
-
-## Módulos principais
-
-```text
-apps/web/lib/platform/
-apps/web/lib/supabase/
-apps/web/lib/auth/
-apps/web/lib/identity/
-apps/web/lib/admin/
-apps/web/lib/diagnostics/
-apps/web/lib/journey-runtime/
-apps/web/lib/engagement/
-apps/web/lib/credentials/
-apps/web/lib/library/
-apps/web/lib/storage/
-apps/web/lib/hubspot/
-apps/web/lib/configurable-product/
-```
+- OAuth corporativo e RBAC;
+- jornadas, trilhas, aulas e conteúdos;
+- diagnóstico, CMS, biblioteca, campanhas, B2B, recompensas, certificados, usuários e relatórios;
+- editor do score comportamental;
+- preview isolado da interface;
+- auditoria e operações protegidas.
 
 ## Banco e integridade
 
-- `supabase/migrations/` é o único histórico executável;
-- `supabase/canonical-migrations/` contém baselines recuperadas e manifests;
-- replay estrutural não depende de conteúdo editorial, contas ou estado remoto não versionado;
-- correções de ambiente já migrado usam migrations aditivas e idempotentes;
-- testes comportamentais usam fixtures controladas depois do replay;
-- contratos públicos permanecem em `public-rpc-contracts-v1.json`;
-- após o replay, os gates aceitam somente suítes SQL de teste;
-- idempotência, constraints, RLS, RBAC e autorização devem ser provadas sob concorrência;
-- regras event-driven, templates de certificado e operações de arquivamento pertencem ao histórico canônico.
+- `supabase/migrations/` é o histórico executável;
+- migrations aplicadas não são editadas; correções são aditivas;
+- RLS, grants, idempotência e autorização são parte do contrato;
+- Edge Functions usam service role somente no servidor;
+- views analíticas não são expostas a `anon` ou `authenticated`;
+- replay e contratos do banco fazem parte do gate de release.
 
-A tecnologia e a operação do banco AWS ainda não estão decididas. Qualquer prova futura deve cobrir replay, equivalência, extensões, roles, grants, RLS, conexão, failover, backup e restore no desenho aprovado.
+## AWS
 
-## Container
-
-Existe somente `Dockerfile.lambda`. Ele:
-
-- usa Node.js 22 e Next.js standalone;
-- inclui AWS Lambda Web Adapter;
-- configura `APP_ENV=production` e `PLATFORM_RUNTIME_PROVIDER=aws`;
-- não incorpora configuração Supabase ou segredos;
-- usa `/api/health/live` para inicialização do processo;
-- preserva `/api/health/ready` como gate externo fail-closed;
-- usa `/tmp` apenas para cache descartável;
-- executa como usuário não-root.
-
-A imagem não define a arquitetura AWS ao redor da função.
+AWS continua sendo o destino institucional planejado. `Dockerfile.lambda` é o único artefato aprovado, mas não define entrada pública, identidade, banco, armazenamento, rede, segredos, observabilidade ou continuidade. O provider AWS permanece *fail-closed* até essas decisões.
 
 ## Validações permanentes
 
@@ -152,36 +102,12 @@ npm run test:secret-scanning
 npm run verify:supabase
 ```
 
-O CI também deve reconstruir o banco desde zero, construir e inspecionar a imagem e preservar evidências associadas ao mesmo SHA. O status de um candidato não é mantido manualmente neste documento.
-
-## Capacidade e performance
-
-O harness de carga produz throughput, taxa de erro e percentis. O cenário curto de `/api/health/live` valida o artefato e o processo HTTP sob limites definidos. Prontidão multiusuário requer, no ambiente AWS decidido:
-
-- leitura e escrita autenticadas;
-- diagnóstico e progresso concorrentes;
-- administração e publicação;
-- arquivos;
-- processamento assíncrono e integrações;
-- múltiplas organizações e testes negativos;
-- ramp, spike e soak;
-- métricas de memória, conexões, backlog, erros e custo.
-
-Resultados numéricos de um candidato ficam nos artefatos do workflow.
-
 ## Limites atuais
 
-Ainda não estão aprovados ou comprovados:
+Ainda dependem de decisão ou evidência adicional:
 
 - arquitetura AWS completa;
-- adapters e infraestrutura de produção;
-- E2E transacional no ambiente definitivo;
-- perfil de carga, limites e SLOs validados no ambiente final;
-- observabilidade e resposta a incidentes;
-- backup, restore e rollback;
-- operação institucional das chaves do CPF;
-- integração externa em sandbox e produção;
-- conteúdo e diagnóstico oficiais aprovados;
-- aprovações de segurança, privacidade e acessibilidade.
-
-O estado de liberação está em [`DELIVERY_BLOCKERS.md`](DELIVERY_BLOCKERS.md).
+- E2E transacional no ambiente AWS definitivo;
+- capacidade, SLOs, observabilidade e recuperação no ambiente final;
+- operação institucional de chaves e segredos;
+- aprovações formais de conteúdo, segurança, privacidade e acessibilidade.

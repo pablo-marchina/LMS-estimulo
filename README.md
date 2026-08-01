@@ -2,102 +2,73 @@
 
 LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdos e atividades e produzir dados educacionais e operacionais com governança.
 
-> **Ambientes:** Supabase e Vercel são exclusivos de desenvolvimento, teste e preview. A AWS permanece como ambiente definitivo de produção, mas sua arquitetura ainda não foi decidida. O único artefato AWS aprovado é [`Dockerfile.lambda`](Dockerfile.lambda); o runtime AWS permanece *fail-closed* e não pode receber usuários reais.
+> **Ambientes:** o runtime Supabase/Vercel está ativo para desenvolvimento, demonstração e validação controlada. A AWS continua sendo o destino institucional planejado para produção definitiva, mas sua arquitetura ainda depende de decisão e implementação. O único artefato AWS aprovado é [`Dockerfile.lambda`](Dockerfile.lambda), e esse runtime permanece *fail-closed*.
 
-[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Suíte de crescimento e engajamento](docs/implementation/PLATFORM_GROWTH_ENGAGEMENT_SUITE.md) · [Bloqueadores da entrega](docs/implementation/DELIVERY_BLOCKERS.md)
+[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Fundação atual](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Preview e carregamento](docs/implementation/INTERFACE_PREVIEW_AND_LOADING.md)
 
 ## Produto
 
-A Plataforma Estímulo reúne a experiência dos participantes e as ferramentas administrativas necessárias para publicar e operar jornadas. Definições editoriais são versionadas; execuções, entregas, pontos, eventos e auditoria preservam histórico.
+A plataforma reúne a experiência dos participantes e as ferramentas administrativas necessárias para criar, publicar e operar jornadas. Cada jornada é única e possui apenas dois estados visíveis: `draft` e `published`. Uma jornada publicada pode ser editada diretamente; conteúdo removido deixa de aparecer e os dados operacionais já registrados seguem suas próprias regras de retenção.
 
 ### Participantes
 
 - cadastro, confirmação, login e recuperação de senha;
-- aceite versionado de Termos de Uso e Política de Privacidade, inclusive nova aceitação obrigatória;
+- aceite de Termos de Uso e Política de Privacidade, inclusive nova aceitação obrigatória;
 - home, jornadas, aulas, biblioteca, perfil, diagnóstico principal e diagnósticos opcionais;
-- vídeos responsivos que nunca ultrapassam a tela em computador ou celular;
-- perguntas rápidas sem limite fixo por aula;
-- entregas vinculadas a atividades ou conteúdos exclusivos da biblioteca;
-- correção de entregas por IA em modo automático, revisão humana ou assistência ao avaliador;
-- pontos de engajamento, carteira de recompensas, catálogo, resgates e histórico;
-- páginas B2B visíveis somente a usuários ou grupos autorizados;
-- certificados com template global e sobrescrita por programa ou jornada;
+- aula responsiva em toda a largura disponível do layout participante;
+- barra global de progresso em navegações e carregamentos, sem skeletons de página;
+- perguntas rápidas, atividades práticas, entregas, comentários e arquivos;
+- pontos de engajamento, recompensas, selos e certificados;
+- páginas B2B visíveis somente a públicos autorizados;
 - ajuda e suporte configuráveis.
 
 ### Administração
 
 - entrada administrativa separada por OAuth corporativo e RBAC;
-- produto, jornadas, trilhas, aulas, conteúdos, diagnóstico principal e CMS da experiência;
-- criação e exclusão protegida de temas, usados por seleção múltipla em conteúdos e jornadas;
-- biblioteca com prévia real do participante sem progresso, pontos ou efeitos colaterais;
-- configurações gerais, contatos, documentos legais e exigência de nova aceitação;
-- campanhas e links UTM com destino pós-login, validade, público, parâmetros e etapas ignoráveis;
-- páginas B2B por blocos, grupos e concessões individuais;
-- recompensas físicas, digitais, experiências e serviços, com estoque, período, regulamento e fluxo de entrega;
-- entregas, rubricas, tentativas, notas e revisão da avaliação produzida por IA;
-- diagnósticos opcionais publicados no perfil sem alterar arquétipo ou elegibilidade de jornadas;
-- eventos comportamentais e score multidimensional exclusivamente analítico;
-- certificados e templates em imagem ou PDF;
-- usuários, permissões, auditoria e arquivamento seguro.
+- edição ao vivo de jornadas publicadas, trilhas, aulas e conteúdos;
+- publicação e despublicação da mesma jornada, sem criar versões editoriais paralelas;
+- exclusão permitida somente para jornadas em rascunho;
+- CMS da interface com prévia administrativa isolada para telas de participante e administrador;
+- prévia sem matrícula, progresso, analytics, eventos comportamentais, entregas ou score;
+- biblioteca, diagnóstico, campanhas, B2B, recompensas, certificados, usuários, permissões e auditoria;
+- score comportamental configurável com validação no cliente e no banco;
+- correção de entregas por IA com fallback obrigatório para revisão humana.
 
 ### Dados e integrações
 
 - PostgreSQL é a fonte operacional e histórica;
-- eventos, ledgers e trilhas de auditoria preservam fatos e movimentações;
-- integrações futuras consomem uma outbox genérica e incremental;
-- nenhum CRM ou destino externo é dependência do produto;
-- exportação ETL permanece desabilitada por padrão e exige consumidor, credenciais e destino explicitamente configurados;
-- score comportamental não altera navegação, acesso, recompensas, jornadas ou recomendações;
-- a captura comportamental começa na implantação da suíte e não reconstrói interações antigas.
+- eventos brutos, ledgers e trilhas de auditoria preservam fatos e movimentações;
+- score comportamental registra configuração, valores intermediários, snapshots e histórico para ETL;
+- o score é exclusivamente analítico e não altera acesso, recomendações, pontos, recompensas ou crédito;
+- integrações futuras consomem outbox genérica e incremental;
+- nenhum CRM ou destino externo é dependência do produto.
 
 ## Fundação técnica
 
-- monólito modular Next.js;
+- monólito modular Next.js 16, React 19 e TypeScript;
 - PostgreSQL reproduzível por migrations;
-- Supabase Auth, Storage e Edge Functions em desenvolvimento, teste e preview;
+- Supabase Auth, Storage, PostgreSQL e Edge Functions no runtime ativo;
+- Vercel para build e implantação do frontend atual;
 - RLS, RBAC, idempotência, auditoria, eventos e outbox;
-- RPCs `SECURITY DEFINER` com `search_path` fechado e gateway autenticado;
-- armazenamento protegido para certificados e evidências de entregas;
-- correção por IA com fallback obrigatório para revisão humana quando o provedor ou a evidência forem insuficientes;
+- RPCs privilegiadas com `search_path` fechado e gateway autenticado;
 - contratos e gates de qualidade, segurança, integridade e reprodutibilidade.
 
-A existência de uma tela, fluxo, contrato ou imagem não equivale à aprovação de conteúdo, metodologia, segurança, privacidade, acessibilidade ou operação em produção.
+A existência de uma tela, fluxo ou artefato não equivale à aprovação institucional de conteúdo, metodologia, segurança, privacidade, acessibilidade ou arquitetura AWS.
 
 ## Ambientes
 
-| Ambiente | Provider | Uso permitido |
+| Ambiente | Provider | Estado |
 |---|---|---|
-| `development` | `supabase` | desenvolvimento local |
-| `test` | `supabase` | CI e testes automatizados |
-| `preview` | `supabase` em Vercel | revisão controlada com dados de teste |
-| `staging` | `aws` | bloqueado até decisão e implementação da arquitetura |
-| `production` | `aws` | bloqueado até todos os gates de produção |
+| `development` | Supabase | ativo para desenvolvimento local |
+| `test` | Supabase | ativo para CI e testes automatizados |
+| `preview` | Supabase + Vercel | ativo para revisão controlada |
+| implantação web atual | Supabase + Vercel | operacional para demonstração e validação |
+| `staging` institucional | AWS | bloqueado até definição da arquitetura |
+| `production` institucional | AWS | bloqueado até conclusão dos gates finais |
 
-Supabase e Vercel não podem ser promovidos, renomeados ou tratados como produção oficial.
+Produção web atualmente publicada: `https://lms-estimulo-web.vercel.app/`.
 
-## Estado da AWS
-
-Decisões aprovadas:
-
-1. AWS será o ambiente definitivo de produção;
-2. a aplicação será empacotada por `Dockerfile.lambda`;
-3. o runtime de produção não pode depender de Supabase ou Vercel.
-
-Não foram decididos os serviços ou a topologia de entrada pública, identidade, banco, armazenamento, processamento assíncrono, rede, segredos, observabilidade, deploy, backup e recuperação.
-
-Consulte [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md). `/api/health/ready` retorna `503` com `aws_architecture_pending` enquanto essa decisão estiver aberta.
-
-## Stack
-
-| Camada | Tecnologias |
-|---|---|
-| aplicação | Next.js 16, React 19 e TypeScript |
-| interface | Tailwind CSS 4, Framer Motion e Lucide |
-| desenvolvimento/teste | Supabase Auth, PostgreSQL, Storage e Edge Functions |
-| preview | Vercel com provider Supabase |
-| empacotamento AWS aprovado | container Lambda em `Dockerfile.lambda` |
-| validação | Node Test Runner, gates de banco, contratos, typecheck, build e scans |
-| workspace | Node.js `22.23.1`, npm `10.9.8` e npm workspaces |
+Consulte [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md) para a distinção entre implantação operacional atual e arquitetura institucional definitiva.
 
 ## Desenvolvimento local
 
@@ -107,8 +78,8 @@ Consulte [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATU
 - Node.js `22.23.1`;
 - npm `10.9.8`;
 - projeto Supabase autorizado para teste;
-- Google OAuth configurado no ambiente de teste para validar a administração;
-- duas chaves independentes de 32 bytes, codificadas em Base64, para proteção do CPF.
+- Google OAuth configurado para administração;
+- duas chaves independentes de 32 bytes, em Base64, para proteção do CPF.
 
 ### Instalação
 
@@ -133,13 +104,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ETL_EXPORT_ENABLED=false
 ```
 
-A correção por IA permanece em revisão humana quando o provedor não estiver configurado. Nunca coloque segredos no browser ou em variáveis `NEXT_PUBLIC_*`.
-
-Gere duas chaves distintas para CPF e nunca as versione:
-
-```bash
-node -e "const { randomBytes } = require('node:crypto'); console.log(randomBytes(32).toString('base64'))"
-```
+Nunca coloque segredos no browser ou em variáveis `NEXT_PUBLIC_*`.
 
 ### Execução
 
@@ -150,29 +115,25 @@ npm run dev:web
 
 A aplicação ficará disponível em `http://localhost:3000`.
 
-### Verificação do Supabase de teste
+### Verificação do Supabase
 
 ```bash
 npm run verify:supabase
 ```
 
-A verificação é *read-only*: consulta Auth, readiness do PostgreSQL e proteção da Edge Function `authenticated-rpc`.
-
 ## Superfícies principais
 
-| Público | Administração |
+| Público/participante | Administração |
 |---|---|
-| `/empreendedor/biblioteca` | `/admin/biblioteca` |
+| `/` | `/admin` |
 | `/empreendedor/jornadas` | `/admin/produto` |
-| `/empreendedor/perfil` | `/admin/diagnostico` |
-| `/empreendedor/perfil/diagnosticos/...` | `/admin/diagnosticos-opcionais` |
-| `/empreendedor/entregas` | `/admin/entregas` |
-| `/empreendedor/recompensas` | `/admin/recompensas` |
-| `/empreendedor/b2b` | `/admin/b2b` |
-| links `/r/<slug>` | `/admin/campanhas` |
-| documentos legais obrigatórios | `/admin/configuracoes` |
-| certificados emitidos | `/admin/certificados` |
-| — | `/admin/comportamento` |
+| `/empreendedor/atividade/...` | `/admin/biblioteca` |
+| `/empreendedor/biblioteca` | `/admin/diagnostico` |
+| `/empreendedor/entregas` | `/admin/comportamento` |
+| `/empreendedor/recompensas` | `/admin/experiencia` |
+| `/empreendedor/perfil` | `/admin/configuracoes` |
+
+A rota `/interface-preview/participant` é interna, exige administrador autenticado e existe apenas para o preview isolado do CMS.
 
 ## Gates do software
 
@@ -189,46 +150,24 @@ npm run scan:secrets
 npm run test:secret-scanning
 ```
 
-O banco deve ser reconstruído desde zero. Nenhum workflow ou passo obrigatório pode estar ausente, cancelado, ignorado ou vermelho no SHA avaliado.
-
-## Capacidade
-
-```bash
-LOAD_TEST_BASE_URL=http://localhost:3000 \
-LOAD_TEST_PATH=/api/health/live \
-LOAD_TEST_CONCURRENCY=20 \
-LOAD_TEST_DURATION_SECONDS=8 \
-npm run test:capacity
-```
-
-O cenário de liveness valida o artefato e o harness. Produção multiusuário exige cenários autenticados e transacionais, ramp, spike e soak no ambiente AWS definido.
-
-## Release
-
-Existem dois gates:
-
-1. **software:** fonte, dependências, migrations, contratos, testes, build, imagem, scans e manifestos no mesmo SHA;
-2. **produção:** arquitetura AWS aprovada e implementada, E2E, isolamento, capacidade, segurança, observabilidade e continuidade.
-
-O primeiro não autoriza o segundo. Consulte o [runbook](docs/operations/FINAL_RELEASE_RUNBOOK.md) e os [bloqueadores](docs/implementation/DELIVERY_BLOCKERS.md).
+O banco deve ser reconstruível desde zero. Nenhum passo obrigatório pode estar ausente, cancelado, ignorado ou vermelho no SHA avaliado.
 
 ## Estrutura
 
 ```text
 apps/web/                       aplicação Next.js
-apps/web/lib/extensions/        gateway e runtime da suíte de extensões
+apps/web/lib/extensions/        gateway e runtime das extensões
 apps/web/lib/platform/          contratos e seleção do provider
-apps/web/lib/supabase/          adapter de desenvolvimento e testes
+apps/web/lib/supabase/          adapter Supabase
 config/platform/                fronteira legível por máquina
 docs/                           documentação canônica
 scripts/                        validação, testes, segurança e operação
 supabase/migrations/            histórico PostgreSQL executável
-supabase/functions/             funções do ambiente de teste
-Dockerfile.lambda               único artefato AWS aprovado
+supabase/functions/             Edge Functions
+docs/journeys/JOURNEY_LIFECYCLE.md
+Dockerfile.lambda               artefato AWS aprovado
 ```
-
-Não existe uma segunda imagem de aplicação nem infraestrutura AWS aprovada no repositório.
 
 ## Contribuição
 
-Não faça commits diretamente em `main`. Mantenha código, migrations, contratos, testes e documentação sincronizados; abra PR convencional e só faça merge depois de todos os workflows obrigatórios verdes no SHA final.
+O fluxo padrão continua sendo branch e pull request, com código, migrations, testes e documentação sincronizados. Alterações diretas em `main` são excepcionais e exigem autorização explícita do proprietário, seguida dos mesmos gates de validação e implantação.

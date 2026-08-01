@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, LogOut, Menu, Trophy, User, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
@@ -9,7 +10,6 @@ import { useInterfaceContent } from "@/components/interface-content-provider";
 import { InterfacePreviewBridge } from "@/components/interface-preview-bridge";
 import { InterfacePreviewGuard } from "@/components/interface-preview-guard";
 import { InterfaceSlot } from "@/components/interface-slot";
-import { ParticipantNavigationProgress } from "@/components/participant-navigation-progress";
 import { Button } from "@/components/ui/button";
 import { NavItem } from "@/components/ui/nav-item";
 import { interfaceHref, interfaceOrder, interfaceText, interfaceVisible } from "@/lib/interface-content/contracts";
@@ -27,10 +27,12 @@ const linkDefinitions = [
 ];
 
 export function ParticipantShell({ email, children, hasB2BAccess = false }: { email: string; children: React.ReactNode; hasB2BAccess?: boolean }) {
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const content = useInterfaceContent();
   const skipLabel = interfaceText(content, "shared.skip_to_content", "Pular para o conteúdo");
   const signOutLabel = interfaceText(content, "shared.sign_out", "Sair");
+  const wideLesson = pathname.startsWith("/empreendedor/atividade/");
   const links = linkDefinitions
     .filter((link) => link.contentKey === "participant.nav.home" || interfaceVisible(content, link.contentKey))
     .filter((link) => link.contentKey !== "participant.nav.b2b" || hasB2BAccess)
@@ -47,9 +49,8 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
     return <NavItem key={link.contentKey} href={link.href} exact={link.exact} variant="top" icon={<Icon size={20} strokeWidth={2.1} aria-hidden="true" />} interfaceContentKey={link.contentKey} className="min-h-11 gap-3 text-sm">{link.label}</NavItem>;
   });
 
-  return <div className="participant-stage min-h-screen bg-background">
+  return <div className="participant-stage min-h-screen bg-background" data-wide-lesson={wideLesson ? "true" : "false"}>
     <InterfacePreviewGuard />
-    <ParticipantNavigationProgress />
     <BehaviorEventTracker />
     <InterfacePreviewBridge />
     <a className="skip-link" href="#conteudo-principal" data-interface-content-key="shared.skip_to_content">{skipLabel}</a>
@@ -65,7 +66,13 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
       {mobileOpen ? <div id="participant-mobile-nav" className="border-t border-white/15 px-4 pb-4 lg:hidden"><nav className="grid gap-1 pt-3 sm:grid-cols-2">{mobileNav}</nav><div className="mt-3 flex items-center justify-between border-t border-white/15 pt-3"><span className="truncate text-xs text-white/70">{email}</span><form action={signOutAction} data-interface-content-key="shared.sign_out"><Button variant="ghost" size="sm" type="submit" className="!text-white hover:!bg-white/10">{signOutLabel}</Button></form></div></div> : null}
     </header>
     <InterfaceSlot area="participant" placement="before_content" />
-    <main id="conteudo-principal" className="mx-auto w-full max-w-[1400px]" tabIndex={-1}>{children}</main>
+    <main
+      id="conteudo-principal"
+      className={wideLesson ? "w-full min-w-0 max-w-none [&>div]:max-w-none" : "mx-auto w-full max-w-[1400px]"}
+      tabIndex={-1}
+    >
+      {children}
+    </main>
     <InterfaceSlot area="participant" placement="after_content" />
     <InterfaceSlot area="participant" placement="footer" />
   </div>;
