@@ -19,15 +19,16 @@ export async function unpublishJourneyAction(formData: FormData) {
   if (!organization?.permissions.includes("journey.definition.publish")) redirect("/admin/produto?erro=sem_permissao");
   if (text(formData, "confirm_unpublish") !== "true") redirect("/admin/produto?erro=confirmacao_obrigatoria");
 
-  let draftVersionId = "";
+  const journeyId = text(formData, "journey_id") || text(formData, "journey_version_id");
+  let draftJourneyId = journeyId;
   try {
     const result = await unpublishAdminJourneyToDraft({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId: organization.organization_id,
-      journeyVersionId: text(formData, "journey_version_id"),
+      journeyVersionId: journeyId,
       idempotencyKey: randomUUID(),
     });
-    draftVersionId = result.journey_version_id;
+    draftJourneyId = result.journey_version_id;
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
     const reason = raw.includes("FORBIDDEN") ? "sem_permissao" : raw.includes("NOT_FOUND") ? "publicacao_nao_encontrada" : "falha_voltar_rascunho";
@@ -36,5 +37,5 @@ export async function unpublishJourneyAction(formData: FormData) {
 
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
-  redirect(`/admin/produto?etapa=geral&versao=${draftVersionId}&sucesso=jornada_em_rascunho`);
+  redirect(`/admin/produto?etapa=geral&versao=${draftJourneyId}&sucesso=jornada_em_rascunho`);
 }

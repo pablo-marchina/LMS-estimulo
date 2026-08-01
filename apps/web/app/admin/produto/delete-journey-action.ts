@@ -19,17 +19,17 @@ export async function deleteJourneyAction(formData: FormData) {
   if (!organization?.permissions.includes("journey.definition.manage")) redirect("/admin/produto?erro=sem_permissao");
   if (text(formData, "confirm_delete") !== "true") redirect("/admin/produto?erro=confirmacao_obrigatoria");
 
-  const journeyVersionId = text(formData, "journey_version_id");
+  const journeyId = text(formData, "journey_id") || text(formData, "journey_version_id");
   try {
     await deleteAdminJourneyDraft({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId: organization.organization_id,
-      journeyVersionId,
+      journeyVersionId: journeyId,
       idempotencyKey: randomUUID(),
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
-    const reason = raw.includes("FORBIDDEN") ? "sem_permissao" : raw.includes("DRAFT_NOT_FOUND") ? "somente_rascunho" : "falha_excluir";
+    const reason = raw.includes("FORBIDDEN") ? "sem_permissao" : raw.includes("NOT_FOUND") ? "somente_rascunho" : "falha_exclusao";
     redirect(`/admin/produto?erro=${reason}`);
   }
 

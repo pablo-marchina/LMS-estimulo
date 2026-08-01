@@ -53,9 +53,9 @@ export async function saveJourneyAction(formData: FormData) {
   const description = text(formData, "description");
   const existingCode = text(formData, "definition_code");
   const code = existingCode || deriveCode(publicTitle, `jornada_${randomUUID().slice(0, 8)}`);
-  const versionId = nullable(formData, "version_id");
+  const journeyId = nullable(formData, "journey_id") ?? nullable(formData, "version_id");
   const themeIds = [...new Set(formData.getAll("theme_ids").map(String).filter(Boolean))];
-  let savedVersionId = versionId ?? "";
+  let savedJourneyId = journeyId ?? "";
   let liveUpdate = false;
   const previousConfiguration = configuration(formData);
   const previousPresentation = previousConfiguration.presentation && typeof previousConfiguration.presentation === "object" && !Array.isArray(previousConfiguration.presentation) ? previousConfiguration.presentation as Record<string, unknown> : {};
@@ -90,7 +90,8 @@ export async function saveJourneyAction(formData: FormData) {
       organizationId: organization.organization_id,
       payload: {
         definition_id: nullable(formData, "definition_id"),
-        version_id: versionId,
+        journey_id: journeyId,
+        version_id: journeyId,
         program_id: nullable(formData, "program_id"),
         code,
         slug: deriveCode(publicTitle, code).replaceAll("_", "-"),
@@ -110,13 +111,13 @@ export async function saveJourneyAction(formData: FormData) {
       payload: { journey_definition_id: result.definition_id, theme_ids: themeIds },
       idempotencyKey: `${commandKey}:themes`,
     });
-    savedVersionId = result.version_id;
+    savedJourneyId = (result as typeof result & { journey_id?: string }).journey_id ?? result.version_id;
     liveUpdate = result.live_update;
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
-    redirect(`/admin/produto?etapa=geral&versao=${versionId ?? ""}&erro=${reason}`);
+    redirect(`/admin/produto?etapa=geral&versao=${journeyId ?? ""}&erro=${reason}`);
   }
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
-  redirect(`/admin/produto?etapa=conteudo&versao=${savedVersionId}&sucesso=${liveUpdate ? "atualizado_ao_vivo" : "rascunho_salvo"}`);
+  redirect(`/admin/produto?etapa=conteudo&versao=${savedJourneyId}&sucesso=${liveUpdate ? "atualizado_ao_vivo" : "rascunho_salvo"}`);
 }
