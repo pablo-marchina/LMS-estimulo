@@ -13,7 +13,15 @@ export function InterfacePreviewGuard() {
       event.preventDefault();
       event.stopImmediatePropagation();
     };
+    const preventInteraction = (event: MouseEvent) => {
+      const element = event.target instanceof Element ? event.target : null;
+      if (!element || element.closest("[data-interface-content-key]")) return;
+      if (!element.closest("a, button, input, select, textarea, [role='button']")) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
     document.addEventListener("submit", preventSubmit, true);
+    document.addEventListener("click", preventInteraction, true);
 
     const originalFetch = window.fetch.bind(window);
     window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
@@ -60,6 +68,7 @@ export function InterfacePreviewGuard() {
     return () => {
       delete document.documentElement.dataset.interfacePreview;
       document.removeEventListener("submit", preventSubmit, true);
+      document.removeEventListener("click", preventInteraction, true);
       window.fetch = originalFetch;
       XMLHttpRequest.prototype.open = originalOpen;
       XMLHttpRequest.prototype.send = originalSend;
