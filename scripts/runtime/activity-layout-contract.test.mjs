@@ -49,7 +49,7 @@ test("participant screens use editorial names and compact spacing", async () => 
     read("apps/web/lib/content/display-name.ts"),
     read("apps/web/components/journey-progress-nav.tsx"),
     read("apps/web/app/empreendedor/resultado/page.tsx"),
-    read("supabase/migrations/20260801172000_fix_activity_feedback_quick_check_titles.sql"),
+    read("supabase/migrations/20260801202758_fix_activity_feedback_quick_check_titles.sql"),
   ]);
 
   assert.match(shell, /participant-density\.module\.css/);
