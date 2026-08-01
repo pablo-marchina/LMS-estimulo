@@ -35,6 +35,7 @@ test('new migrations have unique ordered versions', async () => {
     '20260731221300_behavior_score_calculation.sql',
     '20260731221400_behavior_score_runtime_integration.sql',
     '20260731221500_public_landing_journey.sql',
+    '20260731221600_filter_public_landing_journey.sql',
   ]);
 });
 
@@ -74,8 +75,11 @@ test('behavior score is editable, continuous and ETL ready', async () => {
 });
 
 test('landing uses the approved copy and no OpenAI promotion', async () => {
-  const landing = await read('apps/web/app/page.tsx');
-  const publicJourneyMigration = await read('supabase/migrations/20260731221500_public_landing_journey.sql');
+  const [landing, publicJourneyMigration, filterMigration] = await Promise.all([
+    read('apps/web/app/page.tsx'),
+    read('supabase/migrations/20260731221500_public_landing_journey.sql'),
+    read('supabase/migrations/20260731221600_filter_public_landing_journey.sql'),
+  ]);
 
   assert.match(landing, /Seu negócio evolui\. A forma de aprender também\./);
   assert.match(landing, /Conhecimento que vira resultado no seu negócio\./);
@@ -86,4 +90,5 @@ test('landing uses the approved copy and no OpenAI promotion', async () => {
   assert.doesNotMatch(landing, /OpenAI/i);
   assert.match(publicJourneyMigration, /get_public_landing_journey/);
   assert.match(publicJourneyMigration, /jv\.status='published'/);
+  assert.match(filterMigration, /not like '%openai%'/i);
 });
