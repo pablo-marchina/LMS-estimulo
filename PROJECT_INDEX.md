@@ -107,6 +107,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Configuração de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
 - [Baseline de qualidade](docs/operations/PRODUCTION_QUALITY_BASELINE.md)
 - [Runbook do release final](docs/operations/FINAL_RELEASE_RUNBOOK.md)
+- [Backlog dos advisors do banco](docs/operations/DATABASE_ADVISOR_BACKLOG.md)
 - [Arquitetura de segurança e privacidade](docs/security/SECURITY_PRIVACY_ARCHITECTURE.md)
 - [Classificação e tratamento de dados](docs/security/DATA_CLASSIFICATION_AND_HANDLING.md)
 - [Retenção, exclusão e legal hold](docs/security/RETENTION_DELETION_LEGAL_HOLD.md)
