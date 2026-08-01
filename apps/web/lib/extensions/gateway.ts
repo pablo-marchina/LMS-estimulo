@@ -1,6 +1,12 @@
 import "server-only";
 
+import { cookies, headers } from "next/headers";
 import { publicSupabaseEnv } from "@/lib/env";
+import {
+  INTERFACE_PREVIEW_COOKIE,
+  INTERFACE_PREVIEW_REQUEST_HEADER,
+  parseInterfacePreviewIdentity,
+} from "@/lib/interface-preview/constants";
 import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -24,7 +30,14 @@ function configuredInteger(name: string, fallback: number, minimum: number, maxi
   return value;
 }
 
-export async function invokeExtensionsGateway<T>(name: string, args: Record<string, unknown>): Promise<T> {
+async function previewIdentity() {
+  const requestHeaders = await headers();
+  if (requestHeaders.get(INTERFACE_PREVIEW_REQUEST_HEADER) !== "1") return null;
+  const cookieStore = await cookies();
+  return parseInterfacePreviewIdentity(cookieStore.get(INTERFACE_PREVIEW_COOKIE)?.value);
+}
+
+export async function invokePlatformExtensionsGateway<T>(name: string, args: Record<string, unknown>): Promise<T> {
   if (platformRuntimeProvider() !== "supabase") {
     throw new ExtensionsGatewayError("AWS_DATA_ARCHITECTURE_PENDING", "The AWS data architecture is pending approval.");
   }
@@ -75,4 +88,18 @@ export async function invokeExtensionsGateway<T>(name: string, args: Record<stri
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function invokeExtensionsGateway<T>(name: string, args: Record<string, unknown>): Promise<T> {
+  const preview = await previewIdentity();
+  if (preview && name === "get_participant_extensions") {
+    return invokePlatformExtensionsGateway<T>("preview_participant_extensions", {
+      p_organization_id: preview.organizationId,
+      p_preview_user_account_id: preview.participantUserAccountId,
+    });
+  }
+  if (preview && name === "perform_participant_extension") {
+    throw new ExtensionsGatewayError("INTERFACE_PREVIEW_WRITE_BLOCKED", "Preview requests are read-only.");
+  }
+  return invokePlatformExtensionsGateway<T>(name, args);
 }
