@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { publishAdminJourney } from "@/lib/admin/product-management";
+import { publishAdminJourneyVersion } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
@@ -19,23 +19,31 @@ export async function publishJourneyAction(formData: FormData) {
   if (!organization?.permissions.includes("journey.definition.publish")) redirect("/admin/produto?erro=sem_permissao");
 
   const journeyId = text(formData, "journey_id") || text(formData, "journey_version_id");
-  let publishedId = journeyId;
+  const contentHash = text(formData, "content_hash");
+  const back = `/admin/produto?etapa=publicacao&versao=${journeyId}`;
+  if (!journeyId || !contentHash) redirect(`${back}&erro=campos_incompletos`);
+
   try {
-    const result = await publishAdminJourney({
+    await publishAdminJourneyVersion({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId: organization.organization_id,
       journeyVersionId: journeyId,
-      contentHash: text(formData, "content_hash"),
+      expectedContentHash: contentHash,
       idempotencyKey: randomUUID(),
     });
-    publishedId = result.journey_version_id;
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
-    const reason = raw.includes("FORBIDDEN") ? "sem_permissao" : raw.includes("PATH_GRAPH") ? "grafo_invalido" : raw.includes("STALE_REVISION") ? "conteudo_desatualizado" : "falha_publicacao";
-    redirect(`/admin/produto?etapa=publicacao&versao=${journeyId}&erro=${reason}`);
+    const reason = raw.includes("FORBIDDEN")
+      ? "sem_permissao"
+      : raw.includes("CONTENT_HASH_CONFLICT")
+        ? "conteudo_desatualizado"
+        : raw.includes("INCOMPLETE") || raw.includes("REQUIRED") || raw.includes("INVALID")
+          ? "jornada_incompleta"
+          : "falha_publicacao";
+    redirect(`${back}&erro=${reason}`);
   }
 
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
-  redirect(`/admin/produto?etapa=publicacao&versao=${publishedId}&sucesso=jornada_publicada`);
+  redirect(`${back}&sucesso=jornada_publicada`);
 }
