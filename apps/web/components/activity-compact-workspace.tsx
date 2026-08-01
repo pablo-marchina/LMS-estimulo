@@ -35,7 +35,6 @@ export function ActivityCompactWorkspace() {
   const [available, setAvailable] = useState<SectionId[]>([]);
   const [active, setActive] = useState<SectionId>("conteudo");
   const rootRef = useRef<HTMLElement | null>(null);
-  const mainRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const root = document.querySelector<HTMLElement>("[data-activity-workspace]");
@@ -43,7 +42,6 @@ export function ActivityCompactWorkspace() {
     if (!root || !main) return;
 
     rootRef.current = root;
-    mainRef.current = main;
 
     const detected = sectionDefinitions
       .filter((section) => root.querySelector(`#${section.id}`))
@@ -63,7 +61,7 @@ export function ActivityCompactWorkspace() {
       const next = sectionFromLocation(detected);
       setActive(next);
       root.dataset.activeSection = next;
-      main.scrollTo({ top: 0, behavior: "smooth" });
+      root.scrollIntoView({ block: "start", behavior: "smooth" });
     };
 
     window.addEventListener("hashchange", syncHash);
@@ -72,7 +70,6 @@ export function ActivityCompactWorkspace() {
       mount.remove();
       delete root.dataset.activeSection;
       rootRef.current = null;
-      mainRef.current = null;
     };
   }, []);
 
@@ -82,7 +79,7 @@ export function ActivityCompactWorkspace() {
     const url = new URL(window.location.href);
     url.hash = section;
     window.history.replaceState(window.history.state, "", url);
-    mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    rootRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
@@ -106,7 +103,7 @@ export function ActivityCompactWorkspace() {
       role="tablist"
       aria-label="Etapas da aula"
       onKeyDown={handleKeyDown}
-      className="sticky top-0 z-20 mb-3 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-white/95 p-1.5 shadow-sm backdrop-blur sm:flex"
+      className="sticky top-16 z-20 mb-3 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-white/95 p-1.5 shadow-sm backdrop-blur sm:flex"
     >
       {sectionDefinitions.filter((section) => available.includes(section.id)).map((section) => {
         const Icon = section.icon;
