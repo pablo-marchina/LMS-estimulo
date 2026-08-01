@@ -23,11 +23,11 @@ export function InterfacePreviewBridge() {
 
       event.preventDefault();
       event.stopPropagation();
-      window.parent.postMessage({ type: SELECT_MESSAGE, contentKey }, window.location.origin);
+      window.parent.postMessage({ type: SELECT_MESSAGE, contentKey, pathname: window.location.pathname }, window.location.origin);
     };
 
     document.addEventListener("click", handleClick, true);
-    window.parent.postMessage({ type: "estimulo:interface-preview-ready" }, window.location.origin);
+    window.parent.postMessage({ type: "estimulo:interface-preview-ready", pathname: window.location.pathname }, window.location.origin);
 
     return () => {
       document.removeEventListener("click", handleClick, true);
