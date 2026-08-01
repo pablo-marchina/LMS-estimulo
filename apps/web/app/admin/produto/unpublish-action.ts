@@ -37,5 +37,5 @@ export async function unpublishJourneyAction(formData: FormData) {
 
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
-  redirect(`/admin/produto?etapa=geral&jornada=${draftJourneyId}&sucesso=jornada_em_rascunho`);
+  redirect(`/admin/produto?etapa=geral&versao=${draftJourneyId}&sucesso=jornada_em_rascunho`);
 }
