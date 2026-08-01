@@ -36,6 +36,7 @@ test('new migrations have unique ordered versions', async () => {
     '20260731221400_behavior_score_runtime_integration.sql',
     '20260731221500_public_landing_journey.sql',
     '20260731221600_filter_public_landing_journey.sql',
+    '20260731221700_behavior_score_fk_indexes.sql',
   ]);
 });
 
@@ -56,11 +57,12 @@ test('participant preview is isolated and navigation has progress feedback', asy
   assert.match(progress, /role="progressbar"/);
 });
 
-test('behavior score is editable, continuous and ETL ready', async () => {
-  const [schema, calculation, integration, editor] = await Promise.all([
+test('behavior score is editable, continuous, indexed and ETL ready', async () => {
+  const [schema, calculation, integration, indexes, editor] = await Promise.all([
     read('supabase/migrations/20260731221200_behavior_score_configuration_schema.sql'),
     read('supabase/migrations/20260731221300_behavior_score_calculation.sql'),
     read('supabase/migrations/20260731221400_behavior_score_runtime_integration.sql'),
+    read('supabase/migrations/20260731221700_behavior_score_fk_indexes.sql'),
     read('apps/web/components/behavior-score-editor.tsx'),
   ]);
 
@@ -70,6 +72,8 @@ test('behavior score is editable, continuous and ETL ready', async () => {
   assert.match(calculation, /behavior_score_history/);
   assert.match(integration, /p_action='behavior_event'/);
   assert.match(integration, /behavior_score_etl/);
+  assert.match(indexes, /ix_behavior_score_history_configuration/);
+  assert.match(indexes, /ix_behavior_score_snapshots_score_version/);
   assert.match(editor, /Dimensões e pesos/);
   assert.match(editor, /Faixas de classificação/);
 });
