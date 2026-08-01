@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Award, Check } from "lucide-react";
 import { issueLearningCredentialsAction } from "@/app/actions/journey";
-import { DiagnosticDimensionChart } from "@/components/diagnostic-dimension-chart";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
@@ -12,7 +11,7 @@ import { MetricTile } from "@/components/ui/metric-tile";
 import { PageHeader } from "@/components/ui/page-header";
 import { getAuthContext } from "@/lib/auth/context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
-import { engagementRuntime } from "@/lib/engagement/runtime";
+import { displayContentName } from "@/lib/content/display-name";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { participantNextHref, statusLabel } from "@/lib/journey-runtime/navigation";
 
@@ -36,17 +35,17 @@ export default async function ResultPage({
 
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const [state, credentials, diagnosticSummary] = await Promise.all([
+  const [state, credentials] = await Promise.all([
     journeyRuntime.getParticipantState(auth.identity.user_account_id, journey),
     credentialRuntime.listParticipant(auth.identity.user_account_id).catch(() => ({ entrepreneur_id: null, badges: [], certificates: [] })),
-    engagementRuntime.participantDiagnosticSummary(auth.identity.user_account_id).catch(() => ({ diagnostic_name: null, completed_at: null, dimensions: [] })),
   ]);
   const badges = credentials.badges.filter((item) => item.journey_instance_id === journey);
   const certificates = credentials.certificates.filter((item) => item.journey_instance_id === journey);
+  const journeyTitle = displayContentName(state.journey_title, displayContentName(state.journey_code, "Jornada"));
 
   return (
     <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-      <PageHeader eyebrow="Resultado da jornada" title={state.journey_title ?? state.journey_code} description="Acompanhe o que foi registrado durante sua experiência de aprendizagem." />
+      <PageHeader eyebrow="Resultado da jornada" title={journeyTitle} description="Acompanhe o que foi registrado durante sua experiência de aprendizagem." />
       <JourneyProgressNav state={state} current="result" />
 
       {query.diagnostico === "concluido" ? (
@@ -64,17 +63,6 @@ export default async function ResultPage({
       </section>
 
       <ProgressMeter value={state.progress} label="Progresso total" />
-
-      {diagnosticSummary.dimensions.length ? (
-        <Card className="after:!hidden" aria-labelledby="diagnostico-empreendedor-resultado">
-          <div>
-            <p className="brand-kicker">Seu momento</p>
-            <h2 id="diagnostico-empreendedor-resultado" className="display-font mt-1 text-2xl text-secondary">Diagnóstico empreendedor</h2>
-            <p className="mt-2 text-sm text-muted">As barras ajudam a identificar pontos fortes e oportunidades de evolução sem expor pesos ou regras internas de classificação.</p>
-          </div>
-          <DiagnosticDimensionChart dimensions={diagnosticSummary.dimensions} />
-        </Card>
-      ) : null}
 
       <StatusPanel title="Como interpretar estes dados" tone="info">
         <p>Conclusão, respostas e pontos são evidências da jornada de aprendizagem. A plataforma não os apresenta como score, risco ou decisão de crédito sem validação institucional específica.</p>
