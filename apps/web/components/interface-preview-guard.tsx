@@ -35,12 +35,10 @@ export function InterfacePreviewGuard() {
       this: XMLHttpRequest,
       method: string,
       url: string | URL,
-      async = true,
-      username?: string | null,
-      password?: string | null,
+      ...rest: unknown[]
     ) {
       if (!["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())) blocked.add(this);
-      return originalOpen.call(this, method, url, async, username ?? null, password ?? null);
+      return Reflect.apply(originalOpen, this, [method, url, ...rest]);
     }) as typeof XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.send = (function previewSend(
       this: XMLHttpRequest,
