@@ -8,7 +8,9 @@ import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 
-function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").tri(); }
+function text(formData: FormData, name: string) {
+  return String(formData.get(name) ?? "").trim();
+}
 
 export async function deleteJourneyAction(formData: FormData) {
   const auth = await getAuthContext();
