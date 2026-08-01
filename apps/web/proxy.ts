@@ -5,6 +5,7 @@ import {
   decodeLocalAdminCallback,
 } from "@/lib/auth/admin-oauth-bridge-core.mjs";
 import { encodeFirstTouch, FIRST_TOUCH_COOKIE, firstTouchFromUrl } from "@/lib/auth/first-touch";
+import { INTERFACE_PREVIEW_REQUEST_HEADER } from "@/lib/interface-preview/constants";
 import { assertPlatformRuntimePolicy } from "@/lib/platform/runtime-provider";
 
 const requestIdPattern = /^[A-Za-z0-9._:-]{1,128}$/u;
@@ -15,9 +16,16 @@ function requestId(request: NextRequest): string {
   return requestIdPattern.test(candidate) ? candidate : crypto.randomUUID();
 }
 
+function isParticipantPreviewRequest(request: NextRequest): boolean {
+  return request.nextUrl.pathname.startsWith("/empreendedor")
+    && request.nextUrl.searchParams.get("interface_preview") === "1";
+}
+
 function nextResponse(request: NextRequest, id: string): NextResponse {
   const headers = new Headers(request.headers);
   headers.set("x-request-id", id);
+  if (isParticipantPreviewRequest(request)) headers.set(INTERFACE_PREVIEW_REQUEST_HEADER, "1");
+  else headers.delete(INTERFACE_PREVIEW_REQUEST_HEADER);
   return NextResponse.next({ request: { headers } });
 }
 
@@ -111,9 +119,6 @@ export async function proxy(request: NextRequest) {
     return finalize(unavailable("runtime_policy_rejected"), id, startedAt);
   }
 
-  // The definitive AWS identity and session architecture has not been selected.
-  // Protected traffic remains unavailable instead of inferring a service or using
-  // the Supabase preview provider as a production fallback.
   if (provider === "aws") {
     return finalize(unavailable("aws_identity_architecture_pending"), id, startedAt);
   }
