@@ -8,10 +8,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
 
 test("activity route uses compact tabs without trapping vertical scroll", async () => {
-  const [layout, stylesheet, workspace] = await Promise.all([
+  const [layout, stylesheet, workspace, actions] = await Promise.all([
     read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.tsx"),
     read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css"),
     read("apps/web/components/activity-compact-workspace.tsx"),
+    read("apps/web/app/actions/journey.ts"),
   ]);
 
   assert.match(layout, /ActivityCompactWorkspace/);
@@ -28,6 +29,9 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
   assert.match(workspace, /scrollIntoView/);
   assert.doesNotMatch(workspace, /main\.scrollTo/);
   assert.match(workspace, /sticky top-16/);
+
+  assert.match(actions, /utilidade=registrada#conteudo/);
+  assert.doesNotMatch(actions, /utilidade=registrada#utilidade/);
 
   assert.match(stylesheet, /grid-template-columns: minmax\(0, 1fr\) 18rem/);
   assert.match(stylesheet, /data-active-section="conteudo"/);
@@ -52,6 +56,8 @@ test("participant screens use editorial names and compact spacing", async () => 
   assert.doesNotMatch(shell, /<style>/);
   assert.match(density, /#conteudo-principal/);
   assert.match(density, /gap-8/);
+  assert.match(density, /brand-featured-journey/);
+  assert.match(density, /aspect-ratio: 16 \/ 9/);
   assert.match(names, /replaceAll\("_", " "\)/);
   assert.match(progress, /outline\?\.journey_title/);
   assert.match(progress, /displayContentName/);
