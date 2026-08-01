@@ -68,25 +68,39 @@ const platformResources = [
   "Ferramentas práticas para aplicar no dia a dia",
 ];
 
+function landingJourney(value: unknown): LandingJourney | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return typeof (value as { title?: unknown }).title === "string" ? value as LandingJourney : null;
+}
+
 async function getLandingJourney(): Promise<LandingJourney | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
 
   try {
-    const response = await fetch(`${url}/rest/v1/rpc/get_public_landing_journey`, {
-      method: "POST",
-      headers: {
-        apikey: key,
-        authorization: `Bearer ${key}`,
-        "content-type": "application/json",
-      },
-      body: "{}",
-      next: { revalidate: 300 },
-    });
-    if (!response.ok) return null;
-    const value = await response.json() as unknown;
-    return value && typeof value === "object" && !Array.isArray(value) ? value as LandingJourney : null;
+    if (url && key) {
+      const directResponse = await fetch(`${url}/rest/v1/rpc/get_public_landing_journey`, {
+        method: "POST",
+        headers: {
+          apikey: key,
+          authorization: `Bearer ${key}`,
+          "content-type": "application/json",
+        },
+        body: "{}",
+        next: { revalidate: 300 },
+      });
+      if (directResponse.ok) {
+        const directJourney = landingJourney(await directResponse.json());
+        if (directJourney) return directJourney;
+      }
+    }
+
+    const edgeResponse = await fetch(
+      "https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/public-landing-journey",
+      { next: { revalidate: 300 } },
+    );
+    if (!edgeResponse.ok) return null;
+    return landingJourney(await edgeResponse.json());
   } catch {
     return null;
   }
