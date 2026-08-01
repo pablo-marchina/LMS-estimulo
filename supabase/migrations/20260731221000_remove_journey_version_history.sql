@@ -97,10 +97,16 @@ delete from orchestration.path_templates where id in (select id from _journey_ob
 delete from experience.admin_content_revisions where resource_type='journey_version';
 delete from catalog.journey_versions where id in (select id from _journey_obsolete);
 
-update catalog.journey_versions set version_number=1,retired_at=null where version_number<>1;
-drop index if exists catalog.uq_catalog_journey_versions_journey_definition_id_v_2e8961d1;
-drop index if exists catalog.uq_catalog_journey_versions_journey_definition_id_c_280c122a;
-alter table catalog.journey_versions drop constraint if exists ck_catalog_journey_versions_version_number_single;
+update catalog.journey_versions
+set version_number=1,retired_at=null
+where version_number<>1 or retired_at is not null;
+
+alter table catalog.journey_versions
+  drop constraint if exists uq_catalog_journey_versions_journey_definition_id_v_2e8961d1;
+alter table catalog.journey_versions
+  drop constraint if exists uq_catalog_journey_versions_journey_definition_id_c_280c122a;
+alter table catalog.journey_versions
+  drop constraint if exists ck_catalog_journey_versions_version_number_single;
 alter table catalog.journey_versions
   add constraint ck_catalog_journey_versions_version_number_single check(version_number=1);
 create unique index if not exists uq_catalog_single_journey_per_definition
