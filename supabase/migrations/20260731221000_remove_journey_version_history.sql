@@ -1,5 +1,7 @@
 begin;
 
+select set_config('app.admin_live_edit','on',true);
+
 create temporary table _journey_canonical on commit drop as
 select journey_definition_id,id as journey_id
 from (
