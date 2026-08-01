@@ -23,6 +23,8 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
   assert.match(workspace, /aria-selected=\{selected\}/);
   assert.match(workspace, /createPortal/);
   assert.match(workspace, /sectionFromLocation/);
+  assert.match(workspace, /a\[href\^='#'\]/);
+  assert.match(workspace, /event\.preventDefault\(\)/);
   assert.match(workspace, /scrollIntoView/);
   assert.doesNotMatch(workspace, /main\.scrollTo/);
   assert.match(workspace, /sticky top-16/);
@@ -34,4 +36,28 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
   assert.doesNotMatch(stylesheet, /height: calc\(100dvh - 4rem\)/);
   assert.doesNotMatch(stylesheet, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
   assert.doesNotMatch(stylesheet, /300px/);
+});
+
+test("participant screens use editorial names and compact spacing", async () => {
+  const [shell, density, names, progress, result, migration] = await Promise.all([
+    read("apps/web/components/participant-shell.tsx"),
+    read("apps/web/components/participant-density.module.css"),
+    read("apps/web/lib/content/display-name.ts"),
+    read("apps/web/components/journey-progress-nav.tsx"),
+    read("apps/web/app/empreendedor/resultado/page.tsx"),
+    read("supabase/migrations/20260801172000_fix_activity_feedback_quick_check_titles.sql"),
+  ]);
+
+  assert.match(shell, /participant-density\.module\.css/);
+  assert.doesNotMatch(shell, /<style>/);
+  assert.match(density, /#conteudo-principal/);
+  assert.match(density, /gap-8/);
+  assert.match(names, /replaceAll\("_", " "\)/);
+  assert.match(progress, /outline\?\.journey_title/);
+  assert.match(progress, /displayContentName/);
+  assert.doesNotMatch(result, /Seu momento/);
+  assert.doesNotMatch(result, /Diagnóstico empreendedor/);
+  assert.match(migration, /'journey_title'/);
+  assert.match(migration, /activity_asset_progress/);
+  assert.doesNotMatch(migration, /sections'\)::integer<>4/);
 });
