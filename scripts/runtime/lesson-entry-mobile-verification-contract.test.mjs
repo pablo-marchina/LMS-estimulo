@@ -35,7 +35,7 @@ test("mobile participant menu retracts on selection and route changes", async ()
 });
 
 test("quick-check state is scoped to the currently focused lesson", async () => {
-  const migration = await read("supabase/migrations/20260802175600_scope_quick_check_to_current_lesson.sql");
+  const migration = await read("supabase/migrations/20260802180651_scope_quick_check_to_current_lesson.sql");
 
   assert.match(migration, /create or replace function app_private\.e14_state_check\(a uuid\)/);
   assert.match(migration, /app_private\.e14_state_step\(a\)->>'step_instance_id'/);
