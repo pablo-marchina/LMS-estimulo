@@ -17,6 +17,7 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
 
   assert.match(layout, /ActivityCompactWorkspace/);
   assert.match(layout, /data-activity-workspace/);
+  assert.match(layout, /data-activity-page/);
   assert.match(layout, /data-active-section="conteudo"/);
   assert.doesNotMatch(layout, /<style>/);
 
@@ -25,6 +26,8 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
   assert.match(workspace, /createPortal/);
   assert.match(workspace, /sectionFromLocation/);
   assert.match(workspace, /a\[href\^='#'\]/);
+  assert.match(workspace, /root\.addEventListener\("click"/);
+  assert.doesNotMatch(workspace, /document\.addEventListener\("click"/);
   assert.match(workspace, /event\.preventDefault\(\)/);
   assert.match(workspace, /scrollIntoView/);
   assert.doesNotMatch(workspace, /main\.scrollTo/);
@@ -33,10 +36,13 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
   assert.match(actions, /utilidade=registrada#conteudo/);
   assert.doesNotMatch(actions, /utilidade=registrada#utilidade/);
 
+  assert.match(stylesheet, /\.activityPage/);
+  assert.match(stylesheet, /div:has\(> main \+ aside\)/);
   assert.match(stylesheet, /grid-template-columns: minmax\(0, 1fr\) 18rem/);
   assert.match(stylesheet, /data-active-section="conteudo"/);
   assert.match(stylesheet, /nav\[aria-label="Índice da aula"\]/);
   assert.match(stylesheet, /overflow: visible/);
+  assert.doesNotMatch(stylesheet, /\.grid\.items-start\.gap-5/);
   assert.doesNotMatch(stylesheet, /height: calc\(100dvh - 4rem\)/);
   assert.doesNotMatch(stylesheet, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
   assert.doesNotMatch(stylesheet, /300px/);
