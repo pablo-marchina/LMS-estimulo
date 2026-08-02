@@ -113,7 +113,14 @@ As verificações permanentes cobrem:
 - títulos editoriais e remoção do diagnóstico duplicado;
 - validação completa da configuração do score;
 - consumo de eventos de domínio, trigger único e recálculo segmentado;
-- fronteira e ordem das migrations.
+- fronteira e ordem das migrations, incluindo todas as etapas intermediárias aplicadas.
+
+## Fechamento da auditoria
+
+- A última migration auditada é `20260802153507_finalize_behavior_score_event_pipeline`.
+- A migration intermediária `20260801165054_fix_activity_rating_and_quick_check` permanece explicitamente exigida pelo validador de histórico.
+- Não existem rotas temporárias de auditoria no artefato final.
+- Resultados específicos de build, SHA e deployment permanecem nos artefatos operacionais, não neste documento permanente.
 
 ## Fonte de verdade
 
