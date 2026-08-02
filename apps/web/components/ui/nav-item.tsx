@@ -13,6 +13,7 @@ export function NavItem({
   exact = false,
   className,
   interfaceContentKey,
+  onNavigate,
 }: {
   href: string;
   children: ReactNode;
@@ -21,6 +22,7 @@ export function NavItem({
   exact?: boolean;
   className?: string;
   interfaceContentKey?: string;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const isActive = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -30,6 +32,7 @@ export function NavItem({
       href={href}
       aria-current={isActive ? "page" : undefined}
       data-interface-content-key={interfaceContentKey}
+      onClick={onNavigate}
       className={cn(
         "focus-ring flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-[background-color,color,transform] duration-150",
         variant === "dark"
