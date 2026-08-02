@@ -6,9 +6,11 @@
   background: var(--color-background);
 }
 
-.activityLayout > div {
+.activityPage,
+.activityPage > div {
   box-sizing: border-box;
-  width: 100% !important;
+  width: 100%;
+  min-width: 0;
   max-width: none !important;
   margin-inline: 0 !important;
 }
@@ -68,7 +70,7 @@
     overflow: visible;
   }
 
-  .activityLayout > div {
+  .activityPage > div {
     display: grid !important;
     min-height: 0 !important;
     grid-template-rows: auto auto auto !important;
@@ -77,7 +79,7 @@
     padding: 0.75rem 1rem 1.25rem !important;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) {
+  .activityPage > div > :global(div:has(> main + aside)) {
     display: grid !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -88,7 +90,7 @@
     overflow: visible;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) > main {
+  .activityPage > div > :global(div:has(> main + aside)) > main {
     display: grid !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -99,7 +101,7 @@
     padding-right: 0;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) > aside {
+  .activityPage > div > :global(div:has(> main + aside)) > aside {
     position: sticky !important;
     top: 5rem !important;
     inset-inline: auto !important;
@@ -116,22 +118,22 @@
     scrollbar-gutter: stable;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) > aside > :global(nav[aria-label="Índice da aula"]) {
+  .activityPage > div > :global(div:has(> main + aside)) > aside > :global(nav[aria-label="Índice da aula"]) {
     display: none !important;
   }
 
-  .activityLayout > div > :last-child {
+  .activityPage > div > :last-child {
     min-height: 2.75rem;
     padding-top: 0.625rem !important;
   }
 }
 
 @media (max-width: 1199px) {
-  .activityLayout > div {
+  .activityPage > div {
     padding: 0.75rem !important;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) {
+  .activityPage > div > :global(div:has(> main + aside)) {
     display: flex !important;
     width: 100% !important;
     min-width: 0 !important;
@@ -141,27 +143,27 @@
     gap: 0.75rem !important;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) > main,
-  .activityLayout > div > :global(.grid.items-start.gap-5) > aside {
+  .activityPage > div > :global(div:has(> main + aside)) > main,
+  .activityPage > div > :global(div:has(> main + aside)) > aside {
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) > aside {
+  .activityPage > div > :global(div:has(> main + aside)) > aside {
     position: static !important;
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 0.75rem !important;
   }
 
-  .activityLayout > div > :global(.grid.items-start.gap-5) > aside > :global(nav[aria-label="Índice da aula"]) {
+  .activityPage > div > :global(div:has(> main + aside)) > aside > :global(nav[aria-label="Índice da aula"]) {
     display: none !important;
   }
 }
 
 @media (max-width: 720px) {
-  .activityLayout > div > :global(.grid.items-start.gap-5) > aside {
+  .activityPage > div > :global(div:has(> main + aside)) > aside {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
