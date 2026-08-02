@@ -5,7 +5,9 @@ export default function ActivityLayout({ children }: { children: React.ReactNode
   return (
     <div className={styles.activityLayout} data-activity-workspace data-active-section="conteudo">
       <ActivityCompactWorkspace />
-      {children}
+      <div className={styles.activityPage} data-activity-page>
+        {children}
+      </div>
     </div>
   );
 }
