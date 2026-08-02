@@ -37,12 +37,15 @@ export function ActivityCompactWorkspace() {
   const rootRef = useRef<HTMLElement | null>(null);
 
   const selectSection = useCallback((section: SectionId, behavior: ScrollBehavior = "smooth") => {
+    const root = rootRef.current;
+    if (!root) return;
+
     setActive(section);
-    if (rootRef.current) rootRef.current.dataset.activeSection = section;
+    root.dataset.activeSection = section;
     const url = new URL(window.location.href);
     url.hash = section;
     window.history.replaceState(window.history.state, "", url);
-    rootRef.current?.scrollIntoView({ block: "start", behavior });
+    root.scrollIntoView({ block: "start", behavior });
   }, []);
 
   useEffect(() => {
@@ -66,13 +69,10 @@ export function ActivityCompactWorkspace() {
     root.dataset.activeSection = initial;
     setPortalTarget(mount);
 
-    const syncHash = () => {
-      const next = sectionFromLocation(detected);
-      selectSection(next);
-    };
+    const syncHash = () => selectSection(sectionFromLocation(detected));
     const followSectionLink = (event: MouseEvent) => {
       const target = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a[href^='#']") : null;
-      if (!target) return;
+      if (!target || !root.contains(target)) return;
       const section = target.getAttribute("href")?.slice(1) as SectionId | undefined;
       if (!section || !detected.includes(section)) return;
       event.preventDefault();
@@ -80,12 +80,12 @@ export function ActivityCompactWorkspace() {
     };
 
     window.addEventListener("hashchange", syncHash);
-    document.addEventListener("click", followSectionLink, true);
+    root.addEventListener("click", followSectionLink, true);
     if (window.location.hash) requestAnimationFrame(() => root.scrollIntoView({ block: "start" }));
 
     return () => {
       window.removeEventListener("hashchange", syncHash);
-      document.removeEventListener("click", followSectionLink, true);
+      root.removeEventListener("click", followSectionLink, true);
       mount.remove();
       delete root.dataset.activeSection;
       rootRef.current = null;
