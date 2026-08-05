@@ -5,6 +5,7 @@ import type {
   AnnouncementUploadedFile,
   AnnouncementUploadIntent,
   OperatorAnnouncements,
+  ParticipantAnnouncement,
   ParticipantDiagnosticSummary,
   ParticipantEngagementHub,
   ParticipantPointRules,
@@ -14,10 +15,19 @@ import type {
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 export const engagementRuntime = {
-  participantHub: (actorUserAccountId: string) => invokeServerRpc<ParticipantEngagementHub>(
-    "get_participant_engagement_hub",
-    { p_actor_user_account_id: actorUserAccountId },
-  ),
+  async participantHub(actorUserAccountId: string) {
+    const [hub, announcements] = await Promise.all([
+      invokeServerRpc<ParticipantEngagementHub>(
+        "get_participant_engagement_hub",
+        { p_actor_user_account_id: actorUserAccountId },
+      ),
+      invokeServerRpc<ParticipantAnnouncement[]>(
+        "list_participant_announcements_responsive",
+        { p_actor_user_account_id: actorUserAccountId },
+      ),
+    ]);
+    return { ...hub, announcements } satisfies ParticipantEngagementHub;
+  },
   participantProfileSummary: (actorUserAccountId: string) => invokeServerRpc<ParticipantProfileSummary>(
     "get_participant_profile_summary",
     { p_actor_user_account_id: actorUserAccountId },
@@ -31,7 +41,7 @@ export const engagementRuntime = {
     { p_actor_user_account_id: actorUserAccountId },
   ),
   listOperatorAnnouncements: (actorUserAccountId: string, organizationId: string) => invokeServerRpc<OperatorAnnouncements>(
-    "list_operator_announcements",
+    "list_operator_announcements_responsive",
     { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId },
   ),
   createAnnouncementUploadIntent: (input: {
@@ -95,9 +105,17 @@ export const engagementRuntime = {
       p_idempotency_key: idempotencyKey,
     },
   ),
-  getAnnouncementBannerDownload: (actorUserAccountId: string, announcementId: string) => invokeServerRpc<AnnouncementBannerDownload>(
-    "get_announcement_banner_download",
-    { p_actor_user_account_id: actorUserAccountId, p_announcement_id: announcementId },
+  getAnnouncementBannerDownload: (
+    actorUserAccountId: string,
+    announcementId: string,
+    variant: "desktop" | "mobile" = "desktop",
+  ) => invokeServerRpc<AnnouncementBannerDownload>(
+    "get_announcement_banner_download_responsive",
+    {
+      p_actor_user_account_id: actorUserAccountId,
+      p_announcement_id: announcementId,
+      p_variant: variant,
+    },
   ),
   saveAnnouncement: (input: {
     actorUserAccountId: string;
@@ -113,11 +131,12 @@ export const engagementRuntime = {
     startsAt: string | null;
     endsAt: string | null;
     imageFileObjectId: string | null;
+    mobileImageFileObjectId: string | null;
     imageAlt: string | null;
     displayMode: "image_only" | "image_with_text";
     idempotencyKey: string;
   }) => invokeServerRpc<RpcEnvelope<SavedAnnouncement>>(
-    "save_operator_announcement",
+    "save_operator_announcement_responsive",
     {
       p_actor_user_account_id: input.actorUserAccountId,
       p_organization_id: input.organizationId,
@@ -132,6 +151,7 @@ export const engagementRuntime = {
       p_starts_at: input.startsAt,
       p_ends_at: input.endsAt,
       p_image_file_object_id: input.imageFileObjectId,
+      p_mobile_image_file_object_id: input.mobileImageFileObjectId,
       p_image_alt: input.imageAlt,
       p_display_mode: input.displayMode,
       p_idempotency_key: input.idempotencyKey,
