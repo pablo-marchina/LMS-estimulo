@@ -76,7 +76,7 @@ export default async function JornadasCatalogPage({ searchParams }: { searchPara
   const all = [...enrolledModels, ...eligibleModels];
   const featured = all.filter((journey) => journey.presentation.featured === true).sort((a, b) => rank(a.presentation) - rank(b.presentation))[0] ?? all[0] ?? null;
   const isFeatured = (journey: CatalogJourney) => journey.key === featured?.key;
-  const inProgress = enrolledModels.filter((journey) => !isFeatured(journey) && journey.enrolled?.journey_status !== "completed");
+  const inProgress = enrolledModels.filter((journey) => journey.enrolled?.journey_status !== "completed");
   const completed = enrolledModels.filter((journey) => !isFeatured(journey) && journey.enrolled?.journey_status === "completed");
   const recommended = eligibleModels.filter((journey) => !isFeatured(journey) && !journey.eligible?.open_to_all);
   const open = eligibleModels.filter((journey) => !isFeatured(journey) && journey.eligible?.open_to_all);
@@ -132,7 +132,7 @@ function JourneyCard({ journey, index }: { journey: CatalogJourney; index: numbe
 function JourneyAction({ journey, large = false }: { journey: CatalogJourney; large?: boolean }) {
   if (journey.enrolled) {
     if (journey.enrolled.journey_status === "completed") return <ButtonLink href={participantNextHref(journey.enrolled)} variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<CheckCircle2 size={16} />}>Rever jornada</ButtonLink>;
-    return <form action={openJourneyAction}><input type="hidden" name="journey_instance_id" value={journey.enrolled.journey_instance_id} /><input type="hidden" name="aggregate_version" value={journey.enrolled.journey_aggregate_version} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><PendingSubmitButton pendingLabel="Abrindo jornada…" variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<Play size={16} fill="currentColor" />}>{participantNextActionLabel(journey.enrolled)}</PendingSubmitButton></form>;
+    return <form action={openJourneyAction}><input type="hidden" name="journey_instance_id" value={journey.enrolled.journey_instance_id} /><input type="hidden" name="aggregate_version" value={journey.enrolled.journey_aggregate_version} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><PendingSubmitButton pendingLabel="Abrindo próxima aula…" variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<Play size={16} fill="currentColor" />}>{participantNextActionLabel(journey.enrolled)}</PendingSubmitButton></form>;
   }
   if (journey.eligible) return <form action={selfEnrollAction}><input type="hidden" name="journey_version_id" value={journey.eligible.journey_version_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><PendingSubmitButton pendingLabel="Entrando na jornada…" variant={large ? "secondary" : "primary"} size={large ? "lg" : "sm"} icon={<Play size={16} fill="currentColor" />}>{typeof journey.presentation.cta === "string" ? journey.presentation.cta : "Entrar nesta jornada"}</PendingSubmitButton></form>;
   return null;
