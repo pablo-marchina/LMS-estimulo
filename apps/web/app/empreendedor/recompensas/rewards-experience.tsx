@@ -1,6 +1,6 @@
 import { ArrowRightLeft, CheckCircle2, Crown, Gift, History, ImageIcon, LockKeyhole, Medal, Sparkles, Trophy, WalletCards } from "lucide-react";
 import { performExtensionAction } from "@/app/empreendedor/extension-actions";
-import { PointsGuideDialog } from "@/app/empreendedor/recompensas/points-guide-dialog";
+import { PointsRulesSection } from "@/app/empreendedor/recompensas/points-rules-section";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -40,7 +40,7 @@ export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, poi
     <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary via-primary-active to-secondary p-6 text-white shadow-xl sm:p-8">
       <Sparkles className="absolute right-6 top-5 text-white/25" size={72} aria-hidden="true" />
       <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div><div className="flex items-center gap-2 text-sm font-black uppercase tracking-[.14em] text-white/75"><Crown size={18} /> Central de recompensas</div><h1 className="display-font mt-3 text-4xl sm:text-5xl">Transforme seu progresso em conquistas</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">Acompanhe seu saldo, converta pontos, escolha recompensas e compare seu avanço em um só lugar.</p><div className="mt-5"><PointsGuideDialog rules={pointRules} /></div></div>
+        <div><div className="flex items-center gap-2 text-sm font-black uppercase tracking-[.14em] text-white/75"><Crown size={18} /> Central de recompensas</div><h1 className="display-font mt-3 text-4xl sm:text-5xl">Transforme seu progresso em conquistas</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">Acompanhe seu saldo, converta pontos, escolha recompensas e compare seu avanço em um só lugar.</p></div>
         <div className="grid min-w-52 gap-3 rounded-2xl border border-white/20 bg-white/10 p-5 text-center backdrop-blur"><div><p className="text-xs font-bold uppercase tracking-wide text-white/70">Seu saldo</p><p className="display-font mt-1 text-5xl">{rewards.reward_balance}</p><p className="text-sm text-white/75">pontos de recompensa</p></div><div className="border-t border-white/20 pt-3"><p className="text-xs text-white/65">Ranking de aprendizagem</p><p className="mt-1 font-black">{ownRank ? `#${ownRank.position} · ${ownRank.points} pontos` : "Ainda sem posição"}</p></div></div>
       </div>
       {nextReward ? <div className="relative mt-6 rounded-2xl bg-black/15 p-4"><div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>Próximo objetivo: <strong>{text(nextReward.name)}</strong></span><span>{Math.max(0, nextCost-rewards.reward_balance)} pontos restantes</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/20"><div className="h-full rounded-full bg-white" style={{ width: `${progress}%` }} /></div></div> : null}
@@ -48,6 +48,7 @@ export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, poi
 
     <nav aria-label="Áreas da central de recompensas" className="flex flex-wrap gap-2 rounded-2xl border border-border bg-white p-2 shadow-sm">
       <a href="#saldo" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Saldo e conversão</a>
+      <a href="#como-conseguir-pontos" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Como conseguir pontos</a>
       <a href="#catalogo" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Recompensas</a>
       <a href="#historico" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Histórico</a>
       <a href="#ranking" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Ranking</a>
@@ -57,6 +58,8 @@ export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, poi
       <Card className="brand-accent-card after:!hidden"><div className="flex items-start gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-primary-soft text-primary"><WalletCards size={24} /></span><div><p className="text-sm font-semibold text-muted">Pontos prontos para usar</p><p className="display-font mt-1 text-4xl text-secondary">{rewards.reward_balance}</p></div></div><div className="mt-5 grid grid-cols-2 gap-3 text-sm"><div className="rounded-xl bg-surface-muted p-3"><p className="text-muted">Pontos de engajamento</p><strong className="mt-1 block text-xl text-ink">{rewards.convertible_engagement_points}</strong></div><div className="rounded-xl bg-surface-muted p-3"><p className="text-muted">Conversão</p><strong className="mt-1 block text-xl text-ink">{rateSource} por {rateReward}</strong></div></div></Card>
       <Card><div className="flex items-center gap-2"><ArrowRightLeft className="text-primary" /><h2 className="font-black text-secondary">Converter pontos</h2></div><p className="mt-1 text-sm text-muted">Escolha quantos pontos de engajamento quer transformar. A conversão não pode ser desfeita.</p><form action={performExtensionAction} className="mt-5 grid gap-3"><input type="hidden" name="action_type" value="reward_convert" /><input type="hidden" name="return_to" value="/empreendedor/recompensas" /><Label>Quantidade<Input name="source_points" type="number" min="1" max={rewards.convertible_engagement_points} required placeholder="Digite a quantidade" /></Label><PendingSubmitButton pendingLabel="Convertendo…" disabled={rewards.convertible_engagement_points < 1}>Converter agora</PendingSubmitButton></form></Card>
     </section>
+
+    <PointsRulesSection rules={pointRules} />
 
     <section id="catalogo" className="grid scroll-mt-24 gap-4"><div className="flex items-end justify-between gap-4"><div><p className="brand-kicker">Escolha sua próxima conquista</p><h2 className="display-font mt-1 text-3xl text-secondary">Recompensas disponíveis</h2></div><Trophy className="hidden text-warning sm:block" size={38} /></div>{rewards.catalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{rewards.catalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}</section>
 
