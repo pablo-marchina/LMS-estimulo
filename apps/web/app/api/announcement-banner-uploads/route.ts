@@ -17,6 +17,13 @@ const uuid = z.string().uuid();
 const statusSchema = z.enum(["draft", "published", "retired"]);
 const displayModeSchema = z.enum(["image_only", "image_with_text"]);
 
+type UploadedObject = {
+  uploadIntentId: string;
+  bucket: string;
+  objectKey: string;
+  created: boolean;
+};
+
 function sameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return true;
@@ -26,6 +33,11 @@ function sameOrigin(request: NextRequest): boolean {
 function nullable(value: FormDataEntryValue | null): string | null {
   const text = String(value ?? "").trim();
   return text || null;
+}
+
+function fileFrom(formData: FormData, name: string): File | null {
+  const value = formData.get(name);
+  return value instanceof File && value.size > 0 ? value : null;
 }
 
 function isoDate(value: FormDataEntryValue | null): string | null {
@@ -48,16 +60,62 @@ function redirectToAdmin(request: NextRequest, params: Record<string, string>) {
   return NextResponse.redirect(target, 303);
 }
 
+async function uploadFile(input: {
+  file: File;
+  variant: "desktop" | "mobile";
+  actorUserAccountId: string;
+  organizationId: string;
+  requestKey: string;
+}): Promise<{ fileObjectId: string; uploaded: UploadedObject }> {
+  validateAnnouncementBanner(input.file);
+  const bucket = announcementBannerBucket();
+  const intent = await engagementRuntime.createAnnouncementUploadIntent({
+    actorUserAccountId: input.actorUserAccountId,
+    organizationId: input.organizationId,
+    originalFilename: input.file.name,
+    expectedContentType: input.file.type,
+    bucket,
+    idempotencyKey: `${input.requestKey}:${input.variant}:upload`,
+  });
+  const uploaded = await uploadAnnouncementBanner({
+    bucket,
+    objectKey: intent.data.object_key,
+    file: input.file,
+  });
+  const confirmed = await engagementRuntime.confirmAnnouncementUpload({
+    actorUserAccountId: input.actorUserAccountId,
+    organizationId: input.organizationId,
+    uploadIntentId: intent.data.upload_intent_id,
+    actualContentType: input.file.type,
+    actualSizeBytes: input.file.size,
+    sha256: uploaded.sha256,
+    providerObjectVersion: uploaded.providerObjectVersion,
+    etag: uploaded.etag,
+    metadata: {
+      source: "admin_announcement",
+      variant: input.variant,
+      originalFilename: input.file.name,
+    },
+    idempotencyKey: `${input.requestKey}:${input.variant}:confirm`,
+  });
+  return {
+    fileObjectId: confirmed.data.file_object_id,
+    uploaded: {
+      uploadIntentId: intent.data.upload_intent_id,
+      bucket,
+      objectKey: intent.data.object_key,
+      created: uploaded.created,
+    },
+  };
+}
+
 export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) return new NextResponse("Forbidden", { status: 403 });
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
 
   let organizationId = "";
-  let uploadIntentId: string | null = null;
-  let bucket: string | null = null;
-  let objectKey: string | null = null;
-  let objectCreated = false;
+  const uploadedObjects: UploadedObject[] = [];
   const requestKey = randomUUID();
 
   try {
@@ -84,40 +142,39 @@ export async function POST(request: NextRequest) {
     const ctaUrl = nullable(formData.get("cta_url"));
     if ((ctaLabel === null) !== (ctaUrl === null)) throw new Error("ANNOUNCEMENT_CTA_PAIR_REQUIRED");
 
-    let imageFileObjectId = nullable(formData.get("current_image_file_object_id"));
-    if (imageFileObjectId) uuid.parse(imageFileObjectId);
-    const fileEntry = formData.get("file");
-    const file = fileEntry instanceof File && fileEntry.size > 0 ? fileEntry : null;
+    let desktopImageFileObjectId = nullable(formData.get("current_image_file_object_id"));
+    let mobileImageFileObjectId = nullable(formData.get("current_mobile_image_file_object_id"));
+    if (desktopImageFileObjectId) uuid.parse(desktopImageFileObjectId);
+    if (mobileImageFileObjectId) uuid.parse(mobileImageFileObjectId);
 
-    if (file) {
-      validateAnnouncementBanner(file);
-      bucket = announcementBannerBucket();
-      const intent = await engagementRuntime.createAnnouncementUploadIntent({
+    const desktopFile = fileFrom(formData, "desktop_file") ?? fileFrom(formData, "file");
+    const mobileFile = fileFrom(formData, "mobile_file");
+
+    if (desktopFile) {
+      const result = await uploadFile({
+        file: desktopFile,
+        variant: "desktop",
         actorUserAccountId: auth.identity.user_account_id,
         organizationId,
-        originalFilename: file.name,
-        expectedContentType: file.type,
-        bucket,
-        idempotencyKey: `${requestKey}:upload`,
+        requestKey,
       });
-      uploadIntentId = intent.data.upload_intent_id;
-      objectKey = intent.data.object_key;
-      const uploaded = await uploadAnnouncementBanner({ bucket, objectKey, file });
-      objectCreated = uploaded.created;
-      const confirmed = await engagementRuntime.confirmAnnouncementUpload({
-        actorUserAccountId: auth.identity.user_account_id,
-        organizationId,
-        uploadIntentId,
-        actualContentType: file.type,
-        actualSizeBytes: file.size,
-        sha256: uploaded.sha256,
-        providerObjectVersion: uploaded.providerObjectVersion,
-        etag: uploaded.etag,
-        metadata: { source: "admin_announcement", originalFilename: file.name },
-        idempotencyKey: `${requestKey}:confirm`,
-      });
-      imageFileObjectId = confirmed.data.file_object_id;
+      desktopImageFileObjectId = result.fileObjectId;
+      uploadedObjects.push(result.uploaded);
     }
+
+    if (mobileFile) {
+      const result = await uploadFile({
+        file: mobileFile,
+        variant: "mobile",
+        actorUserAccountId: auth.identity.user_account_id,
+        organizationId,
+        requestKey,
+      });
+      mobileImageFileObjectId = result.fileObjectId;
+      uploadedObjects.push(result.uploaded);
+    }
+
+    if (displayMode === "image_only" && !desktopImageFileObjectId) throw new Error("ANNOUNCEMENT_IMAGE_REQUIRED");
 
     await engagementRuntime.saveAnnouncement({
       actorUserAccountId: auth.identity.user_account_id,
@@ -132,7 +189,8 @@ export async function POST(request: NextRequest) {
       priority,
       startsAt,
       endsAt,
-      imageFileObjectId,
+      imageFileObjectId: desktopImageFileObjectId,
+      mobileImageFileObjectId,
       imageAlt,
       displayMode,
       idempotencyKey: `${requestKey}:save`,
@@ -141,16 +199,18 @@ export async function POST(request: NextRequest) {
     return redirectToAdmin(request, { sucesso: "salvo", view: "gerenciar" });
   } catch (error) {
     const failureCode = code(error);
-    if (uploadIntentId && organizationId) {
-      await engagementRuntime.abortAnnouncementUpload(
-        auth.identity.user_account_id,
-        organizationId,
-        uploadIntentId,
-        failureCode,
-        `${requestKey}:abort`,
-      ).catch(() => undefined);
-    }
-    if (objectCreated && bucket && objectKey) await removeAnnouncementBanner(bucket, objectKey).catch(() => undefined);
+    await Promise.all(uploadedObjects.map(async (uploaded, index) => {
+      if (organizationId) {
+        await engagementRuntime.abortAnnouncementUpload(
+          auth.identity.user_account_id,
+          organizationId,
+          uploaded.uploadIntentId,
+          failureCode,
+          `${requestKey}:abort:${index}`,
+        ).catch(() => undefined);
+      }
+      if (uploaded.created) await removeAnnouncementBanner(uploaded.bucket, uploaded.objectKey).catch(() => undefined);
+    }));
     return redirectToAdmin(request, { erro: failureCode });
   }
 }
