@@ -8,6 +8,7 @@ export type ParticipantAnnouncement = {
   starts_at: string | null;
   ends_at: string | null;
   image_file_object_id: string | null;
+  mobile_image_file_object_id: string | null;
   image_alt: string | null;
   display_mode: "image_only" | "image_with_text";
 };
@@ -128,6 +129,7 @@ export type AnnouncementUploadedFile = {
 
 export type AnnouncementBannerDownload = {
   announcement_id: string;
+  variant?: "desktop" | "mobile";
   file_object_id: string;
   bucket: string;
   object_key: string;
@@ -141,5 +143,6 @@ export type SavedAnnouncement = {
   status: "draft" | "published" | "retired";
   aggregate_version: number;
   image_file_object_id: string | null;
+  mobile_image_file_object_id: string | null;
   display_mode: "image_only" | "image_with_text";
 };
