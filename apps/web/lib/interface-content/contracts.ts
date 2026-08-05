@@ -5,6 +5,9 @@ export type InterfaceContentValue = {
   href?: string;
   button_text?: string;
   image_url?: string;
+  image_file_object_id?: string | null;
+  mobile_image_file_object_id?: string | null;
+  image_position?: "center" | "top" | "bottom";
   alt?: string;
   tone?: string;
   visible?: boolean;
