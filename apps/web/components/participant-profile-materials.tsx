@@ -32,12 +32,15 @@ function statusTone(status: string): "success" | "warning" | "info" | "neutral" 
   return "neutral";
 }
 
-export async function ParticipantProfileMaterials() {
+export async function ParticipantProfileMaterials({ embedded = false }: { embedded?: boolean }) {
   const auth = await requireParticipantContext();
   const workspace = await extensionsRuntime.participantWorkspace(auth.identity.user_account_id);
+  const wrapperClass = embedded
+    ? "grid scroll-mt-24 gap-5"
+    : "mx-auto grid max-w-[1400px] scroll-mt-24 gap-5 px-5 pb-10 lg:px-9";
 
   return (
-    <section id="materiais-enviados" aria-labelledby="materiais-enviados-titulo" className="mx-auto grid max-w-[1400px] scroll-mt-24 gap-5 px-5 pb-10 lg:px-9">
+    <section id="materiais-enviados" aria-labelledby="materiais-enviados-titulo" className={wrapperClass}>
       <div>
         <p className="brand-kicker">Aplicação e acompanhamento</p>
         <h2 id="materiais-enviados-titulo" className="display-font mt-1 text-2xl text-secondary">Meus materiais enviados</h2>
@@ -60,6 +63,8 @@ function DeliveryCard({ delivery }: { delivery: JsonRecord }) {
   const latest = submissions[0];
   const allowed = Array.isArray(delivery.allowed_submission_types) ? delivery.allowed_submission_types.map(String) : ["text"];
   const attempts = delivery.max_attempts === null ? "Tentativas ilimitadas" : `${number(delivery.max_attempts)} tentativa(s)`;
+  const fileFormats = allowed.filter((format) => !["text", "external_link"].includes(format));
+  const maxMegabytes = Math.max(1, Math.round(number(delivery.max_file_size_bytes) / 1024 / 1024));
 
   return (
     <Card className="grid gap-4">
@@ -79,10 +84,10 @@ function DeliveryCard({ delivery }: { delivery: JsonRecord }) {
         <summary className="cursor-pointer p-4 font-bold text-secondary">{latest ? "Enviar nova tentativa" : "Fazer entrega"}</summary>
         <form action="/api/delivery-uploads" method="post" encType="multipart/form-data" className="grid gap-4 border-t border-border p-4">
           <input type="hidden" name="delivery_configuration_id" value={text(delivery.id)} />
-          <input type="hidden" name="return_to" value="/empreendedor/perfil#materiais-enviados" />
+          <input type="hidden" name="return_to" value="/empreendedor/perfil?aba=entregas#materiais-enviados" />
           {allowed.includes("text") ? <Label>Resposta em texto<Textarea name="text_content" rows={8} placeholder="Escreva sua resposta..." /></Label> : null}
           {allowed.includes("external_link") ? <Label>Link externo<Input name="external_link" type="url" placeholder="https://..." /></Label> : null}
-          {allowed.some((format) => !["text", "external_link"].includes(format)) ? <Label>Arquivos<Input name="files" type="file" multiple /><span className="text-[11px] font-normal text-muted">Formatos aceitos: {allowed.filter((format) => !["text", "external_link"].includes(format)).join(", ")}. Até {Math.round(number(delivery.max_file_size_bytes) / 1024 / 1024)} MB por arquivo.</span></Label> : null}
+          {fileFormats.length ? <Label>Arquivos<Input name="files" type="file" multiple /><span className="text-[11px] font-normal text-muted">Formatos aceitos: {fileFormats.join(", ")}. Tamanho máximo: {maxMegabytes} MB por arquivo. Confira os arquivos selecionados antes de enviar.</span></Label> : null}
           <button type="submit" className="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-95"><FileCheck2 size={17} />Enviar material</button>
         </form>
       </details>
