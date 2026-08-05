@@ -13,6 +13,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const DEFAULT_RETURN_TO = "/empreendedor/perfil?aba=entregas#materiais-enviados";
+
 function sameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
   if (!origin) return true;
@@ -27,20 +29,21 @@ function code(error: unknown) {
 
 function safeReturnTo(value: FormDataEntryValue | null) {
   const path = String(value ?? "").trim();
-  if (!path.startsWith("/empreendedor/") || path.startsWith("//")) return "/empreendedor/perfil#materiais-enviados";
+  if (!path.startsWith("/empreendedor/") || path.startsWith("//")) return DEFAULT_RETURN_TO;
   try {
     const parsed = new URL(path, "https://local.invalid");
-    return `${parsed.pathname}${parsed.hash}`;
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
   } catch {
-    return "/empreendedor/perfil#materiais-enviados";
+    return DEFAULT_RETURN_TO;
   }
 }
 
 function redirectTo(request: NextRequest, returnTo: string, state: "success" | "error", error?: string) {
-  const [pathname, hash = ""] = returnTo.split("#", 2);
-  const url = new URL(pathname || "/empreendedor/perfil", request.url);
+  const parsed = new URL(returnTo, "https://local.invalid");
+  const url = new URL(parsed.pathname || "/empreendedor/perfil", request.url);
+  parsed.searchParams.forEach((value, key) => url.searchParams.set(key, value));
   url.searchParams.set(state === "success" ? "sucesso" : "erro", error ?? "delivery_submit");
-  if (hash) url.hash = hash;
+  url.hash = parsed.hash;
   return NextResponse.redirect(url, 303);
 }
 
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
 
   const bucket = deliveryEvidenceBucket();
   const uploadedObjects: string[] = [];
-  let returnTo = "/empreendedor/perfil#materiais-enviados";
+  let returnTo = DEFAULT_RETURN_TO;
   try {
     const formData = await request.formData();
     returnTo = safeReturnTo(formData.get("return_to"));
