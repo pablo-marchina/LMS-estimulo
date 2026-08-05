@@ -9,9 +9,11 @@ import { Table, TableScroll, Td, Th } from "@/components/ui/table";
 import { getAdminProductWorkspace } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
+import { badgeHighlightsRuntime } from "@/lib/engagement/badge-highlights-runtime";
 import { saveGamificationResourceAction } from "./actions";
 import { CertificateEditor } from "./certificate-editor";
 import { CertificateTemplateManager } from "./certificate-template-manager";
+import { HomeBadgeHighlightsEditor } from "./home-badge-highlights-editor";
 import { PointRuleEditor } from "./point-rule-editor";
 
 export const dynamic = "force-dynamic";
@@ -38,7 +40,10 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
 
   const canEdit = organization.permissions.includes("engagement.manage");
-  const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
+  const [workspace, badgeHighlightWorkspace] = await Promise.all([
+    getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id),
+    badgeHighlightsRuntime.admin(auth.identity.user_account_id, organization.organization_id),
+  ]);
   const ruleVersions = workspace.rules.flatMap((item) => item.versions.map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
   const journeyVersions = workspace.journeys.filter((item) => item.status !== "retired").flatMap((item) => item.versions.map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
   const type = ["pontos", "selos", "certificados"].includes(single(query.tipo)) ? single(query.tipo) : "pontos";
@@ -62,7 +67,7 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
       <fieldset disabled={!canEdit} className="contents"><PointRuleEditor pointRules={pointRuleEditorData} eligibilityRules={ruleVersions} /></fieldset>
     </div> : null}
 
-    {type === "selos" ? <fieldset disabled={!canEdit} className="contents"><Card><div><h2 className="text-lg font-black text-secondary">Criar ou atualizar selo</h2><p className="mt-1 text-sm text-muted">Defina o título e o que ele reconhece.</p></div><form action={saveGamificationResourceAction} className="mt-5 grid gap-4"><input type="hidden" name="resource_type" value="badge" /><div className="grid gap-4 sm:grid-cols-2"><Label>Selo existente<Select name="definition_id"><option value="">Criar novo</option>{workspace.badges.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select></Label><Label>Título para o participante<Input name="title" required /></Label></div><Label>O que o selo reconhece<Textarea name="description" rows={3} required /></Label><AdminDisclosure title="Condição e disponibilidade" description="Abra para escolher quando o selo será concedido."><div className="grid gap-4 sm:grid-cols-2"><Label>Nome interno<Input name="name" required /></Label><Label>Condição para receber<Select name="criteria_rule_version_id" required><option value="">Selecione</option>{ruleVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select></Label><Label>Disponibilidade<Select name="status"><option value="draft">Preparar sem mostrar</option><option value="published">Ativar agora</option></Select></Label></div></AdminDisclosure><Button type="submit" className="w-fit">Salvar selo</Button></form></Card></fieldset> : null}
+    {type === "selos" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5"><HomeBadgeHighlightsEditor workspace={badgeHighlightWorkspace} /><Card><div><h2 className="text-lg font-black text-secondary">Criar ou atualizar selo</h2><p className="mt-1 text-sm text-muted">Defina o título e o que ele reconhece.</p></div><form action={saveGamificationResourceAction} className="mt-5 grid gap-4"><input type="hidden" name="resource_type" value="badge" /><div className="grid gap-4 sm:grid-cols-2"><Label>Selo existente<Select name="definition_id"><option value="">Criar novo</option>{workspace.badges.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select></Label><Label>Título para o participante<Input name="title" required /></Label></div><Label>O que o selo reconhece<Textarea name="description" rows={3} required /></Label><AdminDisclosure title="Condição e disponibilidade" description="Abra para escolher quando o selo será concedido."><div className="grid gap-4 sm:grid-cols-2"><Label>Nome interno<Input name="name" required /></Label><Label>Condição para receber<Select name="criteria_rule_version_id" required><option value="">Selecione</option>{ruleVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select></Label><Label>Disponibilidade<Select name="status"><option value="draft">Preparar sem mostrar</option><option value="published">Ativar agora</option></Select></Label></div></AdminDisclosure><Button type="submit" className="w-fit">Salvar selo</Button></form></Card></div></fieldset> : null}
 
     {type === "certificados" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5"><CertificateTemplateManager /><CertificateEditor certificates={certificateEditorData} journeyVersions={journeyVersions} ruleVersions={ruleVersions} /></div></fieldset> : null}
   </div></AppShell>;
