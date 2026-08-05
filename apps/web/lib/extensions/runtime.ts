@@ -9,6 +9,9 @@ export type ExtensionParticipant = {
   entrepreneur_id: string | null;
   email: string;
   name: string;
+  registration_status?: string;
+  registered_at?: string;
+  onboarding_completed_at?: string | null;
 };
 
 export type BehaviorScoreDimensionConfiguration = {
@@ -93,11 +96,22 @@ export type ParticipantExtensionsWorkspace = {
 };
 
 export const extensionsRuntime = {
-  adminWorkspace(actorUserAccountId: string, organizationId: string) {
-    return invokeExtensionsGateway<AdminExtensionsWorkspace>("get_admin_extensions_workspace", {
-      p_actor_user_account_id: actorUserAccountId,
-      p_organization_id: organizationId,
-    });
+  async adminWorkspace(actorUserAccountId: string, organizationId: string) {
+    const [workspace, registeredUsers] = await Promise.all([
+      invokeExtensionsGateway<AdminExtensionsWorkspace>("get_admin_extensions_workspace", {
+        p_actor_user_account_id: actorUserAccountId,
+        p_organization_id: organizationId,
+      }),
+      invokeExtensionsGateway<ExtensionParticipant[]>("list_admin_registered_users", {
+        p_actor_user_account_id: actorUserAccountId,
+        p_organization_id: organizationId,
+      }),
+    ]);
+
+    return {
+      ...workspace,
+      participants: registeredUsers,
+    } satisfies AdminExtensionsWorkspace;
   },
 
   getAiGradingProvider(actorUserAccountId: string, organizationId: string) {
