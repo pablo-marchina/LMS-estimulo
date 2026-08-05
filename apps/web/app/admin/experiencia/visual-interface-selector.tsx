@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ExternalLink, MousePointerClick, PanelTop } from "lucide-react";
+import { ExternalLink, Image as ImageIcon, MousePointerClick, PanelTop } from "lucide-react";
 import { Select } from "@/components/ui/input";
 import type { AdminInterfaceContentEntry } from "@/lib/interface-content/contracts";
 
@@ -30,9 +31,6 @@ const participantRoutes = [
   ["/empreendedor", "Participante — Início"],
   ["/empreendedor/jornadas", "Participante — Jornadas"],
   ["/empreendedor/biblioteca", "Participante — Biblioteca"],
-  ["/empreendedor/entregas", "Participante — Entregas"],
-  ["/empreendedor/engajamento", "Participante — Pontuação"],
-  ["/empreendedor/pontuacao", "Participante — Como ganhar pontos"],
   ["/empreendedor/recompensas", "Participante — Recompensas"],
   ["/empreendedor/conquistas", "Participante — Conquistas"],
   ["/empreendedor/credenciais", "Participante — Credenciais"],
@@ -124,7 +122,10 @@ export function VisualInterfaceSelector({ entries, selectedKey, initialRoute }: 
     <aside className="grid content-start gap-4">
       <div><p className="brand-kicker">Navegação visual</p><h2 className="mt-1 text-lg font-black text-secondary">Página exibida</h2><p className="mt-1 text-sm text-muted">A prévia usa a mesma rota, os mesmos componentes e os dados reais de um participante, com todas as escritas bloqueadas.</p></div>
       <Select value={route} onChange={(event) => changeRoute(event.target.value)} aria-label="Página exibida na prévia">{options.map((option) => <option key={option.route} value={option.route}>{option.label}</option>)}</Select>
-      <a href={previewUrl(route)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"><ExternalLink size={15} /> Abrir prévia somente leitura</a>
+      <div className="grid gap-2">
+        <Link href="/admin/experiencia/cabecalhos" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:brightness-95"><ImageIcon size={16} /> Imagens dos cabeçalhos</Link>
+        <a href={previewUrl(route)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:underline"><ExternalLink size={15} /> Abrir prévia somente leitura</a>
+      </div>
       <div className="grid gap-2"><p className="text-xs font-bold uppercase tracking-wide text-muted">Elementos nesta página</p>{visibleEntries.length ? visibleEntries.map((entry) => <button key={entry.content_key} type="button" onClick={() => selectEntry(entry.content_key)} className={`rounded-xl border p-3 text-left transition ${selectedKey === entry.content_key ? "border-primary bg-primary-soft" : "border-border hover:border-primary/40 hover:bg-surface-muted"}`}><strong className="block text-sm text-secondary">{entry.element_name}</strong><span className="mt-1 block text-xs text-muted">{entry.placement.replaceAll("_", " ")} · {entry.element_type}</span></button>) : <p className="rounded-xl bg-surface-muted p-3 text-sm text-muted">Nenhum elemento registrado especificamente para esta página.</p>}</div>
     </aside>
     <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-surface-muted">
