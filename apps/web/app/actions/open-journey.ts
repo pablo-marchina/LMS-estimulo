@@ -28,8 +28,12 @@ export async function openJourneyAction(formData: FormData) {
       );
       state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     }
-    if (state.journey_status !== "completed" && !state.s?.step_instance_id) {
-      await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:default-path`);
+
+    // Idempotent reconciliation is intentionally executed on every open journey.
+    // This repairs old enrollments created before new paths/activities were published.
+    if (state.journey_status !== "completed") {
+      await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:reconcile-paths`);
+      state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     }
 
     if (state.journey_status !== "completed") {
