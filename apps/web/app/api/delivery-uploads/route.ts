@@ -25,9 +25,22 @@ function code(error: unknown) {
   return /^[A-Z0-9_]+$/u.test(parsed) ? parsed : "DELIVERY_SUBMISSION_FAILED";
 }
 
-function redirectTo(request: NextRequest, state: string, error?: string) {
-  const url = new URL("/empreendedor/entregas", request.url);
+function safeReturnTo(value: FormDataEntryValue | null) {
+  const path = String(value ?? "").trim();
+  if (!path.startsWith("/empreendedor/") || path.startsWith("//")) return "/empreendedor/perfil#materiais-enviados";
+  try {
+    const parsed = new URL(path, "https://local.invalid");
+    return `${parsed.pathname}${parsed.hash}`;
+  } catch {
+    return "/empreendedor/perfil#materiais-enviados";
+  }
+}
+
+function redirectTo(request: NextRequest, returnTo: string, state: "success" | "error", error?: string) {
+  const [pathname, hash = ""] = returnTo.split("#", 2);
+  const url = new URL(pathname || "/empreendedor/perfil", request.url);
   url.searchParams.set(state === "success" ? "sucesso" : "erro", error ?? "delivery_submit");
+  if (hash) url.hash = hash;
   return NextResponse.redirect(url, 303);
 }
 
@@ -55,8 +68,10 @@ export async function POST(request: NextRequest) {
 
   const bucket = deliveryEvidenceBucket();
   const uploadedObjects: string[] = [];
+  let returnTo = "/empreendedor/perfil#materiais-enviados";
   try {
     const formData = await request.formData();
+    returnTo = safeReturnTo(formData.get("return_to"));
     const configurationId = String(formData.get("delivery_configuration_id") ?? "").trim();
     if (!/^[0-9a-f-]{36}$/iu.test(configurationId)) throw new Error("DELIVERY_CONFIGURATION_INVALID");
     const files = formData.getAll("files").filter((entry): entry is File => entry instanceof File && entry.size > 0);
@@ -99,13 +114,10 @@ export async function POST(request: NextRequest) {
     });
 
     const submissionId = typeof result.submission_id === "string" ? result.submission_id : null;
-    if (submissionId && result.status === "processing") {
-      await triggerDeliveryGrading(submissionId).catch(() => undefined);
-    }
-
-    return redirectTo(request, "success");
+    if (submissionId && result.status === "processing") await triggerDeliveryGrading(submissionId).catch(() => undefined);
+    return redirectTo(request, returnTo, "success");
   } catch (error) {
     await Promise.all(uploadedObjects.map((objectKey) => removeDeliveryEvidence(bucket, objectKey).catch(() => undefined)));
-    return redirectTo(request, "error", code(error));
+    return redirectTo(request, returnTo, "error", code(error));
   }
 }
