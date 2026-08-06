@@ -30,20 +30,23 @@ jobs:
       - run: npm run test:application
       - run: npm run test:product
       - run: npm run test:integrations
-      - name: Inspect mutations
-        if: always()
+      - name: Inspect before typecheck
         shell: bash
         run: |
-          git status --short | tee /tmp/git-status.txt
+          git status --short | tee /tmp/git-status-before-typecheck.txt
           find apps/web -type f | sort > /tmp/web-files.txt
           grep -R "thumbnail_path\|thumbnailPath" -n apps/web > /tmp/thumbnail-hits.txt || true
+      - name: Run exact web typecheck
+        shell: bash
+        run: npm run typecheck:web 2>&1 | tee /tmp/typecheck-output.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: web-workspace-after-tests
+          name: web-workspace-typecheck
           path: |
             apps/web
-            /tmp/git-status.txt
+            /tmp/git-status-before-typecheck.txt
             /tmp/web-files.txt
             /tmp/thumbnail-hits.txt
+            /tmp/typecheck-output.txt
           retention-days: 1
