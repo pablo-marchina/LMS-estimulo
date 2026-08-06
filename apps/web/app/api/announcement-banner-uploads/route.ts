@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
   if (!sameOrigin(request)) return new NextResponse("Forbidden", { status: 403 });
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
+  const identity = auth.identity;
 
   let organizationId = "";
   const createdUploads: Array<{ uploadIntentId: string; bucket: string; objectKey: string; objectCreated: boolean }> = [];
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     organizationId = uuid.parse(formData.get("organization_id"));
-    const organization = auth.identity.organizations.find((item) => item.organization_id === organizationId);
+    const organization = identity.organizations.find((item) => item.organization_id === organizationId);
     if (!organization?.permissions.includes("engagement.manage")) throw new Error("FORBIDDEN");
 
     const announcementId = nullable(formData.get("announcement_id"));
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       validateAnnouncementBanner(file);
       const bucket = announcementBannerBucket();
       const intent = await engagementRuntime.createAnnouncementUploadIntent({
-        actorUserAccountId: auth.identity.user_account_id,
+        actorUserAccountId: identity.user_account_id,
         organizationId,
         originalFilename: file.name,
         expectedContentType: file.type,
@@ -103,7 +104,7 @@ export async function POST(request: NextRequest) {
       const uploaded = await uploadAnnouncementBanner({ bucket, objectKey: intent.data.object_key, file });
       createdUploads.push({ uploadIntentId: intent.data.upload_intent_id, bucket, objectKey: intent.data.object_key, objectCreated: uploaded.created });
       const confirmed = await engagementRuntime.confirmAnnouncementUpload({
-        actorUserAccountId: auth.identity.user_account_id,
+        actorUserAccountId: identity.user_account_id,
         organizationId,
         uploadIntentId: intent.data.upload_intent_id,
         actualContentType: file.type,
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
     mobileImageFileObjectId = await uploadVariant("mobile_file", "mobile", mobileImageFileObjectId);
 
     await engagementRuntime.saveAnnouncement({
-      actorUserAccountId: auth.identity.user_account_id,
+      actorUserAccountId: identity.user_account_id,
       organizationId,
       announcementId,
       expectedVersion,
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
     const failureCode = code(error);
     if (organizationId) {
       await Promise.all(createdUploads.map((upload, index) => engagementRuntime.abortAnnouncementUpload(
-        auth.identity.user_account_id,
+        identity.user_account_id,
         organizationId,
         upload.uploadIntentId,
         failureCode,
