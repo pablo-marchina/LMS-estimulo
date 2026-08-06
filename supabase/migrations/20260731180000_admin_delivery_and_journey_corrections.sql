@@ -362,7 +362,7 @@ begin
 end;
 $function$;
 
-perform set_config('app.admin_live_edit','on',true);
+select set_config('app.admin_live_edit','on',true);
 update catalog.activity_versions
 set configuration=coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts'
 where coalesce(configuration,'{}'::jsonb) ?| array['content_sections','prompts'];
