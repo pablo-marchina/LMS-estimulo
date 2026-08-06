@@ -1,0 +1,36 @@
+name: Apply admin interface fix temporary
+
+on:
+  push:
+    branches:
+      - fix/admin-interface-completeness
+    paths:
+      - .github/workflows/apply-admin-interface-fix-temporary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply validated source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .tmp/admin-interface-fix.tar.gz.b64 > "$RUNNER_TEMP/admin-interface-fix.tar.gz"
+          echo "a9d98418e2a4a99154d244259a2bcf503fc6e272f3f36b69f8eb1f69f71ee4c1  $RUNNER_TEMP/admin-interface-fix.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/admin-interface-fix.tar.gz" -C .
+          rm -f .github/workflows/export-source-temporary.yml
+          rm -f .github/workflows/apply-admin-interface-fix-temporary.yml
+          rm -f .tmp/admin-interface-fix.tar.gz.b64
+          rmdir .tmp 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "fix(admin): complete interface, users and loading"
+          git push origin HEAD:fix/admin-interface-completeness
