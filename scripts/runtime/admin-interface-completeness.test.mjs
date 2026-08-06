@@ -19,6 +19,7 @@ test("admin point screen does not depend on optional badge highlights", () => {
   assert.match(gamification, /const type = .*query\.tipo/u);
   assert.match(gamification, /type === "selos"[\s\S]*adminHomeBadgeHighlights/u);
   assert.match(gamification, /\.catch\(\(\) => null\)/u);
+  assert.match(gamification, /Pontuação temporariamente indisponível/u);
   assert.doesNotMatch(gamification, /Promise\.all\(\[[\s\S]*adminHomeBadgeHighlights/u);
 });
 
