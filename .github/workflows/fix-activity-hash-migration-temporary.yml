@@ -1,0 +1,46 @@
+name: Fix activity hash migration temporary
+
+on:
+  push:
+    branches:
+      - fix/platform-content-progress-certificates
+    paths:
+      - .github/workflows/fix-activity-hash-migration-temporary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Recalculate activity content hashes in historical migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql')
+          content = path.read_text()
+          old = """select set_config('app.admin_live_edit','on',true);
+          update catalog.activity_versions
+          set configuration=coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts'
+          where coalesce(configuration,'{}'::jsonb) ?| array['content_sections','prompts'];"""
+          new = """select set_config('app.admin_live_edit','on',true);
+          update catalog.activity_versions
+          set configuration=coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts',
+              content_hash=encode(digest(payload::text||'|'||(coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts')::text,'sha256'),'hex')
+          where coalesce(configuration,'{}'::jsonb) ?| array['content_sections','prompts'];"""
+          if content.count(old) != 1:
+              raise SystemExit(f'expected exactly one activity normalization block, found {content.count(old)}')
+          path.write_text(content.replace(old, new, 1))
+          PY
+          git rm .github/workflows/fix-activity-hash-migration-temporary.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql
+          git commit -m "fix(database): refresh normalized activity content hashes"
+          git push origin HEAD:fix/platform-content-progress-certificates
