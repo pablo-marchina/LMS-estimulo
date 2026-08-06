@@ -74,6 +74,7 @@ export async function saveAnnouncementAction(formData: FormData) {
       startsAt: parsed.data.startsAt,
       endsAt: parsed.data.endsAt,
       imageFileObjectId: null,
+      mobileImageFileObjectId: null,
       imageAlt: null,
       displayMode: "image_with_text",
       idempotencyKey: randomUUID(),
