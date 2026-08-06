@@ -364,7 +364,8 @@ $function$;
 
 select set_config('app.admin_live_edit','on',true);
 update catalog.activity_versions
-set configuration=coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts'
+set configuration=coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts',
+    content_hash=encode(digest(payload::text||'|'||(coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts')::text,'sha256'),'hex')
 where coalesce(configuration,'{}'::jsonb) ?| array['content_sections','prompts'];
 
 revoke all on function public.get_admin_ai_grading_provider(uuid,uuid) from public,anon,authenticated;
