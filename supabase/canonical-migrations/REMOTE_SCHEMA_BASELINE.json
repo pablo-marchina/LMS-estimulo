@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "artifact": "e14_release_schema_baseline",
-  "source": "Canonical migration replay for the final software release candidate",
+  "source": "Canonical clean migration replay for the final software release candidate",
   "observed_at": "2026-08-06",
   "inventory": {
     "schema_version": "1.0",
