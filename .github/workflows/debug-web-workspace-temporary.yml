@@ -1,0 +1,40 @@
+name: Debug web workspace temporary
+
+on:
+  push:
+    branches:
+      - fix/platform-content-progress-certificates
+    paths:
+      - .github/workflows/debug-web-workspace-temporary.yml
+
+permissions:
+  contents: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:application
+      - run: npm run test:behaviors
+      - run: npm run test:product-rules
+      - run: npm run test:integrations
+      - name: Inspect mutations
+        shell: bash
+        run: |
+          git status --short
+          find apps/web -name 'header-config-manager.tsx' -o -name '*.tsx' | sort > /tmp/tsx-files.txt
+          grep -R "thumbnail_path\|thumbnailPath" -n apps/web > /tmp/thumbnail-hits.txt || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-workspace-after-tests
+          path: |
+            apps/web
+            /tmp/tsx-files.txt
+            /tmp/thumbnail-hits.txt
+          retention-days: 1
