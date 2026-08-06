@@ -7,6 +7,7 @@ export function PrintCertificateButton() {
     <Button
       aria-label="Imprimir ou salvar o certificado em PDF"
       className="no-print"
+      title="Imprimir ou salvar o certificado em PDF"
       type="button"
       onClick={() => window.print()}
     >
