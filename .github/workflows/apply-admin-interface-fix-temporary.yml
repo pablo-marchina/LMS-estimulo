@@ -27,7 +27,9 @@ jobs:
           7185a013c4a75c6937363d6c534d311887e0e294d1c02faea346223af45bda92  .tmp/admin-interface-fix.part02
           7d82f7ec04ab6a29fbfe0cc17d5331f0fa0759748724be84a8f2642a60b65d4d  .tmp/admin-interface-fix.part03a
           932d0be8c598a61ea4b5df8ee89867e55f7aaa21568e94e0d2dabbd747a148f8  .tmp/admin-interface-fix.part03b1
-          91312594272dfb97303f786681fa9311d0236ef9b19a3f429d0dc2b35a2efb37  .tmp/admin-interface-fix.part03b2
+          ffa69e36dcf5f21788419b54636ff41797f45b6dffbde5d6af17ff83936e4033  .tmp/admin-interface-fix.part03b2x00
+          084a20826258b02b91540096a6a701c6a4f94da58130248aa91eacb2a787b923  .tmp/admin-interface-fix.part03b2x01
+          70c62734c2c92cc23b58f1ca18deea701cdb872a63177a244545757f979c6096  .tmp/admin-interface-fix.part03b2x02
           4e9c521ba2db2c9412ac0d2ba146058998ae4c4e1bb4a29e7030bcf9724765e3  .tmp/admin-interface-fix.part04
           d5f54dd89d0bcb62607adf1f58337f9994150af86b26fa8c85812244c2dae23c  .tmp/admin-interface-fix.part05
           8c8195ce207cd179b08da02713ec384844aa85000911b2b4cd4ba2a94039dd9a  .tmp/admin-interface-fix.part06
@@ -40,7 +42,9 @@ jobs:
             .tmp/admin-interface-fix.part02 \
             .tmp/admin-interface-fix.part03a \
             .tmp/admin-interface-fix.part03b1 \
-            .tmp/admin-interface-fix.part03b2 \
+            .tmp/admin-interface-fix.part03b2x00 \
+            .tmp/admin-interface-fix.part03b2x01 \
+            .tmp/admin-interface-fix.part03b2x02 \
             .tmp/admin-interface-fix.part04 \
             .tmp/admin-interface-fix.part05 \
             .tmp/admin-interface-fix.part06 \
