@@ -17,24 +17,33 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.1
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run validate:dependency-lock
+      - run: npm run lint:source
+      - run: |
+          npm run validate:repository
+          npm run validate:application-foundation
+          npm run validate:platform-contract
+          npm run validate:runtime-hardening
       - run: npm run test:application
-      - run: npm run test:behaviors
-      - run: npm run test:product-rules
+      - run: npm run test:product
       - run: npm run test:integrations
       - name: Inspect mutations
+        if: always()
         shell: bash
         run: |
-          git status --short
-          find apps/web -name 'header-config-manager.tsx' -o -name '*.tsx' | sort > /tmp/tsx-files.txt
+          git status --short | tee /tmp/git-status.txt
+          find apps/web -type f | sort > /tmp/web-files.txt
           grep -R "thumbnail_path\|thumbnailPath" -n apps/web > /tmp/thumbnail-hits.txt || true
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: web-workspace-after-tests
           path: |
             apps/web
-            /tmp/tsx-files.txt
+            /tmp/git-status.txt
+            /tmp/web-files.txt
             /tmp/thumbnail-hits.txt
           retention-days: 1
