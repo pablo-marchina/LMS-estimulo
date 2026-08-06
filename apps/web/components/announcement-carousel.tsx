@@ -16,15 +16,18 @@ const artwork = [
 ];
 
 function BannerImage({ announcement, index }: { announcement: ParticipantAnnouncement; index: number }) {
-  const src = announcement.image_file_object_id
+  const desktopSrc = announcement.image_file_object_id
     ? `/api/announcements/${announcement.id}/image`
     : artwork[index % artwork.length];
+  const mobileSrc = announcement.mobile_image_file_object_id
+    ? `/api/announcements/${announcement.id}/image?variant=mobile`
+    : desktopSrc;
   const label = announcement.cta_label?.trim() || announcement.title || `Abrir anúncio ${index + 1}`;
-  const image = <img src={src} alt={announcement.image_alt ?? ""} className="brand-carousel-image" />;
+  const image = <picture><source media="(max-width: 639px)" srcSet={mobileSrc} /><img src={desktopSrc} alt={announcement.image_alt ?? ""} className="brand-carousel-image" /></picture>;
   if (!announcement.cta_url || announcement.display_mode !== "image_only") return image;
   return isInternalHref(announcement.cta_url)
     ? <Link href={announcement.cta_url} aria-label={label} className="absolute inset-0 z-10">{image}</Link>
-    : <a href={announcement.cta_url} target="_blank" rel="noopener noreferrer" aria-label={label} className="absolute inset-0 z-10">{image}</a>;
+    : <a href={announcement.cta_url} aria-label={label} className="absolute inset-0 z-10">{image}</a>;
 }
 
 export function AnnouncementCarousel({ announcements }: { announcements: ParticipantAnnouncement[] }) {
@@ -71,9 +74,9 @@ export function AnnouncementCarousel({ announcements }: { announcements: Partici
         {slides.map((announcement, index) => {
           const imageOnly = announcement.display_mode === "image_only";
           return (
-            <article key={announcement.id} className="brand-carousel-slide" style={{ minHeight: "clamp(15rem, 38vh, 24rem)" }} aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
+            <article key={announcement.id} className="brand-carousel-slide" aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
               <BannerImage announcement={announcement} index={index} />
-              {imageOnly ? <span className="sr-only">{announcement.title}. {announcement.body}</span> : <><div className="brand-carousel-overlay" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-4 max-w-2xl text-3xl leading-none text-white sm:text-4xl lg:text-5xl">{announcement.title}</h3><p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p>{announcement.cta_label && announcement.cta_url ? (isInternalHref(announcement.cta_url) ? <Link href={announcement.cta_url} className="brand-carousel-cta">{announcement.cta_label}</Link> : <a href={announcement.cta_url} target="_blank" rel="noopener noreferrer" className="brand-carousel-cta">{announcement.cta_label}</a>) : null}</div></>}
+              {imageOnly ? <span className="sr-only">{announcement.title}. {announcement.body}</span> : <><div className="brand-carousel-overlay" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-4 max-w-2xl text-3xl leading-none text-white sm:text-4xl lg:text-5xl">{announcement.title}</h3><p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p>{announcement.cta_label && announcement.cta_url ? (isInternalHref(announcement.cta_url) ? <Link href={announcement.cta_url} className="brand-carousel-cta">{announcement.cta_label}</Link> : <a href={announcement.cta_url} className="brand-carousel-cta">{announcement.cta_label}</a>) : null}</div></>}
             </article>
           );
         })}

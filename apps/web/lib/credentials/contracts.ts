@@ -14,6 +14,9 @@ export type CertificateIssuance = {
   certificate_name: string;
   journey_title: string;
   verification_code: string;
+  certificate_number: string | null;
+  issuer_name: string | null;
+  issuer_cnpj: string | null;
   display_name: string;
   status: string;
   issued_at: string;
@@ -41,9 +44,14 @@ export type CertificateVerification = {
   valid: boolean;
   reason: string;
   verification_code?: string;
+  certificate_number?: string | null;
   certificate_name?: string;
   journey_title?: string;
   display_name?: string;
   issued_at?: string;
   expires_at?: string | null;
+  issuer_name?: string | null;
+  issuer_cnpj?: string | null;
+  representative_name?: string | null;
+  representative_role?: string | null;
 };

@@ -1,6 +1,6 @@
+import Link from "next/link";
 import { ArrowRightLeft, CheckCircle2, Crown, Gift, History, ImageIcon, LockKeyhole, Medal, Sparkles, Trophy, WalletCards } from "lucide-react";
 import { performExtensionAction } from "@/app/empreendedor/extension-actions";
-import { PointsGuideDialog } from "@/app/empreendedor/recompensas/points-guide-dialog";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -14,6 +14,10 @@ function number(value: unknown) { const parsed = Number(value); return Number.is
 const statusLabels: Record<string,string> = { pending:"Pedido recebido", approved:"Aprovada", preparing:"Em preparação", sent:"Enviada", available:"Disponível", delivered:"Concluída", cancelled:"Cancelada" };
 const typeLabels: Record<string,string> = { digital:"Digital", physical:"Produto", experience:"Experiência", service:"Serviço" };
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" });
+const frequencyLabels: Record<string, string> = {
+  once: "uma única vez", per_activity: "por aula", per_assessment: "por avaliação", per_path: "por trilha",
+  per_journey: "por jornada", daily: "por dia", weekly: "por semana", unlimited: "sempre que acontecer",
+};
 
 type RewardsWorkspace = {
   settings: JsonRecord;
@@ -23,12 +27,13 @@ type RewardsWorkspace = {
   redemptions: JsonRecord[];
 };
 
-export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, pointRules }: {
+export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, pointRules, activeTab }: {
   rewards: RewardsWorkspace;
   ranking: RankingEntry[];
   ownRank: { position: number; points: number } | null;
   pointHistory: PointHistoryEntry[];
   pointRules: ParticipantPointRule[];
+  activeTab: "recompensas" | "como-conseguir-pontos" | "historico" | "ranking";
 }) {
   const rateSource = number(rewards.settings.source_points_per_unit) || 1;
   const rateReward = number(rewards.settings.reward_points_per_unit) || 1;
@@ -40,35 +45,43 @@ export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, poi
     <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary via-primary-active to-secondary p-6 text-white shadow-xl sm:p-8">
       <Sparkles className="absolute right-6 top-5 text-white/25" size={72} aria-hidden="true" />
       <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
-        <div><div className="flex items-center gap-2 text-sm font-black uppercase tracking-[.14em] text-white/75"><Crown size={18} /> Central de recompensas</div><h1 className="display-font mt-3 text-4xl sm:text-5xl">Transforme seu progresso em conquistas</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">Acompanhe seu saldo, converta pontos, escolha recompensas e compare seu avanço em um só lugar.</p><div className="mt-5"><PointsGuideDialog rules={pointRules} /></div></div>
+        <div><div className="flex items-center gap-2 text-sm font-black uppercase tracking-[.14em] text-white/75"><Crown size={18} /> Central de recompensas</div><h1 className="display-font mt-3 text-4xl sm:text-5xl">Transforme seu progresso em conquistas</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">Acompanhe seu saldo, converta pontos, escolha recompensas e compare seu avanço em um só lugar.</p><div className="mt-5"><Link href="/empreendedor/recompensas?tab=como-conseguir-pontos" className="inline-flex rounded-xl bg-white px-4 py-2 text-sm font-black text-primary shadow-sm">Como conseguir pontos</Link></div></div>
         <div className="grid min-w-52 gap-3 rounded-2xl border border-white/20 bg-white/10 p-5 text-center backdrop-blur"><div><p className="text-xs font-bold uppercase tracking-wide text-white/70">Seu saldo</p><p className="display-font mt-1 text-5xl">{rewards.reward_balance}</p><p className="text-sm text-white/75">pontos de recompensa</p></div><div className="border-t border-white/20 pt-3"><p className="text-xs text-white/65">Ranking de aprendizagem</p><p className="mt-1 font-black">{ownRank ? `#${ownRank.position} · ${ownRank.points} pontos` : "Ainda sem posição"}</p></div></div>
       </div>
       {nextReward ? <div className="relative mt-6 rounded-2xl bg-black/15 p-4"><div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>Próximo objetivo: <strong>{text(nextReward.name)}</strong></span><span>{Math.max(0, nextCost-rewards.reward_balance)} pontos restantes</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/20"><div className="h-full rounded-full bg-white" style={{ width: `${progress}%` }} /></div></div> : null}
     </section>
 
-    <nav aria-label="Áreas da central de recompensas" className="flex flex-wrap gap-2 rounded-2xl border border-border bg-white p-2 shadow-sm">
-      <a href="#saldo" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Saldo e conversão</a>
-      <a href="#catalogo" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Recompensas</a>
-      <a href="#historico" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Histórico</a>
-      <a href="#ranking" className="rounded-xl px-4 py-2 text-sm font-bold text-secondary hover:bg-primary-soft hover:text-primary">Ranking</a>
+    <nav aria-label="Abas da central de recompensas" className="flex gap-2 overflow-x-auto rounded-2xl border border-border bg-white p-2 shadow-sm">
+      {[
+        ["recompensas", "Recompensas"],
+        ["como-conseguir-pontos", "Como conseguir pontos"],
+        ["historico", "Histórico"],
+        ["ranking", "Ranking"],
+      ].map(([tab, label]) => <Link key={tab} href={tab === "recompensas" ? "/empreendedor/recompensas" : `/empreendedor/recompensas?tab=${tab}`} aria-current={activeTab === tab ? "page" : undefined} className={`inline-flex min-h-11 min-w-fit flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold ${activeTab === tab ? "bg-primary text-white" : "text-secondary hover:bg-primary-soft hover:text-primary"}`}>{label}</Link>)}
     </nav>
 
-    <section id="saldo" className="grid scroll-mt-24 gap-4 lg:grid-cols-[1.15fr_.85fr]">
+    {activeTab === "recompensas" ? <><section id="saldo" className="grid scroll-mt-24 gap-4 lg:grid-cols-[1.15fr_.85fr]">
       <Card className="brand-accent-card after:!hidden"><div className="flex items-start gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-primary-soft text-primary"><WalletCards size={24} /></span><div><p className="text-sm font-semibold text-muted">Pontos prontos para usar</p><p className="display-font mt-1 text-4xl text-secondary">{rewards.reward_balance}</p></div></div><div className="mt-5 grid grid-cols-2 gap-3 text-sm"><div className="rounded-xl bg-surface-muted p-3"><p className="text-muted">Pontos de engajamento</p><strong className="mt-1 block text-xl text-ink">{rewards.convertible_engagement_points}</strong></div><div className="rounded-xl bg-surface-muted p-3"><p className="text-muted">Conversão</p><strong className="mt-1 block text-xl text-ink">{rateSource} por {rateReward}</strong></div></div></Card>
       <Card><div className="flex items-center gap-2"><ArrowRightLeft className="text-primary" /><h2 className="font-black text-secondary">Converter pontos</h2></div><p className="mt-1 text-sm text-muted">Escolha quantos pontos de engajamento quer transformar. A conversão não pode ser desfeita.</p><form action={performExtensionAction} className="mt-5 grid gap-3"><input type="hidden" name="action_type" value="reward_convert" /><input type="hidden" name="return_to" value="/empreendedor/recompensas" /><Label>Quantidade<Input name="source_points" type="number" min="1" max={rewards.convertible_engagement_points} required placeholder="Digite a quantidade" /></Label><PendingSubmitButton pendingLabel="Convertendo…" disabled={rewards.convertible_engagement_points < 1}>Converter agora</PendingSubmitButton></form></Card>
     </section>
 
-    <section id="catalogo" className="grid scroll-mt-24 gap-4"><div className="flex items-end justify-between gap-4"><div><p className="brand-kicker">Escolha sua próxima conquista</p><h2 className="display-font mt-1 text-3xl text-secondary">Recompensas disponíveis</h2></div><Trophy className="hidden text-warning sm:block" size={38} /></div>{rewards.catalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{rewards.catalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}</section>
+    <section id="catalogo" className="grid scroll-mt-24 gap-4"><div className="flex items-end justify-between gap-4"><div><p className="brand-kicker">Escolha sua próxima conquista</p><h2 className="display-font mt-1 text-3xl text-secondary">Recompensas disponíveis</h2></div><Trophy className="hidden text-warning sm:block" size={38} /></div>{rewards.catalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{rewards.catalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}</section></> : null}
 
-    <section id="historico" className="grid scroll-mt-24 gap-5 xl:grid-cols-2">
+    {activeTab === "como-conseguir-pontos" ? <PointsTable pointRules={pointRules} /> : null}
+
+    {activeTab === "historico" ? <section id="historico" className="grid scroll-mt-24 gap-5 xl:grid-cols-2">
       <Card><div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"><History size={20} /></span><div><h2 className="font-black text-secondary">Histórico de pontuação</h2><p className="text-sm text-muted">Veja como seus pontos de aprendizagem foram acumulados.</p></div></div><div className="mt-5 grid gap-3">{pointHistory.length ? pointHistory.map((entry) => <article key={entry.id} className="flex items-center gap-4 rounded-xl border border-border p-4"><span className={`w-16 shrink-0 text-right text-sm font-black tabular-nums ${entry.amount >= 0 ? "text-success" : "text-danger"}`}>{entry.amount >= 0 ? "+" : ""}{entry.amount}</span><div><h3 className="font-bold text-ink">{entry.reason}</h3><time dateTime={entry.occurred_at} className="block text-xs text-muted">{dateFormatter.format(new Date(entry.occurred_at))}</time></div></article>) : <p className="text-sm text-muted">As ações elegíveis aparecerão neste histórico.</p>}</div></Card>
       <Card><div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-xl bg-primary-soft text-primary"><Gift size={20} /></span><div><h2 className="font-black text-secondary">Minha jornada de resgates</h2><p className="text-sm text-muted">Acompanhe cada etapa até a recompensa chegar.</p></div></div><div className="mt-5 grid gap-3">{rewards.redemptions.map((redemption) => <article key={text(redemption.id)} className="flex gap-3 rounded-xl border border-border p-4"><span className={`mt-0.5 grid size-9 shrink-0 place-items-center rounded-full ${text(redemption.status)==="delivered" ? "bg-success/15 text-success" : "bg-primary-soft text-primary"}`}>{text(redemption.status)==="delivered" ? <CheckCircle2 size={18} /> : <Gift size={17} />}</span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold text-ink">{text(redemption.reward_name)}</h3><p className="text-xs text-muted">{number(redemption.points_spent)} pontos utilizados</p></div><StatusPill tone={text(redemption.status) === "cancelled" ? "warning" : text(redemption.status) === "delivered" ? "success" : "info"}>{statusLabels[text(redemption.status)] ?? "Em andamento"}</StatusPill></div>{text(redemption.cancellation_reason) ? <p className="mt-3 text-sm text-warning">{text(redemption.cancellation_reason)}</p> : null}</div></article>)}{rewards.redemptions.length === 0 ? <p className="text-sm text-muted">Seu primeiro resgate aparecerá aqui.</p> : null}</div></Card>
-    </section>
+    </section> : null}
 
-    <section id="ranking" className="scroll-mt-24" aria-labelledby="ranking-titulo">
+    {activeTab === "ranking" ? <section id="ranking" className="scroll-mt-24" aria-labelledby="ranking-titulo">
       <Card><div className="flex items-start gap-3"><span className="grid size-10 place-items-center rounded-xl bg-warning-soft text-warning"><Medal size={20} /></span><div><h2 id="ranking-titulo" className="font-black text-secondary">Ranking de pontos</h2><p className="text-sm text-muted">Participantes são identificados por pseudônimo para preservar a privacidade.</p></div></div>{ranking.length ? <ol className="mt-5 grid gap-2">{ranking.map((entry) => <li key={`${entry.position}:${entry.participant}`} className={`flex items-center gap-4 rounded-xl border px-4 py-3 ${entry.is_current ? "border-primary/35 bg-primary-soft" : "border-border bg-surface"}`}><span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-sm font-black text-white">{entry.position}</span><strong className="flex-1 font-semibold text-ink">{entry.participant}</strong><span className="text-sm font-bold text-muted">{entry.points} pontos</span></li>)}</ol> : <EmptyState title="Ranking ainda não disponível" tone="info" className="mt-5">O ranking aparece quando há pontos registrados na sua organização.</EmptyState>}</Card>
-    </section>
+    </section> : null}
   </div>;
+}
+
+function PointsTable({ pointRules }: { pointRules: ParticipantPointRule[] }) {
+  return <section className="grid gap-4" aria-labelledby="como-conseguir-pontos-titulo"><div><p className="brand-kicker">Regras transparentes</p><h2 id="como-conseguir-pontos-titulo" className="display-font mt-1 text-3xl text-secondary">Como conseguir pontos</h2><p className="mt-2 text-sm text-muted">A tabela mostra todas as ações ativas, quantos pontos cada uma concede e a frequência permitida.</p></div><Card className="overflow-hidden p-0">{pointRules.length ? <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-surface-muted text-secondary"><tr><th className="px-4 py-3">Ação</th><th className="px-4 py-3">Descrição</th><th className="px-4 py-3 text-right">Pontos</th><th className="px-4 py-3">Frequência</th></tr></thead><tbody className="divide-y divide-border">{pointRules.map((rule) => <tr key={rule.definition_id}><td className="px-4 py-3 font-bold text-ink">{rule.name}</td><td className="px-4 py-3 text-muted">{rule.description}</td><td className="px-4 py-3 text-right text-lg font-black text-primary">+{rule.amount}</td><td className="px-4 py-3 text-muted">{frequencyLabels[rule.frequency] ?? rule.frequency}</td></tr>)}</tbody></table></div> : <EmptyState title="Nenhuma regra de pontuação ativa" tone="info">As ações configuradas pelo administrador aparecerão aqui.</EmptyState>}</Card></section>;
 }
 
 function RewardCard({ reward, balance }: { reward: JsonRecord; balance: number }) {

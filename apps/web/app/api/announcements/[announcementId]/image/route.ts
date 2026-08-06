@@ -16,7 +16,8 @@ export async function GET(
   try {
     const { announcementId } = await context.params;
     const id = z.string().uuid().parse(announcementId);
-    const descriptor = await engagementRuntime.getAnnouncementBannerDownload(auth.identity.user_account_id, id);
+    const variant = request.nextUrl.searchParams.get("variant") === "mobile" ? "mobile" : "desktop";
+    const descriptor = await engagementRuntime.getAnnouncementBannerDownload(auth.identity.user_account_id, id, variant);
     const url = await createAnnouncementBannerUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key });
     return NextResponse.redirect(url, 307);
   } catch {

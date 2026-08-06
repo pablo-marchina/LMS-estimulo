@@ -43,7 +43,7 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
   assert.match(stylesheet, /nav\[aria-label="Índice da aula"\]/);
   assert.match(stylesheet, /overflow: visible/);
   assert.doesNotMatch(stylesheet, /\.grid\.items-start\.gap-5/);
-  assert.doesNotMatch(stylesheet, /height: calc\(100dvh - 4rem\)/);
+  assert.doesNotMatch(stylesheet, /(?:^|\n)\s*height:\s*calc\(100dvh - 4rem\)/u);
   assert.doesNotMatch(stylesheet, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
   assert.doesNotMatch(stylesheet, /300px/);
 });

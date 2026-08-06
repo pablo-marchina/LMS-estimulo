@@ -14,6 +14,7 @@ import {
 import { createActivityCommentAction, rateActivityUtilityAction } from "@/app/actions/journey";
 import { ActivityContentProgress } from "@/components/activity-content-progress";
 import { ContentAssetViewer } from "@/components/content-asset-viewer";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { QuickCheckPanel } from "@/components/quick-check-panel";
 import { StatusPanel } from "@/components/status-panel";
@@ -272,17 +273,14 @@ export default async function ActivityPage({
                     <input type="hidden" name="idempotency_key" value={randomUUID()} />
 
                     <div className="grid min-w-0 gap-3">
-                      <label htmlFor="practice-file" className="grid gap-1.5 text-sm font-semibold text-ink">
-                        Arquivo da prática
-                        <input
-                          id="practice-file"
-                          name="file"
-                          type="file"
-                          accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.docx"
-                          required
-                          className="min-w-0 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-white file:px-3.5 file:py-2 file:text-sm file:font-semibold file:text-primary"
-                        />
-                      </label>
+                      <FileUploadPreview
+                        name="file"
+                        label="Arquivo da prática"
+                        accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.docx"
+                        required
+                        maxSizeBytes={6 * 1024 * 1024}
+                        help="PDF, imagem, TXT ou DOCX. O arquivo permanece privado e nunca é executado."
+                      />
 
                       <label className="flex items-start gap-2 text-xs leading-5 text-ink">
                         <input type="checkbox" name="allow_public_use" className="mt-0.5 size-4 shrink-0 accent-primary" />

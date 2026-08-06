@@ -5,7 +5,14 @@ export type InterfaceContentValue = {
   href?: string;
   button_text?: string;
   image_url?: string;
+  mobile_image_url?: string;
+  image_file_object_id?: string;
+  mobile_image_file_object_id?: string;
   alt?: string;
+  image_position?: string;
+  overlay_opacity?: number;
+  max_items?: number;
+  layout_variant?: string;
   tone?: string;
   visible?: boolean;
   order?: number;

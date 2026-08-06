@@ -6,7 +6,7 @@ import { extensionsRuntime } from "@/lib/extensions/runtime";
 
 export const dynamic = "force-dynamic";
 
-export default async function ParticipantRewardsPage({ searchParams }: { searchParams: Promise<{ erro?: string; sucesso?: string }> }) {
+export default async function ParticipantRewardsPage({ searchParams }: { searchParams: Promise<{ erro?: string; sucesso?: string; tab?: string }> }) {
   const query = await searchParams;
   const auth = await requireParticipantContext();
   const [workspace, engagement, pointRules] = await Promise.all([
@@ -25,6 +25,7 @@ export default async function ParticipantRewardsPage({ searchParams }: { searchP
         ownRank={engagement.own_rank}
         pointHistory={engagement.point_history}
         pointRules={pointRules.point_rules}
+        activeTab={query.tab === "como-conseguir-pontos" ? "como-conseguir-pontos" : query.tab === "historico" ? "historico" : query.tab === "ranking" ? "ranking" : "recompensas"}
       />
     </div>
   );

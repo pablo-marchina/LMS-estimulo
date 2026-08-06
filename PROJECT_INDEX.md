@@ -27,6 +27,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Modelo de competências](docs/journeys/OPENAI_COMPETENCY_MODEL.md)
 - [Lacunas de conteúdo](docs/journeys/OPENAI_CONTENT_GAPS.md)
 - [Requisitos de eventos](docs/journeys/OPENAI_EVENT_REQUIREMENTS.md)
+- [Versionamento editorial da Jornada OpenAI](docs/journeys/OPENAI_EDITORIAL_VERSIONING.md)
 
 ## Pesquisa e diagnóstico
 
@@ -87,6 +88,9 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Catálogo de eventos](docs/events/EVENT_CATALOG_V0_1.md)
 - [Idempotência e ordenação](docs/events/EVENT_IDEMPOTENCY_AND_ORDERING.md)
 - [Privacidade, segurança e retenção](docs/events/EVENT_PRIVACY_SECURITY_RETENTION.md)
+- [Nomenclatura e versionamento de eventos](docs/events/EVENT_NAMING_AND_VERSIONING.md)
+- [Registro de schemas de eventos](docs/events/EVENT_SCHEMA_REGISTRY.md)
+- [Qualidade das evidências de eventos](docs/events/EVENT_EVIDENCE_QUALITY.md)
 
 ## Estado da implementação
 
@@ -102,12 +106,17 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Bloqueadores da entrega](docs/implementation/DELIVERY_BLOCKERS.md)
 - [Registro das correções administrativas](docs/ADMIN_EDITOR_RELEASE_20260730.md)
 
+## Integrações
+
+- [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md)
+
 ## Operação, segurança e release
 
 - [Matriz de acesso](docs/operations/ACCESS_MATRIX.md)
 - [Configuração de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
 - [Baseline de qualidade](docs/operations/PRODUCTION_QUALITY_BASELINE.md)
 - [Runbook do release final](docs/operations/FINAL_RELEASE_RUNBOOK.md)
+- [Rotação da service role do Supabase](docs/deployments/SUPABASE_SERVICE_ROLE_ROTATION_2026_07_27.md)
 - [Backlog dos advisors do banco](docs/operations/DATABASE_ADVISOR_BACKLOG.md)
 - [Arquitetura de segurança e privacidade](docs/security/SECURITY_PRIVACY_ARCHITECTURE.md)
 - [Classificação e tratamento de dados](docs/security/DATA_CLASSIFICATION_AND_HANDLING.md)
@@ -117,6 +126,10 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Resposta a incidentes](docs/security/SECURITY_INCIDENT_RESPONSE.md)
 - [Backup, restore e disaster recovery](docs/security/BACKUP_RESTORE_DISASTER_RECOVERY.md)
 - [Gate de prontidão institucional](docs/security/PRODUCTION_READINESS_GATE.md)
+- [Bases legais e governança de consentimento](docs/security/LEGAL_BASIS_AND_CONSENT_GOVERNANCE.md)
+- [Fluxo de direitos dos titulares](docs/security/DATA_SUBJECT_RIGHTS_WORKFLOW.md)
+- [Registro das atividades de tratamento](docs/security/RECORD_OF_PROCESSING_ACTIVITIES.md)
+- [Fornecedores e transferências internacionais](docs/security/VENDOR_AND_INTERNATIONAL_TRANSFER_GOVERNANCE.md)
 
 ## Regra de leitura
 

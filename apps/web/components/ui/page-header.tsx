@@ -1,10 +1,14 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useInterfaceContent } from "@/components/interface-content-provider";
 import { interfaceText, interfaceVisible, pageHeaderCmsPrefix } from "@/lib/interface-content/contracts";
 import { cn } from "@/lib/utils";
+
+function safeMediaUrl(value: unknown) {
+  return typeof value === "string" && (value.startsWith("/") || value.startsWith("https://")) ? value : null;
+}
 
 export function PageHeader({
   eyebrow,
@@ -26,23 +30,59 @@ export function PageHeader({
   const pathname = usePathname();
   const content = useInterfaceContent();
   const prefix = cmsKey ?? pageHeaderCmsPrefix(pathname);
-  const dark = tone === "dark";
+  const mediaKey = `${prefix}.media`;
+  const media = content[mediaKey] ?? {};
+  const desktopImage = media.image_file_object_id
+    ? `/api/interface-content/image?key=${encodeURIComponent(mediaKey)}&variant=desktop`
+    : safeMediaUrl(media.image_url);
+  const mobileImage = media.mobile_image_file_object_id
+    ? `/api/interface-content/image?key=${encodeURIComponent(mediaKey)}&variant=mobile`
+    : safeMediaUrl(media.mobile_image_url) ?? desktopImage;
+  const hasMedia = interfaceVisible(content, mediaKey, false) && Boolean(desktopImage);
+  const dark = tone === "dark" || hasMedia;
   const participant = pathname === "/empreendedor" || pathname.startsWith("/empreendedor/");
   const resolvedEyebrow = eyebrow ? interfaceText(content, `${prefix}.eyebrow`, eyebrow) : "";
   const resolvedTitle = typeof title === "string" ? interfaceText(content, `${prefix}.title`, title) : title;
   const resolvedDescription = typeof description === "string" ? interfaceText(content, `${prefix}.description`, description) : description;
+  const objectPosition = typeof media.image_position === "string" && media.image_position.trim() ? media.image_position : "center";
+  const overlayOpacity = typeof media.overlay_opacity === "number" && Number.isFinite(media.overlay_opacity)
+    ? Math.min(0.9, Math.max(0, media.overlay_opacity))
+    : 0.48;
 
   return (
-    <header className={cn(
-      "flex flex-col rounded-xl sm:flex-row sm:items-end sm:justify-between",
-      participant ? "mb-4 gap-3 p-5 sm:p-6" : "mb-8 gap-4 p-6 sm:p-8",
-      dark ? "brand-hero text-white" : "brand-page-header border border-border",
-      className,
-    )}>
+    <header
+      className={cn(
+        "relative isolate flex flex-col overflow-hidden rounded-xl sm:flex-row sm:items-end sm:justify-between",
+        participant ? "mb-4 gap-3 p-5 sm:p-6" : "mb-8 gap-4 p-6 sm:p-8",
+        participant ? "min-h-40 sm:min-h-44" : "min-h-44 sm:min-h-52",
+        dark ? "brand-hero text-white" : "brand-page-header border border-border",
+        className,
+      )}
+    >
+      {hasMedia ? (
+        <>
+          <picture data-interface-content-key={mediaKey} className="absolute inset-0 -z-20">
+            {mobileImage ? <source media="(max-width: 639px)" srcSet={mobileImage} /> : null}
+            <img
+              src={desktopImage ?? undefined}
+              alt={typeof media.alt === "string" ? media.alt : ""}
+              className="h-full w-full object-cover"
+              style={{ objectPosition } as CSSProperties}
+            />
+          </picture>
+          <div className="absolute inset-0 -z-10 bg-black" style={{ opacity: overlayOpacity }} aria-hidden="true" />
+        </>
+      ) : null}
       <div className="relative z-10 max-w-2xl">
-        {resolvedEyebrow && interfaceVisible(content, `${prefix}.eyebrow`) ? <p data-interface-content-key={`${prefix}.eyebrow`} className={cn("mb-2 text-xs font-bold uppercase tracking-[.14em]", dark ? "text-brand-cyan" : "text-primary")}>{resolvedEyebrow}</p> : null}
-        {interfaceVisible(content, `${prefix}.title`) ? <h1 data-interface-content-key={`${prefix}.title`} className={cn("display-font text-2xl sm:text-3xl", dark ? "text-white" : "text-ink")}>{resolvedTitle}</h1> : null}
-        {resolvedDescription && interfaceVisible(content, `${prefix}.description`) ? <p data-interface-content-key={`${prefix}.description`} className={cn("mt-2 text-sm leading-6 sm:text-base", dark ? "text-white/85" : "text-muted")}>{resolvedDescription}</p> : null}
+        {resolvedEyebrow && interfaceVisible(content, `${prefix}.eyebrow`) ? (
+          <p data-interface-content-key={`${prefix}.eyebrow`} className={cn("mb-2 text-xs font-bold uppercase tracking-[.14em]", dark ? "text-brand-cyan" : "text-primary")}>{resolvedEyebrow}</p>
+        ) : null}
+        {interfaceVisible(content, `${prefix}.title`) ? (
+          <h1 data-interface-content-key={`${prefix}.title`} className={cn("display-font text-2xl sm:text-3xl", dark ? "text-white" : "text-ink")}>{resolvedTitle}</h1>
+        ) : null}
+        {resolvedDescription && interfaceVisible(content, `${prefix}.description`) ? (
+          <p data-interface-content-key={`${prefix}.description`} className={cn("mt-2 text-sm leading-6 sm:text-base", dark ? "text-white/90" : "text-muted")}>{resolvedDescription}</p>
+        ) : null}
       </div>
       {actions ? <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-3">{actions}</div> : null}
     </header>

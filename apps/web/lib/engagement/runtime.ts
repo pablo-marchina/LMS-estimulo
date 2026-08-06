@@ -4,6 +4,8 @@ import type {
   AnnouncementBannerDownload,
   AnnouncementUploadedFile,
   AnnouncementUploadIntent,
+  AdminHomeBadgeHighlights,
+  ParticipantFeaturedBadges,
   OperatorAnnouncements,
   ParticipantDiagnosticSummary,
   ParticipantEngagementHub,
@@ -21,6 +23,30 @@ export const engagementRuntime = {
   participantProfileSummary: (actorUserAccountId: string) => invokeServerRpc<ParticipantProfileSummary>(
     "get_participant_profile_summary",
     { p_actor_user_account_id: actorUserAccountId },
+  ),
+  participantFeaturedBadges: (actorUserAccountId: string) => invokeServerRpc<ParticipantFeaturedBadges>(
+    "get_participant_featured_badges",
+    { p_actor_user_account_id: actorUserAccountId },
+  ),
+  adminHomeBadgeHighlights: (actorUserAccountId: string, organizationId: string) => invokeServerRpc<AdminHomeBadgeHighlights>(
+    "get_admin_home_badge_highlights",
+    { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId },
+  ),
+  saveAdminHomeBadgeHighlights: (input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    badgeVersionIds: string[];
+    maxItems: number;
+    idempotencyKey: string;
+  }) => invokeServerRpc<{ saved_count: number; max_items: number; replayed: boolean }>(
+    "save_admin_home_badge_highlights",
+    {
+      p_actor_user_account_id: input.actorUserAccountId,
+      p_organization_id: input.organizationId,
+      p_badge_version_ids: input.badgeVersionIds,
+      p_max_items: input.maxItems,
+      p_idempotency_key: input.idempotencyKey,
+    },
   ),
   participantPointRules: (actorUserAccountId: string) => invokeServerRpc<ParticipantPointRules>(
     "list_participant_point_rules",
@@ -95,9 +121,9 @@ export const engagementRuntime = {
       p_idempotency_key: idempotencyKey,
     },
   ),
-  getAnnouncementBannerDownload: (actorUserAccountId: string, announcementId: string) => invokeServerRpc<AnnouncementBannerDownload>(
+  getAnnouncementBannerDownload: (actorUserAccountId: string, announcementId: string, variant: "desktop" | "mobile" = "desktop") => invokeServerRpc<AnnouncementBannerDownload>(
     "get_announcement_banner_download",
-    { p_actor_user_account_id: actorUserAccountId, p_announcement_id: announcementId },
+    { p_actor_user_account_id: actorUserAccountId, p_announcement_id: announcementId, p_variant: variant },
   ),
   saveAnnouncement: (input: {
     actorUserAccountId: string;
@@ -113,6 +139,7 @@ export const engagementRuntime = {
     startsAt: string | null;
     endsAt: string | null;
     imageFileObjectId: string | null;
+    mobileImageFileObjectId: string | null;
     imageAlt: string | null;
     displayMode: "image_only" | "image_with_text";
     idempotencyKey: string;
@@ -132,6 +159,7 @@ export const engagementRuntime = {
       p_starts_at: input.startsAt,
       p_ends_at: input.endsAt,
       p_image_file_object_id: input.imageFileObjectId,
+      p_mobile_image_file_object_id: input.mobileImageFileObjectId,
       p_image_alt: input.imageAlt,
       p_display_mode: input.displayMode,
       p_idempotency_key: input.idempotencyKey,
