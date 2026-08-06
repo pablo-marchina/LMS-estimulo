@@ -21,12 +21,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 --decode .tmp/admin-interface-fix.tar.gz.b64 > "$RUNNER_TEMP/admin-interface-fix.tar.gz"
+          cat > "$RUNNER_TEMP/payload-parts.sha256" <<'EOF'
+          87dbf1b3ec43c023aabdf037739303b97c1285ac307d2fc917356c4203835af8  .tmp/admin-interface-fix.part00
+          4432417f28d0707e3e9fb4333b7678606ba103ded989541a3b54aef70a78d48f  .tmp/admin-interface-fix.part01
+          7185a013c4a75c6937363d6c534d311887e0e294d1c02faea346223af45bda92  .tmp/admin-interface-fix.part02
+          7d82f7ec04ab6a29fbfe0cc17d5331f0fa0759748724be84a8f2642a60b65d4d  .tmp/admin-interface-fix.part03a
+          af6301bffc5a684ff469362fc3f518402a7a976d4baa557e185423582c36e21f  .tmp/admin-interface-fix.part03b
+          4e9c521ba2db2c9412ac0d2ba146058998ae4c4e1bb4a29e7030bcf9724765e3  .tmp/admin-interface-fix.part04
+          d5f54dd89d0bcb62607adf1f58337f9994150af86b26fa8c85812244c2dae23c  .tmp/admin-interface-fix.part05
+          8c8195ce207cd179b08da02713ec384844aa85000911b2b4cd4ba2a94039dd9a  .tmp/admin-interface-fix.part06
+          6924b5d11e26dd5cfc658585934671a79bed801a108e2892b0908831b9794a7a  .tmp/admin-interface-fix.part07
+          EOF
+          sha256sum --check --strict "$RUNNER_TEMP/payload-parts.sha256"
+          cat \
+            .tmp/admin-interface-fix.part00 \
+            .tmp/admin-interface-fix.part01 \
+            .tmp/admin-interface-fix.part02 \
+            .tmp/admin-interface-fix.part03a \
+            .tmp/admin-interface-fix.part03b \
+            .tmp/admin-interface-fix.part04 \
+            .tmp/admin-interface-fix.part05 \
+            .tmp/admin-interface-fix.part06 \
+            .tmp/admin-interface-fix.part07 \
+            > "$RUNNER_TEMP/admin-interface-fix.tar.gz.b64"
+          base64 --decode "$RUNNER_TEMP/admin-interface-fix.tar.gz.b64" > "$RUNNER_TEMP/admin-interface-fix.tar.gz"
           echo "a9d98418e2a4a99154d244259a2bcf503fc6e272f3f36b69f8eb1f69f71ee4c1  $RUNNER_TEMP/admin-interface-fix.tar.gz" | sha256sum --check --strict
           tar -xzf "$RUNNER_TEMP/admin-interface-fix.tar.gz" -C .
           rm -f .github/workflows/export-source-temporary.yml
           rm -f .github/workflows/apply-admin-interface-fix-temporary.yml
-          rm -f .tmp/admin-interface-fix.tar.gz.b64
+          rm -f .tmp/admin-interface-fix.tar.gz.b64 .tmp/admin-interface-fix.part*
           rmdir .tmp 2>/dev/null || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
