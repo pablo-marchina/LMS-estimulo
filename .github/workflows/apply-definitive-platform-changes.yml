@@ -5,7 +5,7 @@ on:
     branches:
       - fix/platform-content-progress-certificates
     paths:
-      - .github/changes/definitive-platform.patch.gz.b64
+      - .github/changes/definitive-platform.patch.gz.b64.part-*
 
 permissions:
   contents: write
@@ -23,10 +23,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 --decode .github/changes/definitive-platform.patch.gz.b64 | gzip --decompress > /tmp/definitive-platform.patch
+          cat .github/changes/definitive-platform.patch.gz.b64.part-* | base64 --decode | gzip --decompress > /tmp/definitive-platform.patch
           git apply --check /tmp/definitive-platform.patch
           git apply --index --whitespace=error-all /tmp/definitive-platform.patch
-          git rm .github/changes/definitive-platform.patch.gz.b64
+          git rm .github/changes/definitive-platform.patch.gz.b64.part-*
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "feat(platform): apply definitive content and progress corrections"
