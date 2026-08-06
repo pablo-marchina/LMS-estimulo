@@ -22,6 +22,8 @@ function selectedFile(formData: FormData, name: string) { const value = formData
 function decimal(value: string, fallback: number) { const parsed = Number.parseFloat(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function slug(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "elemento"; }
 
+const insertablePlacements = new Set(["before_content", "after_content", "footer"]);
+
 function canManageInterface(permissions: string[]) {
   return permissions.includes("interface.content.manage") || permissions.includes("journey.definition.manage");
 }
@@ -85,6 +87,8 @@ export async function registerInterfaceElementAction(formData: FormData) {
   const elementType = text(formData, "element_type") || "text";
   const contentKey = `${area}.${page}.${slug(elementName)}.${randomUUID().slice(0, 8)}`;
   const initialText = text(formData, "initial_text");
+  const requestedPlacement = text(formData, "placement");
+  const placement = insertablePlacements.has(requestedPlacement) ? requestedPlacement : "before_content";
   try {
     await registerAdminInterfaceContent({
       actorUserAccountId: auth.identity.user_account_id,
@@ -96,13 +100,13 @@ export async function registerInterfaceElementAction(formData: FormData) {
         page,
         element_name: elementName,
         element_type: elementType,
-        description: text(formData, "description") || "Elemento criado pelo CMS geral da experiência.",
+        description: text(formData, "description") || "Elemento criado na configuração administrativa da interface.",
         route_pattern: text(formData, "route_pattern") || null,
-        placement: text(formData, "placement") || "before_content",
+        placement,
         group_name: text(formData, "group_name") || null,
         can_delete: true,
-        default_value: { text: initialText, visible: true, order: 9999 },
-        initial_value: { text: initialText, visible: true, order: 9999 },
+        default_value: { text: initialText, visible: true, order: Math.max(0, integer(text(formData, "order"), 9999)), layout_variant: "default" },
+        initial_value: { text: initialText, visible: true, order: Math.max(0, integer(text(formData, "order"), 9999)), layout_variant: "default" },
       },
       idempotencyKey: randomUUID(),
     });

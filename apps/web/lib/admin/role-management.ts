@@ -13,11 +13,12 @@ export type ManagedRole = {
 };
 
 export type ManagedMembership = {
-  membership_id: string;
+  membership_id: string | null;
   user_account_id: string;
   email: string;
+  account_status: string;
   membership_status: string;
-  valid_from: string;
+  valid_from: string | null;
   valid_until: string | null;
   roles: ManagedRole[];
 };

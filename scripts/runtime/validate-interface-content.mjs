@@ -24,7 +24,7 @@ assert.match(runtime, /interface_content_fallback/);
 assert.match(actions, /updateTag\(INTERFACE_CONTENT_CACHE_TAG\)/);
 assert.match(actions, /interface\.content\.manage/);
 assert.match(page, /interface\.content\.manage/);
-assert.match(page, /CMS temporariamente indisponível/);
+assert.match(page, /Interface temporariamente indisponível/);
 assert.doesNotMatch(layout, /getPublishedInterfaceContent\(\)\.catch/);
 
 for (const operation of [
