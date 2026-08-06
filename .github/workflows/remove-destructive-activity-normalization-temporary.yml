@@ -1,0 +1,44 @@
+name: Remove destructive activity normalization temporary
+
+on:
+  push:
+    branches:
+      - fix/platform-content-progress-certificates
+    paths:
+      - .github/workflows/remove-destructive-activity-normalization-temporary.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve activity content used by runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql')
+          content = path.read_text()
+          block = """select set_config('app.admin_live_edit','on',true);
+          update catalog.activity_versions
+          set configuration=coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts',
+              content_hash=app_private.e14_request_hash(coalesce(configuration,'{}'::jsonb)-'content_sections'-'prompts')
+          where coalesce(configuration,'{}'::jsonb) ?| array['content_sections','prompts'];
+
+          """
+          if content.count(block) != 1:
+              raise SystemExit(f'expected exactly one destructive normalization block, found {content.count(block)}')
+          path.write_text(content.replace(block, '', 1))
+          PY
+          git rm .github/workflows/remove-destructive-activity-normalization-temporary.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql
+          git commit -m "fix(database): preserve activity content during replay"
+          git push origin HEAD:fix/platform-content-progress-certificates
