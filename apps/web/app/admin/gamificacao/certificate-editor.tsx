@@ -32,7 +32,7 @@ export function CertificateEditor({ certificates, journeyVersions, ruleVersions 
   const layout = objectValue(version?.template_layout);
 
   return <Card>
-    <div><h2 className="text-lg font-black text-secondary">Regra de emissão</h2><p className="mt-1 text-sm text-muted">Escolha qual jornada gera o certificado e qual condição precisa ser cumprida. O fundo é escolhido automaticamente pelos modelos definidos acima.</p></div>
+    <div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">Etapa 3 de 3</p><h2 className="mt-1 text-lg font-black text-secondary">Regra de emissão</h2><p className="mt-1 text-sm text-muted">Escolha qual jornada gera o certificado e qual condição precisa ser cumprida. O fundo é escolhido automaticamente pelos modelos definidos acima.</p></div>
     <form key={`${selectedDefinitionId}:${version?.id ?? "new"}`} action={saveGamificationResourceAction} className="mt-5 grid gap-4">
       <input type="hidden" name="resource_type" value="certificate" />
       <input type="hidden" name="template_file_object_id" value={version?.template_file_object_id ?? ""} />

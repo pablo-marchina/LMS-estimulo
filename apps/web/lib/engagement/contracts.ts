@@ -8,6 +8,7 @@ export type ParticipantAnnouncement = {
   starts_at: string | null;
   ends_at: string | null;
   image_file_object_id: string | null;
+  mobile_image_file_object_id: string | null;
   image_alt: string | null;
   display_mode: "image_only" | "image_with_text";
 };
@@ -94,6 +95,34 @@ export type ParticipantDiagnosticSummary = {
   dimensions: DiagnosticDimensionSummary[];
 };
 
+
+export type AdminHomeBadgeHighlight = {
+  badge_version_id: string;
+  title: string;
+  description: string;
+  selected: boolean;
+  position: number | null;
+};
+
+export type AdminHomeBadgeHighlights = {
+  organization_id: string;
+  max_items: number;
+  badges: AdminHomeBadgeHighlight[];
+};
+
+export type ParticipantFeaturedBadge = {
+  badge_version_id: string;
+  title: string;
+  description: string;
+  earned: boolean;
+  position: number;
+};
+
+export type ParticipantFeaturedBadges = {
+  max_items: number;
+  badges: ParticipantFeaturedBadge[];
+};
+
 export type OperatorAnnouncement = ParticipantAnnouncement & {
   status: "draft" | "published" | "retired";
   aggregate_version: number;
@@ -141,5 +170,6 @@ export type SavedAnnouncement = {
   status: "draft" | "published" | "retired";
   aggregate_version: number;
   image_file_object_id: string | null;
+  mobile_image_file_object_id: string | null;
   display_mode: "image_only" | "image_with_text";
 };

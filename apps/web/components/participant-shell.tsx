@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { preconnect, prefetchDNS } from "react-dom";
-import { Award, BookOpen, Building2, Compass, FileUp, Gift, Home, LogOut, Menu, Trophy, User, X } from "lucide-react";
+import { Award, BookOpen, Building2, Compass, Gift, Home, LogOut, Menu, User, X } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { BehaviorEventTracker } from "@/components/behavior-event-tracker";
 import { EstimuloBrand } from "@/components/estimulo-brand";
@@ -20,8 +20,6 @@ const linkDefinitions = [
   { href: "/empreendedor", label: "Início", contentKey: "participant.nav.home", icon: Home, exact: true, order: 10 },
   { href: "/empreendedor/jornadas", label: "Jornadas", contentKey: "participant.nav.journeys", icon: Compass, order: 20 },
   { href: "/empreendedor/biblioteca", label: "Biblioteca", contentKey: "participant.nav.library", icon: BookOpen, order: 30 },
-  { href: "/empreendedor/entregas", label: "Entregas", contentKey: "participant.nav.submissions", icon: FileUp, order: 40 },
-  { href: "/empreendedor/engajamento", label: "Pontuação", contentKey: "participant.nav.points", icon: Trophy, order: 50 },
   { href: "/empreendedor/recompensas", label: "Recompensas", contentKey: "participant.nav.rewards", icon: Gift, order: 55 },
   { href: "/empreendedor/conquistas", label: "Conquistas", contentKey: "participant.nav.achievements", icon: Award, order: 60 },
   { href: "/empreendedor/b2b", label: "B2B", contentKey: "participant.nav.b2b", icon: Building2, order: 65 },

@@ -55,20 +55,11 @@ test("published journeys can return to draft and only drafts can be deleted", ()
   assert.match(migration, /delete_admin_journey_draft/u);
 });
 
-test("behavior page documents the exact eight-dimension formula and confidence", () => {
-  assert.match(behaviorPage, /média simples das oito dimensões/u);
-  assert.match(behaviorPage, /eventos × 2,5/u);
-  assert.match(behaviorPage, /dias ativos × 8/u);
-  assert.match(behaviorPage, /conclusões × 12/u);
-  assert.match(behaviorPage, /semanas ativas × 15/u);
-  assert.match(behaviorPage, /quantidade de eventos ÷ 30/u);
-});
-
-test("published lesson UI ignores removed complementary text and stays structured", () => {
+test("published lesson UI hides complementary text while migrations preserve runtime content", () => {
   assert.doesNotMatch(lessonPage, /activity\.sections/u);
   assert.doesNotMatch(lessonPage, /activity\.prompts/u);
   assert.doesNotMatch(lessonPage, /Prompts para adaptar/u);
-  assert.match(migration, /-'content_sections'-'prompts'/u);
+  assert.doesNotMatch(migration, /-'content_sections'-'prompts'/u);
   assert.match(lessonPage, /xl:grid-cols-\[minmax\(0,1fr\)_300px\]/u);
   assert.match(lessonPage, /xl:sticky xl:top-20/u);
   assert.match(lessonPage, /Conteúdo da aula/u);

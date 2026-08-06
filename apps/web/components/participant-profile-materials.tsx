@@ -1,4 +1,5 @@
 import { FileCheck2, FileUp, Sparkles } from "lucide-react";
+import { FileUploadPreview } from "@/components/file-upload-preview";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -25,6 +26,21 @@ const statusLabels: Record<string, string> = {
 function text(value: unknown) { return typeof value === "string" ? value : ""; }
 function number(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 function records(value: unknown): JsonRecord[] { return Array.isArray(value) ? value.filter((item): item is JsonRecord => Boolean(item) && typeof item === "object" && !Array.isArray(item)) : []; }
+
+function acceptedFileTypes(formats: string[]) {
+  const values = formats.flatMap((format) => {
+    if (format === "pdf") return [".pdf", "application/pdf"];
+    if (format === "image") return [".png", ".jpg", ".jpeg", ".webp", "image/png", "image/jpeg", "image/webp"];
+    if (format === "document") return [".doc", ".docx", ".odt", ".txt", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
+    if (format === "spreadsheet") return [".xls", ".xlsx", ".csv", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv"];
+    if (format === "presentation") return [".ppt", ".pptx", "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"];
+    if (format === "video") return [".mp4", ".webm", "video/mp4", "video/webm"];
+    if (format.startsWith(".")) return [format];
+    return [];
+  });
+  return [...new Set(values)].join(",") || ".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.txt,.xls,.xlsx,.csv,.ppt,.pptx,.mp4,.webm";
+}
+
 function statusTone(status: string): "success" | "warning" | "info" | "neutral" {
   if (status === "approved" || status === "available") return "success";
   if (["rejected", "returned", "cancelled", "upload_pending"].includes(status)) return "warning";
@@ -37,7 +53,7 @@ export async function ParticipantProfileMaterials() {
   const workspace = await extensionsRuntime.participantWorkspace(auth.identity.user_account_id);
 
   return (
-    <section id="materiais-enviados" aria-labelledby="materiais-enviados-titulo" className="mx-auto grid max-w-[1400px] scroll-mt-24 gap-5 px-5 pb-10 lg:px-9">
+    <section id="materiais-enviados" aria-labelledby="materiais-enviados-titulo" className="grid scroll-mt-24 gap-5">
       <div>
         <p className="brand-kicker">Aplicação e acompanhamento</p>
         <h2 id="materiais-enviados-titulo" className="display-font mt-1 text-2xl text-secondary">Meus materiais enviados</h2>
@@ -79,10 +95,10 @@ function DeliveryCard({ delivery }: { delivery: JsonRecord }) {
         <summary className="cursor-pointer p-4 font-bold text-secondary">{latest ? "Enviar nova tentativa" : "Fazer entrega"}</summary>
         <form action="/api/delivery-uploads" method="post" encType="multipart/form-data" className="grid gap-4 border-t border-border p-4">
           <input type="hidden" name="delivery_configuration_id" value={text(delivery.id)} />
-          <input type="hidden" name="return_to" value="/empreendedor/perfil#materiais-enviados" />
+          <input type="hidden" name="return_to" value="/empreendedor/perfil/entregas#materiais-enviados" />
           {allowed.includes("text") ? <Label>Resposta em texto<Textarea name="text_content" rows={8} placeholder="Escreva sua resposta..." /></Label> : null}
           {allowed.includes("external_link") ? <Label>Link externo<Input name="external_link" type="url" placeholder="https://..." /></Label> : null}
-          {allowed.some((format) => !["text", "external_link"].includes(format)) ? <Label>Arquivos<Input name="files" type="file" multiple /><span className="text-[11px] font-normal text-muted">Formatos aceitos: {allowed.filter((format) => !["text", "external_link"].includes(format)).join(", ")}. Até {Math.round(number(delivery.max_file_size_bytes) / 1024 / 1024)} MB por arquivo.</span></Label> : null}
+          {allowed.some((format) => !["text", "external_link"].includes(format)) ? <FileUploadPreview name="files" label="Arquivos" accept={acceptedFileTypes(allowed)} multiple maxFiles={Math.max(1, number(delivery.max_files) || 5)} maxSizeBytes={Math.max(1, number(delivery.max_file_size_bytes))} help={`Tipos configurados: ${allowed.filter((format) => !["text", "external_link"].includes(format)).join(", ")}.`} /> : null}
           <button type="submit" className="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-95"><FileCheck2 size={17} />Enviar material</button>
         </form>
       </details>

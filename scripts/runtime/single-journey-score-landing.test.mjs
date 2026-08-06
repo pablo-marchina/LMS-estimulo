@@ -15,7 +15,7 @@ test('journeys have a single operational record and two visible states', async (
 
   assert.match(historyMigration, /uq_catalog_single_journey_per_definition/);
   assert.match(historyMigration, /check\(version_number=1\)/);
-  assert.match(lifecycleMigration, /v_status='draft'/);
+  assert.match(lifecycleMigration, /v_status:='draft'/);
   assert.match(lifecycleMigration, /jv\.status in \('draft','published'\)/);
   assert.match(lifecycleMigration, /status='cancelled'/);
   assert.match(lifecycleMigration, /drop function if exists public\.create_admin_journey_draft_from_version/);
@@ -42,10 +42,11 @@ test('new migrations have unique ordered versions', async () => {
 });
 
 test('participant preview is isolated and navigation has progress feedback', async () => {
-  const [guard, shell, progress] = await Promise.all([
+  const [guard, shell, layout, progress] = await Promise.all([
     read('apps/web/components/interface-preview-guard.tsx'),
     read('apps/web/components/participant-shell.tsx'),
-    read('apps/web/components/participant-navigation-progress.tsx'),
+    read('apps/web/app/layout.tsx'),
+    read('apps/web/components/navigation-feedback.tsx'),
   ]);
 
   assert.match(guard, /interface_preview/);
@@ -54,7 +55,7 @@ test('participant preview is isolated and navigation has progress feedback', asy
   assert.match(guard, /XMLHttpRequest/);
   assert.match(guard, /sendBeacon/);
   assert.match(shell, /InterfacePreviewGuard/);
-  assert.match(shell, /ParticipantNavigationProgress/);
+  assert.match(layout, /NavigationFeedback/);
   assert.match(progress, /role="progressbar"/);
 });
 

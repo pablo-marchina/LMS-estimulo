@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { saveAdminLesson, saveAdminTrack } from "@/lib/admin/product-management";
+import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
@@ -139,6 +140,9 @@ export async function saveAulaAction(formData: FormData) {
   const contentSource = text(formData, "content_source") || (activityVersionId ? "current" : "none");
   const previousConfiguration = objectSnapshot(formData, "configuration_snapshot");
   const previousMetadata = objectSnapshot(formData, "metadata_snapshot");
+  const thumbnailFile = selectedFile(formData, "continue_thumbnail_file");
+  const currentThumbnailFileObjectId = nullable(formData, "current_continue_thumbnail_file_object_id");
+  const thumbnailAlt = text(formData, "continue_thumbnail_alt");
   const { content_sections: _oldSections, prompts: _oldPrompts, practice_checklist: _oldChecklist, ...preservedConfiguration } = previousConfiguration;
   const configuration = { ...preservedConfiguration, ...(checklist.length ? { practice_checklist: checklist } : {}) };
   const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
@@ -150,6 +154,15 @@ export async function saveAulaAction(formData: FormData) {
     if (contentSource === "new") { libraryItemVersionId = await createInlineLibraryContent({ formData, actor, organizationId, journeyVersionId }); normalizedContentSource = "new"; }
     if (contentSource === "library" && !libraryItemVersionId) throw new Error("LIBRARY_CONTENT_REQUIRED");
     const stepCode = text(formData, "step_code") || `passo_${position}_${randomUUID().slice(0, 6)}`;
+    const thumbnailFileObjectId = thumbnailFile
+      ? await uploadAdministrativeImage({ actorUserAccountId: actor, organizationId, file: thumbnailFile, source: "lesson_thumbnail", role: "continue_activity" })
+      : currentThumbnailFileObjectId;
+    const metadata = {
+      ...previousMetadata,
+      always_available: previousMetadata.always_available ?? true,
+      continue_thumbnail_file_object_id: thumbnailFileObjectId,
+      continue_thumbnail_alt: thumbnailAlt || previousMetadata.continue_thumbnail_alt || title,
+    };
     const result = await saveAdminLesson({
       actorUserAccountId: actor,
       organizationId,
@@ -165,7 +178,7 @@ export async function saveAulaAction(formData: FormData) {
         configuration,
         position,
         is_required: checked(formData, "is_required"),
-        metadata: { ...previousMetadata, always_available: previousMetadata.always_available ?? true },
+        metadata,
         content_source: normalizedContentSource,
         library_item_version_id: libraryItemVersionId || null,
         content_required: checked(formData, "content_required"),

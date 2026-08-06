@@ -16,12 +16,15 @@ test("platform loading uses one global progress bar and no page skeletons", asyn
 });
 
 test("lesson consumes the full participant content area without a permanent side column", async () => {
-  const shell = await read("apps/web/components/participant-shell.tsx");
+  const [shell, layoutCss] = await Promise.all([
+    read("apps/web/components/participant-shell.tsx"),
+    read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css"),
+  ]);
   assert.match(shell, /pathname\.startsWith\("\/empreendedor\/atividade\/"\)/);
   assert.match(shell, /max-w-none \[&>div\]:max-w-none/);
-  assert.match(shell, /grid-template-columns: minmax\(0, 1fr\) !important/);
-  assert.match(shell, /order: -1/);
-  assert.match(shell, /grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(layoutCss, /grid-template-columns: minmax\(0, 1fr\) 18rem !important/);
+  assert.match(layoutCss, /position: sticky !important/);
+  assert.match(layoutCss, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
 });
 
 test("admin extension saves do not catch successful Next redirects", async () => {

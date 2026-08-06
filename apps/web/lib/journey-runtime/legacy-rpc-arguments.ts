@@ -1,5 +1,9 @@
 export type LegacyRpcArguments = Record<string, unknown>;
 
+export const legacyRpcNames = {
+  getParticipantState: "e14_get_participant_state"
+} as const;
+
 type CompleteDiagnosticInput = {
   actorUserAccountId: string;
   sessionId: string;

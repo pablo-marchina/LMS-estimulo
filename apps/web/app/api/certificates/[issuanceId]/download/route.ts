@@ -19,7 +19,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { issuanceId } = await params;
     const payload = await extendedCredentialRuntime.renderPayload(auth.identity.user_account_id, issuanceId);
     const templateBytes = payload.template ? await downloadCredentialObject(payload.template.bucket, payload.template.object_key).catch(() => null) : null;
-    const pdf = generateCertificatePdf(payload, templateBytes);
+    const logoBytes = payload.issuer?.logo ? await downloadCredentialObject(payload.issuer.logo.bucket, payload.issuer.logo.object_key).catch(() => null) : null;
+    const signatureBytes = payload.issuer?.signature ? await downloadCredentialObject(payload.issuer.signature.bucket, payload.issuer.signature.object_key).catch(() => null) : null;
+    const pdf = generateCertificatePdf({ ...payload, verification_url: new URL(`/credenciais/${encodeURIComponent(payload.verification_code)}`, request.url).toString() }, templateBytes, logoBytes, signatureBytes);
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,
       headers: {

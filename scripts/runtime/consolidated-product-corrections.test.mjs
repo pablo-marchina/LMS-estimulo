@@ -203,8 +203,9 @@ test("migration boundary preserves release hardening and growth extensions", asy
     "20260731150000_admin_program_management.sql",
     "20260731180000_admin_delivery_and_journey_corrections.sql",
     "20260731180100_harden_ai_grading_provider_storage.sql",
+    "20260806023000_definitive_platform_content_progress_certificates.sql",
   ]) {
     assert.match(validator, new RegExp(migration.replaceAll(".", "\\."), "u"));
   }
-  assert.match(validator, /expectedLastMigration = '20260731180100_harden_ai_grading_provider_storage\.sql'/u);
+  assert.match(validator, /expectedLastMigration = '20260806023000_definitive_platform_content_progress_certificates\.sql'/u);
 });

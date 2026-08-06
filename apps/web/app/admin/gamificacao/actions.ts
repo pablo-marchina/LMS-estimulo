@@ -3,13 +3,16 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { getAdminProductWorkspace, saveAdminProductResource } from "@/lib/admin/product-management";
+import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extendedCredentialRuntime } from "@/lib/credentials/extended-runtime";
+import { engagementRuntime } from "@/lib/engagement/runtime";
 
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
 function nullable(formData: FormData, name: string) { return text(formData, name) || null; }
+function selectedFile(formData: FormData, name: string) { const entry = formData.get(name); return entry instanceof File && entry.size > 0 ? entry : null; }
 function deriveCode(source: string, fallback: string) { const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60); return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback; }
 function positiveInteger(value: string, fallback: number) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function boundedRatio(value: string, fallback: number) { const parsed = Number.parseFloat(value); return Number.isFinite(parsed) ? Math.min(.8, Math.max(.15, parsed / 100)) : fallback; }
@@ -57,4 +60,64 @@ export async function saveGamificationResourceAction(formData: FormData) {
     }
   } catch { redirect(`/admin/gamificacao?tipo=${typeQuery}&erro=falha`); }
   redirect(`/admin/gamificacao?tipo=${typeQuery}&sucesso=salvo`);
+}
+
+
+export async function saveHomeBadgeHighlightsAction(formData: FormData) {
+  const auth = await getAuthContext();
+  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/gamificacao?tipo=selos&erro=sem_permissao");
+
+  const maxItems = Math.min(12, Math.max(1, positiveInteger(text(formData, "max_items"), 3)));
+  const badgeVersionIds = Array.from(formData.entries())
+    .filter(([name, value]) => name.startsWith("badge_position_") && Number(value) > 0)
+    .map(([name, value]) => ({ id: name.replace("badge_position_", ""), position: Number(value) }))
+    .sort((a, b) => a.position - b.position)
+    .map((item) => item.id);
+
+  try {
+    await engagementRuntime.saveAdminHomeBadgeHighlights({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId: organization.organization_id,
+      badgeVersionIds,
+      maxItems,
+      idempotencyKey: randomUUID(),
+    });
+  } catch {
+    redirect("/admin/gamificacao?tipo=selos&erro=destaques");
+  }
+  redirect("/admin/gamificacao?tipo=selos&sucesso=destaques");
+}
+
+
+export async function saveCertificateIssuerAction(formData: FormData) {
+  const auth = await getAuthContext();
+  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/gamificacao?tipo=certificados&erro=sem_permissao");
+  const actor = auth.identity.user_account_id;
+  const organizationId = organization.organization_id;
+  const logo = selectedFile(formData, "issuer_logo_file");
+  const signature = selectedFile(formData, "issuer_signature_file");
+  try {
+    const logoFileObjectId = logo ? await uploadAdministrativeImage({ actorUserAccountId: actor, organizationId, file: logo, source: "certificate_issuer", role: "logo" }) : nullable(formData, "current_logo_file_object_id");
+    const signatureFileObjectId = signature ? await uploadAdministrativeImage({ actorUserAccountId: actor, organizationId, file: signature, source: "certificate_issuer", role: "signature" }) : nullable(formData, "current_signature_file_object_id");
+    await extendedCredentialRuntime.saveIssuer({
+      actorUserAccountId: actor,
+      organizationId,
+      name: text(formData, "issuer_name"),
+      cnpj: nullable(formData, "issuer_cnpj"),
+      representativeName: nullable(formData, "representative_name"),
+      representativeRole: nullable(formData, "representative_role"),
+      logoFileObjectId,
+      signatureFileObjectId,
+      primaryColor: text(formData, "primary_color") || "#13115B",
+      secondaryColor: text(formData, "secondary_color") || "#54D68C",
+      idempotencyKey: randomUUID(),
+    });
+  } catch {
+    redirect("/admin/gamificacao?tipo=certificados&erro=emissor");
+  }
+  redirect("/admin/gamificacao?tipo=certificados&sucesso=emissor");
 }

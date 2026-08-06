@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
+import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import {
   INTERFACE_CONTENT_CACHE_TAG,
   archiveAdminInterfaceContent,
@@ -17,6 +18,8 @@ import {
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
 function checked(formData: FormData, name: string) { return formData.get(name) === "on" || formData.get(name) === "true"; }
 function integer(value: string, fallback: number) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) ? parsed : fallback; }
+function selectedFile(formData: FormData, name: string) { const value = formData.get(name); return value instanceof File && value.size > 0 ? value : null; }
+function decimal(value: string, fallback: number) { const parsed = Number.parseFloat(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function slug(value: string) { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50) || "elemento"; }
 
 function canManageInterface(permissions: string[]) {
@@ -35,19 +38,32 @@ export async function saveInterfaceContentAction(formData: FormData) {
   const { auth, organization } = await authorize();
   const contentKey = text(formData, "content_key");
   const publishNow = checked(formData, "publish_now");
-  const value = {
-    text: text(formData, "text"),
-    title: text(formData, "title"),
-    body: text(formData, "body"),
-    href: text(formData, "href"),
-    button_text: text(formData, "button_text"),
-    image_url: text(formData, "image_url"),
-    alt: text(formData, "alt"),
-    tone: text(formData, "tone") || "neutral",
-    visible: checked(formData, "visible"),
-    order: integer(text(formData, "order"), 9999),
-  };
   try {
+    const desktopFile = selectedFile(formData, "desktop_image_file");
+    const mobileFile = selectedFile(formData, "mobile_image_file");
+    const currentDesktopId = text(formData, "current_image_file_object_id") || null;
+    const currentMobileId = text(formData, "current_mobile_image_file_object_id") || null;
+    const imageFileObjectId = desktopFile ? await uploadAdministrativeImage({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, file: desktopFile, source: "interface_content", role: "desktop" }) : currentDesktopId;
+    const mobileImageFileObjectId = mobileFile ? await uploadAdministrativeImage({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, file: mobileFile, source: "interface_content", role: "mobile" }) : currentMobileId;
+    const value = {
+      text: text(formData, "text"),
+      title: text(formData, "title"),
+      body: text(formData, "body"),
+      href: text(formData, "href"),
+      button_text: text(formData, "button_text"),
+      image_url: text(formData, "image_url"),
+      mobile_image_url: text(formData, "mobile_image_url"),
+      image_file_object_id: imageFileObjectId ?? undefined,
+      mobile_image_file_object_id: mobileImageFileObjectId ?? undefined,
+      alt: text(formData, "alt"),
+      tone: text(formData, "tone") || "neutral",
+      image_position: text(formData, "image_position") || "center",
+      overlay_opacity: Math.max(0, Math.min(0.9, decimal(text(formData, "overlay_opacity"), 0.55))),
+      layout_variant: text(formData, "layout_variant") || "default",
+      max_items: Math.max(1, integer(text(formData, "max_items"), 6)),
+      visible: checked(formData, "visible"),
+      order: integer(text(formData, "order"), 9999),
+    };
     await saveAdminInterfaceContent({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, entries: [{ content_key: contentKey, locale: text(formData, "locale") || "pt-BR", value }], idempotencyKey: randomUUID() });
     if (publishNow) {
       await publishAdminInterfaceContent({ actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id, contentKeys: [contentKey], idempotencyKey: randomUUID() });

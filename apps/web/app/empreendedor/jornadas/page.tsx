@@ -76,7 +76,7 @@ export default async function JornadasCatalogPage({ searchParams }: { searchPara
   const all = [...enrolledModels, ...eligibleModels];
   const featured = all.filter((journey) => journey.presentation.featured === true).sort((a, b) => rank(a.presentation) - rank(b.presentation))[0] ?? all[0] ?? null;
   const isFeatured = (journey: CatalogJourney) => journey.key === featured?.key;
-  const inProgress = enrolledModels.filter((journey) => !isFeatured(journey) && journey.enrolled?.journey_status !== "completed");
+  const inProgress = enrolledModels.filter((journey) => journey.enrolled?.journey_status !== "completed");
   const completed = enrolledModels.filter((journey) => !isFeatured(journey) && journey.enrolled?.journey_status === "completed");
   const recommended = eligibleModels.filter((journey) => !isFeatured(journey) && !journey.eligible?.open_to_all);
   const open = eligibleModels.filter((journey) => !isFeatured(journey) && journey.eligible?.open_to_all);

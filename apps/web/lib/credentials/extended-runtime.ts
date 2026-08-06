@@ -59,15 +59,31 @@ export type CertificateTemplateCatalog = {
   items: CertificateTemplate[];
 };
 
+export type CertificateIssuer = {
+  id?: string;
+  owner_organization_id: string;
+  name: string;
+  cnpj?: string | null;
+  representative_name?: string | null;
+  representative_role?: string | null;
+  logo_file_object_id?: string | null;
+  signature_file_object_id?: string | null;
+  primary_color: string;
+  secondary_color: string;
+};
+
 export type CertificateRenderPayload = {
   issuance_id: string;
   display_name: string;
   journey_title: string;
   certificate_name: string;
   verification_code: string;
+  verification_url?: string;
+  certificate_number?: string | null;
   issued_at: string;
   expires_at: string | null;
   template_layout: { name_y?: number; journey_y?: number; text_color?: string };
+  issuer?: null | { name: string; cnpj?: string | null; representative_name?: string | null; representative_role?: string | null; primary_color?: string; secondary_color?: string; logo?: null | { bucket: string; object_key: string; content_type: string; filename: string | null }; signature?: null | { bucket: string; object_key: string; content_type: string; filename: string | null } };
   template: null | { bucket: string; object_key: string; content_type: string; filename: string | null };
 };
 
@@ -83,6 +99,23 @@ type UploadIntent = {
 export const extendedCredentialRuntime = {
   listExternal: (actorUserAccountId: string) => invokeServerRpc<ExternalCredentialWallet>("list_participant_external_credentials", { p_actor_user_account_id: actorUserAccountId }),
   listIssuers: (actorUserAccountId: string) => invokeServerRpc<ExternalCredentialIssuers>("list_external_credential_issuers", { p_actor_user_account_id: actorUserAccountId }),
+  getIssuer: (actorUserAccountId: string, organizationId: string) => invokeServerRpc<CertificateIssuer>("get_admin_certificate_issuer", {
+    p_actor_user_account_id: actorUserAccountId,
+    p_organization_id: organizationId,
+  }),
+  saveIssuer: (input: { actorUserAccountId: string; organizationId: string; name: string; cnpj: string | null; representativeName: string | null; representativeRole: string | null; logoFileObjectId: string | null; signatureFileObjectId: string | null; primaryColor: string; secondaryColor: string; idempotencyKey: string }) => invokeServerRpc<{ issuer_id: string; replayed: boolean }>("save_admin_certificate_issuer", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_name: input.name,
+    p_cnpj: input.cnpj,
+    p_representative_name: input.representativeName,
+    p_representative_role: input.representativeRole,
+    p_logo_file_object_id: input.logoFileObjectId,
+    p_signature_file_object_id: input.signatureFileObjectId,
+    p_primary_color: input.primaryColor,
+    p_secondary_color: input.secondaryColor,
+    p_idempotency_key: input.idempotencyKey,
+  }),
   listTemplates: (actorUserAccountId: string, organizationId: string) => invokeServerRpc<CertificateTemplateCatalog>("list_operator_certificate_templates", {
     p_actor_user_account_id: actorUserAccountId,
     p_organization_id: organizationId,

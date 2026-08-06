@@ -60,5 +60,5 @@ export async function completeOptionalDiagnosticAction(formData: FormData) {
     failure = error instanceof Error ? error.message.split(":",1)[0] : "OPTIONAL_COMPLETE_FAILED";
   }
   if (failure) redirect(`/empreendedor/perfil/diagnosticos/${availabilityId}?sessao=${sessionId}&erro=${encodeURIComponent(failure)}`);
-  redirect("/empreendedor/perfil?diagnostico=concluido");
+  redirect("/empreendedor/perfil/diagnostico?diagnostico=concluido");
 }

@@ -8,6 +8,7 @@ import {
   INTERFACE_PREVIEW_REQUEST_HEADER,
   parseInterfacePreviewIdentity,
 } from "@/lib/interface-preview/constants";
+import { legacyRpcNames } from "@/lib/journey-runtime/legacy-rpc-arguments";
 import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -29,7 +30,7 @@ type SlotWaiter = {
 
 const previewReadOnlyRpcs = new Set([
   "e14_get_participant_experience",
-  "e14_get_participant_state",
+  legacyRpcNames.getParticipantState,
   "e14_list_eligible_journeys",
   "e14_list_participant_journeys",
   "get_activity_asset_download",

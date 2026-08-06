@@ -44,7 +44,7 @@ export default async function CertificateVerificationPage({
       <article className="w-full max-w-3xl rounded-b-lg border-t-8 border-primary bg-surface p-8 text-center shadow-lg sm:p-14" aria-labelledby="certificate-title">
         <div className="mb-6 inline-flex items-center gap-2 text-lg font-bold text-primary">
           <span className="grid size-9 place-items-center rounded-full bg-primary text-white">E</span>
-          Estímulo
+          {certificate.issuer_name || "Estímulo"}
         </div>
         <p className="text-xs font-semibold uppercase tracking-wide text-primary">Certificado de conclusão</p>
         <h1 id="certificate-title" className="mt-2 text-2xl font-bold text-ink">
@@ -61,6 +61,10 @@ export default async function CertificateVerificationPage({
             <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Emissão</dt>
             <dd className="mt-1 font-semibold text-ink">{certificate.issued_at ? dateFormatter.format(new Date(certificate.issued_at)) : "—"}</dd>
           </div>
+          {certificate.certificate_number ? <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Número do certificado</dt>
+            <dd className="mt-1 font-semibold text-ink">{certificate.certificate_number}</dd>
+          </div> : null}
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-muted">Código de validação</dt>
             <dd className="mt-1 font-semibold text-ink">{certificate.verification_code}</dd>
@@ -72,6 +76,7 @@ export default async function CertificateVerificationPage({
             </div>
           ) : null}
         </dl>
+        {certificate.issuer_cnpj || certificate.representative_name ? <p className="mt-7 text-sm text-muted">Emitido por {certificate.issuer_name || "Estímulo"}{certificate.issuer_cnpj ? ` · CNPJ ${certificate.issuer_cnpj}` : ""}{certificate.representative_name ? ` · ${certificate.representative_name}${certificate.representative_role ? `, ${certificate.representative_role}` : ""}` : ""}.</p> : null}
         <p className="mt-8 flex items-center justify-center gap-2 font-semibold text-success">
           <CheckCircle2 size={18} aria-hidden="true" /> Certificado válido
         </p>

@@ -1,3 +1,4 @@
+import { FileUploadPreview } from "@/components/file-upload-preview";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/input";
 import type { JourneyEditorActivityDetails } from "@/lib/admin/journey-editor";
@@ -49,6 +50,20 @@ function AulaForm({ journeyVersionId, organizationId, pathTemplateId, libraryIte
         <label className="grid gap-1 text-sm font-medium text-ink">Duração<Input name="estimated_minutes" type="number" min="1" defaultValue={String(aula?.estimated_minutes ?? 10)} required /><span className="text-[11px] font-normal text-muted">Em minutos.</span></label>
       </div>
       <label className="grid gap-1 text-sm font-medium text-ink">O que a pessoa fará<Textarea name="description" rows={2} defaultValue={aula?.description ?? ""} placeholder="Explique em uma frase." /></label>
+
+      <input type="hidden" name="current_continue_thumbnail_file_object_id" value={typeof aula?.step_metadata?.continue_thumbnail_file_object_id === "string" ? aula.step_metadata.continue_thumbnail_file_object_id : ""} />
+      <FileUploadPreview
+        name="continue_thumbnail_file"
+        label="Thumb do botão Continuar atividade"
+        accept="image/png,image/jpeg,image/webp"
+        maxSizeBytes={4 * 1024 * 1024}
+        recommendedDimensions="1200 × 675 px"
+        recommendedAspectRatio="16:9"
+        existingPreviewUrl={aula?.step_id && typeof aula.step_metadata?.continue_thumbnail_file_object_id === "string" ? `/api/admin/lesson-thumbnails/${aula.step_id}` : null}
+        existingPreviewAlt={typeof aula?.step_metadata?.continue_thumbnail_alt === "string" ? aula.step_metadata.continue_thumbnail_alt : aula?.title ?? "Thumb atual"}
+        help="A imagem aparece na ação de continuar a aula. O clique abre a atividade."
+      />
+      <label className="grid gap-1 text-sm font-medium text-ink">Texto alternativo da thumb<Input name="continue_thumbnail_alt" defaultValue={typeof aula?.step_metadata?.continue_thumbnail_alt === "string" ? aula.step_metadata.continue_thumbnail_alt : aula?.title ?? ""} /></label>
 
       <ActivityContentFields items={libraryItems} currentLibraryItemVersionId={currentLibraryItemVersionId} currentAsset={currentAsset} currentContentRequired={currentAsset?.is_required === true} />
 
