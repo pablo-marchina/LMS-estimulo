@@ -45,7 +45,7 @@ export default async function ParticipantHome() {
   const eligibleJourneys = fulfilled(results[3]) ?? [];
   const diagnosticEntry = fulfilled(results[4]);
   const featuredBadges = fulfilled(results[5]);
-  const dataUnavailable = results.some((result) => result.status === "rejected");
+  const coreDataUnavailable = results[0].status === "rejected" || results[2].status === "rejected";
 
   const journeys = [...(participantJourneys?.journeys ?? [])].sort((a, b) => participantJourneyPriority(a) - participantJourneyPriority(b));
   const nextJourney = journeys.find((journey) => journey.journey_status !== "completed") ?? journeys[0] ?? null;
@@ -66,7 +66,7 @@ export default async function ParticipantHome() {
     <div className="mx-auto max-w-[1400px] px-5 py-6 lg:px-9 lg:py-8">
       <PageHeader cmsKey="participant.page.overview.header" eyebrow={`Olá, ${firstName}!`} title="Vamos fazer seu negócio crescer?" description="Escolha um conteúdo, aprenda no seu ritmo e coloque em prática no dia a dia do seu negócio." />
 
-      {dataUnavailable ? <StatusPanel title="Algumas informações não puderam ser atualizadas" tone="warning"><p>Seus dados continuam salvos. Recarregue a página para tentar novamente.</p></StatusPanel> : null}
+      {coreDataUnavailable ? <StatusPanel title="Não foi possível carregar o resumo completo" tone="warning"><p>As jornadas e o saldo principal podem estar temporariamente indisponíveis. Recarregue a página para tentar novamente.</p></StatusPanel> : null}
 
       <div className="mt-6"><AnnouncementCarousel announcements={engagement?.announcements ?? []} /></div>
 

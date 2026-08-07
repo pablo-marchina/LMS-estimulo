@@ -123,7 +123,7 @@ test("administrative CMS distinguishes backend outage from an empty workspace", 
     read("apps/web/app/admin/experiencia/page.tsx"),
     read("apps/web/lib/interface-content/runtime.ts"),
   ]);
-  assert.match(page, /CMS temporariamente indisponível/u);
+  assert.match(page, /Interface temporariamente indisponível/u);
   assert.match(page, /Nenhuma alteração foi aplicada/u);
   assert.match(runtime, /interface_content_fallback/u);
   assert.match(runtime, /platformRuntimeProvider\(\) === "aws"/u);

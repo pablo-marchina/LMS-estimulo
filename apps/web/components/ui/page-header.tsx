@@ -39,6 +39,10 @@ export function PageHeader({
     ? `/api/interface-content/image?key=${encodeURIComponent(mediaKey)}&variant=mobile`
     : safeMediaUrl(media.mobile_image_url) ?? desktopImage;
   const hasMedia = interfaceVisible(content, mediaKey, false) && Boolean(desktopImage);
+  const configuredLayout = typeof media.layout_variant === "string" ? media.layout_variant : "";
+  const layoutVariant = ["compact", "default", "wide", "hero"].includes(configuredLayout)
+    ? configuredLayout
+    : hasMedia ? "hero" : "compact";
   const dark = tone === "dark" || hasMedia;
   const participant = pathname === "/empreendedor" || pathname.startsWith("/empreendedor/");
   const resolvedEyebrow = eyebrow ? interfaceText(content, `${prefix}.eyebrow`, eyebrow) : "";
@@ -53,8 +57,10 @@ export function PageHeader({
     <header
       className={cn(
         "relative isolate flex flex-col overflow-hidden rounded-xl sm:flex-row sm:items-end sm:justify-between",
-        participant ? "mb-4 gap-3 p-5 sm:p-6" : "mb-8 gap-4 p-6 sm:p-8",
-        participant ? "min-h-40 sm:min-h-44" : "min-h-44 sm:min-h-52",
+        participant ? "mb-4 gap-3" : "mb-5 gap-3 sm:gap-4",
+        layoutVariant === "compact" ? "p-4 sm:p-5" : layoutVariant === "wide" ? "p-5 sm:p-7" : "p-5 sm:p-6",
+        hasMedia && layoutVariant === "hero" ? (participant ? "min-h-40 sm:min-h-44" : "min-h-44 sm:min-h-52") : "",
+        hasMedia && layoutVariant === "wide" ? "min-h-36 sm:min-h-40" : "",
         dark ? "brand-hero text-white" : "brand-page-header border border-border",
         className,
       )}
