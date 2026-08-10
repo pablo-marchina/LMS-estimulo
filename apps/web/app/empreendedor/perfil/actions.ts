@@ -12,16 +12,16 @@ const objectiveSchema = z.string().trim().min(5).max(500);
 
 function objectiveErrorPath(error: unknown, reference: string) {
   if (error instanceof ServerRpcError && /INVALID_OBJECTIVE|22023/u.test(`${error.code}:${error.message}`)) {
-    return "/empreendedor/perfil?erro=objetivo_invalido";
+    return "/empreendedor/perfil/diagnostico?erro=objetivo_invalido";
   }
-  return `/empreendedor/perfil?erro=objetivo_indisponivel&referencia=${encodeURIComponent(reference)}`;
+  return `/empreendedor/perfil/diagnostico?erro=objetivo_indisponivel&referencia=${encodeURIComponent(reference)}`;
 }
 
 function diagnosticErrorPath(error: unknown) {
   if (error instanceof ServerRpcError && /DIAGNOSTIC_NOT_AVAILABLE|not_configured/u.test(`${error.code}:${error.message}`)) {
-    return "/empreendedor/perfil?erro=diagnostico_nao_configurado";
+    return "/empreendedor/perfil/diagnostico?erro=diagnostico_nao_configurado";
   }
-  return "/empreendedor/perfil?erro=diagnostico_indisponivel";
+  return "/empreendedor/perfil/diagnostico?erro=diagnostico_indisponivel";
 }
 
 function safeFailure(error: unknown) {
@@ -34,10 +34,10 @@ function safeFailure(error: unknown) {
 export async function saveApplicationObjectiveAction(formData: FormData) {
   const auth = await requireParticipantContext();
   const parsed = objectiveSchema.safeParse(formData.get("application_objective"));
-  if (!parsed.success) redirect("/empreendedor/perfil?erro=objetivo_invalido");
+  if (!parsed.success) redirect("/empreendedor/perfil/diagnostico?erro=objetivo_invalido");
 
   const reference = randomUUID().slice(0, 8).toUpperCase();
-  let destination = "/empreendedor/perfil?sucesso=objetivo_salvo";
+  let destination = "/empreendedor/perfil/diagnostico?sucesso=objetivo_salvo";
   try {
     await invokeServerRpc("set_participant_application_objective", {
       p_actor_user_account_id: auth.identity.user_account_id,
@@ -57,7 +57,7 @@ export async function saveApplicationObjectiveAction(formData: FormData) {
 
 export async function startProfileDiagnosticAction() {
   const auth = await requireParticipantContext();
-  let destination = "/empreendedor/perfil?erro=diagnostico_indisponivel";
+  let destination = "/empreendedor/perfil/diagnostico?erro=diagnostico_indisponivel";
 
   try {
     const entry = await participantDiagnosticRuntime.resolveEntry(auth.identity.user_account_id);
@@ -67,7 +67,7 @@ export async function startProfileDiagnosticAction() {
     } else if (entry.status === "journey_required") {
       destination = "/empreendedor/jornadas?aviso=diagnostico_requer_jornada";
     } else if (entry.status === "not_configured") {
-      destination = "/empreendedor/perfil?erro=diagnostico_nao_configurado";
+      destination = "/empreendedor/perfil/diagnostico?erro=diagnostico_nao_configurado";
     } else if (entry.status === "available" && entry.journey_instance_id && entry.diagnostic_version_id) {
       if (entry.journey_status === "available") {
         await journeyRuntime.startJourney(
