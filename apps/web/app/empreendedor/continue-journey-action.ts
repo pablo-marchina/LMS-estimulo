@@ -33,9 +33,18 @@ export async function continueJourneyAction(formData: FormData) {
     }
 
     const outline = await getParticipantJourneyOutline(auth.identity.user_account_id, journeyInstanceId);
-    const next = outline.modules
-      .flatMap((module) => module.activities)
-      .find((activity) => activity.step_status !== "completed" && (activity.can_start || activity.can_open));
+    const activities = outline.modules.flatMap((module) => module.activities);
+    const focusedStepInstanceId = state.s?.step_instance_id ?? null;
+    const focused = focusedStepInstanceId
+      ? activities.find((activity) =>
+          activity.step_instance_id === focusedStepInstanceId &&
+          activity.step_status !== "completed" &&
+          (activity.can_start || activity.can_open)
+        )
+      : undefined;
+    const next = focused ?? activities.find((activity) =>
+      activity.step_status !== "completed" && (activity.can_start || activity.can_open)
+    );
 
     if (next) {
       if (next.step_status === "available") {
