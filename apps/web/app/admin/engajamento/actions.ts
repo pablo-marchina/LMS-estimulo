@@ -13,7 +13,6 @@ const schema = z.object({
   expectedVersion: z.number().int().nonnegative().nullable(),
   title: z.string().trim().min(2).max(120),
   body: z.string().trim().min(2).max(1200),
-  ctaLabel: z.string().trim().max(60).nullable(),
   ctaUrl: z.string().trim().max(500).nullable(),
   status: z.enum(["draft", "published", "retired"]),
   priority: z.number().int().min(-1000).max(1000),
@@ -45,7 +44,6 @@ export async function saveAnnouncementAction(formData: FormData) {
     expectedVersion: nullable(formData.get("expected_version")) === null ? null : Number(formData.get("expected_version")),
     title: formData.get("title"),
     body: formData.get("body"),
-    ctaLabel: nullable(formData.get("cta_label")),
     ctaUrl: nullable(formData.get("cta_url")),
     status: formData.get("status"),
     priority: Number(formData.get("priority") ?? 0),
@@ -56,7 +54,6 @@ export async function saveAnnouncementAction(formData: FormData) {
 
   const organization = auth.identity.organizations.find((item) => item.organization_id === parsed.data.organizationId);
   if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/engajamento?erro=sem_permissao");
-  if ((parsed.data.ctaLabel === null) !== (parsed.data.ctaUrl === null)) redirect("/admin/engajamento?erro=cta_incompleto");
   if (parsed.data.endsAt && parsed.data.startsAt && parsed.data.endsAt <= parsed.data.startsAt) redirect("/admin/engajamento?erro=periodo_invalido");
 
   try {
@@ -67,7 +64,7 @@ export async function saveAnnouncementAction(formData: FormData) {
       expectedVersion: parsed.data.expectedVersion,
       title: parsed.data.title,
       body: parsed.data.body,
-      ctaLabel: parsed.data.ctaLabel,
+      ctaLabel: parsed.data.ctaUrl ? (parsed.data.title || "Abrir anúncio") : null,
       ctaUrl: parsed.data.ctaUrl,
       status: parsed.data.status,
       priority: parsed.data.priority,
