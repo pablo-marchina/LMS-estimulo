@@ -55,11 +55,11 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
 
   const canEdit = organization.permissions.includes("diagnostic.configuration.manage");
-  const [workspace, extensionWorkspace] = await Promise.all([
-    getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id),
-    extensionsRuntime.adminWorkspace(auth.identity.user_account_id, organization.organization_id),
-  ]);
   const type = single(query.tipo) === "opcionais" ? "opcionais" : "principal";
+  const workspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id);
+  const extensionWorkspace = type === "opcionais"
+    ? await extensionsRuntime.adminWorkspace(auth.identity.user_account_id, organization.organization_id).catch(() => null)
+    : null;
   const activeDiagnostics = workspace.diagnostics.filter((item) => item.status !== "retired");
   const versions = activeDiagnostics.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name, definitionId: item.definition_id, definitionCode: item.code, definitionPurpose: stringValue(item.purpose) })));
   const draftVersions = versions.filter((item) => item.status === "draft").sort((a, b) => b.version_number - a.version_number);
@@ -84,7 +84,7 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
   };
   const success = single(query.sucesso);
   const error = single(query.erro);
-  const diagnosticsForProfile = optionalItems(extensionWorkspace.optional_diagnostics);
+  const diagnosticsForProfile = optionalItems(extensionWorkspace?.optional_diagnostics);
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
     <PageHeader eyebrow="Personalização" title="Diagnósticos" description="Configure o diagnóstico principal e escolha outros diagnósticos que aparecerão no perfil." />
@@ -97,7 +97,7 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
     {error ? <StatusPanel title="Não foi possível concluir" tone="warning">Revise os campos e tente novamente.</StatusPanel> : null}
 
     {type === "principal" ? <>
-      <StatusPanel title="O que o diagnóstico principal controla" tone="info">Somente um diagnóstico permanece publicado por vez. Ele define o arquétipo principal e pode determinar quais jornadas ficam disponíveis. Ao publicar uma mudança, a plataforma pede a relação entre os perfis antigos e os novos.</StatusPanel>
+      <StatusPanel title="O que o diagnóstico principal controla" tone="info">Somente um diagnóstico permanece publicado por vez. Ele define o perfil principal e pode ajudar a personalizar quais jornadas fazem mais sentido para cada participante. Ao publicar uma mudança, a plataforma preserva a relação entre os perfis antigos e os novos.</StatusPanel>
       <Card><form method="get" className="flex flex-wrap items-end gap-3"><input type="hidden" name="tipo" value="principal" /><Label className="min-w-72 flex-1">Rascunho que deseja abrir<Select name="versao" defaultValue={selectedVersionId}><option value="">Criar novo diagnóstico</option>{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · rascunho</option>)}</Select><span className="text-[11px] font-normal text-muted">Ao criar um novo, a plataforma usa o diagnóstico publicado como ponto de partida.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
       <fieldset disabled={!canEdit} className="contents"><DiagnosticBuilder initial={initial} previousProfiles={profiles(publishedVersion)} canPublish={canEdit} /></fieldset>
       <AdminDisclosure title="Diagnósticos salvos" description="A exclusão retira uma configuração do painel, mas preserva respostas e resultados anteriores.">
@@ -107,10 +107,12 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
 
     {type === "opcionais" ? <>
       <StatusPanel title="Sem impacto no arquétipo ou nas jornadas" tone="info">Diagnósticos opcionais servem apenas para reflexão e análise. Eles não alteram o arquétipo principal nem liberam ou bloqueiam jornadas.</StatusPanel>
-      <fieldset disabled={!canEdit} className="contents">
-        <Card className="grid gap-4"><div className="flex items-start gap-3"><ClipboardList className="mt-0.5 text-primary" /><div><h2 className="text-lg font-black text-secondary">Adicionar ao perfil</h2><p className="text-sm text-muted">Escolha um diagnóstico já preparado, defina quem poderá vê-lo e publique quando estiver pronto.</p></div></div><OptionalDiagnosticForm diagnosticVersions={extensionWorkspace.diagnostic_versions} participants={extensionWorkspace.participants} /></Card>
-      </fieldset>
-      <section className="grid gap-3"><div><p className="brand-kicker">No perfil</p><h2 className="display-font mt-1 text-2xl text-secondary">Diagnósticos disponíveis</h2></div>{diagnosticsForProfile.length === 0 ? <Card><p className="text-sm text-muted">Nenhum diagnóstico opcional configurado.</p></Card> : <div className="grid gap-3 lg:grid-cols-2">{diagnosticsForProfile.map((item) => <Card key={stringValue(item.id)} className="grid gap-3"><div className="flex items-start justify-between gap-3"><div><h3 className="font-black text-ink">{stringValue(item.display_title)}</h3><p className="text-sm text-muted">{stringValue(item.diagnostic_name)}</p></div><StatusPill tone={stringValue(item.status) === "published" ? "success" : "neutral"}>{stringValue(item.status) === "published" ? "Visível no perfil" : stringValue(item.status) === "inactive" ? "Retirado" : "Em preparação"}</StatusPill></div><p className="text-sm text-muted">{stringValue(item.display_description)}</p><p className="text-xs text-muted">{numberValue(item.session_count)} resposta(s) iniciada(s) · {item.max_attempts === null ? "sem limite de tentativas" : `${numberValue(item.max_attempts)} tentativa(s)`}</p><details className="rounded-xl border border-border"><summary className="cursor-pointer p-3 text-sm font-bold text-secondary">Editar disponibilidade</summary><div className="border-t border-border p-4"><OptionalDiagnosticForm item={item} diagnosticVersions={extensionWorkspace.diagnostic_versions} participants={extensionWorkspace.participants} /></div></details></Card>)}</div>}</section>
+      {!extensionWorkspace ? <StatusPanel title="Diagnósticos opcionais temporariamente indisponíveis" tone="warning">O diagnóstico principal continua disponível para edição. Apenas os dados opcionais não puderam ser carregados agora.</StatusPanel> : <>
+        <fieldset disabled={!canEdit} className="contents">
+          <Card className="grid gap-4"><div className="flex items-start gap-3"><ClipboardList className="mt-0.5 text-primary" /><div><h2 className="text-lg font-black text-secondary">Adicionar ao perfil</h2><p className="text-sm text-muted">Escolha um diagnóstico já preparado, defina quem poderá vê-lo e publique quando estiver pronto.</p></div></div><OptionalDiagnosticForm diagnosticVersions={extensionWorkspace.diagnostic_versions} participants={extensionWorkspace.participants} /></Card>
+        </fieldset>
+        <section className="grid gap-3"><div><p className="brand-kicker">No perfil</p><h2 className="display-font mt-1 text-2xl text-secondary">Diagnósticos disponíveis</h2></div>{diagnosticsForProfile.length === 0 ? <Card><p className="text-sm text-muted">Nenhum diagnóstico opcional configurado.</p></Card> : <div className="grid gap-3 lg:grid-cols-2">{diagnosticsForProfile.map((item) => <Card key={stringValue(item.id)} className="grid gap-3"><div className="flex items-start justify-between gap-3"><div><h3 className="font-black text-ink">{stringValue(item.display_title)}</h3><p className="text-sm text-muted">{stringValue(item.diagnostic_name)}</p></div><StatusPill tone={stringValue(item.status) === "published" ? "success" : "neutral"}>{stringValue(item.status) === "published" ? "Visível no perfil" : stringValue(item.status) === "inactive" ? "Retirado" : "Em preparação"}</StatusPill></div><p className="text-sm text-muted">{stringValue(item.display_description)}</p><p className="text-xs text-muted">{numberValue(item.session_count)} resposta(s) iniciada(s) · {item.max_attempts === null ? "sem limite de tentativas" : `${numberValue(item.max_attempts)} tentativa(s)`}</p><details className="rounded-xl border border-border"><summary className="cursor-pointer p-3 text-sm font-bold text-secondary">Editar disponibilidade</summary><div className="border-t border-border p-4"><OptionalDiagnosticForm item={item} diagnosticVersions={extensionWorkspace.diagnostic_versions} participants={extensionWorkspace.participants} /></div></details></Card>)}</div>}</section>
+      </>}
     </> : null}
   </div></AppShell>;
 }
