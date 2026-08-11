@@ -28,6 +28,14 @@ test("gamification route uses a dedicated, defensive workspace", () => {
   assert.match(runtime, /"get_admin_gamification_workspace"/u);
 });
 
+test("gamification workspace fallback covers only rollout compatibility failures", () => {
+  assert.match(runtime, /code === "PGRST202"/u);
+  assert.match(runtime, /code === "RPC_NOT_ALLOWED"/u);
+  assert.match(runtime, /if \(!isGamificationWorkspaceCompatibilityError\(error\)\) throw error/u);
+  assert.match(runtime, /getAdminProductWorkspace\(actorUserAccountId, organizationId\)/u);
+  assert.doesNotMatch(runtime, /code === "42501"/u);
+});
+
 test("gamification RPC is tenant-scoped and independent from unrelated product modules", () => {
   const block = functionBlock(
     migration,
