@@ -13,6 +13,7 @@ import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import type { OperatorAnnouncement } from "@/lib/engagement/contracts";
 import { engagementRuntime } from "@/lib/engagement/runtime";
+import { retireAnnouncementAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -54,6 +55,7 @@ export default async function EngagementAdminPage({ searchParams }: { searchPara
     {!canEdit ? <StatusPanel title="Somente consulta" tone="info">Você pode consultar os anúncios, mas não alterá-los.</StatusPanel> : null}
     <AdminSectionNav items={[...(canEdit ? [{ href: "/admin/engajamento?view=novo", label: "Novo anúncio", active: view === "novo" }] : []), { href: "/admin/engajamento?view=gerenciar", label: "Anúncios cadastrados", active: view === "gerenciar" }]} />
     {query.sucesso === "salvo" ? <StatusPanel title="Anúncio salvo" tone="success">Se publicado, o banner já está disponível para participantes.</StatusPanel> : null}
+    {query.sucesso === "excluido" ? <StatusPanel title="Banner excluído" tone="success">O banner foi retirado do carrossel. O histórico administrativo foi preservado.</StatusPanel> : null}
     {query.erro ? <StatusPanel title="Alteração não concluída" tone="warning">{errorMessages[query.erro] ?? errorMessages.ANNOUNCEMENT_SAVE_FAILED}</StatusPanel> : null}
     {view === "novo" && canEdit ? <Card><div><h2 className="text-lg font-black text-secondary">Novo anúncio</h2><p className="mt-1 text-sm text-muted">O carrossel continua aceitando vários anúncios. Cada item pode ter uma arte otimizada por dispositivo.</p></div><div className="mt-5"><AnnouncementForm organizationId={organization.organization_id} /></div></Card> : <AnnouncementList actor={auth.identity.user_account_id} organizationId={organization.organization_id} canEdit={canEdit} />}
   </div></AppShell>;
@@ -70,7 +72,7 @@ async function AnnouncementList({ actor, organizationId, canEdit }: { actor: str
         <div className="min-w-0 flex-1"><strong className="block truncate text-ink">{announcement.title || "Anúncio sem título"}</strong><p className="mt-1 line-clamp-1 text-sm text-muted">{announcement.body || announcement.image_alt}</p><p className="mt-1 text-xs text-muted">Desktop {announcement.image_file_object_id ? "configurado" : "ausente"} · Mobile {announcement.mobile_image_file_object_id ? "configurado" : "usa fallback"}</p></div>
         <StatusPill tone={announcementTone(announcement.status)}>{announcement.status === "published" ? "Publicado" : announcement.status === "retired" ? "Retirado" : "Rascunho"}</StatusPill>
       </summary>
-      <div className="border-t border-border p-5">{canEdit ? <AnnouncementForm organizationId={organizationId} announcement={announcement} /> : <div className="grid gap-2 text-sm"><p><strong>Descrição acessível:</strong> {announcement.image_alt ?? "Não informada"}</p><p><strong>Formato:</strong> {announcement.display_mode === "image_only" ? "Somente imagem" : "Imagem com texto"}</p></div>}</div>
+      <div className="border-t border-border p-5">{canEdit ? <div className="grid gap-4"><AnnouncementForm organizationId={organizationId} announcement={announcement} />{announcement.status !== "retired" ? <form action={retireAnnouncementAction} className="rounded-xl border border-danger/20 bg-danger-soft/40 p-4"><input type="hidden" name="organization_id" value={organizationId} /><input type="hidden" name="announcement_id" value={announcement.id} /><input type="hidden" name="expected_version" value={announcement.aggregate_version} /><p className="mb-3 text-xs text-muted">Excluir retira o banner do carrossel sem apagar o histórico administrativo.</p><Button type="submit" variant="secondary" size="sm">Excluir banner</Button></form> : null}</div> : <div className="grid gap-2 text-sm"><p><strong>Descrição acessível:</strong> {announcement.image_alt ?? "Não informada"}</p><p><strong>Formato:</strong> {announcement.display_mode === "image_only" ? "Somente imagem" : "Imagem com texto"}</p></div>}</div>
     </details>)}</div>
   </section>;
 }
