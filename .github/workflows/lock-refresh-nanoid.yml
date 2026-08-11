@@ -1,4 +1,4 @@
-name: Refresh nanoid lock
+name: Remediate production dependency audit
 
 on:
   push:
@@ -6,13 +6,16 @@ on:
       - fix/consolidated-audit-remediation
     paths:
       - ".github/workflows/lock-refresh-nanoid.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "apps/web/package.json"
 
 permissions:
   contents: write
 
 jobs:
-  refresh:
-    name: Refresh nanoid security patch
+  remediate:
+    name: Audit and refresh dependency lock
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,20 +38,65 @@ jobs:
           test "$(node --version)" = "v22.23.1"
           test "$(npm --version)" = "10.9.8"
 
-      - name: Refresh only nanoid in lockfile
-        shell: bash
-        run: |
-          set -euo pipefail
-          npm update nanoid --package-lock-only --ignore-scripts --no-audit --no-fund
-          node -e "const lock=require('./package-lock.json'); if (lock.packages?.['node_modules/nanoid']?.version !== '3.3.17') { throw new Error('nanoid lock did not resolve to 3.3.17') }"
-          test "$(git diff --name-only)" = "package-lock.json"
+      - name: Install exact dependency graph
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Commit generated lockfile
+      - name: Capture audit before remediation
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p .artifacts
+          npm audit --omit=dev --json > .artifacts/audit-before.json || true
+          npm audit --omit=dev --audit-level=high > .artifacts/audit-before.txt 2>&1 || true
+
+      - name: Apply safe lockfile remediation
+        shell: bash
+        run: |
+          set -uo pipefail
+          npm audit fix --package-lock-only --ignore-scripts --no-fund > .artifacts/audit-fix.txt 2>&1 || true
+
+      - name: Verify remediated dependency graph
+        id: verify
+        shell: bash
+        run: |
+          set -uo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ls --all > .artifacts/npm-ls.txt 2>&1 || true
+          npm audit --omit=dev --json > .artifacts/audit-after.json
+          audit_status=$?
+          npm audit --omit=dev --audit-level=high > .artifacts/audit-after.txt 2>&1
+          high_status=$?
+          echo "audit_status=$audit_status" >> "$GITHUB_OUTPUT"
+          echo "high_status=$high_status" >> "$GITHUB_OUTPUT"
+          echo "changed=$(if git diff --quiet -- package-lock.json; then echo false; else echo true; fi)" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload dependency audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-dependency-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 9
+
+      - name: Commit safe lockfile remediation
+        if: steps.verify.outputs.high_status == '0' && steps.verify.outputs.changed == 'true'
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git diff --name-only)" = "package-lock.json"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
-          git commit -m "fix(deps): update nanoid security patch"
+          git commit -m "fix(deps): remediate production audit"
           git push origin HEAD:fix/consolidated-audit-remediation
+
+      - name: Report residual production audit blockers
+        if: steps.verify.outputs.high_status != '0'
+        shell: bash
+        run: |
+          echo "Safe lockfile-only remediation did not clear all high-severity production audit findings."
+          echo "Audit diagnostics were uploaded for targeted dependency upgrades."
