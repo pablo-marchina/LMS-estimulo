@@ -10,6 +10,12 @@ function safeMediaUrl(value: unknown) {
   return typeof value === "string" && (value.startsWith("/") || value.startsWith("https://")) ? value : null;
 }
 
+function interpolateInterfaceVariables(value: string, variables: Record<string, string>) {
+  return value.replace(/\{\{\s*([\w.-]+)\s*\}\}/g, (token, key: string) => {
+    return Object.prototype.hasOwnProperty.call(variables, key) ? variables[key] : token;
+  });
+}
+
 export function PageHeader({
   eyebrow,
   title,
@@ -18,6 +24,7 @@ export function PageHeader({
   tone = "light",
   className,
   cmsKey,
+  variables = {},
 }: {
   eyebrow?: string;
   title: ReactNode;
@@ -26,6 +33,7 @@ export function PageHeader({
   tone?: "light" | "dark";
   className?: string;
   cmsKey?: string;
+  variables?: Record<string, string>;
 }) {
   const pathname = usePathname();
   const content = useInterfaceContent();
@@ -45,9 +53,9 @@ export function PageHeader({
     : hasMedia ? "hero" : "compact";
   const dark = tone === "dark" || hasMedia;
   const participant = pathname === "/empreendedor" || pathname.startsWith("/empreendedor/");
-  const resolvedEyebrow = eyebrow ? interfaceText(content, `${prefix}.eyebrow`, eyebrow) : "";
-  const resolvedTitle = typeof title === "string" ? interfaceText(content, `${prefix}.title`, title) : title;
-  const resolvedDescription = typeof description === "string" ? interfaceText(content, `${prefix}.description`, description) : description;
+  const resolvedEyebrow = eyebrow ? interpolateInterfaceVariables(interfaceText(content, `${prefix}.eyebrow`, eyebrow), variables) : "";
+  const resolvedTitle = typeof title === "string" ? interpolateInterfaceVariables(interfaceText(content, `${prefix}.title`, title), variables) : title;
+  const resolvedDescription = typeof description === "string" ? interpolateInterfaceVariables(interfaceText(content, `${prefix}.description`, description), variables) : description;
   const objectPosition = typeof media.image_position === "string" && media.image_position.trim() ? media.image_position : "center";
   const overlayOpacity = typeof media.overlay_opacity === "number" && Number.isFinite(media.overlay_opacity)
     ? Math.min(0.9, Math.max(0, media.overlay_opacity))

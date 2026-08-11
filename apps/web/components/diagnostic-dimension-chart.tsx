@@ -12,10 +12,10 @@ export function DiagnosticDimensionChart({ dimensions }: { dimensions: Diagnosti
     <section className="mt-6" aria-labelledby="diagnostic-dimensions-title">
       <div className="mb-4">
         <h3 id="diagnostic-dimensions-title" className="text-base font-black text-secondary">
-          Seu momento por área
+          Um olhar mais de perto
         </h3>
         <p className="mt-1 text-sm text-muted">
-          Cada percentual representa o resultado normalizado usado para compor sua recomendação.
+          Veja como suas respostas se distribuem nos temas que fazem parte do seu perfil.
         </p>
       </div>
 

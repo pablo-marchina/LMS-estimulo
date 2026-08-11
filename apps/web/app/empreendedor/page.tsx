@@ -64,7 +64,7 @@ export default async function ParticipantHome() {
 
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-6 lg:px-9 lg:py-8">
-      <PageHeader cmsKey="participant.page.overview.header" eyebrow={`Olá, ${firstName}!`} title="Vamos fazer seu negócio crescer?" description="Escolha um conteúdo, aprenda no seu ritmo e coloque em prática no dia a dia do seu negócio." />
+      <PageHeader cmsKey="participant.page.overview.header" eyebrow="Olá, {{nome}}!" title="Vamos fazer seu negócio crescer?" description="Escolha um conteúdo, aprenda no seu ritmo e coloque em prática no dia a dia do seu negócio." variables={{ nome: firstName }} />
 
       {coreDataUnavailable ? <StatusPanel title="Não foi possível carregar o resumo completo" tone="warning"><p>As jornadas e o saldo principal podem estar temporariamente indisponíveis. Recarregue a página para tentar novamente.</p></StatusPanel> : null}
 

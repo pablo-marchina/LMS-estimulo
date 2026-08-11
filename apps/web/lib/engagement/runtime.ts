@@ -13,7 +13,16 @@ import type {
   ParticipantProfileSummary,
   SavedAnnouncement,
 } from "@/lib/engagement/contracts";
-import { invokeServerRpc } from "@/lib/rpc/server-invoke";
+import { invokeServerRpc, ServerRpcError } from "@/lib/rpc/server-invoke";
+
+function isMissingAnnouncementMobileSignature(error: unknown) {
+  if (!(error instanceof ServerRpcError)) return false;
+  const text = `${error.code} ${error.message}`.toLowerCase();
+  return text.includes("pgrst202") || (
+    text.includes("save_operator_announcement") &&
+    (text.includes("mobile_image_file_object_id") || text.includes("could not find"))
+  );
+}
 
 export const engagementRuntime = {
   participantHub: (actorUserAccountId: string) => invokeServerRpc<ParticipantEngagementHub>(
@@ -125,7 +134,7 @@ export const engagementRuntime = {
     "get_announcement_banner_download",
     { p_actor_user_account_id: actorUserAccountId, p_announcement_id: announcementId, p_variant: variant },
   ),
-  saveAnnouncement: (input: {
+  saveAnnouncement: async (input: {
     actorUserAccountId: string;
     organizationId: string;
     announcementId: string | null;
@@ -143,9 +152,8 @@ export const engagementRuntime = {
     imageAlt: string | null;
     displayMode: "image_only" | "image_with_text";
     idempotencyKey: string;
-  }) => invokeServerRpc<RpcEnvelope<SavedAnnouncement>>(
-    "save_operator_announcement",
-    {
+  }) => {
+    const commonArgs = {
       p_actor_user_account_id: input.actorUserAccountId,
       p_organization_id: input.organizationId,
       p_announcement_id: input.announcementId,
@@ -159,10 +167,28 @@ export const engagementRuntime = {
       p_starts_at: input.startsAt,
       p_ends_at: input.endsAt,
       p_image_file_object_id: input.imageFileObjectId,
-      p_mobile_image_file_object_id: input.mobileImageFileObjectId,
       p_image_alt: input.imageAlt,
       p_display_mode: input.displayMode,
       p_idempotency_key: input.idempotencyKey,
-    },
-  ),
+    };
+
+    try {
+      return await invokeServerRpc<RpcEnvelope<SavedAnnouncement>>(
+        "save_operator_announcement",
+        { ...commonArgs, p_mobile_image_file_object_id: input.mobileImageFileObjectId },
+      );
+    } catch (error) {
+      if (!isMissingAnnouncementMobileSignature(error)) throw error;
+      if (input.mobileImageFileObjectId) {
+        throw new ServerRpcError(
+          "ANNOUNCEMENT_MOBILE_SCHEMA_REQUIRED",
+          "ANNOUNCEMENT_MOBILE_SCHEMA_REQUIRED",
+        );
+      }
+      return invokeServerRpc<RpcEnvelope<SavedAnnouncement>>(
+        "save_operator_announcement",
+        commonArgs,
+      );
+    }
+  },
 };

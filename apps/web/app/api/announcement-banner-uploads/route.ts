@@ -78,9 +78,11 @@ export async function POST(request: NextRequest) {
     const title = String(formData.get("title") ?? "").trim();
     const body = String(formData.get("body") ?? "").trim();
     const imageAlt = nullable(formData.get("image_alt"));
-    const ctaLabel = nullable(formData.get("cta_label"));
     const ctaUrl = nullable(formData.get("cta_url"));
-    if ((ctaLabel === null) !== (ctaUrl === null)) throw new Error("ANNOUNCEMENT_CTA_PAIR_REQUIRED");
+    // The participant experience makes the entire artwork clickable. The RPC still
+    // accepts the legacy label/url pair, so keep an internal accessible label without
+    // exposing a redundant button-label field in Admin.
+    const ctaLabel = ctaUrl ? (title || imageAlt || "Abrir anúncio") : null;
 
     let imageFileObjectId = nullable(formData.get("current_image_file_object_id"));
     let mobileImageFileObjectId = nullable(formData.get("current_mobile_image_file_object_id"));
