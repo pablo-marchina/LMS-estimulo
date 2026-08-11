@@ -20,6 +20,12 @@ const schema = z.object({
   endsAt: z.string().datetime({ offset: true }).nullable(),
 });
 
+const retireSchema = z.object({
+  organizationId: z.string().uuid(),
+  announcementId: z.string().uuid(),
+  expectedVersion: z.number().int().nonnegative(),
+});
+
 function nullable(value: FormDataEntryValue | null): string | null {
   const text = String(value ?? "").trim();
   return text || null;
@@ -32,12 +38,17 @@ function isoDate(value: FormDataEntryValue | null): string | null {
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : "invalid";
 }
 
-export async function saveAnnouncementAction(formData: FormData) {
+async function adminContext(organizationId: string) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
     redirect("/entrar?erro=acesso_nao_autorizado");
   }
+  const organization = auth.identity.organizations.find((item) => item.organization_id === organizationId);
+  if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/engajamento?erro=sem_permissao");
+  return auth;
+}
 
+export async function saveAnnouncementAction(formData: FormData) {
   const parsed = schema.safeParse({
     organizationId: String(formData.get("organization_id") ?? ""),
     announcementId: nullable(formData.get("announcement_id")),
@@ -52,8 +63,7 @@ export async function saveAnnouncementAction(formData: FormData) {
   });
   if (!parsed.success) redirect("/admin/engajamento?erro=dados_invalidos");
 
-  const organization = auth.identity.organizations.find((item) => item.organization_id === parsed.data.organizationId);
-  if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/engajamento?erro=sem_permissao");
+  const auth = await adminContext(parsed.data.organizationId);
   if (parsed.data.endsAt && parsed.data.startsAt && parsed.data.endsAt <= parsed.data.startsAt) redirect("/admin/engajamento?erro=periodo_invalido");
 
   try {
@@ -81,4 +91,44 @@ export async function saveAnnouncementAction(formData: FormData) {
     redirect(`/admin/engajamento?erro=${code.includes("VERSION_CONFLICT") ? "conflito_versao" : "falha"}`);
   }
   redirect("/admin/engajamento?sucesso=salvo");
+}
+
+export async function retireAnnouncementAction(formData: FormData) {
+  const parsed = retireSchema.safeParse({
+    organizationId: String(formData.get("organization_id") ?? ""),
+    announcementId: String(formData.get("announcement_id") ?? ""),
+    expectedVersion: Number(formData.get("expected_version")),
+  });
+  if (!parsed.success) redirect("/admin/engajamento?view=gerenciar&erro=dados_invalidos");
+
+  const auth = await adminContext(parsed.data.organizationId);
+  try {
+    const workspace = await engagementRuntime.listOperatorAnnouncements(auth.identity.user_account_id, parsed.data.organizationId);
+    const announcement = workspace.announcements.find((item) => item.id === parsed.data.announcementId);
+    if (!announcement) redirect("/admin/engajamento?view=gerenciar&erro=ANNOUNCEMENT_SAVE_FAILED");
+
+    await engagementRuntime.saveAnnouncement({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId: parsed.data.organizationId,
+      announcementId: announcement.id,
+      expectedVersion: parsed.data.expectedVersion,
+      title: announcement.title,
+      body: announcement.body,
+      ctaLabel: announcement.cta_label,
+      ctaUrl: announcement.cta_url,
+      status: "retired",
+      priority: announcement.priority,
+      startsAt: announcement.starts_at,
+      endsAt: announcement.ends_at,
+      imageFileObjectId: announcement.image_file_object_id,
+      mobileImageFileObjectId: announcement.mobile_image_file_object_id,
+      imageAlt: announcement.image_alt,
+      displayMode: announcement.display_mode,
+      idempotencyKey: randomUUID(),
+    });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    redirect(`/admin/engajamento?view=gerenciar&erro=${code.includes("VERSION_CONFLICT") ? "conflito_versao" : "falha"}`);
+  }
+  redirect("/admin/engajamento?view=gerenciar&sucesso=excluido");
 }
