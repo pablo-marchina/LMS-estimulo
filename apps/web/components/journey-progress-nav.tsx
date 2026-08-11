@@ -23,6 +23,13 @@ const statusCopy: Record<string, string> = {
   completed: "Atividade concluída",
 };
 
+const stageOrder: JourneyStage[] = ["diagnostic", "activity", "result"];
+const stageCopy: Record<JourneyStage, { label: string; description: string }> = {
+  diagnostic: { label: "Diagnóstico", description: "Entenda seu momento" },
+  activity: { label: "Jornada", description: "Aprenda e coloque em prática" },
+  result: { label: "Resultado", description: "Acompanhe sua evolução" },
+};
+
 function ActivityNavigationForm({
   journeyInstanceId,
   activity,
@@ -60,6 +67,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
   const stepStatus = state.s?.status ?? "available";
   const title = current === "activity" ? activityTitle ?? "Atividade da jornada" : current === "result" ? "Resultado da jornada" : "Conheça seu perfil";
   const Icon = current === "activity" ? PlayCircle : current === "result" ? Flag : CircleDot;
+  const currentStageIndex = stageOrder.indexOf(current);
 
   const auth = await getAuthContext();
   const outline = auth.status === "authenticated"
@@ -98,6 +106,21 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
           {current === "activity" ? <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${stepStatus === "completed" ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>{stepStatus === "completed" ? <CheckCircle2 size={14} /> : <CircleDot size={14} />}{statusCopy[stepStatus] ?? "Atividade disponível"}</span> : null}
         </div>
       </div>
+
+      <ol className="mt-4 grid gap-2 border-t border-border pt-4 sm:grid-cols-3" aria-label="Etapas da experiência">
+        {stageOrder.map((stage, index) => {
+          const completed = index < currentStageIndex || (stage === "result" && current === "result");
+          const active = stage === current;
+          const copy = stageCopy[stage];
+          return <li key={stage} aria-current={active ? "step" : undefined} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${active ? "border-primary/30 bg-primary-soft" : completed ? "border-success/20 bg-success-soft/60" : "border-border bg-surface-muted/40"}`}>
+            <span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${active ? "bg-primary text-white" : completed ? "bg-success text-white" : "bg-white text-muted ring-1 ring-border"}`}>
+              {completed ? <CheckCircle2 size={17} aria-hidden="true" /> : index + 1}
+            </span>
+            <span className="min-w-0"><strong className={`block text-sm ${active ? "text-primary" : "text-secondary"}`}>{copy.label}</strong><small className="block truncate text-xs text-muted">{copy.description}</small></span>
+          </li>;
+        })}
+      </ol>
+
       {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Ver resultado <ArrowRight size={15} /></Link>}</div> : null}
     </aside>
   );

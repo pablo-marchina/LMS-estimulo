@@ -71,11 +71,11 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
   const seedDimensions = dimensions(seedVersion);
   const seedQuestions = questions(seedVersion);
   const initial: DiagnosticBuilderInitial = {
-    definitionId: selectedVersion?.definitionId ?? "",
-    versionId: selectedVersionId,
-    definitionCode: selectedVersion?.definitionCode ?? "",
-    name: selectedVersion?.definitionName ?? "",
-    purpose: selectedVersion?.definitionPurpose ?? "",
+    definitionId: seedVersion?.definitionId ?? "",
+    versionId: selectedVersion?.id ? String(selectedVersion.id) : "",
+    definitionCode: seedVersion?.definitionCode ?? "",
+    name: seedVersion?.definitionName ?? "",
+    purpose: seedVersion?.definitionPurpose ?? "",
     profiles: seedProfiles,
     dimensions: seedDimensions,
     questions: seedQuestions,
@@ -98,7 +98,8 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
 
     {type === "principal" ? <>
       <StatusPanel title="O que o diagnóstico principal controla" tone="info">Somente um diagnóstico permanece publicado por vez. Ele define o perfil principal e pode ajudar a personalizar quais jornadas fazem mais sentido para cada participante. Ao publicar uma mudança, a plataforma preserva a relação entre os perfis antigos e os novos.</StatusPanel>
-      <Card><form method="get" className="flex flex-wrap items-end gap-3"><input type="hidden" name="tipo" value="principal" /><Label className="min-w-72 flex-1">Rascunho que deseja abrir<Select name="versao" defaultValue={selectedVersionId}><option value="">Criar novo diagnóstico</option>{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · rascunho</option>)}</Select><span className="text-[11px] font-normal text-muted">Ao criar um novo, a plataforma usa o diagnóstico publicado como ponto de partida.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
+      <Card><form method="get" className="flex flex-wrap items-end gap-3"><input type="hidden" name="tipo" value="principal" /><Label className="min-w-72 flex-1">Rascunho que deseja abrir<Select name="versao" defaultValue={selectedVersionId}><option value="">Usar diagnóstico publicado como base</option>{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · rascunho</option>)}</Select><span className="text-[11px] font-normal text-muted">Sem rascunho selecionado, a configuração publicada é carregada como ponto de partida.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
+      {!seedVersion ? <StatusPanel title="Nenhum diagnóstico principal configurado" tone="warning">Crie o primeiro diagnóstico abaixo e publique quando estiver pronto.</StatusPanel> : null}
       <fieldset disabled={!canEdit} className="contents"><DiagnosticBuilder initial={initial} previousProfiles={profiles(publishedVersion)} canPublish={canEdit} /></fieldset>
       <AdminDisclosure title="Diagnósticos salvos" description="A exclusão retira uma configuração do painel, mas preserva respostas e resultados anteriores.">
         <div className="grid gap-3 sm:grid-cols-2">{activeDiagnostics.map((item) => <div key={item.definition_id} className="rounded-xl border border-border p-4"><strong className="text-ink">{item.name}</strong><p className="mt-1 text-xs text-muted">{item.versions.some((version) => version.status === "published") ? "Em uso" : "Em preparação"}</p>{canEdit ? <details className="mt-4 rounded-xl border border-border"><summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-secondary">Retirar diagnóstico</summary><form action={retireDiagnosticAction} className="grid gap-2 border-t border-border p-3"><input type="hidden" name="definition_id" value={item.definition_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Label className="text-xs">Confirme digitando EXCLUIR<Input name="confirmation" autoComplete="off" required /></Label><Button type="submit" variant="secondary" size="sm" className="w-fit">Retirar</Button></form></details> : null}</div>)}</div>
