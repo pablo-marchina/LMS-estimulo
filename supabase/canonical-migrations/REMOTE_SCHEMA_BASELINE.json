@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "artifact": "e14_release_schema_baseline",
   "source": "Canonical clean migration replay preserving runtime activity content for the final software release candidate",
-  "observed_at": "2026-08-06",
+  "observed_at": "2026-08-10",
   "inventory": {
     "schema_version": "1.0",
     "postgres_major": 17,
@@ -12,8 +12,8 @@
       "indexes": { "count": 670, "sha256": "77cce44405416eba766bdbc0b431b6cc627561a187c938e23c213debbe926de8" },
       "schemas": { "count": 14, "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344" },
       "policies": { "count": 622, "sha256": "063a0f31004017b207b3ffaddce320e9efe0f1f5723604092c66b1fb82215248" },
-      "routines": { "count": 248, "sha256": "adc15550aeeda1a8e23051f04a3a895ba8f909f5ced814ba5412c87c6d4b4e8c" },
-      "triggers": { "count": 86, "sha256": "bda7e6d9d49949cfde4a29ea321e46cdcaad63aef7a6a48fc9548d9ea3979927" },
+      "routines": { "count": 250, "sha256": "0e5248f4178152dafbc18d0ab82b486e0aed8f27c8b9c8e8c737ea995c7fc18c" },
+      "triggers": { "count": 87, "sha256": "e5e95cc6f96bf48173ba4827dfe8d702977236a832be608e04c3532374d178d4" },
       "relations": { "count": 209, "sha256": "241f846c5483d77718d1fc7b228f47863bbe67c714b461cc85cf9af19387d362" },
       "constraints": { "count": 1096, "sha256": "9ee244b723646d7c3b955a4f3e2fc90150c23410aadc6771eb18df66d0db1491" }
     }
