@@ -9,19 +9,24 @@ import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
 
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
-function parseObject(raw: string): JsonRecord { try { const value = JSON.parse(raw); return value && typeof value === "object" && !Array.isArray(value) ? value as JsonRecord : {}; } catch { return {}; } }
+function parseObject(raw: string): JsonRecord {
+  if (!raw) return {};
+  const value = JSON.parse(raw) as unknown;
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("INVALID_JSON_METADATA");
+  return value as JsonRecord;
+}
 function parseLinks(raw: string): Array<{ label: string; url: string }> {
-  try {
-    const value = JSON.parse(raw);
-    if (!Array.isArray(value)) return [];
-    return value.flatMap((item) => {
-      if (!item || typeof item !== "object" || Array.isArray(item)) return [];
-      const record = item as Record<string, unknown>;
-      const label = typeof record.label === "string" ? record.label.trim() : "";
-      const url = typeof record.url === "string" ? record.url.trim() : "";
-      return label && /^https:\/\//u.test(url) ? [{ label, url }] : [];
-    });
-  } catch { return []; }
+  if (!raw) return [];
+  const value = JSON.parse(raw) as unknown;
+  if (!Array.isArray(value)) throw new Error("INVALID_JSON_INSTITUTIONAL_LINKS");
+  return value.map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) throw new Error("INVALID_JSON_INSTITUTIONAL_LINKS");
+    const record = item as Record<string, unknown>;
+    const label = typeof record.label === "string" ? record.label.trim() : "";
+    const url = typeof record.url === "string" ? record.url.trim() : "";
+    if (!label || !/^https:\/\//u.test(url)) throw new Error("INVALID_JSON_INSTITUTIONAL_LINKS");
+    return { label, url };
+  });
 }
 function safeHttps(raw: string) {
   if (!raw) return "";
@@ -39,8 +44,15 @@ export async function savePlatformSettingsAction(formData: FormData) {
   if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/configuracoes?erro=sem_permissao");
 
   const communityUrl = safeHttps(text(formData, "community_whatsapp_url"));
-  const links = parseLinks(text(formData, "institutional_links"))
-    .filter((link) => !link.label.toLocaleLowerCase("pt-BR").includes("comunidade"));
+  let links: Array<{ label: string; url: string }>;
+  let metadata: JsonRecord;
+  try {
+    links = parseLinks(text(formData, "institutional_links"))
+      .filter((link) => !link.label.toLocaleLowerCase("pt-BR").includes("comunidade"));
+    metadata = parseObject(text(formData, "metadata"));
+  } catch (error) {
+    redirect(`/admin/configuracoes?erro=${encodeURIComponent(errorCode(error))}`);
+  }
   if (communityUrl) links.push({ label: "Comunidade no WhatsApp", url: communityUrl });
 
   try {
@@ -56,7 +68,7 @@ export async function savePlatformSettingsAction(formData: FormData) {
         support_hours: text(formData, "support_hours"),
         footer_text: text(formData, "footer_text"),
         institutional_links: links,
-        metadata: parseObject(text(formData, "metadata")),
+        metadata,
       },
       idempotencyKey: randomUUID(),
     });
