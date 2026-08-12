@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
+import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 export const runtime = "nodejs";
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return NextResponse.json({ code: "AUTHENTICATION_REQUIRED" }, { status: 401 });
   try {
+    await assertParticipantMutationAllowed();
     const stepInstanceId = z.string().uuid().parse(request.nextUrl.searchParams.get("step"));
     const payload = payloadSchema.parse(await request.json());
     const result = await journeyRuntime.recordAssetProgress({
@@ -32,6 +34,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "MEDIA_PROGRESS_FAILED";
-    return NextResponse.json({ code: "MEDIA_PROGRESS_FAILED", message }, { status: 400 });
+    const preview = message.includes("INTERFACE_PREVIEW_READ_ONLY");
+    return NextResponse.json({ code: preview ? "INTERFACE_PREVIEW_READ_ONLY" : "MEDIA_PROGRESS_FAILED", message }, { status: preview ? 403 : 400 });
   }
 }
