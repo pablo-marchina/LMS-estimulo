@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth/context";
+import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
 import { triggerDeliveryGrading } from "@/lib/extensions/delivery-grading";
 import { extensionsRuntime } from "@/lib/extensions/runtime";
 import {
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
   const uploadedObjects: string[] = [];
   let returnTo = "/empreendedor/perfil#materiais-enviados";
   try {
+    await assertParticipantMutationAllowed();
     const formData = await request.formData();
     returnTo = safeReturnTo(formData.get("return_to"));
     const configurationId = String(formData.get("delivery_configuration_id") ?? "").trim();
