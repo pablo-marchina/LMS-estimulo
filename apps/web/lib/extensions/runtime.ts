@@ -92,6 +92,32 @@ export type ParticipantExtensionsWorkspace = {
   optional_diagnostics: JsonRecord[];
 };
 
+export type RewardImageUploadIntent = {
+  upload_intent_id: string;
+  bucket: string;
+  object_key: string;
+  original_filename: string;
+  expected_content_type: string;
+  max_size_bytes: number;
+};
+
+export type RewardImageConfirmation = {
+  file_object_id: string;
+  original_filename: string;
+  status: string;
+};
+
+export type RewardImageDownload = {
+  reward_id: string;
+  file_object_id: string;
+  bucket: string;
+  object_key: string;
+  content_type: string;
+  original_filename: string | null;
+};
+
+type Envelope<T> = { data?: T } & JsonRecord;
+
 export const extensionsRuntime = {
   adminWorkspace(actorUserAccountId: string, organizationId: string) {
     return invokeExtensionsGateway<AdminExtensionsWorkspace>("get_admin_extensions_workspace", {
@@ -134,6 +160,77 @@ export const extensionsRuntime = {
       p_resource_type: input.resourceType,
       p_payload: input.payload,
       p_idempotency_key: input.idempotencyKey,
+    });
+  },
+
+  async createRewardImageUploadIntent(input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    originalFilename: string;
+    expectedContentType: string;
+    storageProvider: string;
+    bucket: string;
+    idempotencyKey: string;
+  }) {
+    const result = await invokeExtensionsGateway<Envelope<RewardImageUploadIntent>>("create_reward_image_upload_intent", {
+      p_actor_user_account_id: input.actorUserAccountId,
+      p_organization_id: input.organizationId,
+      p_original_filename: input.originalFilename,
+      p_expected_content_type: input.expectedContentType,
+      p_storage_provider: input.storageProvider,
+      p_bucket: input.bucket,
+      p_idempotency_key: input.idempotencyKey,
+    });
+    if (!result.data) throw new Error("REWARD_IMAGE_UPLOAD_INTENT_INVALID");
+    return result.data;
+  },
+
+  async confirmRewardImageUpload(input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    uploadIntentId: string;
+    actualContentType: string;
+    actualSizeBytes: number;
+    sha256: string;
+    providerObjectVersion?: string | null;
+    etag?: string | null;
+    idempotencyKey: string;
+  }) {
+    const result = await invokeExtensionsGateway<Envelope<RewardImageConfirmation>>("confirm_reward_image_upload", {
+      p_actor_user_account_id: input.actorUserAccountId,
+      p_organization_id: input.organizationId,
+      p_upload_intent_id: input.uploadIntentId,
+      p_actual_content_type: input.actualContentType,
+      p_actual_size_bytes: input.actualSizeBytes,
+      p_sha256: input.sha256,
+      p_provider_object_version: input.providerObjectVersion ?? "",
+      p_etag: input.etag ?? "",
+      p_idempotency_key: input.idempotencyKey,
+    });
+    if (!result.data) throw new Error("REWARD_IMAGE_CONFIRMATION_INVALID");
+    return result.data;
+  },
+
+  abortRewardImageUpload(input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    uploadIntentId: string;
+    failureCode: string;
+    idempotencyKey: string;
+  }) {
+    return invokeExtensionsGateway<Envelope<JsonRecord>>("abort_reward_image_upload", {
+      p_actor_user_account_id: input.actorUserAccountId,
+      p_organization_id: input.organizationId,
+      p_upload_intent_id: input.uploadIntentId,
+      p_failure_code: input.failureCode,
+      p_idempotency_key: input.idempotencyKey,
+    });
+  },
+
+  rewardImageDownload(actorUserAccountId: string, rewardId: string) {
+    return invokeExtensionsGateway<RewardImageDownload>("get_reward_image_download", {
+      p_actor_user_account_id: actorUserAccountId,
+      p_reward_id: rewardId,
     });
   },
 
