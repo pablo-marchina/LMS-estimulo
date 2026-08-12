@@ -23,30 +23,24 @@ export async function POST(request: NextRequest) {
   const interactionType = text(input.interaction_type);
   const eventId = text(input.event_id);
   const properties = object(input.properties);
-  if (!/^[a-z][a-z0-9_.-]{1,99}$/u.test(interactionType) || !/^[A-Za-z0-9._:-]{8,160}$/u.test(eventId)) {
-    return NextResponse.json({ ok: false, code: "BEHAVIOR_EVENT_INVALID" }, { status: 400 });
-  }
-  if (Buffer.byteLength(JSON.stringify(properties), "utf8") > 16_384) {
-    return NextResponse.json({ ok: false, code: "BEHAVIOR_EVENT_TOO_LARGE" }, { status: 413 });
-  }
+  if (!/^[a-z][a-z0-9_.-]{1,99}$/u.test(interactionType) || !/^[A-Za-z0-9._:-]{8,160}$/u.test(eventId)) return NextResponse.json({ ok: false, code: "BEHAVIOR_EVENT_INVALID" }, { status: 400 });
+  if (Buffer.byteLength(JSON.stringify(properties), "utf8") > 16_384) return NextResponse.json({ ok: false, code: "BEHAVIOR_EVENT_TOO_LARGE" }, { status: 413 });
+
+  const payload = {
+    interaction_type: interactionType,
+    captured_at: text(input.captured_at) || new Date().toISOString(),
+    session_id: text(input.session_id).slice(0, 160),
+    entity_type: text(input.entity_type).slice(0, 100),
+    entity_id: text(input.entity_id).slice(0, 200),
+    journey_instance_id: text(input.journey_instance_id),
+    channel: text(properties.channel).slice(0, 80),
+    properties,
+  };
 
   try {
-    const isSocialShare = interactionType === "social_share";
-    const result = await extensionsRuntime.performParticipant({
-      actorUserAccountId: auth.identity.user_account_id,
-      action: isSocialShare ? "social_share" : "behavior_event",
-      payload: {
-        interaction_type: interactionType,
-        captured_at: text(input.captured_at) || new Date().toISOString(),
-        session_id: text(input.session_id).slice(0, 160),
-        entity_type: text(input.entity_type).slice(0, 100),
-        entity_id: text(input.entity_id).slice(0, 200),
-        journey_instance_id: text(input.journey_instance_id),
-        channel: text(properties.channel).slice(0, 80),
-        properties,
-      },
-      idempotencyKey: eventId,
-    });
+    const result = interactionType === "social_share"
+      ? await extensionsRuntime.performParticipant({ actorUserAccountId: auth.identity.user_account_id, action: "social_share", payload, idempotencyKey: eventId })
+      : await extensionsRuntime.performParticipant({ actorUserAccountId: auth.identity.user_account_id, action: "behavior_event", payload, idempotencyKey: eventId });
     return NextResponse.json({ ok: true, data: result }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     const code = error instanceof Error ? error.message.split(":", 1)[0] : "BEHAVIOR_EVENT_FAILED";
