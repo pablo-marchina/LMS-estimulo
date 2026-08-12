@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import { InterfaceContentProvider } from "@/components/interface-content-provider";
 import { NavigationFeedback } from "@/components/navigation-feedback";
 import { SupportButton } from "@/components/support-button";
@@ -34,6 +35,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           {children}
           <SupportButton />
         </InterfaceContentProvider>
+        <GoogleAnalytics />
       </body>
     </html>
   );
