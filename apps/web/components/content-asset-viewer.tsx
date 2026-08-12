@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, ExternalLink, FileAudio, FileImage, FileText, PlayCircle, RefreshCw, RotateCcw } from "lucide-react";
 import type { ActivityAsset } from "@/lib/journey-runtime/contracts";
 
@@ -153,6 +154,7 @@ function clock(seconds: number) {
 }
 
 export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, compact = false }: Props) {
+  const router = useRouter();
   const [ratio, setRatio] = useState(asset.progress?.completion_ratio ?? 0);
   const [completed, setCompleted] = useState(Boolean(asset.progress?.completed));
   const [saving, setSaving] = useState(false);
@@ -171,13 +173,13 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
   const description = asset.description ?? asset.library_summary ?? metadataText(asset, "description");
   const type = asset.asset_type.toLowerCase();
 
-  const persist = useCallback(async (positionSeconds: number, durationSeconds: number | null, forceComplete = false) => {
+  const persist = useCallback(async (positionSeconds: number, durationSeconds: number | null, forceComplete = false, forceSend = false) => {
     const nextRatio = forceComplete ? 1 : durationSeconds && durationSeconds > 0 ? Math.min(1, positionSeconds / durationSeconds) : ratioRef.current;
     ratioRef.current = Math.max(ratioRef.current, nextRatio);
     setRatio(ratioRef.current);
     if (forceComplete || nextRatio >= 0.9) setCompleted(true);
     if (!progressEndpoint) return;
-    if (!forceComplete && positionSeconds - lastSent.current < 4.5) return;
+    if (!forceComplete && !forceSend && positionSeconds - lastSent.current < 4.5) return;
     lastSent.current = positionSeconds;
     setSaving(true);
     try {
@@ -192,17 +194,18 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
         }),
       });
       if (!response.ok) return;
-      const payload = await response.json() as { data?: { completion_ratio?: number; completed?: boolean } };
+      const payload = await response.json() as { data?: { completion_ratio?: number; completed?: boolean; lesson_completed?: boolean } };
       const persistedRatio = payload.data?.completion_ratio ?? nextRatio;
       const persistedCompleted = Boolean(payload.data?.completed || persistedRatio >= 0.9);
       ratioRef.current = Math.max(ratioRef.current, persistedRatio);
       setRatio(ratioRef.current);
       setCompleted((current) => current || persistedCompleted);
-      window.dispatchEvent(new CustomEvent("estimulo:asset-progress", { detail: { assetId: asset.id, ratio: persistedRatio, completed: persistedCompleted } }));
+      window.dispatchEvent(new CustomEvent("estimulo:asset-progress", { detail: { assetId: asset.id, ratio: persistedRatio, completed: persistedCompleted, lessonCompleted: Boolean(payload.data?.lesson_completed) } }));
+      if (payload.data?.lesson_completed) router.refresh();
     } finally {
       setSaving(false);
     }
-  }, [asset.id, progressEndpoint]);
+  }, [asset.id, progressEndpoint, router]);
 
   useEffect(() => {
     if (!youtubeUrl || !youtube?.videoId || !youtubeFrame.current) return;
@@ -221,7 +224,10 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
                 void persist(event.target.getCurrentTime(), event.target.getDuration() || null, false);
               }, 5000);
             }
-            if (event.data === YT.PlayerState.ENDED) void persist(event.target.getDuration(), event.target.getDuration(), true);
+            if (event.data === YT.PlayerState.PAUSED) {
+              void persist(event.target.getCurrentTime(), event.target.getDuration() || null, false, true);
+            }
+            if (event.data === YT.PlayerState.ENDED) void persist(event.target.getDuration(), event.target.getDuration(), true, true);
           },
         },
       });
@@ -229,7 +235,11 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
     return () => {
       cancelled = true;
       if (interval.current) clearInterval(interval.current);
-      youtubePlayer.current?.destroy();
+      const player = youtubePlayer.current;
+      if (player) {
+        try { void persist(player.getCurrentTime(), player.getDuration() || null, false, true); } catch { /* player may already be disposed */ }
+      }
+      player?.destroy();
       youtubePlayer.current = null;
     };
   }, [persist, resumeSeconds, youtube?.videoId, youtubeUrl]);
@@ -239,12 +249,12 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
     media.currentTime = resumeSeconds;
   }
 
-  const markViewed = () => void persist(1, 1, true);
+  const markViewed = () => void persist(1, 1, true, true);
   const viewerClass = compact ? "rounded-xl" : "rounded-2xl";
   const mediaUrl = downloadHref ?? externalUrl;
   const isLibraryArticle = type === "library_article" && Boolean(asset.library_body);
   const embedded = Boolean(youtubeUrl || vimeo || googleDriveUrl);
-  const requiresManualCompletion = Boolean(googleDriveUrl || (youtube?.playlistId && !youtube.videoId));
+  const requiresManualCompletion = Boolean(googleDriveUrl || vimeo || (youtube?.playlistId && !youtube.videoId));
   const supportsAutomaticResume = Boolean(youtube?.videoId || (!embedded && ["video", "audio"].includes(type)));
 
   return (
@@ -265,8 +275,8 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
       {youtubeUrl ? <div className="relative aspect-video w-full bg-black"><iframe ref={youtube?.videoId ? youtubeFrame : undefined} className="absolute inset-0 size-full" src={youtubeUrl} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /><span className="sr-only">Carregando vídeo</span></div> : null}</div> : null}
       {!youtubeUrl && vimeo ? <div className="relative aspect-video w-full bg-black"><iframe className="absolute inset-0 size-full" src={vimeo} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="autoplay; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /></div> : null}</div> : null}
       {!youtubeUrl && !vimeo && googleDriveUrl ? <div className="relative aspect-video w-full bg-black"><iframe className="absolute inset-0 size-full" src={googleDriveUrl} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="autoplay; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /><span className="sr-only">Carregando vídeo do Google Drive</span></div> : null}</div> : null}
-      {!embedded && type === "video" && mediaUrl ? <video className="aspect-video w-full bg-black" src={mediaUrl} controls playsInline preload="metadata" onLoadedMetadata={(event) => restoreNativePosition(event.currentTarget)} onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /> : null}
-      {type === "audio" && mediaUrl ? <div className="flex min-h-36 items-center gap-4 bg-info-soft p-6"><FileAudio className="text-info" size={34} /><audio className="w-full" src={mediaUrl} controls preload="metadata" onLoadedMetadata={(event) => restoreNativePosition(event.currentTarget)} onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /></div> : null}
+      {!embedded && type === "video" && mediaUrl ? <video className="aspect-video w-full bg-black" src={mediaUrl} controls playsInline preload="metadata" onLoadedMetadata={(event) => restoreNativePosition(event.currentTarget)} onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onPause={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null, false, true)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true, true)} /> : null}
+      {type === "audio" && mediaUrl ? <div className="flex min-h-36 items-center gap-4 bg-info-soft p-6"><FileAudio className="text-info" size={34} /><audio className="w-full" src={mediaUrl} controls preload="metadata" onLoadedMetadata={(event) => restoreNativePosition(event.currentTarget)} onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onPause={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null, false, true)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true, true)} /></div> : null}
       {type === "image" && mediaUrl ? <img src={mediaUrl} alt={metadataText(asset, "alt") ?? asset.title} className="max-h-[38rem] w-full bg-surface-muted object-contain" /> : null}
       {type === "pdf" && mediaUrl ? <object data={mediaUrl} type="application/pdf" className="h-[min(70vh,48rem)] w-full"><p className="p-6 text-sm text-muted">Seu navegador não exibiu o PDF. Use o botão abaixo para abrir o arquivo.</p></object> : null}
       {isLibraryArticle ? <div className="grid gap-4 px-5 py-6 text-sm leading-7 text-ink/90">{asset.library_body?.split(/\n{2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`} className="whitespace-pre-line">{paragraph}</p>)}</div> : null}
@@ -278,9 +288,9 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
         <div className="flex flex-wrap items-center gap-2">
           {externalUrl ? <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft"><ExternalLink size={15} /> Abrir na fonte</a> : null}
           {downloadHref ? <a href={downloadHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft">{type === "image" ? <FileImage size={15} /> : <FileText size={15} />} Abrir arquivo</a> : null}
-          {progressEndpoint && !completed && (!(["video", "audio"].includes(type)) || requiresManualCompletion) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">Marcar como concluído</button> : null}
+          {progressEndpoint && !completed && (!(["video", "audio"].includes(type)) || requiresManualCompletion) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">{["video", "audio"].includes(type) ? "Concluí este conteúdo" : "Marcar como concluído"}</button> : null}
         </div>
-        {googleDriveUrl ? <p className="text-xs text-muted">O Google Drive controla o player incorporado. Para guardar e compartilhar um ponto exato do vídeo, abra a fonte e use a opção do Drive de copiar o link daquele momento.</p> : embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
+        {googleDriveUrl ? <p className="text-xs text-muted">Este vídeo usa o player do Google Drive, que não fornece o tempo assistido à plataforma. Ao terminar, clique em “Concluí este conteúdo” para registrar a aula e a pontuação. Para retomada automática por segundo, o vídeo precisa ser hospedado em um player compatível com controle de reprodução.</p> : embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
       </div>
     </article>
   );

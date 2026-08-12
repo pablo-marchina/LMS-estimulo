@@ -65,7 +65,8 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
   const versions = activeDiagnostics.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name, definitionId: item.definition_id, definitionCode: item.code, definitionPurpose: stringValue(item.purpose) })));
   const draftVersions = versions.filter((item) => item.status === "draft").sort((a, b) => b.version_number - a.version_number);
   const publishedVersion = (versions.filter((item) => item.status === "published").sort((a, b) => dateValue(b.published_at) - dateValue(a.published_at) || b.version_number - a.version_number)[0] ?? null) as (VersionSummary & { definitionName?: string; definitionId?: string; definitionCode?: string; definitionPurpose?: string }) | null;
-  const selectedVersionId = single(query.versao);
+  const requestedVersion = single(query.versao);
+  const selectedVersionId = requestedVersion === "publicado" ? "publicado" : requestedVersion;
   const selectedVersion = (draftVersions.find((item) => String(item.id) === selectedVersionId) ?? null) as (VersionSummary & { definitionName?: string; definitionId?: string; definitionCode?: string; definitionPurpose?: string }) | null;
   const seedVersion = selectedVersion ?? publishedVersion;
   const seedProfiles = profiles(seedVersion);
@@ -86,6 +87,7 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
   const success = single(query.sucesso);
   const error = single(query.erro);
   const diagnosticsForProfile = optionalItems(extensionWorkspace?.optional_diagnostics);
+  const selectorValue = selectedVersion ? String(selectedVersion.id) : publishedVersion ? "publicado" : "";
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
     <PageHeader eyebrow="Personalização" title="Diagnósticos" description="Configure o diagnóstico principal e escolha outros diagnósticos que aparecerão no perfil." />
@@ -99,7 +101,7 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
 
     {type === "principal" ? <>
       <StatusPanel title="O que o diagnóstico principal controla" tone="info">Somente um diagnóstico permanece publicado por vez. Ele define o perfil principal e pode ajudar a personalizar quais jornadas fazem mais sentido para cada participante. Ao publicar uma mudança, a plataforma preserva a relação entre os perfis antigos e os novos.</StatusPanel>
-      <Card><form method="get" className="flex flex-wrap items-end gap-3"><input type="hidden" name="tipo" value="principal" /><Label className="min-w-72 flex-1">Rascunho que deseja abrir<Select name="versao" defaultValue={selectedVersionId}><option value="">Usar diagnóstico publicado como base</option>{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · rascunho</option>)}</Select><span className="text-[11px] font-normal text-muted">Sem rascunho selecionado, a configuração publicada é carregada como ponto de partida.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
+      <Card><form method="get" className="flex flex-wrap items-end gap-3"><input type="hidden" name="tipo" value="principal" /><Label className="min-w-72 flex-1">Diagnóstico que deseja abrir<Select name="versao" defaultValue={selectorValue}><option value="">Criar o primeiro diagnóstico</option>{publishedVersion ? <option value="publicado">{publishedVersion.definitionName} · em uso (v{publishedVersion.version_number})</option> : null}{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · rascunho (v{item.version_number})</option>)}</Select><span className="text-[11px] font-normal text-muted">A versão em uso pode ser aberta e revisada. Ao salvar mudanças nela, a plataforma cria ou atualiza um rascunho; a versão publicada não é alterada silenciosamente.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
       {!seedVersion ? <StatusPanel title="Nenhum diagnóstico principal configurado" tone="warning">Crie o primeiro diagnóstico abaixo e publique quando estiver pronto.</StatusPanel> : null}
       <fieldset disabled={!canEdit} className="contents"><DiagnosticBuilder initial={initial} previousProfiles={profiles(publishedVersion)} canPublish={canEdit} /></fieldset>
       <AdminDisclosure title="Diagnósticos salvos" description="Retirar uma configuração não apaga respostas nem resultados; ela é movida para o histórico preservado abaixo.">
