@@ -5,11 +5,8 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   Compass,
-  FileCheck2,
   Gauge,
-  Lightbulb,
   Rocket,
-  Sparkles,
   Target,
   Trophy,
   Users,
@@ -17,22 +14,6 @@ import {
 import { EstimuloBrand } from "@/components/estimulo-brand";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
-type LandingJourney = {
-  journey_id?: string;
-  slug?: string;
-  title?: string;
-  description?: string | null;
-  track_count?: number;
-  lesson_count?: number;
-  estimated_minutes?: number;
-  presentation?: {
-    tags?: string[];
-    badge?: string;
-    eyebrow?: string;
-    icon?: string;
-  };
-};
 
 const profiles = [
   {
@@ -68,57 +49,7 @@ const platformResources = [
   "Ferramentas práticas para aplicar no dia a dia",
 ];
 
-function landingJourney(value: unknown): LandingJourney | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return typeof (value as { title?: unknown }).title === "string" ? value as LandingJourney : null;
-}
-
-async function getLandingJourney(): Promise<LandingJourney | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  try {
-    if (url && key) {
-      const directResponse = await fetch(`${url}/rest/v1/rpc/get_public_landing_journey`, {
-        method: "POST",
-        headers: {
-          apikey: key,
-          authorization: `Bearer ${key}`,
-          "content-type": "application/json",
-        },
-        body: "{}",
-        next: { revalidate: 300 },
-      });
-      if (directResponse.ok) {
-        const directJourney = landingJourney(await directResponse.json());
-        if (directJourney) return directJourney;
-      }
-    }
-
-    const edgeResponse = await fetch(
-      "https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/public-landing-journey",
-      { next: { revalidate: 300 } },
-    );
-    if (!edgeResponse.ok) return null;
-    return landingJourney(await edgeResponse.json());
-  } catch {
-    return null;
-  }
-}
-
-function durationLabel(minutes: number) {
-  if (!Number.isFinite(minutes) || minutes <= 0) return "Conteúdo prático";
-  if (minutes < 60) return `${Math.round(minutes)} min`;
-  const hours = Math.max(1, Math.round(minutes / 60));
-  return `${hours} h estimadas`;
-}
-
-export default async function PublicLandingPage() {
-  const journey = await getLandingJourney();
-  const journeyTitle = journey?.title || "Negócio em Movimento";
-  const journeyDescription = journey?.description || "Uma jornada prática para organizar prioridades, aplicar ferramentas e transformar aprendizado em evolução real para o negócio.";
-  const journeyTags = Array.isArray(journey?.presentation?.tags) ? journey.presentation.tags.slice(0, 4) : [];
-
+export default function PublicLandingPage() {
   return (
     <main className="min-h-screen overflow-hidden bg-background">
       <a href="#conteudo-principal" className="skip-link">Pular para o conteúdo</a>
@@ -127,7 +58,6 @@ export default async function PublicLandingPage() {
           <EstimuloBrand href="/" />
           <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-secondary md:flex" aria-label="Navegação pública">
             <a href="#como-funciona" className="hover:text-primary">Como funciona</a>
-            <a href="#curso" className="hover:text-primary">Curso em destaque</a>
             <a href="#aprendizado-personalizado" className="hover:text-primary">Aprendizado personalizado</a>
           </nav>
           <ButtonLink href="/entrar" size="sm" className="ml-auto md:ml-4">Já tenho acesso</ButtonLink>
@@ -140,7 +70,7 @@ export default async function PublicLandingPage() {
             <div className="animate-in max-w-3xl">
               <p className="brand-kicker">COMO FUNCIONA</p>
               <h1 className="display-font mt-6 text-5xl leading-[.93] sm:text-6xl lg:text-7xl">Seu negócio evolui. A forma de aprender também.</h1>
-              <p className="mt-7 max-w-2xl text-lg leading-8 text-white/78 sm:text-xl">Uma plataforma gratuita que reúne conteúdos, ferramentas e experiências práticas para ajudar você a desenvolver seu negócio, com recomendações personalizadas para o momento da sua empresa.</p>
+              <p className="mt-7 max-w-2xl text-lg leading-8 text-white/78 sm:text-xl">Uma experiência gratuita que reúne conteúdos, ferramentas e recomendações personalizadas para ajudar você a evoluir como empreendedor.</p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <ButtonLink href="/cadastro" variant="secondary" size="lg">Criar conta gratuitamente</ButtonLink>
                 <ButtonLink href="/entrar" variant="ghost" size="lg" className="!border-white/35 !text-white hover:!bg-white/10">Já tenho acesso</ButtonLink>
@@ -165,9 +95,8 @@ export default async function PublicLandingPage() {
                   </div>
                   <div className="mt-8 grid gap-3">
                     <JourneyPreview icon={<Compass size={17} />} title="Descubra por onde começar" color="bg-brand-cyan" />
-                    <JourneyPreview icon={<BookOpenCheck size={17} />} title="Aprenda no seu ritmo" color="bg-brand-magenta" />
-                    <JourneyPreview icon={<Lightbulb size={17} />} title="Coloque em prática" color="bg-brand-green" />
-                    <JourneyPreview icon={<Trophy size={17} />} title="Evolua a cada conquista" color="bg-accent-gold" />
+                    <JourneyPreview icon={<BookOpenCheck size={17} />} title="Desenvolva habilidades práticas" color="bg-brand-magenta" />
+                    <JourneyPreview icon={<Trophy size={17} />} title="Evolua e abra novas oportunidades" color="bg-brand-green" />
                   </div>
                 </div>
               </div>
@@ -181,31 +110,10 @@ export default async function PublicLandingPage() {
               <p className="text-sm font-bold uppercase tracking-[.14em] text-primary">Uma experiência simples e prática</p>
               <h2 className="display-font mt-3 text-4xl text-secondary sm:text-5xl">Conhecimento que vira resultado no seu negócio.</h2>
             </div>
-            <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              <FeatureCard icon={<Compass />} title="Descubra por onde começar" text="Receba recomendações de acordo com o momento do seu negócio." accent="bg-brand-cyan" />
-              <FeatureCard icon={<BookOpenCheck />} title="Aprenda no seu ritmo" text="Conteúdos rápidos, práticos e pensados para quem empreende." accent="bg-brand-magenta" />
-              <FeatureCard icon={<FileCheck2 />} title="Coloque em prática" text="Transforme o aprendizado em melhorias reais para o seu negócio." accent="bg-brand-green" />
-              <FeatureCard icon={<Trophy />} title="Evolua a cada conquista" text="Ganhe certificados, acompanhe seu progresso e desbloqueie benefícios." accent="bg-accent-gold" />
-            </div>
-          </div>
-        </section>
-
-        <section id="curso" className="px-5 pb-20 lg:px-9 lg:pb-28">
-          <div className="mx-auto max-w-[1400px] overflow-hidden rounded-[2rem] bg-secondary text-white shadow-lg">
-            <div className="grid lg:grid-cols-[1fr_.85fr]">
-              <div className="brand-dots-bg p-8 sm:p-12 lg:p-16">
-                <p className="brand-kicker">CURSO EM DESTAQUE</p>
-                <p className="mt-5 text-sm font-bold uppercase tracking-[.14em] text-brand-green">{journey?.presentation?.badge || "Jornada Estímulo"}</p>
-                <h2 className="display-font mt-3 text-4xl sm:text-5xl">{journeyTitle}</h2>
-                <p className="mt-6 max-w-2xl leading-7 text-white/72">{journeyDescription}</p>
-                {journeyTags.length ? <div className="mt-7 flex flex-wrap gap-2">{journeyTags.map((tag) => <span key={tag} className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold">{tag}</span>)}</div> : null}
-                <ButtonLink href="/entrar" variant="secondary" size="lg" className="mt-8">Conhecer o curso</ButtonLink>
-              </div>
-              <div className="grid content-center gap-4 bg-white/7 p-8 sm:grid-cols-3 sm:p-12 lg:grid-cols-1 lg:p-16">
-                <CourseMetric value={journey?.track_count ? String(journey.track_count) : "—"} label="trilhas" />
-                <CourseMetric value={journey?.lesson_count ? String(journey.lesson_count) : "—"} label="aulas e atividades" />
-                <CourseMetric value={durationLabel(Number(journey?.estimated_minutes ?? 0))} label="para aprender no seu ritmo" />
-              </div>
+            <div className="mt-12 grid gap-5 md:grid-cols-3">
+              <FeatureCard icon={<Compass />} title="Descubra" text="Entenda por onde começar e receba recomendações para o seu momento." accent="bg-brand-cyan" />
+              <FeatureCard icon={<BookOpenCheck />} title="Desenvolva" text="Conteúdos práticos, ferramentas e jornadas com parceiros como a OpenAI para apoiar seu crescimento." accent="bg-brand-magenta" />
+              <FeatureCard icon={<Trophy />} title="Evolua" text="Sua evolução abre portas para certificados, mentorias e novas oportunidades." accent="bg-brand-green" />
             </div>
           </div>
         </section>
@@ -273,8 +181,4 @@ function JourneyPreview({ icon, title, color }: { icon: React.ReactNode; title: 
 
 function FeatureCard({ icon, title, text, accent }: { icon: React.ReactNode; title: string; text: string; accent: string }) {
   return <Card className="brand-accent-card p-7"><span className={`grid size-12 place-items-center rounded-2xl ${accent} text-secondary`}>{icon}</span><h3 className="display-font mt-8 text-2xl text-secondary">{title}</h3><p className="mt-3 leading-7 text-muted">{text}</p></Card>;
-}
-
-function CourseMetric({ value, label }: { value: string; label: string }) {
-  return <div className="rounded-2xl border border-white/15 bg-white/8 p-5"><strong className="display-font block text-3xl text-brand-green">{value}</strong><span className="mt-1 block text-sm text-white/65">{label}</span></div>;
 }
