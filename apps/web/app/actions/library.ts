@@ -80,11 +80,14 @@ export async function saveLibraryContentAction(formData: FormData) {
       },
       idempotencyKey: `${commandKey}:themes`,
     }),
-    libraryRuntime.setArchetypes({
+    extensionsRuntime.saveAdmin({
       actorUserAccountId: actor,
       organizationId,
-      libraryItemVersionId: saved.data.library_item_version_id,
-      archetypeDefinitionIds,
+      resourceType: "library_archetypes_set",
+      payload: {
+        library_item_version_id: saved.data.library_item_version_id,
+        archetype_definition_ids: archetypeDefinitionIds,
+      },
       idempotencyKey: `${commandKey}:archetypes`,
     }),
   ]);
