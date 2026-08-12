@@ -26,7 +26,7 @@ export default async function OptionalDiagnosticPage({ params, searchParams }: {
   if (!diagnostic) notFound();
   const availability = diagnostic.availability as JsonRecord;
   const sessions = records(diagnostic.sessions);
-  const session = sessions.find((item) => text(item.id) === query.sessao) ?? sessions.find((item) => item.status === "in_progress");
+  const session = sessions.find((item) => text(item.id) === query.sessao && item.status === "in_progress") ?? sessions.find((item) => item.status === "in_progress");
   const completed = sessions.find((item) => item.status === "completed");
   const questions = records(diagnostic.questions);
   const questionData = questions.map((question) => ({
