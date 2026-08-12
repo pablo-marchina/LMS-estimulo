@@ -31,9 +31,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const isSocialShare = interactionType === "social_share";
     const result = await extensionsRuntime.performParticipant({
       actorUserAccountId: auth.identity.user_account_id,
-      action: "behavior_event",
+      action: isSocialShare ? "social_share" : "behavior_event",
       payload: {
         interaction_type: interactionType,
         captured_at: text(input.captured_at) || new Date().toISOString(),
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
         entity_type: text(input.entity_type).slice(0, 100),
         entity_id: text(input.entity_id).slice(0, 200),
         journey_instance_id: text(input.journey_instance_id),
+        channel: text(properties.channel).slice(0, 80),
         properties,
       },
       idempotencyKey: eventId,
