@@ -3,13 +3,68 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireParticipantContext } from "@/lib/auth/participant-context";
+import { assertParticipantMutationAllowed, requireParticipantContext } from "@/lib/auth/participant-context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 const uuid = z.string().uuid();
+const diagnosticAnswerSchema = z.object({
+  journeyInstanceId: z.string().uuid(),
+  itemId: z.string().uuid(),
+  optionCode: z.string().trim().min(1).max(200),
+  idempotencyKey: z.string().trim().min(1).max(300),
+});
+
+export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof diagnosticAnswerSchema>) {
+  await assertParticipantMutationAllowed();
+  const parsed = diagnosticAnswerSchema.parse(input);
+  const auth = await requireParticipantContext();
+  const actor = auth.identity.user_account_id;
+
+  let experience = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
+  if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
+  let diagnostic = experience.diagnostic;
+
+  const submittedItem = diagnostic.items.find((item) => item.id === parsed.itemId);
+  if (!submittedItem) throw new Error("DIAGNOSTIC_ITEM_NOT_AVAILABLE");
+  if (!submittedItem.options.some((option) => option.code === parsed.optionCode)) {
+    throw new Error("DIAGNOSTIC_OPTION_NOT_AVAILABLE");
+  }
+
+  if (!experience.state.d) {
+    await journeyRuntime.startDiagnostic(
+      actor,
+      parsed.journeyInstanceId,
+      diagnostic.version_id,
+      `${parsed.idempotencyKey}:start`,
+    );
+    experience = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
+    if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
+    diagnostic = experience.diagnostic;
+  }
+
+  const sessionId = experience.state.d?.session_id;
+  if (!sessionId) throw new Error("DIAGNOSTIC_SESSION_NOT_AVAILABLE");
+
+  const latestItem = diagnostic.items.find((item) => item.id === parsed.itemId);
+  if (!latestItem) throw new Error("DIAGNOSTIC_ITEM_NOT_AVAILABLE");
+  if (latestItem.response?.option_code === parsed.optionCode) return { ok: true as const };
+
+  const revision = (latestItem.response?.revision ?? 0) + 1;
+  await journeyRuntime.recordDiagnosticResponse(
+    actor,
+    sessionId,
+    parsed.itemId,
+    parsed.optionCode,
+    revision,
+    `${parsed.idempotencyKey}:item:${parsed.itemId}:revision:${revision}:option:${parsed.optionCode}`,
+  );
+
+  return { ok: true as const };
+}
 
 export async function submitProfileDiagnosisAction(formData: FormData) {
+  await assertParticipantMutationAllowed();
   const auth = await requireParticipantContext();
   const actor = auth.identity.user_account_id;
   const journey = uuid.parse(formData.get("journey_instance_id"));
