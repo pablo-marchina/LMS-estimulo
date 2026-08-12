@@ -38,14 +38,20 @@ export default async function ResultPage({
 
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const [state, credentials, engagement, diagnosticSummary] = await Promise.all([
+  const [stateResult, credentialsResult, engagementResult, diagnosticSummaryResult] = await Promise.allSettled([
     journeyRuntime.getParticipantState(auth.identity.user_account_id, journey),
-    credentialRuntime.listParticipant(auth.identity.user_account_id).catch(() => ({ entrepreneur_id: null, badges: [], certificates: [] })),
-    engagementRuntime.participantHub(auth.identity.user_account_id).catch(() => null),
-    engagementRuntime.participantDiagnosticSummary(auth.identity.user_account_id).catch(() => null),
-  ]);
-  const badges = credentials.badges.filter((item) => item.journey_instance_id === journey);
-  const certificates = credentials.certificates.filter((item) => item.journey_instance_id === journey);
+    credentialRuntime.listParticipant(auth.identity.user_account_id),
+    engagementRuntime.participantHub(auth.identity.user_account_id),
+    engagementRuntime.participantDiagnosticSummary(auth.identity.user_account_id),
+  ] as const);
+
+  if (stateResult.status === "rejected") throw stateResult.reason;
+  const state = stateResult.value;
+  const credentials = credentialsResult.status === "fulfilled" ? credentialsResult.value : null;
+  const engagement = engagementResult.status === "fulfilled" ? engagementResult.value : null;
+  const diagnosticSummary = diagnosticSummaryResult.status === "fulfilled" ? diagnosticSummaryResult.value : null;
+  const badges = credentials?.badges.filter((item) => item.journey_instance_id === journey) ?? [];
+  const certificates = credentials?.certificates.filter((item) => item.journey_instance_id === journey) ?? [];
   const journeyTitle = displayContentName(state.journey_title, displayContentName(state.journey_code, "Jornada"));
   const archetype = engagement?.archetype ?? null;
 
@@ -61,6 +67,8 @@ export default async function ResultPage({
       ) : null}
       {query.avaliacao === "aprovada" ? <StatusPanel title="Avaliação aprovada" tone="success"><p>O resultado foi registrado e as credenciais elegíveis foram processadas.</p></StatusPanel> : null}
       {query.credenciais === "atualizadas" ? <StatusPanel title="Credenciais atualizadas" tone="success"><p>Selos e certificados elegíveis foram verificados.</p></StatusPanel> : null}
+      {credentialsResult.status === "rejected" ? <StatusPanel title="Credenciais temporariamente indisponíveis" tone="warning"><p>Não foi possível consultar seus selos e certificados agora. Isso não significa que você não possui credenciais; tente recarregar a página.</p></StatusPanel> : null}
+      {engagementResult.status === "rejected" || diagnosticSummaryResult.status === "rejected" ? <StatusPanel title="Parte do diagnóstico está temporariamente indisponível" tone="warning"><p>Seu progresso da jornada foi carregado, mas o resumo do perfil não pôde ser consultado neste momento.</p></StatusPanel> : null}
 
       {archetype ? <DiagnosticResultDashboard archetype={archetype} dimensions={diagnosticSummary?.dimensions ?? []} primaryHref={participantNextHref(state)} primaryLabel={state.journey_status === "completed" ? "Explorar outras jornadas" : "Acessar minha trilha"} /> : null}
 
@@ -87,7 +95,7 @@ export default async function ResultPage({
 
       <section className="grid gap-4" aria-labelledby="credenciais-jornada">
         <h2 id="credenciais-jornada" className="text-xl font-semibold text-ink">Credenciais desta jornada</h2>
-        {badges.length === 0 && certificates.length === 0 ? <StatusPanel title="Nenhuma credencial emitida" tone="info"><p>A emissão depende das regras publicadas para esta jornada.</p></StatusPanel> : null}
+        {credentials && badges.length === 0 && certificates.length === 0 ? <StatusPanel title="Nenhuma credencial emitida" tone="info"><p>A emissão depende das regras publicadas para esta jornada.</p></StatusPanel> : null}
         {badges.length || certificates.length ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {badges.map((badge) => (
