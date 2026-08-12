@@ -22,15 +22,24 @@ function code(error: unknown) {
   return /^[A-Z0-9_]+$/.test(value) ? value : "CERTIFICATE_TEMPLATE_UPLOAD_FAILED";
 }
 function safeReturnTo(value: FormDataEntryValue | null) {
-  const path = typeof value === "string" ? value.trim() : "";
-  return path === "/admin/certificados" ? path : "/admin/gamificacao";
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return "/admin/gamificacao?tipo=certificados#templates-certificado";
+  try {
+    const target = new URL(raw, "https://admin.estimulo.local");
+    if (!["/admin/gamificacao", "/admin/certificados"].includes(target.pathname)) {
+      return "/admin/gamificacao?tipo=certificados#templates-certificado";
+    }
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return "/admin/gamificacao?tipo=certificados#templates-certificado";
+  }
 }
-function redirectTo(request: NextRequest, pathname: string, organizationId: string, values: Record<string, string>) {
-  const target = new URL(pathname, request.url);
+function redirectTo(request: NextRequest, returnTo: string, organizationId: string, values: Record<string, string>) {
+  const target = new URL(returnTo, request.url);
   target.searchParams.set("organization", organizationId);
-  if (pathname === "/admin/gamificacao") target.searchParams.set("tipo", "certificados");
+  if (target.pathname === "/admin/gamificacao") target.searchParams.set("tipo", "certificados");
   for (const [key, value] of Object.entries(values)) target.searchParams.set(key, value);
-  if (pathname === "/admin/gamificacao") target.hash = "template-certificado";
+  if (target.pathname === "/admin/gamificacao" && !target.hash) target.hash = "templates-certificado";
   return NextResponse.redirect(target, 303);
 }
 
@@ -40,7 +49,7 @@ export async function POST(request: NextRequest) {
   if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar/administracao", request.url), 303);
   const key = randomUUID();
   let organizationId = "";
-  let returnTo = "/admin/gamificacao";
+  let returnTo = "/admin/gamificacao?tipo=certificados#templates-certificado";
   let intentId: string | null = null;
   let bucket: string | null = null;
   let objectKey: string | null = null;
@@ -88,10 +97,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return redirectTo(request, returnTo, organizationId, { template: confirmed.data.file_object_id, templateNome: confirmed.data.original_filename, templateStatus: "enviado" });
+    return redirectTo(request, returnTo, organizationId, {
+      sucesso: "modelo_certificado_salvo",
+      template: confirmed.data.file_object_id,
+      templateNome: confirmed.data.original_filename,
+    });
   } catch (error) {
     if (objectCreated && bucket && objectKey) await removeCredentialFile(bucket, objectKey).catch(() => undefined);
-    if (organizationId) return redirectTo(request, returnTo, organizationId, { templateStatus: "erro", codigo: code(error) });
+    if (organizationId) return redirectTo(request, returnTo, organizationId, { erro: "modelo_certificado", codigo: code(error) });
     return NextResponse.json({ error: code(error) }, { status: 400 });
   }
 }
