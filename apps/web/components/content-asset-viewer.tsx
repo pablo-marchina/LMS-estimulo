@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle2, ExternalLink, FileAudio, FileImage, FileText, PlayCircle, RefreshCw } from "lucide-react";
+import { CheckCircle2, ExternalLink, FileAudio, FileImage, FileText, PlayCircle, RefreshCw, RotateCcw } from "lucide-react";
 import type { ActivityAsset } from "@/lib/journey-runtime/contracts";
 
 export type ContentViewerAsset = Partial<ActivityAsset> & {
@@ -27,13 +27,17 @@ type Props = {
 type YouTubePlayer = {
   getCurrentTime: () => number;
   getDuration: () => number;
+  seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
   destroy: () => void;
 };
 
 type YouTubeApi = {
   Player: new (
     element: HTMLElement,
-    options: { events?: { onStateChange?: (event: { data: number; target: YouTubePlayer }) => void } },
+    options: { events?: {
+      onReady?: (event: { target: YouTubePlayer }) => void;
+      onStateChange?: (event: { data: number; target: YouTubePlayer }) => void;
+    } },
   ) => YouTubePlayer;
   PlayerState: { PLAYING: number; ENDED: number; PAUSED: number };
 };
@@ -88,9 +92,10 @@ function youtubeSource(raw: string | null | undefined): YouTubeSource | null {
   return null;
 }
 
-function youtubeEmbed(source: YouTubeSource | null) {
+function youtubeEmbed(source: YouTubeSource | null, resumeSeconds = 0) {
   if (!source) return null;
   const params = new URLSearchParams({ rel: "0", playsinline: "1", enablejsapi: "1" });
+  if (resumeSeconds > 0) params.set("start", String(Math.floor(resumeSeconds)));
   if (source.playlistId) params.set("list", source.playlistId);
   if (!source.videoId && source.playlistId) {
     params.set("listType", "playlist");
@@ -140,19 +145,27 @@ function metadataText(asset: ContentViewerAsset, key: string) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function clock(seconds: number) {
+  const safe = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safe / 60);
+  const remainder = safe % 60;
+  return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
 export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, compact = false }: Props) {
   const [ratio, setRatio] = useState(asset.progress?.completion_ratio ?? 0);
   const [completed, setCompleted] = useState(Boolean(asset.progress?.completed));
   const [saving, setSaving] = useState(false);
   const [frameLoaded, setFrameLoaded] = useState(false);
   const ratioRef = useRef(ratio);
-  const lastSent = useRef(asset.progress?.watched_seconds ?? 0);
+  const resumeSeconds = completed ? 0 : Math.max(0, asset.progress?.watched_seconds ?? 0);
+  const lastSent = useRef(resumeSeconds);
   const youtubeFrame = useRef<HTMLIFrameElement>(null);
   const youtubePlayer = useRef<YouTubePlayer | null>(null);
   const interval = useRef<ReturnType<typeof setInterval> | null>(null);
   const externalUrl = safeExternalUrl(asset.external_url);
   const youtube = useMemo(() => youtubeSource(externalUrl), [externalUrl]);
-  const youtubeUrl = useMemo(() => youtubeEmbed(youtube), [youtube]);
+  const youtubeUrl = useMemo(() => youtubeEmbed(youtube, resumeSeconds), [youtube, resumeSeconds]);
   const vimeo = useMemo(() => vimeoEmbed(externalUrl), [externalUrl]);
   const googleDriveUrl = useMemo(() => googleDriveEmbed(externalUrl), [externalUrl]);
   const description = asset.description ?? asset.library_summary ?? metadataText(asset, "description");
@@ -198,6 +211,9 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
       if (cancelled || !youtubeFrame.current) return;
       youtubePlayer.current = new YT.Player(youtubeFrame.current, {
         events: {
+          onReady: (event) => {
+            if (resumeSeconds > 0) event.target.seekTo(resumeSeconds, true);
+          },
           onStateChange: (event) => {
             if (interval.current) clearInterval(interval.current);
             if (event.data === YT.PlayerState.PLAYING) {
@@ -216,7 +232,12 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
       youtubePlayer.current?.destroy();
       youtubePlayer.current = null;
     };
-  }, [persist, youtube?.videoId, youtubeUrl]);
+  }, [persist, resumeSeconds, youtube?.videoId, youtubeUrl]);
+
+  function restoreNativePosition(media: HTMLMediaElement) {
+    if (resumeSeconds <= 0 || !Number.isFinite(media.duration) || resumeSeconds >= Math.max(0, media.duration - 3)) return;
+    media.currentTime = resumeSeconds;
+  }
 
   const markViewed = () => void persist(1, 1, true);
   const viewerClass = compact ? "rounded-xl" : "rounded-2xl";
@@ -224,6 +245,7 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
   const isLibraryArticle = type === "library_article" && Boolean(asset.library_body);
   const embedded = Boolean(youtubeUrl || vimeo || googleDriveUrl);
   const requiresManualCompletion = Boolean(googleDriveUrl || (youtube?.playlistId && !youtube.videoId));
+  const supportsAutomaticResume = Boolean(youtube?.videoId || (!embedded && ["video", "audio"].includes(type)));
 
   return (
     <article className={`brand-media-card overflow-hidden border border-border bg-white shadow-sm ${viewerClass}`}>
@@ -232,6 +254,7 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
           <p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{type === "video" ? "Vídeo" : type === "audio" ? "Áudio" : type === "image" ? "Imagem" : type === "pdf" ? "Documento" : isLibraryArticle ? "Conteúdo da Biblioteca" : "Conteúdo complementar"}</p>
           <h3 className="mt-1 font-bold text-secondary">{asset.title}</h3>
           {description ? <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">{description}</p> : null}
+          {resumeSeconds > 0 && supportsAutomaticResume ? <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary"><RotateCcw size={13} /> Retomando de {clock(resumeSeconds)}</p> : null}
         </div>
         <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${completed ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>
           {completed ? <CheckCircle2 size={14} /> : <PlayCircle size={14} />}
@@ -242,8 +265,8 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
       {youtubeUrl ? <div className="relative aspect-video w-full bg-black"><iframe ref={youtube?.videoId ? youtubeFrame : undefined} className="absolute inset-0 size-full" src={youtubeUrl} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /><span className="sr-only">Carregando vídeo</span></div> : null}</div> : null}
       {!youtubeUrl && vimeo ? <div className="relative aspect-video w-full bg-black"><iframe className="absolute inset-0 size-full" src={vimeo} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="autoplay; fullscreen; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /></div> : null}</div> : null}
       {!youtubeUrl && !vimeo && googleDriveUrl ? <div className="relative aspect-video w-full bg-black"><iframe className="absolute inset-0 size-full" src={googleDriveUrl} title={asset.title} loading="eager" onLoad={() => setFrameLoaded(true)} allow="autoplay; fullscreen" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />{!frameLoaded ? <div className="pointer-events-none absolute inset-0 grid place-items-center text-white"><RefreshCw className="animate-spin" size={24} /><span className="sr-only">Carregando vídeo do Google Drive</span></div> : null}</div> : null}
-      {!embedded && type === "video" && mediaUrl ? <video className="aspect-video w-full bg-black" src={mediaUrl} controls playsInline preload="metadata" onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /> : null}
-      {type === "audio" && mediaUrl ? <div className="flex min-h-36 items-center gap-4 bg-info-soft p-6"><FileAudio className="text-info" size={34} /><audio className="w-full" src={mediaUrl} controls preload="metadata" onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /></div> : null}
+      {!embedded && type === "video" && mediaUrl ? <video className="aspect-video w-full bg-black" src={mediaUrl} controls playsInline preload="metadata" onLoadedMetadata={(event) => restoreNativePosition(event.currentTarget)} onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /> : null}
+      {type === "audio" && mediaUrl ? <div className="flex min-h-36 items-center gap-4 bg-info-soft p-6"><FileAudio className="text-info" size={34} /><audio className="w-full" src={mediaUrl} controls preload="metadata" onLoadedMetadata={(event) => restoreNativePosition(event.currentTarget)} onTimeUpdate={(event) => void persist(event.currentTarget.currentTime, event.currentTarget.duration || null)} onEnded={(event) => void persist(event.currentTarget.duration, event.currentTarget.duration, true)} /></div> : null}
       {type === "image" && mediaUrl ? <img src={mediaUrl} alt={metadataText(asset, "alt") ?? asset.title} className="max-h-[38rem] w-full bg-surface-muted object-contain" /> : null}
       {type === "pdf" && mediaUrl ? <object data={mediaUrl} type="application/pdf" className="h-[min(70vh,48rem)] w-full"><p className="p-6 text-sm text-muted">Seu navegador não exibiu o PDF. Use o botão abaixo para abrir o arquivo.</p></object> : null}
       {isLibraryArticle ? <div className="grid gap-4 px-5 py-6 text-sm leading-7 text-ink/90">{asset.library_body?.split(/\n{2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`} className="whitespace-pre-line">{paragraph}</p>)}</div> : null}
@@ -255,9 +278,9 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
         <div className="flex flex-wrap items-center gap-2">
           {externalUrl ? <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft"><ExternalLink size={15} /> Abrir na fonte</a> : null}
           {downloadHref ? <a href={downloadHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft">{type === "image" ? <FileImage size={15} /> : <FileText size={15} />} Abrir arquivo</a> : null}
-          {progressEndpoint && !completed && (!( ["video", "audio"].includes(type)) || requiresManualCompletion) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">Marcar como concluído</button> : null}
+          {progressEndpoint && !completed && (!(["video", "audio"].includes(type)) || requiresManualCompletion) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">Marcar como concluído</button> : null}
         </div>
-        {embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
+        {googleDriveUrl ? <p className="text-xs text-muted">O Google Drive controla o player incorporado. Para guardar e compartilhar um ponto exato do vídeo, abra a fonte e use a opção do Drive de copiar o link daquele momento.</p> : embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
       </div>
     </article>
   );
