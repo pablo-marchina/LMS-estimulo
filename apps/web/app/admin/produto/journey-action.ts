@@ -17,7 +17,13 @@ function nullable(formData: FormData, name: string) { return text(formData, name
 function checked(formData: FormData, name: string) { return formData.get(name) === "on" || formData.get(name) === "true"; }
 function positiveInteger(value: string, fallback = 9999) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function deriveCode(source: string, fallback: string) { const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60); return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback; }
-function configuration(formData: FormData) { const raw = text(formData, "configuration_snapshot"); if (!raw) return {} as Record<string, unknown>; try { const parsed = JSON.parse(raw) as unknown; return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}; } catch { return {}; } }
+function configuration(formData: FormData) {
+  const raw = text(formData, "configuration_snapshot");
+  if (!raw) return {} as Record<string, unknown>;
+  const parsed = JSON.parse(raw) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("INVALID_CONFIGURATION_SNAPSHOT");
+  return parsed as Record<string, unknown>;
+}
 function selectedFile(formData: FormData, name: string) { const entry = formData.get(name); return entry instanceof File && entry.size > 0 ? entry : null; }
 function recordText(value: unknown, field: string) { return value && typeof value === "object" && !Array.isArray(value) && typeof (value as Record<string, unknown>)[field] === "string" ? String((value as Record<string, unknown>)[field]) : ""; }
 
@@ -57,7 +63,13 @@ export async function saveJourneyAction(formData: FormData) {
   const themeIds = [...new Set(formData.getAll("theme_ids").map(String).filter(Boolean))];
   let savedJourneyId = journeyId ?? "";
   let liveUpdate = false;
-  const previousConfiguration = configuration(formData);
+  let themeSaveFailed = false;
+  let previousConfiguration: Record<string, unknown>;
+  try {
+    previousConfiguration = configuration(formData);
+  } catch {
+    redirect(`/admin/produto?etapa=geral&versao=${journeyId ?? ""}&erro=configuracao_invalida`);
+  }
   const previousPresentation = previousConfiguration.presentation && typeof previousConfiguration.presentation === "object" && !Array.isArray(previousConfiguration.presentation) ? previousConfiguration.presentation as Record<string, unknown> : {};
   const commandKey = randomUUID();
 
@@ -104,20 +116,30 @@ export async function saveJourneyAction(formData: FormData) {
       },
       idempotencyKey: commandKey,
     });
-    await extensionsRuntime.saveAdmin({
-      actorUserAccountId: auth.identity.user_account_id,
-      organizationId: organization.organization_id,
-      resourceType: "journey_themes_set",
-      payload: { journey_definition_id: result.definition_id, theme_ids: themeIds },
-      idempotencyKey: `${commandKey}:themes`,
-    });
+
+    // Preserve the primary save result before secondary metadata work. If the
+    // theme relationship fails, the newly-created journey must still reopen by
+    // its real id instead of looking as though all entered data disappeared.
     savedJourneyId = (result as typeof result & { journey_id?: string }).journey_id ?? result.version_id;
     liveUpdate = result.live_update;
+
+    try {
+      await extensionsRuntime.saveAdmin({
+        actorUserAccountId: auth.identity.user_account_id,
+        organizationId: organization.organization_id,
+        resourceType: "journey_themes_set",
+        payload: { journey_definition_id: result.definition_id, theme_ids: themeIds },
+        idempotencyKey: `${commandKey}:themes`,
+      });
+    } catch {
+      themeSaveFailed = true;
+    }
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
     redirect(`/admin/produto?etapa=geral&versao=${journeyId ?? ""}&erro=${reason}`);
   }
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
-  redirect(`/admin/produto?etapa=conteudo&versao=${savedJourneyId}&sucesso=${liveUpdate ? "atualizado_ao_vivo" : "rascunho_salvo"}`);
+  const success = liveUpdate ? "atualizado_ao_vivo" : "rascunho_salvo";
+  redirect(`/admin/produto?etapa=${themeSaveFailed ? "geral" : "conteudo"}&versao=${savedJourneyId}&sucesso=${success}${themeSaveFailed ? "&erro=temas_nao_salvos" : ""}`);
 }
