@@ -102,11 +102,20 @@ export async function retireAnnouncementAction(formData: FormData) {
   if (!parsed.success) redirect("/admin/engajamento?view=gerenciar&erro=dados_invalidos");
 
   const auth = await adminContext(parsed.data.organizationId);
+  let announcement: Awaited<ReturnType<typeof engagementRuntime.listOperatorAnnouncements>>["announcements"][number] | null = null;
   try {
     const workspace = await engagementRuntime.listOperatorAnnouncements(auth.identity.user_account_id, parsed.data.organizationId);
-    const announcement = workspace.announcements.find((item) => item.id === parsed.data.announcementId);
-    if (!announcement) redirect("/admin/engajamento?view=gerenciar&erro=ANNOUNCEMENT_SAVE_FAILED");
+    announcement = workspace.announcements.find((item) => item.id === parsed.data.announcementId) ?? null;
+  } catch {
+    redirect("/admin/engajamento?view=gerenciar&erro=falha");
+  }
 
+  // Keep redirects outside the persistence try/catch. Next.js implements
+  // redirect() by throwing a controlled exception, which must not be mistaken
+  // for an archive failure.
+  if (!announcement) redirect("/admin/engajamento?view=gerenciar&erro=anuncio_inexistente");
+
+  try {
     await engagementRuntime.saveAnnouncement({
       actorUserAccountId: auth.identity.user_account_id,
       organizationId: parsed.data.organizationId,

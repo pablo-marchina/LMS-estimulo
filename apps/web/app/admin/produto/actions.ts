@@ -18,7 +18,13 @@ function deriveCode(source: string, fallback: string) { const slug = source.norm
 function positiveInteger(value: string, fallback = 1) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function secureExternalUrl(value: string): string | null { if (!value) return null; try { const url = new URL(value); return url.protocol === "https:" ? url.toString() : null; } catch { return null; } }
 function selectedFile(formData: FormData, name: string) { const entry = formData.get(name); return entry instanceof File && entry.size > 0 ? entry : null; }
-function objectSnapshot(formData: FormData, name: string): Record<string, unknown> { const raw = text(formData, name); if (!raw) return {}; try { const parsed = JSON.parse(raw) as unknown; return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {}; } catch { return {}; } }
+function objectSnapshot(formData: FormData, name: string): Record<string, unknown> {
+  const raw = text(formData, name);
+  if (!raw) return {};
+  const parsed = JSON.parse(raw) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("INVALID_OBJECT_SNAPSHOT");
+  return parsed as Record<string, unknown>;
+}
 
 const questionTypes = new Set(["single_choice", "multiple_choice", "true_false", "open_text"]);
 function quizQuestionsFromForm(formData: FormData) {
@@ -140,14 +146,20 @@ export async function saveAulaAction(formData: FormData) {
   const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
   const questions = quizQuestionsFromForm(formData);
   const contentSource = text(formData, "content_source") || (activityVersionId ? "current" : "none");
-  const previousConfiguration = objectSnapshot(formData, "configuration_snapshot");
-  const previousMetadata = objectSnapshot(formData, "metadata_snapshot");
+  const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
+  let previousConfiguration: Record<string, unknown>;
+  let previousMetadata: Record<string, unknown>;
+  try {
+    previousConfiguration = objectSnapshot(formData, "configuration_snapshot");
+    previousMetadata = objectSnapshot(formData, "metadata_snapshot");
+  } catch {
+    redirect(`${back}&erro=configuracao_invalida`);
+  }
   const thumbnailFile = selectedFile(formData, "continue_thumbnail_file");
   const currentThumbnailFileObjectId = nullable(formData, "current_continue_thumbnail_file_object_id");
   const thumbnailAlt = text(formData, "continue_thumbnail_alt");
   const { content_sections: _oldSections, prompts: _oldPrompts, practice_checklist: _oldChecklist, ...preservedConfiguration } = previousConfiguration;
   const configuration = { ...preservedConfiguration, ...(checklist.length ? { practice_checklist: checklist } : {}) };
-  const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
   if (!title || !pathTemplateId || (isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
 
   let liveUpdate = false;
