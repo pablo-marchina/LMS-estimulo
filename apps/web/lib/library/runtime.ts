@@ -89,6 +89,23 @@ export const libraryRuntime = {
     p_idempotency_key: input.idempotencyKey,
   }),
 
+  setArchetypes: (input: {
+    actorUserAccountId: string;
+    organizationId: string;
+    libraryItemVersionId: string;
+    archetypeDefinitionIds: string[];
+    idempotencyKey: string;
+  }) => invokeServerRpc<RpcEnvelope<{ library_item_version_id: string; archetype_definition_ids: string[]; restriction_count: number }>>(
+    "set_library_content_archetypes",
+    {
+      p_actor_user_account_id: input.actorUserAccountId,
+      p_organization_id: input.organizationId,
+      p_library_item_version_id: input.libraryItemVersionId,
+      p_archetype_definition_ids: input.archetypeDefinitionIds,
+      p_idempotency_key: input.idempotencyKey,
+    },
+  ),
+
   createUploadIntent: (input: {
     actorUserAccountId: string;
     organizationId: string;
