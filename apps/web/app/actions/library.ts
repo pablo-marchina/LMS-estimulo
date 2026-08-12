@@ -26,6 +26,11 @@ function optionalUuid(value: FormDataEntryValue | null): string | null {
   return text ? uuid.parse(text) : null;
 }
 
+function optionalEstimatedMinutes(value: FormDataEntryValue | null): number | null {
+  const text = String(value ?? "").trim();
+  return text ? z.coerce.number().int().min(1).max(600).parse(text) : null;
+}
+
 function deriveSlug(value: string): string {
   const slug = value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 100);
   return slug || `conteudo-${randomUUID().slice(0, 8)}`;
@@ -56,7 +61,7 @@ export async function saveLibraryContentAction(formData: FormData) {
     contentKind: kind,
     contentFormat: contentFormat.parse(formData.get("content_format")),
     level: level.parse(formData.get("level")),
-    estimatedMinutes: z.coerce.number().int().min(1).max(600).parse(formData.get("estimated_minutes")),
+    estimatedMinutes: optionalEstimatedMinutes(formData.get("estimated_minutes")),
     sourceType: sourceType.parse(formData.get("source_type")),
     sourceName: z.string().trim().min(2).max(120).parse(formData.get("source_name")),
     externalUrl: kind === "external_link" ? z.string().url().startsWith("https://").parse(externalUrl) : null,
@@ -102,8 +107,15 @@ export async function saveLibraryContentAction(formData: FormData) {
 export async function publishLibraryContentAction(formData: FormData) {
   const actor = await actorId();
   const organizationId = uuid.parse(formData.get("organization_id"));
-  await libraryRuntime.publish(actor, organizationId, uuid.parse(formData.get("library_item_version_id")), z.string().regex(/^[0-9a-f]{64}$/).parse(formData.get("content_hash")), String(formData.get("idempotency_key") || randomUUID()));
-  redirect(`/admin/biblioteca?organization=${organizationId}&publicado=1`);
+  let destination: string;
+  try {
+    await libraryRuntime.publish(actor, organizationId, uuid.parse(formData.get("library_item_version_id")), z.string().regex(/^[0-9a-f]{64}$/).parse(formData.get("content_hash")), String(formData.get("idempotency_key") || randomUUID()));
+    destination = `/admin/biblioteca?organization=${organizationId}&publicado=1`;
+  } catch (error) {
+    const invalidDuration = error instanceof ServerRpcError && error.message.includes("INVALID_LIBRARY_DURATION");
+    destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${invalidDuration ? "duracao" : "publicacao"}`;
+  }
+  redirect(destination);
 }
 
 export async function archiveLibraryContentAction(formData: FormData) {
