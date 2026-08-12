@@ -1,0 +1,121 @@
+import { BarChart3, CheckCircle2, Compass, Focus, Lightbulb, Quote, Route, Target } from "lucide-react";
+import { PrintResultButton } from "@/components/print-result-button";
+import { ShareAction } from "@/components/share-action";
+import { ButtonLink } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type { DiagnosticDimensionSummary } from "@/lib/engagement/contracts";
+
+type ArchetypeInsight = { strength: string; challenge: string; tip: string; phrase: string };
+
+function insightForArchetype(name: string): ArchetypeInsight {
+  const normalized = name.toLocaleLowerCase("pt-BR");
+  if (normalized.includes("fazendo acontecer")) return {
+    strength: "Você conhece o seu trabalho, resolve problemas com rapidez e mantém o negócio em movimento mesmo diante da pressão do dia a dia.",
+    challenge: "Transformar sua energia de execução em uma gestão mais organizada, com rotinas e planejamento que reduzam decisões de última hora.",
+    tip: "Escolha uma rotina simples de gestão para fortalecer primeiro — por exemplo, acompanhar entradas e saídas toda semana ou definir três prioridades para o mês.",
+    phrase: "Organizar o que você já faz bem cria espaço para crescer com mais tranquilidade.",
+  };
+  if (normalized.includes("fortalecendo a base")) return {
+    strength: "Sua persistência e capacidade de atravessar desafios mostram uma base empreendedora forte e disposição para manter o negócio funcionando.",
+    challenge: "Ganhar previsibilidade financeira e operacional para decidir com menos pressão e construir uma base mais estável.",
+    tip: "Comece pelo indicador que mais reduz incerteza no seu dia a dia e acompanhe-o com frequência até ele virar uma rotina de gestão.",
+    phrase: "Uma base mais organizada transforma esforço em segurança para o próximo passo.",
+  };
+  if (normalized.includes("construindo o crescimento")) return {
+    strength: "Você já acompanha melhor o negócio, organiza informações e toma decisões com uma base mais consistente.",
+    challenge: "Transformar organização em crescimento planejado, conectando metas, indicadores e oportunidades a uma direção clara.",
+    tip: "Defina uma meta de crescimento concreta, escolha poucos indicadores para acompanhá-la e revise o avanço em uma cadência fixa.",
+    phrase: "Crescer com direção é transformar uma boa base em escolhas cada vez mais intencionais.",
+  };
+  if (normalized.includes("pronto para o próximo nível") || normalized.includes("próximo nível")) return {
+    strength: "Você já administra com visão de futuro, acompanha resultados e consegue tomar decisões pensando além das urgências do presente.",
+    challenge: "Escalar sem perder a qualidade da gestão, fortalecendo processos, pessoas e capacidade de execução conforme o negócio cresce.",
+    tip: "Identifique o processo que mais depende de você hoje e documente uma forma simples de delegar, medir e melhorar essa rotina.",
+    phrase: "O próximo nível chega quando o negócio cresce sem precisar concentrar tudo em você.",
+  };
+  return {
+    strength: "Seu diagnóstico revela capacidades que já sustentam o negócio e ajudam você a avançar.",
+    challenge: "Escolher a área com maior oportunidade de evolução e transformá-la em uma prioridade prática.",
+    tip: "Use o seu mapa para escolher uma melhoria pequena, mensurável e possível de aplicar no seu dia a dia.",
+    phrase: "Evolução consistente começa com um próximo passo claro.",
+  };
+}
+
+function percent(value: number) { return Math.min(100, Math.max(0, Math.round(value))); }
+
+export function DiagnosticResultDashboard({
+  archetype,
+  dimensions,
+  primaryHref = "/empreendedor/jornadas",
+  primaryLabel = "Acessar minhas jornadas",
+}: {
+  archetype: { name?: string | null; description?: string | null };
+  dimensions: DiagnosticDimensionSummary[];
+  primaryHref?: string;
+  primaryLabel?: string;
+}) {
+  const normalized = dimensions.map((dimension) => ({ ...dimension, percentage: percent(dimension.percentage) }));
+  const score = normalized.length ? Math.round(normalized.reduce((total, dimension) => total + dimension.percentage, 0) / normalized.length) : null;
+  const priority = normalized.slice().sort((a, b) => a.percentage - b.percentage)[0] ?? null;
+  const name = archetype.name?.trim() || "Perfil identificado";
+  const insight = insightForArchetype(name);
+  const shareText = `Meu perfil empreendedor é “${name}”. ${priority ? `Minha prioridade agora é ${priority.name}.` : ""}`.trim();
+  const movements = [
+    { title: priority ? `Fortaleça ${priority.name}` : "Escolha seu foco", body: "Comece pela área com maior espaço de evolução e transforme-a em uma prioridade concreta." },
+    { title: "Aplique uma ação prática", body: insight.tip },
+    { title: "Acompanhe o que mudou", body: "Revise seus indicadores e o progresso nas jornadas para decidir o próximo passo com evidências." },
+  ];
+
+  return <section className="grid gap-6" aria-label="Resultado do diagnóstico empreendedor">
+    <div className="grid gap-4 lg:grid-cols-[1.02fr_.98fr]">
+      <Card className="relative overflow-hidden border-0 bg-[#102820] p-6 text-white shadow-xl after:!hidden sm:p-7">
+        <Compass className="absolute right-5 top-5 text-white/12" size={74} aria-hidden="true" />
+        <div className="relative">
+          <span className="inline-flex rounded-full bg-[#92dcff] px-3 py-1 text-[10px] font-black uppercase tracking-[.14em] text-[#09251d]">Seu nível de maturidade</span>
+          {score !== null ? <div className="mt-5 flex items-end gap-1"><strong className="display-font text-6xl leading-none text-[#c7ff39] sm:text-7xl">{score}</strong><span className="pb-1 text-sm font-bold text-white/60">/100</span></div> : null}
+          <h2 className="display-font mt-3 text-3xl text-white sm:text-4xl">{name}</h2>
+          <p className="mt-4 max-w-xl text-sm leading-6 text-white/72">{archetype.description || "Seu resultado reúne suas respostas e ajuda a transformar o diagnóstico em próximos passos concretos."}</p>
+          <div className="no-print mt-6 flex flex-wrap gap-2">
+            <ButtonLink href={primaryHref} size="sm">{primaryLabel}</ButtonLink>
+            <PrintResultButton />
+            <ShareAction title="Meu diagnóstico empreendedor" text={shareText} entityType="diagnostic_result" entityId={name.toLocaleLowerCase("pt-BR").replace(/\s+/g, "_")} />
+          </div>
+        </div>
+      </Card>
+
+      <Card className="grid gap-5 p-5 after:!hidden sm:p-6">
+        <div className="flex items-center gap-2"><BarChart3 size={19} className="text-primary" /><div><p className="text-xs font-black uppercase tracking-[.12em] text-primary">Seu mapa de maturidade</p><h3 className="mt-0.5 font-black text-secondary">Um olhar mais de perto</h3></div></div>
+        {normalized.length ? <div className="grid gap-4">{normalized.map((dimension) => <div key={dimension.code} className="grid gap-1.5"><div className="flex items-center justify-between gap-3 text-sm"><strong className="text-secondary">{dimension.name}</strong><span className="font-black tabular-nums text-secondary">{dimension.percentage}%</span></div><div className="h-2.5 overflow-hidden rounded-full bg-[#eeeae1]" role="progressbar" aria-label={dimension.name} aria-valuemin={0} aria-valuemax={100} aria-valuenow={dimension.percentage}><div className="h-full rounded-full bg-primary" style={{ width: `${dimension.percentage}%` }} /></div></div>)}</div> : <p className="text-sm text-muted">O mapa aparecerá assim que houver dimensões suficientes para compor o resultado.</p>}
+        <div className="rounded-xl bg-[#efffc7] p-4"><p className="text-[10px] font-black uppercase tracking-[.14em] text-[#557521]">Sua prioridade agora</p><p className="mt-1 text-lg font-black text-[#223019]">{priority?.name ?? "Transformar o diagnóstico em ação"}</p>{priority ? <p className="mt-1 text-xs text-[#557521]">Esta é a dimensão com maior espaço de evolução neste resultado.</p> : null}</div>
+      </Card>
+    </div>
+
+    <Card className="p-5 after:!hidden sm:p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-primary">Rota recomendada</p><h3 className="display-font mt-1 text-3xl text-secondary">Seus próximos três movimentos</h3></div><span className="text-xs font-semibold text-muted">Uma sequência simples para sair do diagnóstico e ir para a prática</span></div>
+      <div className="mt-5 grid gap-4 md:grid-cols-3">{movements.map((movement, index) => <article key={movement.title} className="rounded-2xl border border-[#e5ded1] bg-[#f6f1e8] p-5"><span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-black text-white">{index + 1}</span><h4 className="mt-5 font-black text-secondary">{movement.title}</h4><p className="mt-2 text-sm leading-6 text-muted">{movement.body}</p></article>)}</div>
+    </Card>
+
+    <div className="grid gap-4 md:grid-cols-3">
+      <MiniInsight icon={<Focus size={18} />} title="Foco claro" body={priority ? `Você sabe que ${priority.name} merece atenção primeiro.` : "Escolha onde colocar sua energia primeiro."} />
+      <MiniInsight icon={<Lightbulb size={18} />} title="Conteúdo certo" body="Use as jornadas e conteúdos recomendados para desenvolver o que faz sentido para o seu momento." />
+      <MiniInsight icon={<CheckCircle2 size={18} />} title="Aplicação real" body="Transforme cada aprendizado em uma pequena ação no seu negócio e acompanhe o efeito." />
+    </div>
+
+    <div className="grid gap-4 sm:grid-cols-2">
+      <InsightCard icon={<CheckCircle2 size={20} />} eyebrow="Pontos fortes" title="O que já joga a seu favor" body={insight.strength} />
+      <InsightCard icon={<Target size={20} />} eyebrow="Seu próximo desafio" title="Onde concentrar energia agora" body={insight.challenge} />
+      <InsightCard icon={<Lightbulb size={20} />} eyebrow="Dica prática" title="Um passo para começar" body={insight.tip} />
+      <InsightCard icon={<Quote size={20} />} eyebrow="Para levar com você" title="Uma frase para o seu momento" body={insight.phrase} />
+    </div>
+
+    <p className="text-xs leading-5 text-muted">Seu resultado ajuda a personalizar sua experiência e indicar conteúdos e jornadas que fazem mais sentido para você. Ele é uma leitura de desenvolvimento, não uma avaliação de crédito.</p>
+  </section>;
+}
+
+function MiniInsight({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+  return <Card className="flex gap-3 p-4 after:!hidden"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">{icon}</span><div><h4 className="font-black text-secondary">{title}</h4><p className="mt-1 text-sm leading-5 text-muted">{body}</p></div></Card>;
+}
+
+function InsightCard({ icon, eyebrow, title, body }: { icon: React.ReactNode; eyebrow: string; title: string; body: string }) {
+  return <Card className="flex gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">{icon}</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{eyebrow}</p><h3 className="mt-1 font-black text-secondary">{title}</h3><p className="mt-2 text-sm leading-6 text-muted">{body}</p></div></Card>;
+}
