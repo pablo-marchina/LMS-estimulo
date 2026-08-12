@@ -50,16 +50,47 @@ export async function saveGamificationResourceAction(formData: FormData) {
     payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `certificado_${randomUUID().slice(0,8)}`), name, journey_version_id: text(formData, "journey_version_id"), requirements_rule_version_id: text(formData, "requirements_rule_version_id"), validity_policy: validityPolicy(formData), status: "draft" };
   } else redirect("/admin/gamificacao?erro=tipo_invalido");
 
+  let result: Awaited<ReturnType<typeof saveAdminProductResource>>;
   try {
-    const result = await saveAdminProductResource({ actorUserAccountId: auth.identity.user_account_id, organizationId, resourceType, payload, idempotencyKey: randomUUID() });
-    if (resourceType === "certificate") {
-      const certificateVersionId = String(result.version_id ?? "");
-      if (!certificateVersionId) throw new Error("CERTIFICATE_VERSION_NOT_RETURNED");
-      await extendedCredentialRuntime.configureCertificate({ actorUserAccountId: auth.identity.user_account_id, organizationId, certificateVersionId, templateFileObjectId: nullable(formData, "template_file_object_id"), templateLayout: { name_y: boundedRatio(text(formData, "name_y_percent"), .53), journey_y: boundedRatio(text(formData, "journey_y_percent"), .40), text_color: ["primary","white"].includes(text(formData, "text_color")) ? text(formData, "text_color") : "primary" }, idempotencyKey: randomUUID() });
-      if (requestedCertificateStatus === "published") await extendedCredentialRuntime.publishCertificate({ actorUserAccountId: auth.identity.user_account_id, organizationId, certificateVersionId, idempotencyKey: randomUUID() });
+    result = await saveAdminProductResource({ actorUserAccountId: auth.identity.user_account_id, organizationId, resourceType, payload, idempotencyKey: randomUUID() });
+  } catch {
+    redirect(`/admin/gamificacao?tipo=${typeQuery}&erro=falha_salvar`);
+  }
+
+  if (resourceType !== "certificate") {
+    redirect(`/admin/gamificacao?tipo=${typeQuery}&sucesso=salvo`);
+  }
+
+  const certificateVersionId = String(result.version_id ?? "");
+  if (!certificateVersionId) {
+    redirect("/admin/gamificacao?tipo=certificados&sucesso=rascunho_salvo&erro=versao_certificado_nao_retornada");
+  }
+
+  try {
+    await extendedCredentialRuntime.configureCertificate({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId,
+      certificateVersionId,
+      templateFileObjectId: nullable(formData, "template_file_object_id"),
+      templateLayout: { name_y: boundedRatio(text(formData, "name_y_percent"), .53), journey_y: boundedRatio(text(formData, "journey_y_percent"), .40), text_color: ["primary","white"].includes(text(formData, "text_color")) ? text(formData, "text_color") : "primary" },
+      idempotencyKey: randomUUID(),
+    });
+  } catch {
+    // The core certificate draft has already been persisted. Report that fact
+    // instead of presenting this as a total save failure.
+    redirect(`/admin/gamificacao?tipo=certificados&sucesso=rascunho_salvo&erro=configuracao_certificado&certificado=${encodeURIComponent(certificateVersionId)}`);
+  }
+
+  if (requestedCertificateStatus === "published") {
+    try {
+      await extendedCredentialRuntime.publishCertificate({ actorUserAccountId: auth.identity.user_account_id, organizationId, certificateVersionId, idempotencyKey: randomUUID() });
+    } catch {
+      // Configuration is preserved as a draft even when publication is blocked.
+      redirect(`/admin/gamificacao?tipo=certificados&sucesso=certificado_configurado&erro=publicacao_certificado&certificado=${encodeURIComponent(certificateVersionId)}`);
     }
-  } catch { redirect(`/admin/gamificacao?tipo=${typeQuery}&erro=falha`); }
-  redirect(`/admin/gamificacao?tipo=${typeQuery}&sucesso=salvo`);
+  }
+
+  redirect(`/admin/gamificacao?tipo=certificados&sucesso=${requestedCertificateStatus === "published" ? "certificado_publicado" : "rascunho_salvo"}&certificado=${encodeURIComponent(certificateVersionId)}`);
 }
 
 
