@@ -38,7 +38,7 @@ export default async function CertificateVerificationPage({ params }: { params: 
     </article>
     <div className="no-print flex flex-wrap justify-center gap-3">
       <PrintCertificateButton />
-      <ShareAction title={certificate.certificate_name} text={`${certificate.display_name} concluiu ${certificate.journey_title} na Plataforma Estímulo.`} entityType="certificate" entityId={certificate.verification_code} label="Compartilhar certificado" />
+      <ShareAction title={certificate.certificate_name ?? "Certificado Estímulo"} text={`${certificate.display_name} concluiu ${certificate.journey_title} na Plataforma Estímulo.`} entityType="certificate" entityId={certificate.verification_code ?? verificationCode} label="Compartilhar certificado" />
       <ButtonLink href="/" variant="secondary"><Link href="/" className="contents">Voltar ao início</Link></ButtonLink>
     </div>
   </main>;
