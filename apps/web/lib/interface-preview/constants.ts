@@ -10,7 +10,6 @@ export const participantPreviewRoutes = [
   "/empreendedor/biblioteca",
   "/empreendedor/entregas",
   "/empreendedor/engajamento",
-  "/empreendedor/pontuacao",
   "/empreendedor/recompensas",
   "/empreendedor/conquistas",
   "/empreendedor/credenciais",
