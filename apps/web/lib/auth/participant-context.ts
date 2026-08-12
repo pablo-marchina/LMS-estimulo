@@ -11,6 +11,11 @@ export type ParticipantAuthContext = AuthenticatedContext & {
   identity: CurrentIdentityContext & { entrepreneur_id: string; access_mode: "participant" };
 };
 
+export async function isParticipantInterfacePreviewRequest(): Promise<boolean> {
+  const requestHeaders = await headers();
+  return requestHeaders.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1";
+}
+
 /**
  * Participant interface preview is intentionally read-only. The preview resolves
  * a real participant identity for accurate rendering, so every participant
@@ -18,8 +23,7 @@ export type ParticipantAuthContext = AuthenticatedContext & {
  * writing state for that participant.
  */
 export async function assertParticipantMutationAllowed(): Promise<void> {
-  const requestHeaders = await headers();
-  if (requestHeaders.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1") {
+  if (await isParticipantInterfacePreviewRequest()) {
     throw new Error("INTERFACE_PREVIEW_READ_ONLY");
   }
 }
