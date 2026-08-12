@@ -65,6 +65,7 @@ export async function performExtensionAction(formData: FormData) {
   const returnTo = safeReturn(text(formData, "return_to"));
   if (!action) redirect(`${returnTo}?erro=acao_obrigatoria`);
 
+  let destination: string;
   try {
     await extensionsRuntime.performParticipant({
       actorUserAccountId: auth.identity.user_account_id,
@@ -74,8 +75,10 @@ export async function performExtensionAction(formData: FormData) {
     });
     revalidatePath("/empreendedor", "layout");
     revalidatePath("/admin", "layout");
-    redirect(`${returnTo}?sucesso=${encodeURIComponent(action)}`);
+    destination = `${returnTo}?sucesso=${encodeURIComponent(action)}`;
   } catch (error) {
-    redirect(`${returnTo}?erro=${encodeURIComponent(errorCode(error))}`);
+    destination = `${returnTo}?erro=${encodeURIComponent(errorCode(error))}`;
   }
+
+  redirect(destination);
 }
