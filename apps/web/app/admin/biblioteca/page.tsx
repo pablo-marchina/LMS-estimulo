@@ -76,6 +76,8 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
         {query.erro === "em_uso" ? <StatusPanel title="Conteúdo em uso" tone="warning">Remova primeiro as associações com aulas e jornadas. O sistema não arquiva um material que quebraria experiências publicadas.</StatusPanel> : null}
         {query.erro === "confirmacao" ? <StatusPanel title="Confirmação necessária" tone="warning">Digite ARQUIVAR para confirmar a operação.</StatusPanel> : null}
         {query.erro === "arquivamento" ? <StatusPanel title="Não foi possível arquivar" tone="warning">Recarregue a página e tente novamente. O conteúdo atual não foi alterado.</StatusPanel> : null}
+        {query.erro === "duracao" ? <StatusPanel title="Duração necessária para publicar" tone="warning">O rascunho pode ficar sem duração. Antes de publicar, edite o conteúdo e informe uma estimativa entre 1 e 600 minutos.</StatusPanel> : null}
+        {query.erro === "publicacao" ? <StatusPanel title="Não foi possível publicar" tone="warning">O rascunho continua salvo. Revise os dados e tente novamente.</StatusPanel> : null}
 
         {view === "novo" && canEdit ? (
           <div className="grid gap-5">
@@ -109,7 +111,7 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Label>Formato<Select name="content_format" defaultValue={editing?.content_format ?? (currentFileObjectId ? "other" : "article")}><option value="article">Artigo</option><option value="video">Vídeo</option><option value="podcast">Podcast</option><option value="audio">Áudio</option><option value="image">Imagem</option><option value="pdf">PDF</option><option value="guide">Guia</option><option value="tool">Ferramenta</option><option value="course">Curso</option><option value="other">Outro</option></Select></Label>
                     <Label>Nível<Select name="level" defaultValue={editing?.level ?? "all"}><option value="all">Todos</option><option value="introductory">Introdutório</option><option value="intermediate">Intermediário</option><option value="advanced">Avançado</option></Select></Label>
-                    <Label>Duração em minutos<Input name="estimated_minutes" type="number" min={1} max={600} required defaultValue={editing?.estimated_minutes ?? 10} /></Label>
+                    <Label>Duração em minutos<Input name="estimated_minutes" type="number" min={1} max={600} defaultValue={editing?.estimated_minutes ?? ""} placeholder="Opcional no rascunho" /><span className="text-[11px] font-normal text-muted">Opcional enquanto rascunho; obrigatória para publicar.</span></Label>
                     <Label>Temas administrados
                       <select name="theme_ids" multiple size={Math.min(7, Math.max(3, managedThemes.length))} defaultValue={[...selectedThemeIds]} className="min-h-28 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15">
                         {managedThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}
