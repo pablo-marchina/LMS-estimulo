@@ -69,28 +69,32 @@ export async function saveLibraryContentAction(formData: FormData) {
     idempotencyKey: commandKey,
   });
 
-  await Promise.all([
-    extensionsRuntime.saveAdmin({
-      actorUserAccountId: actor,
-      organizationId,
-      resourceType: "library_themes_set",
-      payload: {
-        library_item_id: saved.data.library_item_id,
-        theme_ids: themeIds,
-      },
-      idempotencyKey: `${commandKey}:themes`,
-    }),
-    extensionsRuntime.saveAdmin({
-      actorUserAccountId: actor,
-      organizationId,
-      resourceType: "library_archetypes_set",
-      payload: {
-        library_item_version_id: saved.data.library_item_version_id,
-        archetype_definition_ids: archetypeDefinitionIds,
-      },
-      idempotencyKey: `${commandKey}:archetypes`,
-    }),
-  ]);
+  try {
+    await Promise.all([
+      extensionsRuntime.saveAdmin({
+        actorUserAccountId: actor,
+        organizationId,
+        resourceType: "library_themes_set",
+        payload: {
+          library_item_id: saved.data.library_item_id,
+          theme_ids: themeIds,
+        },
+        idempotencyKey: `${commandKey}:themes`,
+      }),
+      extensionsRuntime.saveAdmin({
+        actorUserAccountId: actor,
+        organizationId,
+        resourceType: "library_archetypes_set",
+        payload: {
+          library_item_version_id: saved.data.library_item_version_id,
+          archetype_definition_ids: archetypeDefinitionIds,
+        },
+        idempotencyKey: `${commandKey}:archetypes`,
+      }),
+    ]);
+  } catch {
+    redirect(`/admin/biblioteca?view=novo&organization=${organizationId}&edit=${saved.data.library_item_version_id}&salvo=1&aviso=relacoes_nao_salvas`);
+  }
 
   redirect(`/admin/biblioteca?organization=${organizationId}&salvo=1`);
 }
@@ -111,6 +115,7 @@ export async function archiveLibraryContentAction(formData: FormData) {
     redirect(`/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=confirmacao`);
   }
 
+  let destination: string;
   try {
     await invokeServerRpc("archive_library_content", {
       p_actor_user_account_id: actor,
@@ -118,12 +123,13 @@ export async function archiveLibraryContentAction(formData: FormData) {
       p_library_item_version_id: versionId,
       p_idempotency_key: String(formData.get("idempotency_key") || randomUUID()),
     });
+    destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&arquivado=1`;
   } catch (error) {
     const inUse = error instanceof ServerRpcError && ["23503", "409"].includes(error.code);
-    redirect(`/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${inUse ? "em_uso" : "arquivamento"}`);
+    destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${inUse ? "em_uso" : "arquivamento"}`;
   }
 
-  redirect(`/admin/biblioteca?view=conteudos&organization=${organizationId}&arquivado=1`);
+  redirect(destination);
 }
 
 export async function openLibraryContentAction(formData: FormData) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth/context";
+import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
 import { extensionsRuntime } from "@/lib/extensions/runtime";
 
 export const runtime = "nodejs";
@@ -38,12 +39,13 @@ export async function POST(request: NextRequest) {
   };
 
   try {
+    await assertParticipantMutationAllowed();
     const result = interactionType === "social_share"
       ? await extensionsRuntime.performParticipant({ actorUserAccountId: auth.identity.user_account_id, action: "social_share", payload, idempotencyKey: eventId })
       : await extensionsRuntime.performParticipant({ actorUserAccountId: auth.identity.user_account_id, action: "behavior_event", payload, idempotencyKey: eventId });
     return NextResponse.json({ ok: true, data: result }, { headers: { "cache-control": "no-store" } });
   } catch (error) {
     const code = error instanceof Error ? error.message.split(":", 1)[0] : "BEHAVIOR_EVENT_FAILED";
-    return NextResponse.json({ ok: false, code }, { status: 400, headers: { "cache-control": "no-store" } });
+    return NextResponse.json({ ok: false, code }, { status: code === "INTERFACE_PREVIEW_READ_ONLY" ? 403 : 400, headers: { "cache-control": "no-store" } });
   }
 }

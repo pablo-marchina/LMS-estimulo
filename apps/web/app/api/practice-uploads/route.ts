@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
+import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
 import { practiceRuntime } from "@/lib/practice/runtime";
 import {
   practiceEvidenceBucket,
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
   const baseKey = randomUUID();
 
   try {
+    await assertParticipantMutationAllowed();
     const formData = await request.formData();
     step = uuid.parse(formData.get("step_instance_id"));
     journey = uuid.parse(formData.get("journey_instance_id"));
@@ -118,6 +120,6 @@ export async function POST(request: NextRequest) {
       await removePracticeEvidence(bucket, objectKey).catch(() => undefined);
     }
     if (step && journey) return activityRedirect(request, step, journey, "erro", code);
-    return NextResponse.json({ error: code }, { status: 400 });
+    return NextResponse.json({ error: code }, { status: code === "INTERFACE_PREVIEW_READ_ONLY" ? 403 : 400 });
   }
 }
