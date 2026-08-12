@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { requireParticipantContext } from "@/lib/auth/participant-context";
+import { assertParticipantMutationAllowed, requireParticipantContext } from "@/lib/auth/participant-context";
 import { extendedCredentialRuntime } from "@/lib/credentials/extended-runtime";
 import { externalCredentialBucket, removeCredentialFile, uploadCredentialFile, validateExternalCredentialFile } from "@/lib/storage/credential-files";
 
@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
   let credentialConfirmed = false;
 
   try {
+    await assertParticipantMutationAllowed();
     const formData = await request.formData();
     const title = String(formData.get("title") ?? "").trim();
     const issuerCode = String(formData.get("issuer_code") ?? "").trim();
