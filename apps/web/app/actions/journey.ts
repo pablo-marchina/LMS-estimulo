@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
+import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
@@ -17,6 +18,7 @@ const practiceReviewStatus = z.enum(["accepted", "rejected"]);
 const utilityRatingValue = z.coerce.number().int().min(1).max(5);
 
 async function actorId() {
+  await assertParticipantMutationAllowed();
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar");
   return auth.identity.user_account_id;
@@ -111,7 +113,7 @@ export async function moderateActivityCommentAction(formData: FormData) {
   if (status === "hidden" && !reason) throw new Error("ACTIVITY_COMMENT_MODERATION_REASON_REQUIRED");
   const key = String(formData.get("idempotency_key") || randomUUID());
   await journeyRuntime.moderateActivityComment(actor, organization, comment, status, reason, key);
-  redirect(`/admin?organization=${organization}&comentario=moderado#comentarios`);
+  redirect(`/admin/operacao?area=comentarios&organization=${organization}&comentario=moderado#comentarios`);
 }
 
 export async function reviewPracticeSubmissionAction(formData: FormData) {
@@ -129,7 +131,7 @@ export async function reviewPracticeSubmissionAction(formData: FormData) {
     feedback,
     String(formData.get("idempotency_key") || randomUUID())
   );
-  redirect(`/admin?organization=${organization}&pratica=revisada#praticas`);
+  redirect(`/admin/operacao?area=praticas&organization=${organization}&pratica=revisada#praticas`);
 }
 
 export async function rateActivityUtilityAction(formData: FormData) {
@@ -215,25 +217,27 @@ export async function publishVerticalAction(formData: FormData) {
   if (separator < 1) throw new Error("JOURNEY_SELECTION_INVALID");
   const journeyVersionId = uuid.parse(selection.slice(0, separator));
   const contentHash = z.string().min(16).parse(selection.slice(separator + 1));
+  const organizationId = uuid.parse(formData.get("organization_id"));
   await journeyRuntime.publishVertical(
     actor,
-    uuid.parse(formData.get("organization_id")),
+    organizationId,
     journeyVersionId,
     contentHash,
     String(formData.get("idempotency_key") || randomUUID())
   );
-  redirect(`/admin?organization=${formData.get("organization_id")}&sucesso=publicacao`);
+  redirect(`/admin/operacao?area=publicacao&organization=${organizationId}&sucesso=publicacao`);
 }
 
 export async function createEnrollmentAction(formData: FormData) {
   const actor = await actorId();
+  const organizationId = uuid.parse(formData.get("organization_id"));
   await journeyRuntime.createEnrollment(
     actor,
-    uuid.parse(formData.get("organization_id")),
+    organizationId,
     uuid.parse(formData.get("entrepreneur_id")),
     uuid.parse(formData.get("journey_version_id")),
     "operator_ui",
     String(formData.get("idempotency_key") || randomUUID())
   );
-  redirect(`/admin?organization=${formData.get("organization_id")}&sucesso=matricula`);
+  redirect(`/admin/operacao?area=matriculas&organization=${organizationId}&sucesso=matricula`);
 }
