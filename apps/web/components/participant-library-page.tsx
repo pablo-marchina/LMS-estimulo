@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { BookOpen, Clock, ExternalLink, FileText, GraduationCap, Newspaper, Podcast, Search, Video, Wrench } from "lucide-react";
+import { StatusPanel } from "@/components/status-panel";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -37,7 +38,7 @@ async function adminPreviewListing(actorUserAccountId: string, organizationId: s
   const data = await libraryRuntime.listOperator(actorUserAccountId, organizationId);
   const journeyById = new Map(data.journey_versions.map((journey) => [journey.journey_version_id, journey]));
   const items: LibraryItemSummary[] = data.items
-    .filter((item) => item.status === "published" && item.discoverable_in_library)
+    .filter((item) => item.status === "published" && item.discoverable_in_library && item.estimated_minutes !== null)
     .map((item) => ({
       library_item_id: item.library_item_id,
       library_item_version_id: item.library_item_version_id,
@@ -48,7 +49,7 @@ async function adminPreviewListing(actorUserAccountId: string, organizationId: s
       content_kind: item.content_kind,
       content_format: item.content_format,
       level: item.level,
-      estimated_minutes: item.estimated_minutes,
+      estimated_minutes: item.estimated_minutes as number,
       source_type: item.source_type,
       source_name: item.source_name,
       external_url: item.external_url,
@@ -98,9 +99,22 @@ export async function ParticipantLibraryPage({ searchParams, basePath }: { searc
   const selectedFormat = typeof query.formato === "string" ? query.formato : "";
   const selectedLevel = typeof query.nivel === "string" ? query.nivel : "";
   const rawSearch = typeof query.q === "string" ? query.q : "";
-  const rawData = previewMode && adminOrganization
-    ? await adminPreviewListing(auth.identity.user_account_id, adminOrganization.organization_id)
-    : await libraryRuntime.list({ actorUserAccountId: auth.identity.user_account_id, query: rawSearch || null, topic: selectedTopic || null, contentFormat: selectedFormat || null, level: selectedLevel || null });
+  let rawData: LibraryListing | null = null;
+  try {
+    rawData = previewMode && adminOrganization
+      ? await adminPreviewListing(auth.identity.user_account_id, adminOrganization.organization_id)
+      : await libraryRuntime.list({ actorUserAccountId: auth.identity.user_account_id, query: rawSearch || null, topic: selectedTopic || null, contentFormat: selectedFormat || null, level: selectedLevel || null });
+  } catch {
+    rawData = null;
+  }
+
+  if (!rawData) {
+    return <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
+      <PageHeader eyebrow={previewMode ? "Prévia administrativa" : "Conteúdo complementar"} title="Biblioteca" description={previewMode ? "Visualização com o mesmo layout do participante. Esta prévia não registra acesso, progresso, pontos ou entregas." : "Encontre materiais por assunto, formato ou momento de aprendizagem."} actions={previewMode ? <ButtonLink href="/admin/biblioteca?view=conteudos" variant="secondary">Voltar à administração</ButtonLink> : undefined} />
+      <StatusPanel title="Biblioteca temporariamente indisponível" tone="warning">Não foi possível consultar os materiais publicados. Isso não significa que a Biblioteca esteja vazia; tente recarregar a página.</StatusPanel>
+    </div>;
+  }
+
   const normalizedSearch = normalize(rawSearch);
   const items = rawData.items.filter((item) => {
     if (normalizedSearch && !searchableText(item).includes(normalizedSearch)) return false;
