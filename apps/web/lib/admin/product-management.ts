@@ -123,6 +123,15 @@ export type AdminReportingDashboard = {
     certificates_issued: number;
   };
   journeys: Array<{ journey: string; version: number; enrollments: number; completed: number; average_progress: number }>;
+  lessons: Array<{
+    activity_version_id: string;
+    title: string;
+    activity_type: string;
+    assigned: number;
+    started: number;
+    completed: number;
+    completion_rate: number;
+  }>;
   recent_events: Array<{ event_name: string; occurred_at: string; aggregate_type: string | null; aggregate_id: string | null }>;
 };
 

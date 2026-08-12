@@ -61,6 +61,7 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
     ? await extensionsRuntime.adminWorkspace(auth.identity.user_account_id, organization.organization_id).catch(() => null)
     : null;
   const activeDiagnostics = workspace.diagnostics.filter((item) => item.status !== "retired");
+  const retiredDiagnostics = workspace.diagnostics.filter((item) => item.status === "retired");
   const versions = activeDiagnostics.flatMap((item) => item.versions.map((version) => ({ ...version, definitionName: item.name, definitionId: item.definition_id, definitionCode: item.code, definitionPurpose: stringValue(item.purpose) })));
   const draftVersions = versions.filter((item) => item.status === "draft").sort((a, b) => b.version_number - a.version_number);
   const publishedVersion = (versions.filter((item) => item.status === "published").sort((a, b) => dateValue(b.published_at) - dateValue(a.published_at) || b.version_number - a.version_number)[0] ?? null) as (VersionSummary & { definitionName?: string; definitionId?: string; definitionCode?: string; definitionPurpose?: string }) | null;
@@ -93,7 +94,7 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
       { href: "/admin/diagnostico?tipo=opcionais", label: "Opcionais no perfil", active: type === "opcionais" },
     ]} />
     {!canEdit ? <StatusPanel title="Somente consulta" tone="info">Você pode consultar as configurações, mas não alterá-las.</StatusPanel> : null}
-    {success ? <StatusPanel title="Alteração salva" tone="success">{type === "opcionais" ? "A disponibilidade no perfil foi atualizada." : success === "publicado" ? "O diagnóstico principal foi publicado e as relações foram atualizadas." : success === "excluido" ? "O diagnóstico foi retirado do painel e o histórico foi preservado." : "O rascunho foi salvo."}</StatusPanel> : null}
+    {success ? <StatusPanel title="Alteração salva" tone="success">{type === "opcionais" ? "A disponibilidade no perfil foi atualizada." : success === "publicado" ? "O diagnóstico principal foi publicado e as relações foram atualizadas." : success === "excluido" ? "O diagnóstico foi retirado do uso e movido para o histórico preservado." : "O rascunho foi salvo."}</StatusPanel> : null}
     {error ? <StatusPanel title="Não foi possível concluir" tone="warning">Revise os campos e tente novamente.</StatusPanel> : null}
 
     {type === "principal" ? <>
@@ -101,9 +102,15 @@ export default async function AdminDiagnosticPage({ searchParams }: { searchPara
       <Card><form method="get" className="flex flex-wrap items-end gap-3"><input type="hidden" name="tipo" value="principal" /><Label className="min-w-72 flex-1">Rascunho que deseja abrir<Select name="versao" defaultValue={selectedVersionId}><option value="">Usar diagnóstico publicado como base</option>{draftVersions.map((item) => <option value={String(item.id)} key={String(item.id)}>{item.definitionName} · rascunho</option>)}</Select><span className="text-[11px] font-normal text-muted">Sem rascunho selecionado, a configuração publicada é carregada como ponto de partida.</span></Label><Button variant="secondary" type="submit">Abrir</Button></form></Card>
       {!seedVersion ? <StatusPanel title="Nenhum diagnóstico principal configurado" tone="warning">Crie o primeiro diagnóstico abaixo e publique quando estiver pronto.</StatusPanel> : null}
       <fieldset disabled={!canEdit} className="contents"><DiagnosticBuilder initial={initial} previousProfiles={profiles(publishedVersion)} canPublish={canEdit} /></fieldset>
-      <AdminDisclosure title="Diagnósticos salvos" description="A exclusão retira uma configuração do painel, mas preserva respostas e resultados anteriores.">
+      <AdminDisclosure title="Diagnósticos salvos" description="Retirar uma configuração não apaga respostas nem resultados; ela é movida para o histórico preservado abaixo.">
         <div className="grid gap-3 sm:grid-cols-2">{activeDiagnostics.map((item) => <div key={item.definition_id} className="rounded-xl border border-border p-4"><strong className="text-ink">{item.name}</strong><p className="mt-1 text-xs text-muted">{item.versions.some((version) => version.status === "published") ? "Em uso" : "Em preparação"}</p>{canEdit ? <details className="mt-4 rounded-xl border border-border"><summary className="cursor-pointer px-3 py-2 text-sm font-semibold text-secondary">Retirar diagnóstico</summary><form action={retireDiagnosticAction} className="grid gap-2 border-t border-border p-3"><input type="hidden" name="definition_id" value={item.definition_id} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Label className="text-xs">Confirme digitando EXCLUIR<Input name="confirmation" autoComplete="off" required /></Label><Button type="submit" variant="secondary" size="sm" className="w-fit">Retirar</Button></form></details> : null}</div>)}</div>
       </AdminDisclosure>
+      {retiredDiagnostics.length ? <AdminDisclosure title="Histórico preservado" description="Diagnósticos retirados continuam visíveis para auditoria. Respostas, resultados e versões anteriores permanecem armazenados.">
+        <div className="grid gap-3 sm:grid-cols-2">{retiredDiagnostics.map((item) => {
+          const latestVersion = [...item.versions].sort((a, b) => b.version_number - a.version_number)[0];
+          return <div key={item.definition_id} className="rounded-xl border border-border bg-surface-muted/35 p-4"><div className="flex flex-wrap items-start justify-between gap-2"><strong className="text-ink">{item.name}</strong><StatusPill tone="neutral">Retirado</StatusPill></div><p className="mt-2 text-xs text-muted">Código: {item.code}</p><p className="mt-1 text-xs text-muted">{latestVersion ? `Última versão preservada: v${latestVersion.version_number}` : "Sem versão registrada"}</p><p className="mt-3 text-sm text-muted">Este diagnóstico não afeta novos participantes, mas continua disponível no histórico para conferência e recuperação assistida sem perda de dados.</p></div>;
+        })}</div>
+      </AdminDisclosure> : null}
     </> : null}
 
     {type === "opcionais" ? <>

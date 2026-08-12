@@ -36,6 +36,7 @@ export async function saveLibraryContentAction(formData: FormData) {
   const organizationId = uuid.parse(formData.get("organization_id"));
   const kind = contentKind.parse(formData.get("content_kind"));
   const themeIds = [...new Set(formData.getAll("theme_ids").map((value) => uuid.parse(value)))];
+  const archetypeDefinitionIds = [...new Set(formData.getAll("archetype_definition_ids").map((value) => uuid.parse(value)))];
   const journeyVersionIds = formData.getAll("journey_version_ids").map((value) => uuid.parse(value));
   const body = String(formData.get("body") ?? "").trim();
   const externalUrl = String(formData.get("external_url") ?? "").trim();
@@ -68,16 +69,28 @@ export async function saveLibraryContentAction(formData: FormData) {
     idempotencyKey: commandKey,
   });
 
-  await extensionsRuntime.saveAdmin({
-    actorUserAccountId: actor,
-    organizationId,
-    resourceType: "library_themes_set",
-    payload: {
-      library_item_id: saved.data.library_item_id,
-      theme_ids: themeIds,
-    },
-    idempotencyKey: `${commandKey}:themes`,
-  });
+  await Promise.all([
+    extensionsRuntime.saveAdmin({
+      actorUserAccountId: actor,
+      organizationId,
+      resourceType: "library_themes_set",
+      payload: {
+        library_item_id: saved.data.library_item_id,
+        theme_ids: themeIds,
+      },
+      idempotencyKey: `${commandKey}:themes`,
+    }),
+    extensionsRuntime.saveAdmin({
+      actorUserAccountId: actor,
+      organizationId,
+      resourceType: "library_archetypes_set",
+      payload: {
+        library_item_version_id: saved.data.library_item_version_id,
+        archetype_definition_ids: archetypeDefinitionIds,
+      },
+      idempotencyKey: `${commandKey}:archetypes`,
+    }),
+  ]);
 
   redirect(`/admin/biblioteca?organization=${organizationId}&salvo=1`);
 }

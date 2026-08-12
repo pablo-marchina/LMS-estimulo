@@ -49,6 +49,7 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
     .filter((theme) => theme.id && theme.name)
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const selectedThemeIds = new Set(managedThemes.filter((theme) => editing?.topics.includes(theme.name)).map((theme) => theme.id));
+  const selectedArchetypeIds = new Set(editing?.archetype_definition_ids ?? []);
   const view = query.view === "conteudos" || !canEdit ? "conteudos" : "novo";
   const currentFileObjectId = query.arquivo ?? editing?.file_object_id ?? "";
   const currentFilename = query.nomeArquivo ?? editing?.original_filename ?? "";
@@ -104,7 +105,7 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
                     ) : <p className="text-sm text-muted">Nenhum arquivo foi preparado.</p>}
                   </div>
                 </AdminDisclosure>
-                <AdminDisclosure title="Organização e visibilidade" description="Campos opcionais usados para busca, recomendação e tempo estimado.">
+                <AdminDisclosure title="Organização e visibilidade" description="Campos opcionais usados para busca, recomendação, público e tempo estimado.">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Label>Formato<Select name="content_format" defaultValue={editing?.content_format ?? (currentFileObjectId ? "other" : "article")}><option value="article">Artigo</option><option value="video">Vídeo</option><option value="podcast">Podcast</option><option value="audio">Áudio</option><option value="image">Imagem</option><option value="pdf">PDF</option><option value="guide">Guia</option><option value="tool">Ferramenta</option><option value="course">Curso</option><option value="other">Outro</option></Select></Label>
                     <Label>Nível<Select name="level" defaultValue={editing?.level ?? "all"}><option value="all">Todos</option><option value="introductory">Introdutório</option><option value="intermediate">Intermediário</option><option value="advanced">Avançado</option></Select></Label>
@@ -114,6 +115,12 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
                         {managedThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}
                       </select>
                       <span className="text-[11px] font-normal text-muted">Selecione vários com Ctrl ou Cmd. Novos temas são criados em Mais configurações.</span>
+                    </Label>
+                    <Label className="sm:col-span-2">Perfis que podem acessar
+                      <select name="archetype_definition_ids" multiple size={Math.min(7, Math.max(4, data.archetypes.length))} defaultValue={[...selectedArchetypeIds]} className="min-h-32 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15">
+                        {data.archetypes.map((archetype) => <option key={archetype.archetype_definition_id} value={archetype.archetype_definition_id}>{archetype.name}</option>)}
+                      </select>
+                      <span className="text-[11px] font-normal text-muted">Deixe todos desmarcados para disponibilizar a todos os perfis. Ao selecionar um ou mais, somente participantes classificados nesses perfis verão o conteúdo na Biblioteca.</span>
                     </Label>
                   </div>
                   {managedThemes.length === 0 ? <p className="mt-3 rounded-lg bg-warning-soft p-3 text-xs text-warning">Cadastre ao menos um tema em Mais configurações para classificar conteúdos.</p> : null}
@@ -145,11 +152,12 @@ function LibraryTable({ title, items, organizationId, empty, canEdit }: { title:
       {items.length === 0 ? <EmptyState title={empty} tone="info">Nenhum item neste estado.</EmptyState> : (
         <TableScroll>
           <Table>
-            <thead><tr><Th>Conteúdo</Th><Th>Onde aparece</Th><Th>Uso em jornadas</Th><Th className="text-right">Ação</Th></tr></thead>
+            <thead><tr><Th>Conteúdo</Th><Th>Onde aparece</Th><Th>Público</Th><Th>Uso em jornadas</Th><Th className="text-right">Ação</Th></tr></thead>
             <tbody>{items.map((item) => (
               <tr key={item.library_item_version_id}>
                 <Td><StatusPill tone={item.status === "published" ? "success" : "neutral"}>{item.status === "published" ? "Publicado" : "Rascunho"}</StatusPill><strong className="ml-2 text-ink">{item.title}</strong><p className="mt-1 text-xs text-muted">{kindLabels[item.content_kind] ?? item.content_kind}</p></Td>
                 <Td>{item.discoverable_in_library ? "Biblioteca e aulas" : "Somente aulas"}</Td>
+                <Td>{item.archetype_definition_ids.length ? `${item.archetype_definition_ids.length} perfil(is)` : "Todos os perfis"}</Td>
                 <Td>{item.journey_version_ids.length || "Nenhuma"}</Td>
                 <Td>
                   <div className="flex flex-wrap justify-end gap-2">
