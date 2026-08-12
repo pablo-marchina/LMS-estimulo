@@ -123,10 +123,12 @@ export default async function ActivityPage({
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
 
-  const [experience, commentResult, practiceResult, utilityRating] = await Promise.all([
+  const [experience, commentResult, practiceLoad, utilityRating] = await Promise.all([
     journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey),
     journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId),
-    practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId).catch(() => null),
+    practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId)
+      .then((value) => ({ value, unavailable: false as const }))
+      .catch(() => ({ value: null, unavailable: true as const })),
     utilityRatingRuntime.get(auth.identity.user_account_id, stepInstanceId),
   ]);
 
@@ -142,6 +144,8 @@ export default async function ActivityPage({
   const attemptsUsed = experience.state.q?.attempt_number ?? 0;
   const attemptInProgress = experience.state.q?.status === "in_progress";
   const attemptAvailable = maxAttempts === null || attemptInProgress || attemptsUsed < maxAttempts;
+  const practiceResult = practiceLoad.value;
+  const practiceUnavailable = practiceLoad.unavailable;
   const practice = practiceResult?.practice ?? null;
   const submissions = practiceResult?.submissions ?? [];
   const countedSubmissions = submissions.filter((item) => item.status !== "failed").length;
@@ -232,6 +236,12 @@ export default async function ActivityPage({
                 sectionsComplete
               />
             </section>
+          ) : null}
+
+          {practiceUnavailable ? (
+            <StatusPanel title="Atividade prática temporariamente indisponível" tone="warning">
+              Não foi possível consultar a configuração e os envios desta prática. Recarregue a página antes de concluir que esta aula não possui entrega obrigatória.
+            </StatusPanel>
           ) : null}
 
           {practice ? (
