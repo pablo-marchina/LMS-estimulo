@@ -47,17 +47,26 @@ function ActivityNavigationForm({
   direction: "previous" | "next";
 }) {
   const enabled = activity.step_status === "completed" || activity.can_open || activity.can_start;
-  const label = direction === "previous" ? "Anterior" : "Próxima";
+  const label = direction === "previous" ? "Aula anterior" : "Próxima aula";
   return <form action={openJourneyActivityAction} className="min-w-0">
     <input type="hidden" name="journey_instance_id" value={journeyInstanceId} />
     <input type="hidden" name="step_instance_id" value={activity.step_instance_id} />
     <input type="hidden" name="step_aggregate_version" value={activity.step_aggregate_version} />
     <input type="hidden" name="step_status" value={activity.step_status} />
     <input type="hidden" name="idempotency_key" value={randomUUID()} />
-    <PendingSubmitButton pendingLabel="Abrindo…" variant="secondary" size="sm" type="submit" disabled={!enabled} className="max-w-full gap-1.5" title={activity.activity_title}>
+    <PendingSubmitButton
+      pendingLabel="Abrindo…"
+      variant={direction === "next" ? "primary" : "secondary"}
+      size="sm"
+      type="submit"
+      disabled={!enabled}
+      className="max-w-full gap-1.5"
+      title={`${label}: ${activity.activity_title}`}
+      aria-label={`${label}: ${activity.activity_title}`}
+    >
       {direction === "previous" ? <ArrowLeft size={15} aria-hidden="true" /> : null}
-      <span className="hidden sm:inline">{label}:</span>
-      <span className="max-w-40 truncate">{activity.activity_title}</span>
+      <span>{label}</span>
+      <span className="hidden max-w-40 truncate md:inline">· {activity.activity_title}</span>
       {direction === "next" ? <ArrowRight size={15} aria-hidden="true" /> : null}
     </PendingSubmitButton>
   </form>;
@@ -94,7 +103,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
     <aside className="no-print brand-activity-context relative mb-0 overflow-hidden rounded-2xl border border-primary/15 bg-white p-4 shadow-sm" aria-label={`Contexto de ${title}`}>
       <div className="flex flex-wrap items-center gap-3">
         <Link href={`/empreendedor/jornada/${state.journey_instance_id}`} className="brand-button inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary-soft px-3 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
-          <ArrowLeft size={16} aria-hidden="true" /> Jornada
+          <ArrowLeft size={16} aria-hidden="true" /> Voltar à jornada
         </Link>
         <div className="grid size-10 place-items-center rounded-xl bg-primary text-white shadow-sm"><Icon size={19} aria-hidden="true" /></div>
         <div className="min-w-0 flex-1">
@@ -107,21 +116,23 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
         </div>
       </div>
 
-      <ol className="mt-4 grid gap-2 border-t border-border pt-4 sm:grid-cols-3" aria-label="Etapas da experiência">
-        {stageOrder.map((stage, index) => {
-          const completed = index < currentStageIndex || (stage === "result" && current === "result");
-          const active = stage === current;
-          const copy = stageCopy[stage];
-          return <li key={stage} aria-current={active ? "step" : undefined} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${active ? "border-primary/30 bg-primary-soft" : completed ? "border-success/20 bg-success-soft/60" : "border-border bg-surface-muted/40"}`}>
-            <span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${active ? "bg-primary text-white" : completed ? "bg-success text-white" : "bg-white text-muted ring-1 ring-border"}`}>
-              {completed ? <CheckCircle2 size={17} aria-hidden="true" /> : index + 1}
-            </span>
-            <span className="min-w-0"><strong className={`block text-sm ${active ? "text-primary" : "text-secondary"}`}>{copy.label}</strong><small className="block truncate text-xs text-muted">{copy.description}</small></span>
-          </li>;
-        })}
-      </ol>
+      {current !== "activity" ? (
+        <ol className="mt-4 grid gap-2 border-t border-border pt-4 sm:grid-cols-3" aria-label="Etapas da experiência">
+          {stageOrder.map((stage, index) => {
+            const completed = index < currentStageIndex || (stage === "result" && current === "result");
+            const active = stage === current;
+            const copy = stageCopy[stage];
+            return <li key={stage} aria-current={active ? "step" : undefined} className={`flex items-center gap-3 rounded-xl border px-3 py-3 ${active ? "border-primary/30 bg-primary-soft" : completed ? "border-success/20 bg-success-soft/60" : "border-border bg-surface-muted/40"}`}>
+              <span className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${active ? "bg-primary text-white" : completed ? "bg-success text-white" : "bg-white text-muted ring-1 ring-border"}`}>
+                {completed ? <CheckCircle2 size={17} aria-hidden="true" /> : index + 1}
+              </span>
+              <span className="min-w-0"><strong className={`block text-sm ${active ? "text-primary" : "text-secondary"}`}>{copy.label}</strong><small className="block truncate text-xs text-muted">{copy.description}</small></span>
+            </li>;
+          })}
+        </ol>
+      ) : null}
 
-      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Ver resultado <ArrowRight size={15} /></Link>}</div> : null}
+      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Concluir jornada e ver resultado <ArrowRight size={15} /></Link>}</div> : null}
     </aside>
   );
 }
