@@ -63,7 +63,7 @@ export type OperatorLibraryItem = {
   content_kind: LibraryContentKind;
   content_format: LibraryContentFormat;
   level: LibraryItemSummary["level"];
-  estimated_minutes: number;
+  estimated_minutes: number | null;
   source_type: LibraryItemSummary["source_type"];
   source_name: string;
   external_url: string | null;
