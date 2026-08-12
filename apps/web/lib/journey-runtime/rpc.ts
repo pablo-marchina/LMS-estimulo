@@ -167,7 +167,7 @@ export const journeyRuntime = {
   }),
 
   publishVertical: (actor: string, organizationId: string, journeyVersionId: string, contentHash: string, key: string) =>
-    invoke<RpcEnvelope<unknown>>("e14_publish_vertical", {
+    invoke<RpcEnvelope<unknown>>("publish_admin_journey_version", {
       p_actor_user_account_id: actor,
       p_organization_id: organizationId,
       p_journey_version_id: journeyVersionId,
