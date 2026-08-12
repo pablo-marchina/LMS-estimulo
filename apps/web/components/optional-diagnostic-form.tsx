@@ -29,11 +29,13 @@ export function OptionalDiagnosticForm({
   sessionId,
   questions,
   savedResponses,
+  readOnly = false,
 }: {
   availabilityId: string;
   sessionId: string;
   questions: OptionalDiagnosticQuestion[];
   savedResponses: OptionalDiagnosticSavedResponse[];
+  readOnly?: boolean;
 }) {
   const [responses, setResponses] = useState<Record<string, { optionId: string; textValue: string }>>(() =>
     Object.fromEntries(
@@ -47,6 +49,7 @@ export function OptionalDiagnosticForm({
   const [isSaving, startSaving] = useTransition();
 
   function saveAnswer(itemId: string, next: { optionId: string; textValue: string }) {
+    if (readOnly) return;
     setResponses((current) => ({ ...current, [itemId]: next }));
     if (!next.optionId && !next.textValue.trim()) return;
     setSaveError(null);
@@ -85,8 +88,9 @@ export function OptionalDiagnosticForm({
                         type="radio"
                         name={`question_${question.id}`}
                         value={option.id}
-                        required={question.required}
+                        required={question.required && !readOnly}
                         checked={current.optionId === option.id}
+                        disabled={readOnly}
                         onChange={() => saveAnswer(question.id, { optionId: option.id, textValue: "" })}
                         className="mt-0.5 size-4 accent-primary"
                       />
@@ -97,8 +101,9 @@ export function OptionalDiagnosticForm({
                       Resposta
                       <Input
                         name={`text_${question.id}`}
-                        required={question.required}
+                        required={question.required && !readOnly}
                         value={current.textValue}
+                        disabled={readOnly}
                         onChange={(event) => setResponses((existing) => ({
                           ...existing,
                           [question.id]: { optionId: "", textValue: event.target.value },
@@ -113,9 +118,9 @@ export function OptionalDiagnosticForm({
           </Card>
         );
       })}
-      {isSaving ? <p className="text-sm text-muted" role="status">Salvando resposta…</p> : null}
-      {saveError ? <p className="text-sm font-semibold text-warning" role="alert">{saveError}</p> : null}
-      <PendingSubmitButton pendingLabel="Calculando resultado…" className="w-fit">Concluir diagnóstico</PendingSubmitButton>
+      {!readOnly && isSaving ? <p className="text-sm text-muted" role="status">Salvando resposta…</p> : null}
+      {!readOnly && saveError ? <p className="text-sm font-semibold text-warning" role="alert">{saveError}</p> : null}
+      {!readOnly ? <PendingSubmitButton pendingLabel="Calculando resultado…" className="w-fit">Concluir diagnóstico</PendingSubmitButton> : null}
     </form>
   );
 }
