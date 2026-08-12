@@ -7,6 +7,10 @@ const allowed = new Set([
   "save_admin_extension",
   "get_participant_extensions",
   "perform_participant_extension",
+  "create_reward_image_upload_intent",
+  "confirm_reward_image_upload",
+  "abort_reward_image_upload",
+  "get_reward_image_download",
   "preview_participant_rpc",
   "preview_participant_extensions",
 ]);
