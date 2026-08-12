@@ -17,16 +17,8 @@ function errorCode(error: unknown) {
   const raw = error instanceof Error ? error.message : "REWARD_SAVE_FAILED";
   return raw.match(/\b([A-Z][A-Z0-9_]{2,127})\b/u)?.[1] ?? "REWARD_SAVE_FAILED";
 }
-function nullableNumber(raw: string) {
-  if (!raw) return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-function nullableDate(raw: string) {
-  if (!raw) return null;
-  const parsed = new Date(raw);
-  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
-}
+function nullableNumber(raw: string) { if (!raw) return null; const parsed = Number(raw); return Number.isFinite(parsed) ? parsed : null; }
+function nullableDate(raw: string) { if (!raw) return null; const parsed = new Date(raw); return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null; }
 
 async function authorize() {
   const auth = await getAuthContext();
@@ -43,23 +35,10 @@ function rewardPayload(formData: FormData, imageFileObjectId: string): JsonRecor
     checkbox(formData, "request_phone") ? { key: "phone", label: "Telefone para contato", required: true } : null,
   ].filter(Boolean);
   return {
-    id: text(formData, "id"),
-    code: text(formData, "code"),
-    name: text(formData, "name"),
-    description: text(formData, "description"),
-    regulation: text(formData, "regulation"),
-    reward_type: text(formData, "reward_type"),
-    cost_points: Math.max(1, Number(text(formData, "cost_points")) || 1),
-    stock_quantity: nullableNumber(text(formData, "stock_quantity")),
-    max_per_user: nullableNumber(text(formData, "max_per_user")),
-    starts_at: nullableDate(text(formData, "starts_at")),
-    ends_at: nullableDate(text(formData, "ends_at")),
-    status: text(formData, "status") || "draft",
+    id: text(formData, "id"), code: text(formData, "code"), name: text(formData, "name"), description: text(formData, "description"), regulation: text(formData, "regulation"), reward_type: text(formData, "reward_type"),
+    cost_points: Math.max(1, Number(text(formData, "cost_points")) || 1), stock_quantity: nullableNumber(text(formData, "stock_quantity")), max_per_user: nullableNumber(text(formData, "max_per_user")), starts_at: nullableDate(text(formData, "starts_at")), ends_at: nullableDate(text(formData, "ends_at")), status: text(formData, "status") || "draft",
     image_file_object_id: imageFileObjectId || null,
-    fulfillment_configuration: {
-      instructions: text(formData, "delivery_instructions"),
-      fields,
-    },
+    fulfillment_configuration: { instructions: text(formData, "delivery_instructions"), fields },
   };
 }
 
@@ -70,55 +49,26 @@ export async function saveRewardWithImageAction(formData: FormData) {
   let imageFileObjectId = existingImageId;
   let uploadedObject: { bucket: string; objectKey: string } | null = null;
   let uploadIntentId: string | null = null;
+  let uploadConfirmed = false;
 
   try {
     if (image instanceof File && image.size > 0) {
       validateRewardImage(image);
-      const bucket = rewardImageBucket();
-      const intent = await extensionsRuntime.createRewardImageUploadIntent({
-        actorUserAccountId,
-        organizationId,
-        originalFilename: image.name,
-        expectedContentType: image.type,
-        storageProvider: "supabase_storage",
-        bucket,
-        idempotencyKey: randomUUID(),
-      });
+      const intent = await extensionsRuntime.createRewardImageUploadIntent({ actorUserAccountId, organizationId, originalFilename: image.name, expectedContentType: image.type, storageProvider: "supabase_storage", bucket: rewardImageBucket(), idempotencyKey: randomUUID() });
       uploadIntentId = intent.upload_intent_id;
       uploadedObject = { bucket: intent.bucket, objectKey: intent.object_key };
       const uploaded = await uploadRewardImage({ bucket: intent.bucket, objectKey: intent.object_key, file: image });
-      const confirmed = await extensionsRuntime.confirmRewardImageUpload({
-        actorUserAccountId,
-        organizationId,
-        uploadIntentId: intent.upload_intent_id,
-        actualContentType: image.type,
-        actualSizeBytes: image.size,
-        sha256: uploaded.sha256,
-        providerObjectVersion: uploaded.providerObjectVersion,
-        etag: uploaded.etag,
-        idempotencyKey: randomUUID(),
-      });
+      const confirmed = await extensionsRuntime.confirmRewardImageUpload({ actorUserAccountId, organizationId, uploadIntentId: intent.upload_intent_id, actualContentType: image.type, actualSizeBytes: image.size, sha256: uploaded.sha256, providerObjectVersion: uploaded.providerObjectVersion, etag: uploaded.etag, idempotencyKey: randomUUID() });
       imageFileObjectId = confirmed.file_object_id;
+      uploadConfirmed = true;
     }
 
-    await extensionsRuntime.saveAdmin({
-      actorUserAccountId,
-      organizationId,
-      resourceType: "reward",
-      payload: rewardPayload(formData, imageFileObjectId),
-      idempotencyKey: randomUUID(),
-    });
+    await extensionsRuntime.saveAdmin({ actorUserAccountId, organizationId, resourceType: "reward", payload: rewardPayload(formData, imageFileObjectId), idempotencyKey: randomUUID() });
   } catch (error) {
-    if (uploadIntentId) {
-      await extensionsRuntime.abortRewardImageUpload({
-        actorUserAccountId,
-        organizationId,
-        uploadIntentId,
-        failureCode: errorCode(error),
-        idempotencyKey: randomUUID(),
-      }).catch(() => undefined);
+    if (uploadIntentId && !uploadConfirmed) {
+      await extensionsRuntime.abortRewardImageUpload({ actorUserAccountId, organizationId, uploadIntentId, failureCode: errorCode(error), idempotencyKey: randomUUID() }).catch(() => undefined);
+      if (uploadedObject) await removeRewardImage(uploadedObject.bucket, uploadedObject.objectKey).catch(() => undefined);
     }
-    if (uploadedObject) await removeRewardImage(uploadedObject.bucket, uploadedObject.objectKey).catch(() => undefined);
     redirect(`/admin/recompensas?erro=${encodeURIComponent(errorCode(error))}`);
   }
 
