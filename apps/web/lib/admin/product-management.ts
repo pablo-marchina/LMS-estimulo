@@ -126,6 +126,20 @@ export type AdminReportingDashboard = {
   recent_events: Array<{ event_name: string; occurred_at: string; aggregate_type: string | null; aggregate_id: string | null }>;
 };
 
+export type AdminLessonReporting = {
+  organization_id: string;
+  generated_at: string;
+  lessons: Array<{
+    activity_version_id: string;
+    title: string;
+    activity_type: string;
+    assigned: number;
+    started: number;
+    completed: number;
+    completion_rate: number;
+  }>;
+};
+
 export async function getAdminProductWorkspace(actorUserAccountId: string, organizationId: string) {
   return invokeServerRpc<AdminProductWorkspace>("get_admin_product_workspace", { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId });
 }
@@ -229,4 +243,8 @@ export async function publishAdminJourneyVersion(input: {
 
 export async function getAdminReportingDashboard(actorUserAccountId: string, organizationId: string) {
   return invokeServerRpc<AdminReportingDashboard>("get_admin_reporting_dashboard", { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId });
+}
+
+export async function getAdminLessonReporting(actorUserAccountId: string, organizationId: string) {
+  return invokeServerRpc<AdminLessonReporting>("get_admin_lesson_reporting", { p_actor_user_account_id: actorUserAccountId, p_organization_id: organizationId });
 }
