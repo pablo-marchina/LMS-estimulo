@@ -94,9 +94,9 @@ test('landing uses the approved copy and a secured edge projection', async () =>
   assert.match(landing, /Cada empreendedor aprende de um jeito\./);
   assert.match(landing, /O que você encontra na plataforma/);
   assert.match(landing, /Criar conta gratuitamente/);
-  assert.match(landing, /Conhecer o curso/);
-  assert.match(landing, /functions\/v1\/public-landing-journey/);
-  assert.doesNotMatch(landing, /OpenAI/i);
+  assert.match(landing, /Conteúdos práticos, ferramentas e jornadas com parceiros como a OpenAI para apoiar seu crescimento\./);
+  assert.doesNotMatch(landing, /Conhecer o curso/);
+  assert.doesNotMatch(landing, /CURSO EM DESTAQUE/iu);
   assert.match(publicJourneyMigration, /get_public_landing_journey/);
   assert.match(publicJourneyMigration, /jv\.status='published'/);
   assert.match(filterMigration, /not like '%openai%'/i);

@@ -24,6 +24,7 @@ const required = [
   'apps/web/app/empreendedor/diagnostico/page.tsx',
   'apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx',
   'apps/web/app/empreendedor/resultado/page.tsx',
+  'apps/web/components/diagnostic-result-dashboard.tsx',
   'apps/web/app/admin/page.tsx',
   'apps/web/lib/journey-runtime/rpc.ts',
   'apps/web/lib/auth/context.ts',
@@ -82,7 +83,8 @@ assert.ok(migration.includes('grant execute on function public.e14_get_participa
 assert.ok(!migration.includes("'is_correct'"));
 assert.ok(
   appText.includes('não representa risco ou elegibilidade de crédito') ||
-    appText.includes('não os apresenta como score'),
+    appText.includes('não os apresenta como score') ||
+    appText.includes('não uma avaliação de crédito'),
 );
 
 process.stdout.write(

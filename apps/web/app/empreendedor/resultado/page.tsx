@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { Award, Check } from "lucide-react";
 import { issueLearningCredentialsAction } from "@/app/actions/journey";
+import { DiagnosticResultDashboard } from "@/components/diagnostic-result-dashboard";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { ShareAction } from "@/components/share-action";
 import { ProgressMeter, StatusPanel } from "@/components/status-panel";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -12,6 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { getAuthContext } from "@/lib/auth/context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { displayContentName } from "@/lib/content/display-name";
+import { engagementRuntime } from "@/lib/engagement/runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { participantNextHref, statusLabel } from "@/lib/journey-runtime/navigation";
 
@@ -35,38 +38,39 @@ export default async function ResultPage({
 
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
-  const [state, credentials] = await Promise.all([
+  const [state, credentials, engagement, diagnosticSummary] = await Promise.all([
     journeyRuntime.getParticipantState(auth.identity.user_account_id, journey),
     credentialRuntime.listParticipant(auth.identity.user_account_id).catch(() => ({ entrepreneur_id: null, badges: [], certificates: [] })),
+    engagementRuntime.participantHub(auth.identity.user_account_id).catch(() => null),
+    engagementRuntime.participantDiagnosticSummary(auth.identity.user_account_id).catch(() => null),
   ]);
   const badges = credentials.badges.filter((item) => item.journey_instance_id === journey);
   const certificates = credentials.certificates.filter((item) => item.journey_instance_id === journey);
   const journeyTitle = displayContentName(state.journey_title, displayContentName(state.journey_code, "Jornada"));
+  const archetype = engagement?.archetype ?? null;
 
   return (
     <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-      <PageHeader eyebrow="Resultado da jornada" title={journeyTitle} description="Acompanhe o que foi registrado durante sua experiência de aprendizagem." />
+      <PageHeader eyebrow="Resultado da jornada" title={journeyTitle} description="Veja seu diagnóstico, seus próximos movimentos e tudo o que foi registrado durante sua experiência." />
       <JourneyProgressNav state={state} current="result" />
 
       {query.diagnostico === "concluido" ? (
         <StatusPanel title="Diagnóstico concluído" tone="success">
-          <p>Suas respostas, seu perfil e os pontos de conclusão foram registrados. Esta operação é idempotente e não duplica pontos ao recarregar.</p>
+          <p>Suas respostas, seu perfil e os pontos de conclusão foram registrados. Recarregar a página não duplica pontos.</p>
         </StatusPanel>
       ) : null}
       {query.avaliacao === "aprovada" ? <StatusPanel title="Avaliação aprovada" tone="success"><p>O resultado foi registrado e as credenciais elegíveis foram processadas.</p></StatusPanel> : null}
       {query.credenciais === "atualizadas" ? <StatusPanel title="Credenciais atualizadas" tone="success"><p>Selos e certificados elegíveis foram verificados.</p></StatusPanel> : null}
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo do resultado">
+      {archetype ? <DiagnosticResultDashboard archetype={archetype} dimensions={diagnosticSummary?.dimensions ?? []} primaryHref={participantNextHref(state)} primaryLabel={state.journey_status === "completed" ? "Explorar outras jornadas" : "Acessar minha trilha"} /> : null}
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo do resultado da jornada">
         <MetricTile index={0} label="Status" value={statusLabel(state.journey_status)} />
         <MetricTile index={1} label="Pontos registrados" value={state.p?.balance ?? 0} />
         <MetricTile index={2} label="Etapas obrigatórias" value={`${state.completed_required_steps}/${state.total_required_steps}`} />
       </section>
 
       <ProgressMeter value={state.progress} label="Progresso total" />
-
-      <StatusPanel title="Como interpretar estes dados" tone="info">
-        <p>Conclusão, respostas e pontos são evidências da jornada de aprendizagem. A plataforma não os apresenta como score, risco ou decisão de crédito sem validação institucional específica.</p>
-      </StatusPanel>
 
       {state.journey_status === "completed" ? (
         <form action={issueLearningCredentialsAction} className="no-print">
@@ -76,7 +80,7 @@ export default async function ResultPage({
         </form>
       ) : (
         <StatusPanel title="Jornada ainda em andamento" tone="info">
-          <p>Conclua as etapas obrigatórias para liberar o resultado final.</p>
+          <p>Continue pelas etapas disponíveis. Seu progresso permanece salvo.</p>
           <ButtonLink href={participantNextHref(state)} className="mt-3">Continuar jornada</ButtonLink>
         </StatusPanel>
       )}
@@ -100,7 +104,7 @@ export default async function ResultPage({
                 <h3 className="mt-3 font-semibold text-ink">{certificate.certificate_name}</h3>
                 <p className="mt-1 text-sm text-muted">Emitido para {certificate.display_name}.</p>
                 <p className="mt-1 text-xs text-muted">Código {certificate.verification_code}</p>
-                <ButtonLink href={`/credenciais/${certificate.verification_code}`} size="sm" className="mt-4 w-fit">Abrir certificado</ButtonLink>
+                <div className="no-print mt-4 flex flex-wrap gap-2"><ButtonLink href={`/credenciais/${certificate.verification_code}`} size="sm">Abrir certificado</ButtonLink><ShareAction title={certificate.certificate_name} text={`Concluí ${journeyTitle} na Plataforma Estímulo.`} url={`/credenciais/${certificate.verification_code}`} entityType="certificate" entityId={certificate.verification_code} label="Compartilhar" /></div>
               </Card>
             ))}
           </div>

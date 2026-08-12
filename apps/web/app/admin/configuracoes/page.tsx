@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill } from "@/components/ui/status-pill";
 import { requireAdminExtensionsWorkspace } from "@/lib/extensions/admin-context";
 import type { JsonRecord } from "@/lib/extensions/runtime";
+import { savePlatformSettingsAction } from "./platform-settings-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,17 @@ function numberValue(value: unknown) { return typeof value === "number" ? value 
 function booleanValue(value: unknown) { return value === true; }
 function objectValue(value: JsonRecord | null) { return value ?? {}; }
 function pretty(value: unknown, fallback: unknown) { return JSON.stringify(value ?? fallback, null, 2); }
+function communityUrl(value: unknown) {
+  if (!Array.isArray(value)) return "";
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    const label = stringValue(record.label).toLocaleLowerCase("pt-BR");
+    const url = stringValue(record.url);
+    if (label.includes("comunidade") && /^https:\/\//u.test(url)) return url;
+  }
+  return "";
+}
 
 export default async function AdminSettingsPage({ searchParams }: { searchParams: Promise<{ erro?: string; sucesso?: string }> }) {
   const query = await searchParams;
@@ -27,22 +39,20 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
   const privacy = workspace.legal_documents.filter((item) => item.document_type === "privacy_policy");
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-5">
-    <PageHeader eyebrow="Ajustes gerais" title="Mais configurações" description="Atualize contatos, documentos legais e temas da plataforma." />
+    <PageHeader eyebrow="Ajustes gerais" title="Mais configurações" description="Atualize contatos, comunidade, documentos legais e temas da plataforma." />
     {query.sucesso ? <StatusPanel title="Alteração salva" tone="success">As configurações foram atualizadas.</StatusPanel> : null}
     {query.erro ? <StatusPanel title="Não foi possível salvar" tone="warning">Tente novamente. Referência: {query.erro}</StatusPanel> : null}
 
     <Card className="grid gap-4">
-      <div className="flex items-start gap-3"><Settings2 className="mt-0.5 text-primary" /><div><h2 className="text-lg font-black text-secondary">Contato e identificação</h2><p className="text-sm text-muted">Preencha somente as informações usadas pelos participantes.</p></div></div>
-      <form action={saveExtensionAction} className="grid gap-3 sm:grid-cols-2">
-        <input type="hidden" name="resource_type" value="platform_settings" />
-        <input type="hidden" name="return_to" value="/admin/configuracoes" />
-        <input type="hidden" name="json_fields" value="institutional_links,metadata" />
+      <div className="flex items-start gap-3"><Settings2 className="mt-0.5 text-primary" /><div><h2 className="text-lg font-black text-secondary">Contato e identificação</h2><p className="text-sm text-muted">Esses canais aparecem na área de Ajuda do participante.</p></div></div>
+      <form action={savePlatformSettingsAction} className="grid gap-3 sm:grid-cols-2">
         <Label>Nome da plataforma<Input name="platform_name" defaultValue={stringValue(settings.platform_name) || "Plataforma Estímulo"} required /></Label>
         <Label>E-mail de suporte<Input name="support_email" type="email" defaultValue={stringValue(settings.support_email)} /></Label>
         <Label>Telefone<Input name="support_phone" defaultValue={stringValue(settings.support_phone)} placeholder="(11) 0000-0000" /></Label>
-        <Label>WhatsApp<Input name="support_whatsapp" defaultValue={stringValue(settings.support_whatsapp)} placeholder="+55 11 90000-0000" /></Label>
-        <Label className="sm:col-span-2">Horário de atendimento<Input name="support_hours" defaultValue={stringValue(settings.support_hours)} placeholder="Segunda a sexta, das 9h às 18h" /></Label>
-        <details className="sm:col-span-2 rounded-xl border border-border"><summary className="cursor-pointer p-3 text-sm font-bold text-secondary">Rodapé e links institucionais</summary><div className="grid gap-3 border-t border-border p-3"><Label>Texto do rodapé<Textarea name="footer_text" rows={2} defaultValue={stringValue(settings.footer_text)} /></Label><Label>Links institucionais em JSON<Textarea name="institutional_links" rows={4} defaultValue={pretty(settings.institutional_links, [])} placeholder={'[{"label":"Site","url":"https://..."}]'} /></Label></div></details>
+        <Label>WhatsApp de suporte<Input name="support_whatsapp" defaultValue={stringValue(settings.support_whatsapp)} placeholder="+55 11 90000-0000 ou https://wa.me/..." /></Label>
+        <Label>Comunidade no WhatsApp<Input name="community_whatsapp_url" type="url" defaultValue={communityUrl(settings.institutional_links)} placeholder="https://chat.whatsapp.com/..." /><span className="text-[11px] font-normal text-muted">Quando preenchido, aparece como botão separado na Ajuda.</span></Label>
+        <Label>Horário de atendimento<Input name="support_hours" defaultValue={stringValue(settings.support_hours)} placeholder="Segunda a sexta, das 9h às 18h" /></Label>
+        <details className="sm:col-span-2 rounded-xl border border-border"><summary className="cursor-pointer p-3 text-sm font-bold text-secondary">Rodapé e outros links institucionais</summary><div className="grid gap-3 border-t border-border p-3"><Label>Texto do rodapé<Textarea name="footer_text" rows={2} defaultValue={stringValue(settings.footer_text)} /></Label><Label>Links institucionais em JSON<Textarea name="institutional_links" rows={4} defaultValue={pretty(settings.institutional_links, [])} placeholder={'[{"label":"Site","url":"https://..."}]'} /><span className="text-[11px] font-normal text-muted">O link da comunidade acima é mantido automaticamente mesmo ao editar esta lista.</span></Label></div></details>
         <input type="hidden" name="metadata" value={pretty(settings.metadata, {})} />
         <PendingSubmitButton pendingLabel="Salvando…" className="w-fit sm:col-span-2">Salvar contatos</PendingSubmitButton>
       </form>

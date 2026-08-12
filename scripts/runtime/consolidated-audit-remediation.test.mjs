@@ -49,16 +49,23 @@ test("announcement editor supports responsive artwork and image-wide links", asy
 });
 
 test("diagnostic result and profile objective use the approved participant copy and placement", async () => {
-  const [diagnostic, chart, profile, actions] = await Promise.all([
+  const [diagnostic, dashboard, chart, profile, actions] = await Promise.all([
     source("apps/web/app/empreendedor/perfil/diagnostico/page.tsx"),
+    source("apps/web/components/diagnostic-result-dashboard.tsx"),
     source("apps/web/components/diagnostic-dimension-chart.tsx"),
     source("apps/web/app/empreendedor/perfil/page.tsx"),
     source("apps/web/app/empreendedor/perfil/actions.ts"),
   ]);
 
   assert.match(diagnostic, /Um olhar mais de perto/u);
-  assert.match(diagnostic, /Seu jeito de empreender/u);
-  assert.match(diagnostic, /Seu resultado ajuda a personalizar sua experiência/u);
+  assert.match(dashboard, /Seu nível de maturidade/u);
+  assert.match(dashboard, /Seu mapa de maturidade/u);
+  assert.match(dashboard, /Seus próximos três movimentos/u);
+  assert.match(dashboard, /Pontos fortes/u);
+  assert.match(dashboard, /Seu próximo desafio/u);
+  assert.match(dashboard, /Dica prática/u);
+  assert.match(dashboard, /Para levar com você/u);
+  assert.match(dashboard, /Seu resultado ajuda a personalizar sua experiência/u);
   assert.match(chart, /Veja como suas respostas se distribuem nos temas que fazem parte do seu perfil\./u);
   assert.doesNotMatch(diagnostic, /Diagnóstico empreendedor principal/u);
   assert.match(diagnostic, /Seu objetivo de aplicação/u);

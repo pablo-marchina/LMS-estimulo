@@ -20,14 +20,13 @@ test("landing page renders the brand, skip link and current plain-language hero"
   assert.match(page, /Conhecimento que vira resultado no seu negócio\./u);
 });
 
-test("landing page presents a dynamic featured journey and the learning flow", () => {
-  assert.match(page, /journeyTitle/u);
-  assert.match(page, /journeyDescription/u);
-  assert.match(page, /journeyTags/u);
+test("landing page presents the approved learning flow without the removed featured-journey contract", () => {
+  assert.doesNotMatch(page, /journeyTitle/u);
+  assert.doesNotMatch(page, /journeyDescription/u);
+  assert.doesNotMatch(page, /journeyTags/u);
   assert.match(page, /Descubra por onde começar/u);
-  assert.match(page, /Aprenda no seu ritmo/u);
-  assert.match(page, /Coloque em prática/u);
-  assert.match(page, /Evolua a cada conquista/u);
+  assert.match(page, /Desenvolva habilidades práticas/u);
+  assert.match(page, /Evolua e abra novas oportunidades/u);
 });
 
 test("landing page presents the four current learning moments without limiting language", () => {
