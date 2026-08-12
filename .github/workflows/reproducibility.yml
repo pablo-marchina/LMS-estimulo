@@ -75,8 +75,14 @@ jobs:
       - name: Confirm source tree remains unchanged
         run: git diff --exit-code
 
-      - name: Validate runtime hardening
-        run: npm run validate:runtime-hardening
+      - name: Validate runtime hardening core
+        run: node scripts/runtime/validate-hardening.mjs
+
+      - name: Validate authenticated RPC gateway coverage
+        run: npm run validate:rpc-gateway-coverage
+
+      - name: Validate interface content contract
+        run: npm run validate:interface-content
 
       - name: Typecheck
         run: npm run typecheck:web
