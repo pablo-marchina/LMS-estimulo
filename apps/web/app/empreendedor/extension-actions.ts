@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireParticipantContext } from "@/lib/auth/participant-context";
+import { assertParticipantMutationAllowed, requireParticipantContext } from "@/lib/auth/participant-context";
 import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
 
 const reserved = new Set(["action_type", "return_to", "json_fields", "array_fields", "boolean_fields", "idempotency_key"]);
@@ -76,6 +76,7 @@ export async function performExtensionAction(formData: FormData) {
 
   let destination: string;
   try {
+    await assertParticipantMutationAllowed();
     const payload = payloadFromForm(formData);
     await extensionsRuntime.performParticipant({
       actorUserAccountId: auth.identity.user_account_id,
