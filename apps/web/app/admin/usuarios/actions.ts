@@ -23,7 +23,8 @@ async function roleManagerContext(organizationId: string) {
 
 export async function grantOrganizationRoleAction(formData: FormData) {
   const organizationId = uuid.parse(formData.get("organization_id"));
-  confirmation("CONCEDER").parse(formData.get("confirmation"));
+  const confirmationResult = confirmation("CONCEDER").safeParse(formData.get("confirmation"));
+  if (!confirmationResult.success) redirect("/admin/usuarios?status=confirmacao_conceder_invalida");
   const context = await roleManagerContext(organizationId);
   await roleManagementRuntime.grant({
     actorUserAccountId: context.actorUserAccountId,
@@ -38,7 +39,8 @@ export async function grantOrganizationRoleAction(formData: FormData) {
 
 export async function revokeOrganizationRoleAction(formData: FormData) {
   const organizationId = uuid.parse(formData.get("organization_id"));
-  confirmation("REMOVER").parse(formData.get("confirmation"));
+  const confirmationResult = confirmation("REMOVER").safeParse(formData.get("confirmation"));
+  if (!confirmationResult.success) redirect("/admin/usuarios?status=confirmacao_remover_invalida");
   const context = await roleManagerContext(organizationId);
   await roleManagementRuntime.revoke({
     actorUserAccountId: context.actorUserAccountId,
