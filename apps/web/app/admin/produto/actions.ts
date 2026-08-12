@@ -97,6 +97,7 @@ export async function saveTrilhaAction(formData: FormData) {
   const pathTemplateId = nullable(formData, "path_template_id");
   const name = text(formData, "name");
   const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
+  let liveUpdate = false;
   try {
     const result = await saveAdminTrack({
       actorUserAccountId: auth.identity.user_account_id,
@@ -116,13 +117,14 @@ export async function saveTrilhaAction(formData: FormData) {
       },
       idempotencyKey: randomUUID(),
     });
-    revalidatePath("/admin/produto");
-    revalidatePath("/empreendedor", "layout");
-    redirect(`${back}&sucesso=${result.live_update ? "atualizado_ao_vivo" : "trilha_salva"}`);
+    liveUpdate = result.live_update;
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
     redirect(`${back}&erro=${reason}`);
   }
+  revalidatePath("/admin/produto");
+  revalidatePath("/empreendedor", "layout");
+  redirect(`${back}&sucesso=${liveUpdate ? "atualizado_ao_vivo" : "trilha_salva"}`);
 }
 
 export async function saveAulaAction(formData: FormData) {
@@ -148,6 +150,7 @@ export async function saveAulaAction(formData: FormData) {
   const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
   if (!title || !pathTemplateId || (isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
 
+  let liveUpdate = false;
   try {
     let libraryItemVersionId = contentSource === "library" ? text(formData, "library_item_version_id") : "";
     let normalizedContentSource = contentSource;
@@ -187,11 +190,12 @@ export async function saveAulaAction(formData: FormData) {
       },
       idempotencyKey: randomUUID(),
     });
-    revalidatePath("/admin/produto");
-    revalidatePath("/empreendedor", "layout");
-    redirect(`${back}&sucesso=${result.live_update ? "atualizado_ao_vivo" : "aula_salva"}`);
+    liveUpdate = result.live_update;
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
     redirect(`${back}&erro=${reason}`);
   }
+  revalidatePath("/admin/produto");
+  revalidatePath("/empreendedor", "layout");
+  redirect(`${back}&sucesso=${liveUpdate ? "atualizado_ao_vivo" : "aula_salva"}`);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, FileText } from "lucide-react";
+import { ExternalLink, FileText, Save } from "lucide-react";
 import { useMemo, useState } from "react";
 import { FileUploadPreview } from "@/components/file-upload-preview";
 import { Input, Select, Textarea } from "@/components/ui/input";
@@ -19,6 +19,7 @@ export type ActivityLibraryOption = {
 };
 
 export type CurrentActivityAsset = {
+  id: string;
   title: string;
   asset_type: string;
   external_url: string | null;
@@ -53,15 +54,45 @@ export function ActivityContentFields({
   const [selectedLibraryItemVersionId, setSelectedLibraryItemVersionId] = useState(currentLibraryItemVersionId ?? "");
   const selectedLibraryItem = useMemo(() => items.find((item) => item.library_item_version_id === selectedLibraryItemVersionId) ?? null, [items, selectedLibraryItemVersionId]);
   const metadata = recordValue(currentAsset?.accessibility_metadata);
+  const [assetTitle, setAssetTitle] = useState(currentAsset?.title ?? "");
+  const [assetDescription, setAssetDescription] = useState(textValue(metadata.description));
+  const [assetSaveState, setAssetSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
+  async function saveCurrentAssetCopy() {
+    if (!currentAsset?.id || !assetTitle.trim()) return;
+    setAssetSaveState("saving");
+    try {
+      const response = await fetch(`/api/admin/activity-assets/${encodeURIComponent(currentAsset.id)}/metadata`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ title: assetTitle, description: assetDescription }),
+      });
+      if (!response.ok) throw new Error("SAVE_FAILED");
+      setAssetSaveState("saved");
+    } catch {
+      setAssetSaveState("error");
+    }
+  }
 
   return (
     <section className="grid gap-3 rounded-2xl border border-primary/15 bg-primary-soft/30 p-4">
       <div><h3 className="font-black text-secondary">Conteúdo principal</h3><p className="text-[11px] text-muted">Veja o conteúdo atual antes de mantê-lo, substituí-lo ou removê-lo.</p></div>
 
-      {currentAsset ? <div className="grid gap-2 rounded-xl border border-border bg-white p-3">
-        <div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary"><FileText size={18} aria-hidden="true" /></span><div><strong className="text-sm text-secondary">{currentAsset.title || "Conteúdo atual"}</strong><p className="text-xs text-muted">{currentAsset.asset_type}{textValue(metadata.source_name) ? ` · ${textValue(metadata.source_name)}` : ""}</p></div></div>
+      {currentAsset ? <div className="grid gap-3 rounded-xl border border-border bg-white p-3">
+        <div className="flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary"><FileText size={18} aria-hidden="true" /></span><div><strong className="text-sm text-secondary">{assetTitle || "Conteúdo atual"}</strong><p className="text-xs text-muted">{currentAsset.asset_type}{textValue(metadata.source_name) ? ` · ${textValue(metadata.source_name)}` : ""}</p></div></div>
         {textValue(metadata.summary) ? <p className="text-xs leading-5 text-muted">{textValue(metadata.summary)}</p> : null}
         {currentAsset.external_url ? <a href={currentAsset.external_url} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-1.5 text-xs font-bold text-primary hover:underline"><ExternalLink size={13} />Abrir conteúdo atual</a> : currentAsset.file_object_id ? <p className="text-xs font-semibold text-primary">Arquivo armazenado na plataforma</p> : null}
+
+        {!currentLibraryItemVersionId ? <div className="grid gap-3 border-t border-border pt-3">
+          <p className="text-xs font-bold uppercase tracking-[.1em] text-primary">Texto exibido ao participante</p>
+          <label className="grid gap-1 text-sm font-medium text-ink">Título do conteúdo<Input value={assetTitle} onChange={(event) => { setAssetTitle(event.target.value); setAssetSaveState("idle"); }} maxLength={240} /></label>
+          <label className="grid gap-1 text-sm font-medium text-ink">Descrição<Textarea value={assetDescription} onChange={(event) => { setAssetDescription(event.target.value); setAssetSaveState("idle"); }} rows={3} maxLength={2000} /><span className="text-[11px] font-normal text-muted">Este é o texto que aparece acima do player. Pode ser alterado sem recriar o conteúdo.</span></label>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" onClick={saveCurrentAssetCopy} disabled={assetSaveState === "saving" || !assetTitle.trim()} className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white transition hover:bg-primary-active disabled:cursor-not-allowed disabled:opacity-60"><Save size={15} />{assetSaveState === "saving" ? "Salvando…" : "Salvar texto do conteúdo"}</button>
+            {assetSaveState === "saved" ? <span className="text-xs font-bold text-success">Texto salvo.</span> : null}
+            {assetSaveState === "error" ? <span className="text-xs font-bold text-danger">Não foi possível salvar. Tente novamente.</span> : null}
+          </div>
+        </div> : null}
       </div> : null}
 
       <label className="grid gap-1 text-sm font-medium text-ink">Origem
