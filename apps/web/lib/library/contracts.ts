@@ -78,12 +78,14 @@ export type OperatorLibraryItem = {
   content_hash: string;
   published_at: string | null;
   journey_version_ids: string[];
+  archetype_definition_ids: string[];
 };
 
 export type OperatorLibraryData = {
   organization_id: string;
   items: OperatorLibraryItem[];
   journey_versions: Array<{ journey_version_id: string; title: string; version_number: number; status: "draft" | "published" }>;
+  archetypes: Array<{ archetype_definition_id: string; code: string; name: string }>;
 };
 
 export type LibraryAccessResult = {
