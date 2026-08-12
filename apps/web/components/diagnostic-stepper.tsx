@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { submitProfileDiagnosisAction } from "@/app/empreendedor/diagnostico/actions";
+import { useMemo, useState, useTransition } from "react";
+import {
+  saveProfileDiagnosisAnswerAction,
+  submitProfileDiagnosisAction,
+} from "@/app/empreendedor/diagnostico/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -38,6 +41,8 @@ export function DiagnosticStepper({
     ),
   );
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isSaving, startSaving] = useTransition();
 
   const current = items[currentIndex];
   const completed = useMemo(() => items.filter((item) => Boolean(answers[item.id])).length, [answers, items]);
@@ -45,6 +50,24 @@ export function DiagnosticStepper({
   const isLast = currentIndex === items.length - 1;
 
   if (!current) return null;
+
+  function persistAnswer(itemId: string, optionCode: string) {
+    setAnswers((existing) => ({ ...existing, [itemId]: optionCode }));
+    setValidationMessage(null);
+    setSaveMessage(null);
+    startSaving(async () => {
+      try {
+        await saveProfileDiagnosisAnswerAction({
+          journeyInstanceId,
+          itemId,
+          optionCode,
+          idempotencyKey,
+        });
+      } catch {
+        setSaveMessage("Não foi possível salvar esta resposta agora. Ela continuará nesta tela e será tentada novamente ao concluir o diagnóstico.");
+      }
+    });
+  }
 
   function advance() {
     if (current.is_required && !answers[current.id]) {
@@ -89,10 +112,7 @@ export function DiagnosticStepper({
                     name={`visible_answer_${current.id}`}
                     value={option.code}
                     checked={selected}
-                    onChange={() => {
-                      setAnswers((existing) => ({ ...existing, [current.id]: option.code }));
-                      setValidationMessage(null);
-                    }}
+                    onChange={() => persistAnswer(current.id, option.code)}
                     className="mt-0.5 size-4 accent-primary"
                   />
                   <span>{option.label}</span>
@@ -102,6 +122,8 @@ export function DiagnosticStepper({
           </div>
         </fieldset>
         {validationMessage ? <p className="text-sm font-semibold text-danger" role="alert">{validationMessage}</p> : null}
+        {saveMessage ? <p className="text-sm font-semibold text-warning" role="status">{saveMessage}</p> : null}
+        {isSaving ? <p className="text-sm text-muted" role="status">Salvando resposta…</p> : null}
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
