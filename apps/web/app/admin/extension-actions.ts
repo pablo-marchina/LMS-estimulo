@@ -11,7 +11,8 @@ import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
 const reserved = new Set(["resource_type", "return_to", "json_fields", "array_fields", "boolean_fields", "idempotency_key"]);
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
 function names(formData: FormData, name: string) { return new Set(text(formData, name).split(",").map((value) => value.trim()).filter(Boolean)); }
-function parseJson(raw: string, fallback: unknown) { if (!raw) return fallback; try { return JSON.parse(raw) as unknown; } catch { return fallback; } }
+function jsonErrorCode(field: string) { const suffix = field.toUpperCase().replace(/[^A-Z0-9]+/gu, "_").replace(/^_+|_+$/gu, "").slice(0, 48); return suffix ? `INVALID_JSON_${suffix}` : "INVALID_JSON"; }
+function parseJson(raw: string, fallback: unknown, field: string) { if (!raw) return fallback; try { return JSON.parse(raw) as unknown; } catch { throw new Error(jsonErrorCode(field)); } }
 function checkbox(formData: FormData, name: string) { const value = text(formData, name).toLowerCase(); return ["on", "true", "1", "yes"].includes(value); }
 function numeric(formData: FormData, name: string, fallback = 0) { const parsed = Number(text(formData, name)); return Number.isFinite(parsed) ? parsed : fallback; }
 function lines(formData: FormData, name: string) { return text(formData, name).split("\n").map((value) => value.trim()).filter(Boolean); }
@@ -28,7 +29,7 @@ function payloadFromForm(formData: FormData): JsonRecord {
     const values = formData.getAll(key).filter((value): value is string => typeof value === "string");
     if (arrayFields.has(key)) { payload[key] = values.map((value) => value.trim()).filter(Boolean); continue; }
     const value = values.at(-1)?.trim() ?? "";
-    if (jsonFields.has(key)) { payload[key] = parseJson(value, value.trim().startsWith("[") ? [] : {}); continue; }
+    if (jsonFields.has(key)) { payload[key] = parseJson(value, value.trim().startsWith("[") ? [] : {}, key); continue; }
     if (booleanFields.has(key)) { payload[key] = ["on", "true", "1", "yes"].includes(value.toLowerCase()); continue; }
     payload[key] = value;
   }
