@@ -1,9 +1,8 @@
 begin;
 
--- Public signup must bind the acceptance to the immutable legal document rows
--- that were actually presented. The privileged web runtime can resolve either
--- the two versions currently published or an explicit historical snapshot that
--- was published and later retired while the user was confirming their email.
+-- Public signup binds acceptance to immutable legal-document rows. Current
+-- documents are exposed to the server-side signup page, while an already staged
+-- version remains resolvable if it is retired during email confirmation.
 create or replace function public.get_signup_legal_documents(p_version_ids uuid[] default null)
 returns jsonb
 language sql
@@ -47,11 +46,88 @@ $$;
 revoke all on function public.get_signup_legal_documents(uuid[]) from public, anon, authenticated;
 grant execute on function public.get_signup_legal_documents(uuid[]) to service_role;
 
--- legal_accept used to require the target row to still be the currently
--- published version. That reintroduced a race after signup: publishing vN+1
--- retires vN while a user may still be confirming the email for vN. Keep the
--- existing command and idempotency contract, but accept immutable versions
--- that have evidence of having been published at some point.
+-- The staging row is created before Auth signup. The browser never receives a
+-- capability to create or mutate one; only the service-role server boundary can
+-- stage it. The opaque token is then carried by Auth user_metadata solely as a
+-- lookup capability. The canonical versions and timestamp live here.
+create table if not exists app_private.public_signup_legal_snapshots (
+  snapshot_token uuid primary key,
+  email_normalized text not null,
+  terms_document_version_id uuid not null references governance.legal_document_versions(id),
+  privacy_document_version_id uuid not null references governance.legal_document_versions(id),
+  accepted_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '30 days'),
+  constraint public_signup_legal_snapshot_documents_differ
+    check (terms_document_version_id <> privacy_document_version_id)
+);
+
+revoke all on table app_private.public_signup_legal_snapshots from public, anon, authenticated;
+
+create index if not exists idx_public_signup_legal_snapshots_expiry
+  on app_private.public_signup_legal_snapshots(expires_at);
+
+create or replace function public.stage_public_signup_legal_snapshot(
+  p_snapshot_token uuid,
+  p_email text,
+  p_terms_document_version_id uuid,
+  p_privacy_document_version_id uuid,
+  p_accepted_at timestamptz
+) returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog
+as $$
+declare
+  v_organization_id uuid := app_private.extension_default_organization();
+  v_email_normalized text := lower(trim(coalesce(p_email,'')));
+begin
+  if p_snapshot_token is null or v_email_normalized = '' or position('@' in v_email_normalized) <= 1
+    or p_terms_document_version_id is null or p_privacy_document_version_id is null
+    or p_terms_document_version_id = p_privacy_document_version_id or p_accepted_at is null then
+    raise exception 'SIGNUP_LEGAL_SNAPSHOT_INVALID' using errcode='22023';
+  end if;
+
+  if not exists(
+    select 1 from governance.legal_document_versions d
+    where d.id = p_terms_document_version_id
+      and d.organization_id = v_organization_id
+      and d.document_type = 'terms_of_use'
+      and d.status = 'published'
+      and d.published_at is not null
+  ) or not exists(
+    select 1 from governance.legal_document_versions d
+    where d.id = p_privacy_document_version_id
+      and d.organization_id = v_organization_id
+      and d.document_type = 'privacy_policy'
+      and d.status = 'published'
+      and d.published_at is not null
+  ) then
+    raise exception 'SIGNUP_LEGAL_SNAPSHOT_NOT_CURRENT' using errcode='22023';
+  end if;
+
+  delete from app_private.public_signup_legal_snapshots where expires_at <= now();
+
+  insert into app_private.public_signup_legal_snapshots(
+    snapshot_token,email_normalized,terms_document_version_id,
+    privacy_document_version_id,accepted_at
+  ) values (
+    p_snapshot_token,v_email_normalized,p_terms_document_version_id,
+    p_privacy_document_version_id,p_accepted_at
+  );
+
+  return jsonb_build_object('status','staged','snapshot_token',p_snapshot_token);
+end;
+$$;
+
+revoke all on function public.stage_public_signup_legal_snapshot(uuid,text,uuid,uuid,timestamptz) from public, anon, authenticated;
+grant execute on function public.stage_public_signup_legal_snapshot(uuid,text,uuid,uuid,timestamptz) to service_role;
+
+-- legal_accept previously required the target row to still be the current
+-- published version. Publishing vN+1 retires vN, so a user who accepted vN and
+-- was confirming email could no longer persist that exact acceptance. Permit an
+-- immutable version that demonstrably was published, while keeping the existing
+-- command and idempotency contract.
 do $migration$
 declare
   v_definition text;
@@ -70,9 +146,10 @@ begin
 end
 $migration$;
 
--- Seal profile provisioning and legal persistence into one database transaction.
--- The snapshot comes from raw_app_meta_data, which public clients cannot mutate,
--- and is resolved through the already-linked Supabase external identity.
+-- Profile provisioning consumes the server-staged snapshot in the same database
+-- transaction as the two legal_accept commands. user_metadata only carries the
+-- random token; changing it cannot forge an acceptance because the canonical row
+-- is service-role-only and additionally bound to the authenticated email.
 create or replace function public.provision_public_signup_participant_v3(
   p_user_account_id uuid,
   p_preferred_name text,
@@ -96,12 +173,10 @@ declare
   v_entrepreneur_id uuid;
   v_business_id uuid;
   v_cnpj_status text;
-  v_auth_app_metadata jsonb;
-  v_legal_snapshot jsonb;
-  v_terms_document_id uuid;
-  v_privacy_document_id uuid;
-  v_terms_accepted_at timestamptz;
-  v_privacy_accepted_at timestamptz;
+  v_auth_user_metadata jsonb;
+  v_auth_email text;
+  v_snapshot_token uuid;
+  v_signup_snapshot app_private.public_signup_legal_snapshots%rowtype;
 begin
   if coalesce(p_phone_e164,'') !~ '^\+55\d{10,11}$' then
     raise exception 'PHONE_INVALID' using errcode='22023';
@@ -110,8 +185,8 @@ begin
     raise exception 'CNPJ_INVALID' using errcode='22023';
   end if;
 
-  select auth_user.raw_app_meta_data
-    into v_auth_app_metadata
+  select auth_user.raw_user_meta_data, lower(trim(auth_user.email))
+    into v_auth_user_metadata, v_auth_email
   from iam.external_identities identity
   join auth.users auth_user on auth_user.id::text = identity.subject
   where identity.user_account_id = p_user_account_id
@@ -120,36 +195,36 @@ begin
   order by identity.last_authenticated_at desc, identity.created_at desc
   limit 1;
 
-  v_legal_snapshot := v_auth_app_metadata->'signup_legal_snapshot';
-  if jsonb_typeof(v_legal_snapshot) <> 'object' then
-    raise exception 'SIGNUP_LEGAL_SNAPSHOT_REQUIRED' using errcode='22023';
-  end if;
-
   begin
-    v_terms_document_id := nullif(v_legal_snapshot->>'terms_document_version_id','')::uuid;
-    v_privacy_document_id := nullif(v_legal_snapshot->>'privacy_document_version_id','')::uuid;
-    v_terms_accepted_at := nullif(v_legal_snapshot->>'terms_accepted_at','')::timestamptz;
-    v_privacy_accepted_at := nullif(v_legal_snapshot->>'privacy_accepted_at','')::timestamptz;
-  exception when invalid_text_representation or datetime_field_overflow then
+    v_snapshot_token := nullif(v_auth_user_metadata->>'signup_legal_snapshot_token','')::uuid;
+  exception when invalid_text_representation then
     raise exception 'SIGNUP_LEGAL_SNAPSHOT_INVALID' using errcode='22023';
   end;
 
-  if v_terms_document_id is null or v_privacy_document_id is null
-    or v_terms_accepted_at is null or v_privacy_accepted_at is null
-    or v_terms_document_id = v_privacy_document_id then
-    raise exception 'SIGNUP_LEGAL_SNAPSHOT_INVALID' using errcode='22023';
+  if v_snapshot_token is null or coalesce(v_auth_email,'') = '' then
+    raise exception 'SIGNUP_LEGAL_SNAPSHOT_REQUIRED' using errcode='22023';
+  end if;
+
+  select snapshot.* into v_signup_snapshot
+  from app_private.public_signup_legal_snapshots snapshot
+  where snapshot.snapshot_token = v_snapshot_token
+    and snapshot.email_normalized = v_auth_email
+    and snapshot.expires_at > now();
+
+  if not found then
+    raise exception 'SIGNUP_LEGAL_SNAPSHOT_NOT_FOUND' using errcode='22023';
   end if;
 
   if not exists(
     select 1 from governance.legal_document_versions d
-    where d.id = v_terms_document_id
+    where d.id = v_signup_snapshot.terms_document_version_id
       and d.organization_id = app_private.extension_default_organization()
       and d.document_type = 'terms_of_use'
       and d.published_at is not null
       and d.status in ('published','retired')
   ) or not exists(
     select 1 from governance.legal_document_versions d
-    where d.id = v_privacy_document_id
+    where d.id = v_signup_snapshot.privacy_document_version_id
       and d.organization_id = app_private.extension_default_organization()
       and d.document_type = 'privacy_policy'
       and d.published_at is not null
@@ -186,20 +261,22 @@ begin
     p_user_account_id,
     'legal_accept',
     jsonb_build_object(
-      'legal_document_version_id', v_terms_document_id,
-      'metadata', jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_terms_accepted_at)
+      'legal_document_version_id', v_signup_snapshot.terms_document_version_id,
+      'metadata', jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_signup_snapshot.accepted_at)
     ),
-    'signup-legal:' || v_terms_document_id::text
+    'signup-legal:' || v_signup_snapshot.terms_document_version_id::text
   );
   perform public.perform_participant_extension(
     p_user_account_id,
     'legal_accept',
     jsonb_build_object(
-      'legal_document_version_id', v_privacy_document_id,
-      'metadata', jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_privacy_accepted_at)
+      'legal_document_version_id', v_signup_snapshot.privacy_document_version_id,
+      'metadata', jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_signup_snapshot.accepted_at)
     ),
-    'signup-legal:' || v_privacy_document_id::text
+    'signup-legal:' || v_signup_snapshot.privacy_document_version_id::text
   );
+
+  delete from app_private.public_signup_legal_snapshots where snapshot_token = v_snapshot_token;
 
   return v_result || jsonb_build_object('phone_status','stored','cnpj_status',v_cnpj_status);
 end;
