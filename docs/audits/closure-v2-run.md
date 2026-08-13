@@ -1,0 +1,1 @@
+Structural closure validation branch. Temporary marker intentionally removed before final merge.
