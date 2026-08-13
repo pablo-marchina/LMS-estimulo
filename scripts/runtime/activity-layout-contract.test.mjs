@@ -24,7 +24,8 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
   assert.match(workspace, /role="tablist"/);
   assert.match(workspace, /aria-selected=\{selected\}/);
   assert.doesNotMatch(workspace, /createPortal/);
-  assert.match(workspace, /document\.querySelector<HTMLElement>\("\[data-activity-workspace\]"\)/);
+  assert.match(workspace, /anchorRef\.current\?\.closest<HTMLElement>\("\[data-activity-workspace\]"\)/);
+  assert.doesNotMatch(workspace, /document\.querySelector<HTMLElement>\("\[data-activity-workspace\]"\)/);
   assert.match(workspace, /MutationObserver/);
   assert.match(workspace, /sectionFromLocation/);
   assert.match(workspace, /a\[href\^='#'\]/);
