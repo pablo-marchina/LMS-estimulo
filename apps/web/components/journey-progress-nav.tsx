@@ -3,6 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { getAuthContext } from "@/lib/auth/context";
 import { displayContentName } from "@/lib/content/display-name";
 import type { JourneyState } from "@/lib/journey-runtime/contracts";
+import { participantContentCopy } from "@/lib/journey-runtime/content-language";
 import { getParticipantJourneyOutline } from "@/lib/journey-runtime/outline-runtime";
 
 export type JourneyStage = "diagnostic" | "activity" | "result";
@@ -16,8 +17,8 @@ type Props = {
 
 const statusCopy: Record<string, string> = {
   available: "Disponível para começar",
-  in_progress: "Atividade em andamento",
-  completed: "Atividade concluída",
+  in_progress: "Conteúdo em andamento",
+  completed: "Conteúdo concluído",
 };
 
 const stageOrder: JourneyStage[] = ["diagnostic", "activity", "result"];
@@ -29,7 +30,7 @@ const stageCopy: Record<JourneyStage, { label: string; description: string }> = 
 
 export async function JourneyProgressNav({ state, current, activityTitle, estimatedMinutes }: Props) {
   const stepStatus = state.s?.status ?? "available";
-  const title = current === "activity" ? activityTitle ?? "Atividade da jornada" : current === "result" ? "Resultado da jornada" : "Conheça seu perfil";
+  const title = current === "activity" ? activityTitle ?? "Conteúdo da jornada" : current === "result" ? "Resultado da jornada" : "Conheça seu perfil";
   const Icon = current === "activity" ? PlayCircle : current === "result" ? Flag : CircleDot;
   const currentStageIndex = stageOrder.indexOf(current);
 
@@ -44,7 +45,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
 
   const journeyPercent = outline ? Math.round(Math.max(0, Math.min(1, outline.progress)) * 100) : null;
   const focusCopy = stepStatus === "completed"
-    ? "Aula concluída. Continue pela ação principal ao final da página."
+    ? "Conteúdo concluído. Continue pela ação principal ao final da página."
     : "Conclua o conteúdo e as etapas obrigatórias desta aula. Seu progresso é salvo automaticamente.";
 
   return (
@@ -57,7 +58,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {current === "activity" && estimatedMinutes ? <span className="inline-flex items-center gap-1.5 rounded-full bg-info-soft px-3 py-1.5 text-xs font-bold text-info"><Clock3 size={14} /> {estimatedMinutes} min</span> : null}
-          {current === "activity" ? <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${stepStatus === "completed" ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>{stepStatus === "completed" ? <CheckCircle2 size={14} /> : <CircleDot size={14} />}{statusCopy[stepStatus] ?? "Atividade disponível"}</span> : null}
+          {current === "activity" ? <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${stepStatus === "completed" ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>{stepStatus === "completed" ? <CheckCircle2 size={14} /> : <CircleDot size={14} />}{statusCopy[stepStatus] ?? "Conteúdo disponível"}</span> : null}
         </div>
       </div>
 
@@ -70,7 +71,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
             </div>
             <Progress value={journeyPercent} tone="success" className="mt-2.5" />
             <p className="mt-2 text-xs leading-5 text-muted">
-              {outline.completed_required_steps} de {outline.total_required_steps} atividades obrigatórias concluídas.
+              {participantContentCopy.progressSummary.replace("{completed}", String(outline.completed_required_steps)).replace("{total}", String(outline.total_required_steps))}.
             </p>
           </section>
           <section className={`rounded-xl border p-3.5 ${stepStatus === "completed" ? "border-success/20 bg-success-soft/55" : "border-primary/15 bg-primary-soft/45"}`} aria-label="Foco atual">

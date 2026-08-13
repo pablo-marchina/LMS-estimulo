@@ -11,6 +11,7 @@ import { interfaceTemplate, interfaceText, interfaceVisible } from "@/lib/interf
 import { getPublishedInterfaceContent } from "@/lib/interface-content/runtime";
 import type { JourneyPresentation } from "@/lib/journey-runtime/contracts";
 import type { JourneyOutlineActivity, ParticipantJourneyOutline } from "@/lib/journey-runtime/outline-contracts";
+import { participantContentCopy } from "@/lib/journey-runtime/content-language";
 import { getParticipantJourneyOutline } from "@/lib/journey-runtime/outline-runtime";
 import { openJourneyActivityAction } from "./actions";
 
@@ -85,7 +86,7 @@ function Hero({ outline }: { outline: ParticipantJourneyOutline }) {
           {tags.length ? <div className="mt-6 flex flex-wrap gap-2">{tags.map((tag) => <span key={tag} className="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">{tag}</span>)}</div> : null}
         </div>
         <section className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm" aria-label="Seu progresso nesta jornada">
-          <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.12em] text-white/75">Seu progresso</p><p className="mt-1 text-sm text-white/90">{outline.completed_required_steps} de {outline.total_required_steps} atividades</p></div><strong className="text-3xl text-white">{overallPercent}%</strong></div>
+          <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.12em] text-white/75">Seu progresso</p><p className="mt-1 text-sm text-white/90">{outline.completed_required_steps} de {outline.total_required_steps} conteúdos</p></div><strong className="text-3xl text-white">{overallPercent}%</strong></div>
           <Progress value={overallPercent} tone="success" className="mt-4 bg-white/25" />
         </section>
       </div>
@@ -129,8 +130,8 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
           <div className="grid gap-1 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
               <p className="brand-kicker">Seu caminho de aprendizagem</p>
-              <h2 id="trilhas-titulo" className="display-font mt-1 text-2xl text-secondary sm:text-3xl">{interfaceText(interfaceContent, "participant.journey.tracks_title", "Atividades da jornada")}</h2>
-              {interfaceVisible(interfaceContent, "participant.journey.tracks_help") ? <p className="mt-1 text-sm text-muted">{interfaceText(interfaceContent, "participant.journey.tracks_help", "Abra cada etapa para escolher a próxima atividade.")}</p> : null}
+              <h2 id="trilhas-titulo" className="display-font mt-1 text-2xl text-secondary sm:text-3xl">{interfaceText(interfaceContent, "participant.journey.contents_title", participantContentCopy.journeyTitle)}</h2>
+              {interfaceVisible(interfaceContent, "participant.journey.tracks_help") ? <p className="mt-1 text-sm text-muted">{interfaceText(interfaceContent, "participant.journey.contents_help", participantContentCopy.journeyHelp)}</p> : null}
             </div>
             <p className="text-sm font-semibold text-secondary">{outline.modules.length} {outline.modules.length === 1 ? "etapa" : "etapas"}</p>
           </div>
@@ -144,11 +145,11 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
                   <summary className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-4 p-5 marker:content-none hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
                     <span className={`grid size-11 place-items-center rounded-xl ${moduleComplete ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>{moduleComplete ? <CheckCircle2 size={21} aria-hidden="true" /> : <Route size={21} aria-hidden="true" />}</span>
                     <span className="grid gap-1">
-                      <span className="flex flex-wrap items-center gap-2"><strong className="text-lg text-secondary">{module.module_title}</strong>{!required && interfaceVisible(interfaceContent, "participant.journey.optional") ? <StatusPill tone="neutral">{interfaceText(interfaceContent, "participant.journey.optional", "Opcional")}</StatusPill> : null}</span>
+                      <span className="flex flex-wrap items-center gap-2"><strong className="text-lg text-secondary">{module.module_title}</strong>{moduleComplete ? <StatusPill tone="success">{participantContentCopy.completed}</StatusPill> : null}{!required && interfaceVisible(interfaceContent, "participant.journey.optional") ? <StatusPill tone="neutral">{interfaceText(interfaceContent, "participant.journey.optional", "Opcional")}</StatusPill> : null}</span>
                       {module.module_description ? <span className="line-clamp-2 text-sm text-muted">{module.module_description}</span> : null}
-                      <small className="text-sm font-medium text-muted">{interfaceTemplate(interfaceContent, "participant.journey.progress_summary", "{completed} de {total} atividades concluídas", { completed: module.completed_count, total: module.activity_count })}</small>
+                      <small className="text-sm font-medium text-muted">{interfaceTemplate(interfaceContent, "participant.journey.contents_progress_summary", participantContentCopy.progressSummary, { completed: module.completed_count, total: module.activity_count })}</small>
                     </span>
-                    <span className="flex items-center gap-2 text-sm font-semibold text-primary"><span className="hidden sm:inline">{interfaceText(interfaceContent, "participant.journey.view_activities", "Ver atividades")}</span><ChevronDown size={20} className="transition-transform duration-150 group-open:rotate-180" aria-hidden="true" /></span>
+                    <span className="flex items-center gap-2 text-sm font-semibold text-primary"><span className="hidden sm:inline">{interfaceText(interfaceContent, "participant.journey.view_contents", participantContentCopy.viewContents)}</span><ChevronDown size={20} className="transition-transform duration-150 group-open:rotate-180" aria-hidden="true" /></span>
                   </summary>
 
                   <ol className="divide-y divide-border border-t border-border">
@@ -156,12 +157,12 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
                       const completed = activity.step_status === "completed";
                       const canOpen = completed || activity.can_open || activity.can_start;
                       const actionLabel = completed
-                        ? interfaceText(interfaceContent, "participant.journey.action_review", "Rever atividade")
+                        ? interfaceText(interfaceContent, "participant.journey.action_review_content", participantContentCopy.review)
                         : activity.can_start
-                          ? interfaceText(interfaceContent, "participant.journey.action_start", "Começar atividade")
+                          ? interfaceText(interfaceContent, "participant.journey.action_start_content", participantContentCopy.start)
                           : canOpen
-                            ? interfaceText(interfaceContent, "participant.journey.action_continue", "Continuar atividade")
-                            : "Indisponível";
+                            ? interfaceText(interfaceContent, "participant.journey.action_continue_content", participantContentCopy.continue)
+                            : interfaceText(interfaceContent, "participant.journey.action_locked", participantContentCopy.locked);
                       return (
                         <li key={activity.step_instance_id} className="grid gap-4 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center">
                           <span className={`grid size-9 place-items-center rounded-full text-sm font-black ${completed ? "bg-success-soft text-success" : "bg-surface-muted text-secondary"}`}>{completed ? <CheckCircle2 size={18} aria-hidden="true" /> : activityIndex + 1}</span>
@@ -191,7 +192,7 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
           </div>
         </section>
       ) : (
-        <EmptyState icon={<Route size={24} />} title={interfaceText(interfaceContent, "participant.journey.empty_title", "Atividades em preparação")} tone="info">{interfaceText(interfaceContent, "participant.journey.empty_body", "A equipe ainda está organizando os conteúdos desta jornada.")}</EmptyState>
+        <EmptyState icon={<Route size={24} />} title={interfaceText(interfaceContent, "participant.journey.empty_title", "Conteúdos em preparação")} tone="info">{interfaceText(interfaceContent, "participant.journey.empty_body", "A equipe ainda está organizando os conteúdos desta jornada.")}</EmptyState>
       )}
     </div>
   );

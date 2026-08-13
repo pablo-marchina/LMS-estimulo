@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { saveAdminLesson, saveAdminTrack } from "@/lib/admin/product-management";
+import { patchAdminLesson, saveAdminLesson, saveAdminTrack } from "@/lib/admin/product-management";
 import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
@@ -140,11 +140,15 @@ export async function saveAulaAction(formData: FormData) {
   const pathTemplateId = text(formData, "path_template_id");
   const activityVersionId = nullable(formData, "activity_version_id");
   const stepId = nullable(formData, "step_id");
+  const isEdit = Boolean(stepId);
   const title = text(formData, "title");
-  const position = positiveInteger(text(formData, "position"));
+  const rawPosition = text(formData, "position");
+  const rawEstimatedMinutes = text(formData, "estimated_minutes");
+  const position = positiveInteger(rawPosition);
   const isClosing = checked(formData, "is_closing");
   const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
   const questions = quizQuestionsFromForm(formData);
+  const assessmentWasSubmitted = formData.has("quiz_question_count");
   const contentSource = text(formData, "content_source") || (activityVersionId ? "current" : "none");
   const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
   let previousConfiguration: Record<string, unknown>;
@@ -160,7 +164,8 @@ export async function saveAulaAction(formData: FormData) {
   const thumbnailAlt = text(formData, "continue_thumbnail_alt");
   const { content_sections: _oldSections, prompts: _oldPrompts, practice_checklist: _oldChecklist, ...preservedConfiguration } = previousConfiguration;
   const configuration = { ...preservedConfiguration, ...(checklist.length ? { practice_checklist: checklist } : {}) };
-  if (!title || !pathTemplateId || (isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
+
+  if (!pathTemplateId || (!isEdit && !title) || (!isEdit && isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
 
   let liveUpdate = false;
   try {
@@ -168,7 +173,7 @@ export async function saveAulaAction(formData: FormData) {
     let normalizedContentSource = contentSource;
     if (contentSource === "new") { libraryItemVersionId = await createInlineLibraryContent({ formData, actor, organizationId, journeyVersionId }); normalizedContentSource = "new"; }
     if (contentSource === "library" && !libraryItemVersionId) throw new Error("LIBRARY_CONTENT_REQUIRED");
-    const stepCode = text(formData, "step_code") || `passo_${position}_${randomUUID().slice(0, 6)}`;
+    const stepCode = text(formData, "step_code") || (!isEdit ? `passo_${position}_${randomUUID().slice(0, 6)}` : "");
     const thumbnailFileObjectId = thumbnailFile
       ? await uploadAdministrativeImage({ actorUserAccountId: actor, organizationId, file: thumbnailFile, source: "lesson_thumbnail", role: "continue_activity" })
       : currentThumbnailFileObjectId;
@@ -178,30 +183,39 @@ export async function saveAulaAction(formData: FormData) {
       continue_thumbnail_file_object_id: thumbnailFileObjectId,
       continue_thumbnail_alt: thumbnailAlt || previousMetadata.continue_thumbnail_alt || title,
     };
-    const result = await saveAdminLesson({
-      actorUserAccountId: actor,
-      organizationId,
-      payload: {
-        path_template_id: pathTemplateId,
-        step_id: stepId,
-        step_code: deriveCode(stepCode, `passo_${position}`),
-        activity_definition_code: text(formData, "activity_definition_code") || deriveCode(`${title}_${randomUUID().slice(0, 8)}`, "aula"),
-        title,
-        description: nullable(formData, "description"),
-        activity_type: isClosing ? "practice" : "content",
-        estimated_minutes: positiveInteger(text(formData, "estimated_minutes"), 10),
-        configuration,
-        position,
-        is_required: checked(formData, "is_required"),
-        metadata,
-        content_source: normalizedContentSource,
-        library_item_version_id: libraryItemVersionId || null,
-        content_required: checked(formData, "content_required"),
-        assessment: questions.length ? { questions, passing_score: positiveInteger(text(formData, "quiz_passing_score"), 70), max_attempts: positiveInteger(text(formData, "quiz_max_attempts"), 3) } : null,
-        practice: isClosing ? { submission_mode: text(formData, "submission_mode") || "file", allowed_evidence_types: ["file", "text"], review_required: checked(formData, "review_required") } : null,
-      },
-      idempotencyKey: randomUUID(),
-    });
+
+    const payload: Record<string, unknown> = {
+      path_template_id: pathTemplateId,
+      step_id: stepId,
+      description: nullable(formData, "description"),
+      activity_type: isClosing ? "practice" : "content",
+      configuration,
+      is_required: checked(formData, "is_required"),
+      metadata,
+      content_source: normalizedContentSource,
+      library_item_version_id: libraryItemVersionId || null,
+      content_required: checked(formData, "content_required"),
+      practice: isClosing ? { submission_mode: text(formData, "submission_mode") || "file", allowed_evidence_types: ["file", "text"], review_required: checked(formData, "review_required") } : null,
+    };
+
+    if (title) payload.title = title;
+    if (rawEstimatedMinutes) payload.estimated_minutes = positiveInteger(rawEstimatedMinutes, 10);
+    if (rawPosition) payload.position = position;
+    if (stepCode) payload.step_code = deriveCode(stepCode, `passo_${position}`);
+
+    const activityDefinitionCode = text(formData, "activity_definition_code");
+    if (activityDefinitionCode) payload.activity_definition_code = activityDefinitionCode;
+    else if (!isEdit) payload.activity_definition_code = deriveCode(`${title}_${randomUUID().slice(0, 8)}`, "aula");
+
+    if (assessmentWasSubmitted || !isEdit) {
+      payload.assessment = questions.length
+        ? { questions, passing_score: positiveInteger(text(formData, "quiz_passing_score"), 70), max_attempts: positiveInteger(text(formData, "quiz_max_attempts"), 3) }
+        : null;
+    }
+
+    const result = isEdit
+      ? await patchAdminLesson({ actorUserAccountId: actor, organizationId, payload, idempotencyKey: randomUUID() })
+      : await saveAdminLesson({ actorUserAccountId: actor, organizationId, payload, idempotencyKey: randomUUID() });
     liveUpdate = result.live_update;
   } catch (error) {
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
