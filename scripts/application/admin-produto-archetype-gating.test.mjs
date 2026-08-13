@@ -20,8 +20,11 @@ test("product editor uses structured track and lesson forms", () => {
 test("product actions forward typed payloads through the administrative runtime", () => {
   assert.match(actions, /saveAdminTrack\(/u);
   assert.match(actions, /saveAdminLesson\(/u);
-  assert.match(actions, /payload:\s*\{/u);
-  assert.match(actions, /assessment:\s*questions\.length/u);
+  assert.match(actions, /patchAdminLesson\(/u);
+  assert.match(actions, /payload:\s*Record<string, unknown>\s*=\s*\{/u);
+  assert.match(actions, /const assessmentWasSubmitted = formData\.has\("quiz_question_count"\)/u);
+  assert.match(actions, /if \(assessmentWasSubmitted \|\| !isEdit\)/u);
+  assert.match(actions, /payload\.assessment = questions\.length/u);
   assert.match(actions, /practice:\s*isClosing/u);
   assert.doesNotMatch(actions, /createPrivilegedClient|SUPABASE_SERVICE_ROLE_KEY/u);
 });
@@ -29,5 +32,6 @@ test("product actions forward typed payloads through the administrative runtime"
 test("administrative product mutations use the authenticated RPC boundary", () => {
   assert.match(runtime, /save_admin_track/u);
   assert.match(runtime, /save_admin_lesson/u);
+  assert.match(runtime, /patch_admin_lesson/u);
   assert.match(runtime, /invokeServerRpc/u);
 });
