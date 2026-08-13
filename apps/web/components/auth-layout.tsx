@@ -21,16 +21,15 @@ export function AuthLayout({
       <section className="relative hidden min-h-screen flex-col justify-between overflow-hidden p-10 text-white lg:flex xl:p-16" aria-label="Sobre a plataforma">
         <div className="brand-logo-capsule"><EstimuloBrand href="/" /></div>
         <div className="max-w-xl animate-in">
-          <p className="brand-kicker">Desenvolvimento que vira ação</p>
-          <h2 className="display-font mt-5 text-5xl leading-[.98] xl:text-6xl">Mais clareza, repertório e movimento para o seu negócio.</h2>
-          <p className="mt-6 max-w-lg text-lg leading-8 text-white/78">Jornadas práticas, diagnósticos e conquistas em uma experiência construída com a identidade viva da Estímulo.</p>
+          <h2 className="display-font text-5xl leading-[.98] xl:text-6xl">Seu negócio evolui. A forma de aprender também.</h2>
+          <p className="mt-6 max-w-lg text-lg leading-8 text-white/78">Uma experiência gratuita que reúne conteúdos, ferramentas e recomendações personalizadas para ajudar você a evoluir como empreendedor.</p>
           <div className="mt-10 grid gap-3 sm:grid-cols-3">
-            <BrandPromise icon={<Route size={18} />} title="Seu caminho" text="Próximos passos claros" />
-            <BrandPromise icon={<Sparkles size={18} />} title="Aplicação" text="Conteúdo para usar agora" />
-            <BrandPromise icon={<Award size={18} />} title="Reconhecimento" text="Selos e certificados" />
+            <BrandPromise icon={<Sparkles size={18} />} title="Descubra" text="Entenda por onde começar e receba recomendações para o seu momento." />
+            <BrandPromise icon={<Route size={18} />} title="Desenvolva" text="Conteúdos práticos, ferramentas e jornadas com parceiros como a OpenAI para apoiar seu crescimento." />
+            <BrandPromise icon={<Award size={18} />} title="Evolua" text="Sua evolução abre portas para certificados, mentorias e novas oportunidades." />
           </div>
         </div>
-        <p className="text-sm text-white/55">Uma plataforma Estímulo para empreendedores que seguem construindo.</p>
+        <div aria-hidden="true" />
       </section>
 
       <section className="grid min-h-[calc(100vh-3rem)] place-items-center lg:min-h-screen lg:bg-white/8 lg:p-8">
