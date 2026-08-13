@@ -13,6 +13,7 @@ const lessonBuilder = await readFile("apps/web/app/admin/produto/trilha-aula-bui
 const deleteJourneyAction = await readFile("apps/web/app/admin/produto/delete-journey-action.ts", "utf8");
 const unpublishJourneyAction = await readFile("apps/web/app/admin/produto/unpublish-action.ts", "utf8");
 const diagnosticPage = await readFile("apps/web/app/admin/diagnostico/page.tsx", "utf8");
+const principalDiagnosticSection = await readFile("apps/web/app/admin/diagnostico/principal-section.tsx", "utf8");
 const diagnosticBuilder = await readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8");
 const diagnosticActions = await readFile("apps/web/app/admin/diagnostico/actions.ts", "utf8");
 const optionalProgramMigration = await readFile("supabase/migrations/20260730183000_optional_journey_program.sql", "utf8");
@@ -70,7 +71,8 @@ test("lesson editor keeps the main content visible without supplemental text or 
 });
 
 test("diagnostics support dynamic profiles and dimensions with mandatory publication mapping", () => {
-  assert.match(diagnosticPage, /DiagnosticBuilder/u);
+  assert.match(diagnosticPage, /PrincipalDiagnosticSection/u);
+  assert.match(principalDiagnosticSection, /DiagnosticBuilder/u);
   assert.doesNotMatch(diagnosticPage, /const ARCHETYPES/u);
   assert.doesNotMatch(diagnosticPage, /const DIMENSIONS/u);
   assert.match(diagnosticBuilder, /Adicionar perfil/u);
