@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { saveAdminBadgeCatalog } from "@/lib/admin/badge-management";
 import { getAdminProductWorkspace, saveAdminProductResource } from "@/lib/admin/product-management";
 import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
@@ -45,11 +46,20 @@ export async function saveGamificationResourceAction(formData: FormData) {
     payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `pontos_${randomUUID().slice(0,8)}`), name, amount: Number(text(formData, "amount")), eligibility_rule_version_id: text(formData, "eligibility_rule_version_id"), recurrence_policy: recurrencePolicy(formData), status: text(formData, "status") || "draft" };
   } else if (resourceType === "badge") {
     const title = text(formData, "title"); const name = text(formData, "name") || title; const existing = workspace?.badges.find((item) => item.definition_id === definitionId);
-    payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `selo_${randomUUID().slice(0,8)}`), name, title, description: text(formData, "description"), criteria_rule_version_id: text(formData, "criteria_rule_version_id"), status: text(formData, "status") || "draft" };
+    payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `selo_${randomUUID().slice(0,8)}`), name, title, description: text(formData, "description"), criteria_rule_version_id: nullable(formData, "criteria_rule_version_id"), status: text(formData, "status") || "draft" };
   } else if (resourceType === "certificate") {
     const name = text(formData, "name"); const existing = workspace?.certificates.find((item) => item.definition_id === definitionId); requestedCertificateStatus = text(formData, "status") || "draft";
     payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `certificado_${randomUUID().slice(0,8)}`), name, journey_version_id: text(formData, "journey_version_id"), requirements_rule_version_id: text(formData, "requirements_rule_version_id"), validity_policy: validityPolicy(formData), status: "draft" };
   } else redirect("/admin/gamificacao?erro=tipo_invalido");
+
+  if (resourceType === "badge") {
+    try {
+      await saveAdminBadgeCatalog({ actorUserAccountId: auth.identity.user_account_id, organizationId, payload, idempotencyKey: randomUUID() });
+    } catch {
+      redirect("/admin/gamificacao?tipo=selos&erro=falha_salvar");
+    }
+    redirect("/admin/gamificacao?tipo=selos&sucesso=salvo");
+  }
 
   let result: Awaited<ReturnType<typeof saveAdminProductResource>>;
   try {
