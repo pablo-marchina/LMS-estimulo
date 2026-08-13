@@ -1,0 +1,1 @@
+Checkpoint for CI-triggered structural closure validation.
