@@ -1,0 +1,1 @@
+Structural closure v2 ready for pull-request CI validation.
