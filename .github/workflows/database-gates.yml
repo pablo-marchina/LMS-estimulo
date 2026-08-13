@@ -90,21 +90,7 @@ jobs:
             cat .artifacts/database-gates.log
             rm -f .artifacts/database-gates.log
           else
-            {
-              echo
-              echo "=== synthetic replay point ledger diagnostic ==="
-              psql "$DATABASE_URL" -X -P pager=off -c "select to_jsonb(pl) from engagement.point_ledger pl;" || true
-              echo
-              echo "=== point rule ownership diagnostic ==="
-              psql "$DATABASE_URL" -X -P pager=off -c "select jsonb_build_object('ledger_id',pl.id,'rule_version',to_jsonb(prv),'rule_definition',to_jsonb(prd),'owner_organization',to_jsonb(org)) from engagement.point_ledger pl join engagement.point_rule_versions prv on prv.id=pl.point_rule_version_id join engagement.point_rule_definitions prd on prd.id=prv.point_rule_definition_id left join iam.organizations org on org.id=prd.owner_organization_id;" || true
-              echo
-              echo "=== source event diagnostic ==="
-              psql "$DATABASE_URL" -X -P pager=off -c "select to_jsonb(evt) from eventing.events evt where evt.event_id in (select source_event_id from engagement.point_ledger where source_event_id is not null);" || true
-              echo
-              echo "=== journey tenant diagnostic ==="
-              psql "$DATABASE_URL" -X -P pager=off -c "select jsonb_build_object('journey_instance_id',ji.id,'enrollment',to_jsonb(enr),'journey_version',to_jsonb(jv),'journey_definition',to_jsonb(jd),'owner_organization',to_jsonb(org)) from orchestration.journey_instances ji join orchestration.enrollments enr on enr.id=ji.enrollment_id join catalog.journey_versions jv on jv.id=enr.journey_version_id join catalog.journey_definitions jd on jd.id=jv.journey_definition_id left join iam.organizations org on org.id=jd.owner_organization_id where ji.id in (select distinct journey_instance_id from engagement.point_ledger where journey_instance_id is not null);" || true
-            } >> .artifacts/database-gates.log 2>&1
-            tail -n 420 .artifacts/database-gates.log >> "$GITHUB_STEP_SUMMARY"
+            tail -n 260 .artifacts/database-gates.log >> "$GITHUB_STEP_SUMMARY"
           fi
           exit 0
 
