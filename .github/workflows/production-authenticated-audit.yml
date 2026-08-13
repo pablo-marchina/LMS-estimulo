@@ -1,0 +1,68 @@
+name: Production authenticated browser audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/remaining-functional-audit-20260812
+    paths:
+      - .github/workflows/production-authenticated-audit.yml
+      - scripts/e2e/production-authenticated-audit.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-authenticated-browser-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Authenticated production audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      E2E_PRODUCTION_URL: ${{ secrets.E2E_PRODUCTION_URL }}
+      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
+      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Playwright without modifying the lockfile
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify required secrets are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in E2E_PRODUCTION_URL E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required repository secret: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Run authenticated production browser audit
+        run: node scripts/e2e/production-authenticated-audit.mjs
+
+      - name: Upload browser audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-authenticated-audit
+          path: artifacts/e2e-production
+          if-no-files-found: warn
+          retention-days: 7
