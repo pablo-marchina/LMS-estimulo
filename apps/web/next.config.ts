@@ -46,6 +46,15 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: "/privacidade",
+        destination: "/documentos/privacidade",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
