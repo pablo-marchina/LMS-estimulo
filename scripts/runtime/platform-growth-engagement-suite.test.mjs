@@ -182,7 +182,8 @@ test("deliveries support library content, activities and safe AI review modes", 
 
 test("optional diagnostics remain inside diagnostics and never update archetype or journey eligibility", () => {
   assert.match(diagnosticsAdmin, /Opcionais no perfil/u);
-  assert.match(diagnosticsAdmin, /OptionalDiagnosticForm/u);
+  assert.match(diagnosticsAdmin, /OptionalDiagnosticSection/u);
+  assert.match(diagnosticsAdmin, /type === "principal" \? <PrincipalDiagnosticSection[\s\S]*: <OptionalDiagnosticSection/u);
   assert.match(optionalForm, /resource_type" value="optional_diagnostic"/u);
   assert.match(optionalParticipant, /startOptionalDiagnosticAction/u);
   assert.match(optionalActions, /optional_start/u);
