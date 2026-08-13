@@ -159,7 +159,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
         </ol>
       ) : null}
 
-      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Concluir jornada e ver resultado <ArrowRight size={15} /></Link>}</div> : null}
+      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Ver resultado <ArrowRight size={15} /></Link>}</div> : null}
     </aside>
   );
 }
