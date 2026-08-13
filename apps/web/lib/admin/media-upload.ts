@@ -2,8 +2,22 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { libraryRuntime } from "@/lib/library/runtime";
-import { validateAnnouncementBanner } from "@/lib/storage/announcement-banners";
 import { libraryContentBucket, removeLibraryContent, uploadLibraryContent } from "@/lib/storage/library-content";
+
+const ADMIN_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
+const ADMIN_IMAGE_TYPES = new Map([
+  ["image/png", ["png"]],
+  ["image/jpeg", ["jpg", "jpeg"]],
+  ["image/webp", ["webp"]],
+]);
+
+function validateAdministrativeImage(file: File) {
+  if (!file.size || file.size > ADMIN_IMAGE_MAX_BYTES) throw new Error("ADMIN_IMAGE_SIZE_INVALID");
+  const extensions = ADMIN_IMAGE_TYPES.get(file.type);
+  if (!extensions) throw new Error("ADMIN_IMAGE_CONTENT_TYPE_NOT_ALLOWED");
+  const extension = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (!extensions.includes(extension)) throw new Error("ADMIN_IMAGE_EXTENSION_NOT_ALLOWED");
+}
 
 export async function uploadAdministrativeImage(input: {
   actorUserAccountId: string;
@@ -12,7 +26,7 @@ export async function uploadAdministrativeImage(input: {
   source: string;
   role: string;
 }) {
-  validateAnnouncementBanner(input.file);
+  validateAdministrativeImage(input.file);
   const bucket = libraryContentBucket();
   const key = randomUUID();
   let intentId: string | null = null;
