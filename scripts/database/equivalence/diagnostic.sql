@@ -93,13 +93,7 @@ select jsonb_build_object(
       select
         schemaname,
         count(*) as item_count,
-        encode(
-          digest(
-            jsonb_agg(item order by relation_name, position)::text,
-            'sha256'
-          ),
-          'hex'
-        ) as fingerprint
+        encode(digest(jsonb_agg(item order by relation_name, position)::text, 'sha256'), 'hex') as fingerprint
       from column_rows
       group by schemaname
     ) grouped
@@ -119,13 +113,7 @@ select jsonb_build_object(
         schemaname,
         relation_name,
         count(*) as item_count,
-        encode(
-          digest(
-            jsonb_agg(item order by position)::text,
-            'sha256'
-          ),
-          'hex'
-        ) as fingerprint
+        encode(digest(jsonb_agg(item order by position)::text, 'sha256'), 'hex') as fingerprint
       from column_rows
       group by schemaname, relation_name
     ) grouped
@@ -143,13 +131,7 @@ select jsonb_build_object(
       select
         schemaname,
         count(*) as item_count,
-        encode(
-          digest(
-            jsonb_agg(item order by item->>'relation', item->>'name')::text,
-            'sha256'
-          ),
-          'hex'
-        ) as fingerprint
+        encode(digest(jsonb_agg(item order by item->>'relation', item->>'name')::text, 'sha256'), 'hex') as fingerprint
       from policy_rows
       group by schemaname
     ) grouped
@@ -175,5 +157,18 @@ select jsonb_build_object(
       from routine_rows
       group by schemaname
     ) grouped
+  ),
+  'audited_routine_sources', (
+    select jsonb_agg(
+      jsonb_build_object(
+        'schema', schemaname,
+        'routine', routine_key,
+        'source_sha256', encode(digest(source, 'sha256'), 'hex')
+      )
+      order by schemaname, routine_key
+    )
+    from routine_rows
+    where schemaname = 'iam'
+       or (schemaname = 'public' and routine_key like 'e14\_%' escape '\')
   )
 ) as diagnostic;
