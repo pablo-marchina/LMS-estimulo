@@ -66,7 +66,7 @@ export async function ParticipantLibraryContentPage({ params, basePath }: { para
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") redirect("/entrar");
   const adminOrganization = administrativeOrganization(auth.identity);
-  const previewMode = !auth.identity.entrepreneur_id && Boolean(adminOrganization);
+  const previewMode = basePath.startsWith("/capacitacao/") && Boolean(adminOrganization);
   if (!auth.identity.entrepreneur_id && !adminOrganization) redirect("/cadastro/concluir");
   const { slug } = await params;
   const content = previewMode && adminOrganization
