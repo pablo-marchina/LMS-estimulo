@@ -27,18 +27,26 @@ test('public signup freezes governed legal document ids instead of client suppli
   assert.match(provisioning, /stage_public_signup_legal_snapshot/u);
 });
 
-test('provisioning persists the staged signup snapshot through legal_accept even after retirement', async () => {
-  const migration = await read('supabase/migrations/20260813151000_freeze_signup_legal_snapshot.sql');
+test('provisioning persists the staged legal snapshot without widening generic legal_accept', async () => {
+  const [migration, participantExtension] = await Promise.all([
+    read('supabase/migrations/20260813151000_freeze_signup_legal_snapshot.sql'),
+    read('supabase/migrations/20260730211900_perform_participant_extension.sql'),
+  ]);
 
   assert.match(migration, /d\.status in \('published',\s*'retired'\)/u);
   assert.match(migration, /d\.published_at is not null/u);
   assert.match(migration, /public_signup_legal_snapshots/u);
   assert.match(migration, /raw_user_meta_data/u);
   assert.match(migration, /email_normalized/u);
-  assert.match(migration, /perform public\.perform_participant_extension\(/u);
-  assert.match(migration, /'legal_accept'/u);
+  assert.match(migration, /insert into governance\.legal_acceptances\(/u);
+  assert.match(migration, /on conflict\(legal_document_version_id,user_account_id\) do nothing/u);
+  assert.match(migration, /'participant_web'/u);
+  assert.match(migration, /'signup_snapshot'/u);
   assert.match(migration, /v_signup_snapshot\.terms_document_version_id/u);
   assert.match(migration, /v_signup_snapshot\.privacy_document_version_id/u);
+  assert.doesNotMatch(migration, /pg_get_functiondef/u);
+  assert.doesNotMatch(migration, /perform public\.perform_participant_extension\(/u);
+  assert.match(participantExtension, /when 'legal_accept' then[\s\S]*d\.status='published'/u);
 });
 
 test('public terms page renders the governed legal document body', async () => {
