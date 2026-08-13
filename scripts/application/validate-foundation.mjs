@@ -47,7 +47,7 @@ const appFiles = await Promise.all(
 const appText = appFiles.join('\n');
 
 const existingRpcs = [
-  'e14_publish_vertical',
+  'publish_admin_journey_version',
   'e14_create_enrollment',
   'e14_start_journey',
   'e14_start_diagnostic',
