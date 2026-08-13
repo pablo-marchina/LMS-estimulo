@@ -1,0 +1,1 @@
+Validation of structural closure v2 is enforced by repository CI.
