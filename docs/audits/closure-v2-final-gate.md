@@ -1,0 +1,1 @@
+Final structural closure branch is validated by CI and database gates before merge.
