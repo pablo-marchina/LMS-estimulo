@@ -18,22 +18,26 @@ test('public signup freezes governed legal document ids instead of client suppli
   assert.match(page, /privacy_document_version_id/u);
   assert.doesNotMatch(page, /name="terms_version"/u);
   assert.doesNotMatch(page, /name="privacy_version"/u);
-  assert.match(action, /signup_legal_snapshot/u);
-  assert.match(action, /app_metadata/u);
+  assert.match(action, /stagePublicSignupLegalSnapshot/u);
+  assert.match(action, /signup_legal_snapshot_token/u);
+  assert.doesNotMatch(action, /updateUserById/u);
+  assert.doesNotMatch(action, /deleteUser/u);
   assert.doesNotMatch(action, /termsDocumentVersionId:\s*formData\.get\("terms_version"\)/u);
   assert.match(provisioning, /get_signup_legal_documents/u);
+  assert.match(provisioning, /stage_public_signup_legal_snapshot/u);
 });
 
-test('provisioning persists the sealed signup snapshot through legal_accept even after retirement', async () => {
+test('provisioning persists the staged signup snapshot through legal_accept even after retirement', async () => {
   const migration = await read('supabase/migrations/20260813151000_freeze_signup_legal_snapshot.sql');
 
   assert.match(migration, /d\.status in \('published','retired'\) and d\.published_at is not null/u);
-  assert.match(migration, /raw_app_meta_data/u);
-  assert.match(migration, /'signup_legal_snapshot'/u);
+  assert.match(migration, /public_signup_legal_snapshots/u);
+  assert.match(migration, /raw_user_meta_data/u);
+  assert.match(migration, /email_normalized/u);
   assert.match(migration, /perform public\.perform_participant_extension\(/u);
   assert.match(migration, /'legal_accept'/u);
-  assert.match(migration, /'signup-legal:' \|\| v_terms_document_id::text/u);
-  assert.match(migration, /'signup-legal:' \|\| v_privacy_document_id::text/u);
+  assert.match(migration, /v_signup_snapshot\.terms_document_version_id/u);
+  assert.match(migration, /v_signup_snapshot\.privacy_document_version_id/u);
 });
 
 test('public terms page renders the governed legal document body', async () => {
