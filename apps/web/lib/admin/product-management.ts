@@ -182,6 +182,15 @@ export function saveAdminLesson(input: { actorUserAccountId: string; organizatio
   });
 }
 
+export function patchAdminLesson(input: { actorUserAccountId: string; organizationId: string; payload: Record<string, unknown>; idempotencyKey: string }) {
+  return invokeServerRpc<{ step_id: string; activity_version_id: string; status: string; live_update: boolean; replayed: boolean }>("patch_admin_lesson", {
+    p_actor_user_account_id: input.actorUserAccountId,
+    p_organization_id: input.organizationId,
+    p_payload: input.payload,
+    p_idempotency_key: input.idempotencyKey,
+  });
+}
+
 export async function configureAdminPathTemplate(input: {
   actorUserAccountId: string;
   organizationId: string;
