@@ -30,7 +30,8 @@ test("activity navigation follows the ordered journey outline", () => {
   assert.match(navigation, /previousActivity/u);
   assert.match(navigation, /nextActivity/u);
   assert.match(navigation, /openJourneyActivityAction/u);
-  assert.match(navigation, /Ver resultado/u);
+  assert.match(navigation, /\/empreendedor\/resultado\?journey=/u);
+  assert.match(navigation, /ver resultado/iu);
 });
 
 test("participant activity player is compact and videos have rounded corners", () => {

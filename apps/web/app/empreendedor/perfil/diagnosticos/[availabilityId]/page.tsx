@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ClipboardList } from "lucide-react";
-import { completeOptionalDiagnosticAction, startOptionalDiagnosticAction } from "@/app/empreendedor/perfil/diagnosticos/[availabilityId]/actions";
+import { startOptionalDiagnosticAction } from "@/app/empreendedor/perfil/diagnosticos/[availabilityId]/actions";
+import { OptionalDiagnosticForm, type OptionalDiagnosticSavedResponse } from "@/components/optional-diagnostic-form";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { StatusPanel } from "@/components/status-panel";
 import { Card } from "@/components/ui/card";
-import { Input, Label } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatusPill } from "@/components/ui/status-pill";
-import { requireParticipantContext } from "@/lib/auth/participant-context";
+import { isParticipantInterfacePreviewRequest, requireParticipantContext } from "@/lib/auth/participant-context";
 import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
+import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 export const dynamic = "force-dynamic";
 
@@ -26,28 +26,45 @@ export default async function OptionalDiagnosticPage({ params, searchParams }: {
   if (!diagnostic) notFound();
   const availability = diagnostic.availability as JsonRecord;
   const sessions = records(diagnostic.sessions);
-  const session = sessions.find((item) => text(item.id) === query.sessao) ?? sessions.find((item) => item.status === "in_progress");
+  const session = sessions.find((item) => text(item.id) === query.sessao && item.status === "in_progress") ?? sessions.find((item) => item.status === "in_progress");
   const completed = sessions.find((item) => item.status === "completed");
   const questions = records(diagnostic.questions);
+  const questionData = questions.map((question) => ({
+    id: text(question.id),
+    prompt: text(question.prompt),
+    helpText: text(question.help_text),
+    required: question.is_required !== false,
+    options: records(question.options).map((option) => ({ id: text(option.id), label: text(option.label) })),
+  }));
+  const preview = await isParticipantInterfacePreviewRequest();
+  const sessionId = session ? text(session.id) : "";
+  let savedResponses: OptionalDiagnosticSavedResponse[] = [];
+  let responsesUnavailable = false;
+  if (sessionId) {
+    try {
+      savedResponses = await invokeServerRpc<OptionalDiagnosticSavedResponse[]>("get_optional_diagnostic_responses", {
+        p_actor_user_account_id: auth.identity.user_account_id,
+        p_session_id: sessionId,
+      });
+    } catch {
+      responsesUnavailable = true;
+    }
+  }
 
   return <div className="mx-auto grid max-w-4xl gap-7 px-5 py-8 lg:px-9 lg:py-10">
     <Link href="/empreendedor/perfil" className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft size={16} />Voltar ao perfil</Link>
     <PageHeader eyebrow="Diagnóstico opcional" title={text(availability.display_title)} description={text(availability.display_description)} />
     <StatusPanel title="Sem impacto no seu perfil principal" tone="info">Este diagnóstico não altera seu arquétipo nem o acesso às jornadas.</StatusPanel>
+    {preview ? <StatusPanel title="Pré-visualização somente leitura" tone="info">As respostas não podem ser alteradas enquanto você visualiza a experiência de um participante.</StatusPanel> : null}
+    {responsesUnavailable ? <StatusPanel title="Respostas salvas temporariamente indisponíveis" tone="warning">Você pode continuar, mas confirme suas respostas antes de concluir o diagnóstico.</StatusPanel> : null}
     {query.erro ? <StatusPanel title="Não foi possível continuar" tone="warning">Código: {query.erro}</StatusPanel> : null}
 
-    {completed && !session ? <Card><div className="flex items-start gap-3"><ClipboardList className="mt-0.5 text-primary" /><div><h2 className="font-black text-secondary">Resultado mais recente</h2><p className="text-sm text-muted">Tentativa {number(completed.attempt_number)} concluída.</p></div></div>{availability.show_result !== false ? <Result result={completed.result_payload} /> : <p className="mt-4 text-sm text-muted">O resultado não está configurado para exibição.</p>}<form action={startOptionalDiagnosticAction} className="mt-5"><input type="hidden" name="availability_id" value={availabilityId} /><PendingSubmitButton pendingLabel="Preparando…">Refazer diagnóstico</PendingSubmitButton></form></Card> : null}
+    {completed && !session ? <Card><div className="flex items-start gap-3"><ClipboardList className="mt-0.5 text-primary" /><div><h2 className="font-black text-secondary">Resultado mais recente</h2><p className="text-sm text-muted">Tentativa {number(completed.attempt_number)} concluída.</p></div></div>{availability.show_result !== false ? <Result result={completed.result_payload} /> : <p className="mt-4 text-sm text-muted">O resultado não está configurado para exibição.</p>}{!preview ? <form action={startOptionalDiagnosticAction} className="mt-5"><input type="hidden" name="availability_id" value={availabilityId} /><PendingSubmitButton pendingLabel="Preparando…">Refazer diagnóstico</PendingSubmitButton></form> : null}</Card> : null}
 
-    {!session && !completed ? <Card className="grid gap-4"><div><h2 className="font-black text-secondary">Pronto para começar?</h2><p className="text-sm text-muted">O diagnóstico possui {questions.length} pergunta(s). Você poderá continuar a tentativa em andamento.</p></div><form action={startOptionalDiagnosticAction}><input type="hidden" name="availability_id" value={availabilityId} /><PendingSubmitButton pendingLabel="Iniciando…">Iniciar diagnóstico</PendingSubmitButton></form></Card> : null}
+    {!session && !completed ? <Card className="grid gap-4"><div><h2 className="font-black text-secondary">Pronto para começar?</h2><p className="text-sm text-muted">O diagnóstico possui {questions.length} pergunta(s). Você poderá continuar a tentativa em andamento sem perder respostas já salvas.</p></div>{!preview ? <form action={startOptionalDiagnosticAction}><input type="hidden" name="availability_id" value={availabilityId} /><PendingSubmitButton pendingLabel="Iniciando…">Iniciar diagnóstico</PendingSubmitButton></form> : null}</Card> : null}
 
-    {session ? <form action={completeOptionalDiagnosticAction} className="grid gap-5"><input type="hidden" name="availability_id" value={availabilityId} /><input type="hidden" name="session_id" value={text(session.id)} /><input type="hidden" name="question_ids" value={questions.map((question) => text(question.id)).join(",")} />{questions.map((question, index) => <Question key={text(question.id)} question={question} index={index} />)}<PendingSubmitButton pendingLabel="Calculando resultado…" className="w-fit">Concluir diagnóstico</PendingSubmitButton></form> : null}
+    {session ? <OptionalDiagnosticForm availabilityId={availabilityId} sessionId={sessionId} questions={questionData} savedResponses={savedResponses} readOnly={preview} /> : null}
   </div>;
-}
-
-function Question({ question, index }: { question: JsonRecord; index: number }) {
-  const options = records(question.options);
-  const required = question.is_required !== false;
-  return <Card><div className="flex items-start gap-3"><StatusPill tone="neutral">{index + 1}</StatusPill><div className="flex-1"><h2 className="font-bold text-ink">{text(question.prompt)}</h2>{text(question.help_text) ? <p className="mt-1 text-sm text-muted">{text(question.help_text)}</p> : null}<div className="mt-4 grid gap-2">{options.length ? options.map((option) => <label key={text(option.id)} className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 transition hover:border-primary/40"><input type="radio" name={`question_${text(question.id)}`} value={text(option.id)} required={required} className="mt-0.5 size-4 accent-primary" /><span className="text-sm text-ink">{text(option.label)}</span></label>) : <Label>Resposta<Input name={`text_${text(question.id)}`} required={required} /></Label>}</div></div></div></Card>;
 }
 
 function Result({ result }: { result: unknown }) {

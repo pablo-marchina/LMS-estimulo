@@ -218,7 +218,7 @@ export async function publishVerticalAction(formData: FormData) {
   const journeyVersionId = uuid.parse(selection.slice(0, separator));
   const contentHash = z.string().min(16).parse(selection.slice(separator + 1));
   const organizationId = uuid.parse(formData.get("organization_id"));
-  await journeyRuntime.publishVertical(
+  await journeyRuntime.publishAdminJourneyVersion(
     actor,
     organizationId,
     journeyVersionId,

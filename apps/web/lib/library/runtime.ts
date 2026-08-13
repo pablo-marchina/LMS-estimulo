@@ -54,7 +54,7 @@ export const libraryRuntime = {
     contentKind: "article" | "external_link" | "file";
     contentFormat: string;
     level: string;
-    estimatedMinutes: number;
+    estimatedMinutes: number | null;
     sourceType: string;
     sourceName: string;
     externalUrl: string | null;

@@ -26,11 +26,14 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
 
   const actor = auth.identity.user_account_id;
-  const [product, reporting, practices] = await Promise.all([
+  const [product, reporting, practiceLoad] = await Promise.all([
     getAdminProductWorkspace(actor, organization.organization_id).catch(() => null),
     getAdminReportingDashboard(actor, organization.organization_id).catch(() => null),
-    practiceRuntime.listOperator(actor, organization.organization_id, 100).catch(() => null),
+    practiceRuntime.listOperator(actor, organization.organization_id, 100)
+      .then((data) => ({ data, unavailable: false as const }))
+      .catch(() => ({ data: null, unavailable: true as const })),
   ]);
+  const practices = practiceLoad.data;
 
   const activeJourneys = product?.journeys.filter((journey) => journey.status !== "retired") ?? [];
   const publishedJourneys = activeJourneys.reduce((sum, journey) => sum + journey.versions.filter((version) => version.status === "published").length, 0);
@@ -39,7 +42,7 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
     <PageHeader eyebrow="Estímulo" title="Visão geral" description="Veja primeiro o que exige atenção e acesse as áreas mais usadas." />
-    {(practicePending ?? 0) > 0 ? <Card className="border-warning/40 bg-warning-soft/50"><div className="flex flex-wrap items-center gap-4"><span className="grid size-11 place-items-center rounded-xl bg-white text-primary"><ClipboardCheck /></span><div className="min-w-0 flex-1"><h2 className="font-semibold text-ink">{practicePending} entrega(s) aguardando revisão</h2><p className="text-sm text-muted">Abra a operação para aceitar a evidência ou solicitar um ajuste.</p></div><ButtonLink href="/admin/operacao?area=praticas" size="sm">Revisar entregas</ButtonLink></div></Card> : <StatusPanel title="Tudo em dia" tone="success">Não há entregas aguardando revisão.</StatusPanel>}
+    {practiceLoad.unavailable ? <StatusPanel title="Revisões temporariamente indisponíveis" tone="warning">Não foi possível consultar as entregas pendentes. Abra Operação ou recarregue a página antes de assumir que não há itens aguardando revisão.</StatusPanel> : (practicePending ?? 0) > 0 ? <Card className="border-warning/40 bg-warning-soft/50"><div className="flex flex-wrap items-center gap-4"><span className="grid size-11 place-items-center rounded-xl bg-white text-primary"><ClipboardCheck /></span><div className="min-w-0 flex-1"><h2 className="font-semibold text-ink">{practicePending} entrega(s) aguardando revisão</h2><p className="text-sm text-muted">Abra a operação para aceitar a evidência ou solicitar um ajuste.</p></div><ButtonLink href="/admin/operacao?area=praticas" size="sm">Revisar entregas</ButtonLink></div></Card> : <StatusPanel title="Tudo em dia" tone="success">Não há entregas aguardando revisão.</StatusPanel>}
     <section className="grid gap-4" aria-labelledby="resumo-plataforma"><h2 id="resumo-plataforma" className="text-lg font-semibold text-ink">Resumo</h2><div className="grid gap-4 sm:grid-cols-3"><OverviewCard icon={Users} label="Participantes ativos" value={reporting?.metrics.participants ?? null} href="/admin/usuarios" cta="Ver usuários" /><OverviewCard icon={GraduationCap} label="Jornadas publicadas" value={publishedJourneys} href="/admin/produto" cta="Ver jornadas" /><OverviewCard icon={FileQuestion} label="Diagnósticos em rascunho" value={draftDiagnostics} href="/admin/diagnostico" cta="Ver diagnósticos" /></div></section>
     <section className="grid gap-4" aria-labelledby="atalhos"><h2 id="atalhos" className="text-lg font-semibold text-ink">Atalhos</h2><div className="grid gap-3 sm:grid-cols-2"><AreaCard icon={GraduationCap} title="Criar ou editar jornada" description="Informações, trilhas, aulas e publicação." href="/admin/produto" /><AreaCard icon={BookOpen} title="Adicionar conteúdo" description="Textos, links, vídeos e arquivos reutilizáveis." href="/admin/biblioteca?view=novo" /></div></section>
   </div></AppShell>;

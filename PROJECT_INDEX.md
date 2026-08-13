@@ -6,6 +6,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 
 - [README](README.md) — execução, estado, superfícies e arquitetura resumida.
 - [Guia de contribuição](CONTRIBUTING.md) — fluxo de mudanças e padrões.
+- [Política de manutenção do repositório](docs/REPOSITORY_MAINTENANCE.md) — fontes de verdade, limpeza, artifacts, documentação e PRs empilhados.
 
 ## Produto
 
@@ -97,6 +98,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Fundação atual da aplicação](docs/implementation/APPLICATION_FOUNDATION.md)
 - [Preview de interface e carregamento](docs/implementation/INTERFACE_PREVIEW_AND_LOADING.md)
 - [Auditoria das correções definitivas](docs/implementation/DEFINITIVE_CORRECTIONS_AUDIT.md)
+- [Matriz canônica das correções solicitadas](docs/audits/DOCUMENT_CORRECTIONS_MATRIX.md)
 - [Motor configurável do diagnóstico](docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md)
 - [Backend ponta a ponta](docs/implementation/BACKEND_E2E.md)
 - [Suíte de crescimento e engajamento](docs/implementation/PLATFORM_GROWTH_ENGAGEMENT_SUITE.md)

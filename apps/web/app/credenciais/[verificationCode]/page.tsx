@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { PrintCertificateButton } from "@/components/print-certificate-button";
 import { ShareAction } from "@/components/share-action";
@@ -39,7 +38,7 @@ export default async function CertificateVerificationPage({ params }: { params: 
     <div className="no-print flex flex-wrap justify-center gap-3">
       <PrintCertificateButton />
       <ShareAction title={certificate.certificate_name ?? "Certificado Estímulo"} text={`${certificate.display_name} concluiu ${certificate.journey_title} na Plataforma Estímulo.`} entityType="certificate" entityId={certificate.verification_code ?? verificationCode} label="Compartilhar certificado" />
-      <ButtonLink href="/" variant="secondary"><Link href="/" className="contents">Voltar ao início</Link></ButtonLink>
+      <ButtonLink href="/" variant="secondary">Voltar ao início</ButtonLink>
     </div>
   </main>;
 }

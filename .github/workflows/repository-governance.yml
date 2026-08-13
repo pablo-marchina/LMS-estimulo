@@ -133,14 +133,21 @@ jobs:
       - name: Validate legacy RPC containment
         run: npm run validate:legacy-rpc-containment
 
-      - name: Confirm local artifacts and archives remain ignored
+      - name: Confirm repository maintenance invariants
         shell: bash
         run: |
           set -euo pipefail
           grep -Fx '**/*.local.jsonl' .gitignore
           grep -Fx '.artifacts/' .gitignore
+          grep -Fx 'artifacts/' .gitignore
+          grep -Fx 'test-results/' .gitignore
+          grep -Fx 'playwright-report/' .gitignore
+          grep -Fx 'blob-report/' .gitignore
           grep -Fx '*.zip' .gitignore
           grep -Fx '*.tar.gz' .gitignore
+          test ! -e .vercel-deploy-trigger
+          test -f docs/REPOSITORY_MAINTENANCE.md
+          grep -F 'docs/REPOSITORY_MAINTENANCE.md' PROJECT_INDEX.md
 
       - name: Enforce secret-scan result
         if: steps.secret-scan.outcome == 'failure'

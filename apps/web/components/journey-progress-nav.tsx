@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Clock3, Flag, PlayCircle } from "lucide-react";
 import { openJourneyActivityAction } from "@/app/empreendedor/jornada/[journeyInstanceId]/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { Progress } from "@/components/ui/progress";
 import { getAuthContext } from "@/lib/auth/context";
 import { displayContentName } from "@/lib/content/display-name";
 import type { JourneyState } from "@/lib/journey-runtime/contracts";
@@ -99,6 +100,13 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
     nextActivity = currentIndex >= 0 && currentIndex < activities.length - 1 ? activities[currentIndex + 1] : null;
   }
 
+  const journeyPercent = outline ? Math.round(Math.max(0, Math.min(1, outline.progress)) * 100) : null;
+  const focusCopy = stepStatus === "completed"
+    ? nextActivity
+      ? `Aula concluída. Continue em “${nextActivity.activity_title}”.`
+      : "Aula concluída. Você chegou ao fim das atividades desta jornada."
+    : "Conclua o conteúdo e as etapas obrigatórias desta aula. Seu progresso é salvo automaticamente.";
+
   return (
     <aside className="no-print brand-activity-context relative mb-0 overflow-hidden rounded-2xl border border-primary/15 bg-white p-4 shadow-sm" aria-label={`Contexto de ${title}`}>
       <div className="flex flex-wrap items-center gap-3">
@@ -116,6 +124,25 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
         </div>
       </div>
 
+      {current === "activity" && outline && journeyPercent !== null ? (
+        <div className="mt-4 grid gap-3 border-t border-border pt-4 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,0.48fr)]">
+          <section className="rounded-xl bg-surface-muted/65 p-3.5" aria-label="Progresso geral da jornada">
+            <div className="flex items-center justify-between gap-3 text-xs font-bold text-secondary">
+              <span>Progresso da jornada</span>
+              <strong className="text-primary">{journeyPercent}%</strong>
+            </div>
+            <Progress value={journeyPercent} tone="success" className="mt-2.5" />
+            <p className="mt-2 text-xs leading-5 text-muted">
+              {outline.completed_required_steps} de {outline.total_required_steps} atividades obrigatórias concluídas.
+            </p>
+          </section>
+          <section className={`rounded-xl border p-3.5 ${stepStatus === "completed" ? "border-success/20 bg-success-soft/55" : "border-primary/15 bg-primary-soft/45"}`} aria-label="Foco atual">
+            <p className={`text-[11px] font-black uppercase tracking-[.13em] ${stepStatus === "completed" ? "text-success" : "text-primary"}`}>Foco agora</p>
+            <p className="mt-1 text-sm font-semibold leading-5 text-secondary">{focusCopy}</p>
+          </section>
+        </div>
+      ) : null}
+
       {current !== "activity" ? (
         <ol className="mt-4 grid gap-2 border-t border-border pt-4 sm:grid-cols-3" aria-label="Etapas da experiência">
           {stageOrder.map((stage, index) => {
@@ -132,7 +159,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
         </ol>
       ) : null}
 
-      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Concluir jornada e ver resultado <ArrowRight size={15} /></Link>}</div> : null}
+      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Ver resultado <ArrowRight size={15} /></Link>}</div> : null}
     </aside>
   );
 }

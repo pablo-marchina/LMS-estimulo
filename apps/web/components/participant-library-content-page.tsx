@@ -30,7 +30,7 @@ function viewerType(format: string, contentType: string | null) {
 async function adminPreviewContent(actorUserAccountId: string, organizationId: string, slug: string): Promise<LibraryContent | null> {
   const data = await libraryRuntime.listOperator(actorUserAccountId, organizationId);
   const item = data.items.find((entry) => entry.slug === slug && entry.status === "published");
-  if (!item) return null;
+  if (!item || item.estimated_minutes === null) return null;
   const journeyById = new Map(data.journey_versions.map((journey) => [journey.journey_version_id, journey]));
   return {
     library_item_id: item.library_item_id,
