@@ -86,10 +86,8 @@ export async function createPublicAccountAction(formData: FormData) {
         signup_profile_version: 5,
         terms_accepted_at: acceptedAt,
         terms_version: legalDocumentPublishedDate(legalSnapshot.terms),
-        terms_legal_document_version_id: legalSnapshot.terms.id,
         privacy_accepted_at: acceptedAt,
         privacy_version: legalDocumentPublishedDate(legalSnapshot.privacy),
-        privacy_legal_document_version_id: legalSnapshot.privacy.id,
       },
     },
   });
@@ -107,6 +105,29 @@ export async function createPublicAccountAction(formData: FormData) {
 
   if (isObfuscatedExistingUser(data.user)) {
     redirect("/cadastro?erro=conta_existente_ou_vinculada");
+  }
+
+  const privileged = createPrivilegedClient();
+  const { error: snapshotError } = await privileged.auth.admin.updateUserById(data.user.id, {
+    app_metadata: {
+      ...data.user.app_metadata,
+      signup_legal_snapshot: {
+        terms_document_version_id: legalSnapshot.terms.id,
+        privacy_document_version_id: legalSnapshot.privacy.id,
+        terms_accepted_at: acceptedAt,
+        privacy_accepted_at: acceptedAt,
+      },
+    },
+  });
+  if (snapshotError) {
+    const { error: rollbackError } = await privileged.auth.admin.deleteUser(data.user.id);
+    if (rollbackError) {
+      console.error("PUBLIC_SIGNUP_LEGAL_SNAPSHOT_ROLLBACK_FAILED", {
+        code: rollbackError.code ?? null,
+        message: rollbackError.message ?? null,
+      });
+    }
+    redirect("/cadastro?erro=servico_indisponivel");
   }
 
   if (data.session) redirect("/cadastro/concluir");
