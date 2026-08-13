@@ -3,10 +3,10 @@ import { OptionalDiagnosticForm } from "@/app/admin/diagnosticos-opcionais/optio
 import { StatusPanel } from "@/components/status-panel";
 import { Card } from "@/components/ui/card";
 import { StatusPill } from "@/components/ui/status-pill";
-import type { JsonRecord } from "@/lib/extensions/runtime";
+import type { AdminExtensionsWorkspace } from "@/lib/extensions/runtime";
 import { num, str } from "./page-model-utils";
 
-export function OptionalDiagnosticSection({ workspace, canEdit }: { workspace: { diagnostic_versions: JsonRecord[]; participants: JsonRecord[]; optional_diagnostics: JsonRecord[] } | null; canEdit: boolean }) {
+export function OptionalDiagnosticSection({ workspace, canEdit }: { workspace: AdminExtensionsWorkspace | null; canEdit: boolean }) {
   return <>
     <StatusPanel title="Sem impacto no arquétipo ou nas jornadas" tone="info">Diagnósticos opcionais servem apenas para reflexão e análise. Eles não alteram o arquétipo principal nem liberam ou bloqueiam jornadas.</StatusPanel>
     {!workspace ? <StatusPanel title="Diagnósticos opcionais temporariamente indisponíveis" tone="warning">O diagnóstico principal continua disponível para edição. Apenas os dados opcionais não puderam ser carregados agora.</StatusPanel> : <>
