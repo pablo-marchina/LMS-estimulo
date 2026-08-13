@@ -33,8 +33,8 @@ function errorCode(error: unknown): string {
 }
 
 function activityRedirect(request: NextRequest, step: string, journey: string, state: string, code?: string) {
-  const target = new URL(`/empreendedor/atividade/${step}`, request.url);
-  target.searchParams.set("journey", journey);
+  const target = new URL(`/empreendedor/jornada/${journey}`, request.url);
+  target.searchParams.set("conteudo", step);
   target.searchParams.set("pratica", state);
   if (code) target.searchParams.set("codigo", code);
   target.hash = "pratica";
