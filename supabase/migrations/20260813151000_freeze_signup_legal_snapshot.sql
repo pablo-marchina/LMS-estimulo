@@ -123,31 +123,15 @@ $$;
 revoke all on function public.stage_public_signup_legal_snapshot(uuid,text,uuid,uuid,timestamptz) from public, anon, authenticated;
 grant execute on function public.stage_public_signup_legal_snapshot(uuid,text,uuid,uuid,timestamptz) to service_role;
 
--- legal_accept previously required the target row to still be the current
--- published version. Publishing vN+1 retires vN, so a user who accepted vN and
--- was confirming email could no longer persist that exact acceptance. Permit an
--- immutable version that demonstrably was published, while keeping the existing
--- command and idempotency contract.
-do $migration$
-declare
-  v_definition text;
-  v_needle text := 'where d.id=(p_payload->>''legal_document_version_id'')::uuid and d.organization_id=v_organization_id and d.status=''published''';
-  v_replacement text := 'where d.id=(p_payload->>''legal_document_version_id'')::uuid and d.organization_id=v_organization_id and d.status in (''published'',''retired'') and d.published_at is not null';
-  v_occurrences integer;
-begin
-  v_definition := pg_get_functiondef('public.perform_participant_extension(uuid,text,jsonb,text)'::regprocedure);
-  v_occurrences := (length(v_definition) - length(replace(v_definition, v_needle, ''))) / length(v_needle);
-
-  if v_occurrences <> 1 then
-    raise exception 'PERFORM_PARTICIPANT_EXTENSION_LEGAL_ACCEPT_SHAPE_CHANGED';
-  end if;
-
-  execute replace(v_definition, v_needle, v_replacement);
-end
-$migration$;
+-- Do not broaden the generic participant extension so arbitrary callers can
+-- accept retired legal documents. The signup path already validates a
+-- service-role-only snapshot that is bound to the authenticated email and to
+-- immutable legal-document ids. Provisioning records those validated versions
+-- directly and relies on the legal_acceptances uniqueness constraint for retry
+-- idempotency.
 
 -- Profile provisioning consumes the server-staged snapshot in the same database
--- transaction as the two legal_accept commands. user_metadata only carries the
+-- transaction as the two legal_accept inserts. user_metadata only carries the
 -- random token; changing it cannot forge an acceptance because the canonical row
 -- is service-role-only and additionally bound to the authenticated email.
 create or replace function public.provision_public_signup_participant_v3(
@@ -257,24 +241,23 @@ begin
     v_cnpj_status:='stored';
   end if;
 
-  perform public.perform_participant_extension(
+  insert into governance.legal_acceptances(
+    legal_document_version_id,user_account_id,source,metadata
+  ) values (
+    v_signup_snapshot.terms_document_version_id,
     p_user_account_id,
-    'legal_accept',
-    jsonb_build_object(
-      'legal_document_version_id', v_signup_snapshot.terms_document_version_id,
-      'metadata', jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_signup_snapshot.accepted_at)
-    ),
-    'signup-legal:' || v_signup_snapshot.terms_document_version_id::text
-  );
-  perform public.perform_participant_extension(
+    'participant_web',
+    jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_signup_snapshot.accepted_at)
+  ) on conflict(legal_document_version_id,user_account_id) do nothing;
+
+  insert into governance.legal_acceptances(
+    legal_document_version_id,user_account_id,source,metadata
+  ) values (
+    v_signup_snapshot.privacy_document_version_id,
     p_user_account_id,
-    'legal_accept',
-    jsonb_build_object(
-      'legal_document_version_id', v_signup_snapshot.privacy_document_version_id,
-      'metadata', jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_signup_snapshot.accepted_at)
-    ),
-    'signup-legal:' || v_signup_snapshot.privacy_document_version_id::text
-  );
+    'participant_web',
+    jsonb_build_object('source','signup_snapshot','signup_accepted_at',v_signup_snapshot.accepted_at)
+  ) on conflict(legal_document_version_id,user_account_id) do nothing;
 
   delete from app_private.public_signup_legal_snapshots where snapshot_token = v_snapshot_token;
 
