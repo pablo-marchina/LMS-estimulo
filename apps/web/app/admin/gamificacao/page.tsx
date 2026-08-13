@@ -1,9 +1,7 @@
-import { AdminDisclosure, AdminSectionNav } from "@/components/admin-section-nav";
+import { AdminSectionNav } from "@/components/admin-section-nav";
 import { AppShell } from "@/components/app-shell";
 import { StatusPanel } from "@/components/status-panel";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TableScroll, Td, Th } from "@/components/ui/table";
 import { getAdminGamificationWorkspace } from "@/lib/admin/gamification-management";
@@ -11,7 +9,7 @@ import type { DefinitionSummary, VersionSummary } from "@/lib/admin/product-mana
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { engagementRuntime } from "@/lib/engagement/runtime";
-import { saveGamificationResourceAction } from "./actions";
+import { BadgeEditor } from "./badge-editor";
 import { CertificateEditor } from "./certificate-editor";
 import { CertificateIssuerManager } from "./certificate-issuer-manager";
 import { CertificateTemplateManager } from "./certificate-template-manager";
@@ -56,14 +54,11 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
   const homeBadgeHighlights = type === "selos"
     ? await engagementRuntime.adminHomeBadgeHighlights(auth.identity.user_account_id, organization.organization_id).catch(() => null)
     : null;
-  const ruleVersions = rules.flatMap((item) => versionsOf(item).map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
-  const alwaysEligibleVersion = rules.find((item) => item.code === "e14_always_eligible")?.versions
-    .filter((version) => version.status === "published")
-    .slice()
-    .sort((a, b) => b.version_number - a.version_number)[0] ?? null;
+  const ruleVersions = rules.flatMap((item) => versionsOf(item).filter((version) => version.status === "published").map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
   const journeyVersions = journeys.filter((item) => item.status !== "retired").flatMap((item) => versionsOf(item).map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
   const activePointRules = pointRules.filter((item) => item.status !== "retired");
   const pointRuleEditorData = activePointRules.map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), amount: Number(version.amount ?? 10), eligibility_rule_version_id: String(version.eligibility_rule_version_id ?? ""), recurrence_policy: objectValue(version.recurrence_policy) })) }));
+  const badgeEditorData = badges.filter((item) => item.status !== "retired").map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), title: String(version.title ?? item.name), description: String(version.description ?? ""), criteria_rule_version_id: String(version.criteria_rule_version_id ?? "") })) }));
   const certificateEditorData = certificates.map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), journey_version_id: String(version.journey_version_id ?? ""), requirements_rule_version_id: String(version.requirements_rule_version_id ?? ""), template_file_object_id: typeof version.template_file_object_id === "string" ? version.template_file_object_id : null, validity_policy: objectValue(version.validity_policy), template_layout: objectValue(version.template_layout) })) }));
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
@@ -82,7 +77,7 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
       <fieldset disabled={!canEdit} className="contents"><PointRuleEditor pointRules={pointRuleEditorData} eligibilityRules={ruleVersions} /></fieldset>
     </div> : null}
 
-    {type === "selos" ? <fieldset disabled={!canEdit || !alwaysEligibleVersion} className="contents"><div className="grid gap-5">{homeBadgeHighlights ? <HomeBadgeHighlights workspace={homeBadgeHighlights} /> : <StatusPanel title="Destaques da Home indisponíveis" tone="warning">Os selos continuam acessíveis. Apenas a configuração opcional de destaques não pôde ser carregada.</StatusPanel>}{!alwaysEligibleVersion ? <StatusPanel title="Regra base do catálogo indisponível" tone="warning">A configuração neutra necessária para cadastrar selos não foi encontrada. Nenhum selo será salvo até ela voltar a estar publicada.</StatusPanel> : null}<Card><div><h2 className="text-lg font-black text-secondary">Criar ou atualizar selo</h2><p className="mt-1 text-sm text-muted">Cadastre o reconhecimento aqui e vincule-o depois à trilha que deve concedê-lo.</p></div><form action={saveGamificationResourceAction} className="mt-5 grid gap-4"><input type="hidden" name="resource_type" value="badge" /><input type="hidden" name="criteria_rule_version_id" value={alwaysEligibleVersion ? String(alwaysEligibleVersion.id) : ""} /><div className="grid gap-4 sm:grid-cols-2"><Label>Selo existente<Select name="definition_id"><option value="">Criar novo</option>{badges.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select></Label><Label>Título para o participante<Input name="title" required /></Label></div><Label>O que o selo reconhece<Textarea name="description" rows={3} required /></Label><AdminDisclosure title="Identificação e disponibilidade" description="O momento da concessão é definido na trilha, não neste cadastro."><div className="grid gap-4 sm:grid-cols-2"><Label>Nome interno<Input name="name" required /></Label><Label>Disponibilidade<Select name="status"><option value="draft">Preparar sem mostrar</option><option value="published">Ativar para vinculação</option></Select></Label></div></AdminDisclosure><Button type="submit" className="w-fit">Salvar selo</Button></form></Card></div></fieldset> : null}
+    {type === "selos" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5">{homeBadgeHighlights ? <HomeBadgeHighlights workspace={homeBadgeHighlights} /> : <StatusPanel title="Destaques da Home indisponíveis" tone="warning">Os selos continuam acessíveis. Apenas a configuração opcional de destaques não pôde ser carregada.</StatusPanel>}<BadgeEditor badges={badgeEditorData} ruleVersions={ruleVersions} /></div></fieldset> : null}
 
     {type === "certificados" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5"><CertificateIssuerManager /><CertificateTemplateManager /><CertificateEditor certificates={certificateEditorData} journeyVersions={journeyVersions} ruleVersions={ruleVersions} /></div></fieldset> : null}
   </div></AppShell>;
