@@ -6,6 +6,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 
 - [README](README.md) — execução, estado, superfícies e arquitetura resumida.
 - [Guia de contribuição](CONTRIBUTING.md) — fluxo de mudanças e padrões.
+- [Política de manutenção do repositório](docs/REPOSITORY_MAINTENANCE.md) — fontes de verdade, limpeza, artifacts, documentação e PRs empilhados.
 
 ## Produto
 
