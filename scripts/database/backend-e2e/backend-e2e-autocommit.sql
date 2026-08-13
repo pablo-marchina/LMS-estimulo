@@ -65,6 +65,32 @@ select pg_temp.e14_assert(
   :'e14_fixture_rule_count'::integer>0,
   'fixture must define at least one point rule'
 );
+
+-- Lesson completion is an organization-wide product rule. It is intentionally
+-- not part of the E14 journey fixture configuration, so the E2E contract must
+-- account for it independently instead of treating the resulting ledger entry
+-- as drift. Requiring exactly one published +5 rule also guards idempotency.
+select
+  coalesce(sum(prv.amount),0)::text lesson_completion_points,
+  count(*)::text lesson_completion_rule_count
+from engagement.point_rule_versions prv
+join engagement.point_rule_definitions prd on prd.id = prv.point_rule_definition_id
+where prd.owner_organization_id = :'e14_organization_id'::uuid
+  and prd.code = 'complete_lesson'
+  and prd.status = 'active'
+  and prv.status = 'published'
+  and prv.published_at is not null
+  and prv.recurrence_policy#>>'{trigger,event_name}' = 'learning.activity.completed'
+\gset e14_
+select pg_temp.e14_assert(
+  :'e14_lesson_completion_rule_count'::integer=1,
+  'complete_lesson must have exactly one published rule'
+);
+select pg_temp.e14_assert(
+  :'e14_lesson_completion_points'::bigint=5,
+  'complete_lesson must award exactly five points'
+);
+
 select count(*)::text events_before from eventing.events \gset e14_
 select count(*)::text outbox_before from eventing.outbox \gset e14_
 
@@ -230,8 +256,8 @@ select pg_temp.e14_assert((select (value#>>'{s,accepted_sections}')::integer=4 f
 select pg_temp.e14_assert((select value#>>'{q,status}'='passed' from e14_test_results where name='final_state'),'passing attempt');
 select pg_temp.e14_assert((select (value#>>'{q,attempt_number}')::integer=2 from e14_test_results where name='final_state'),'attempt number');
 select pg_temp.e14_assert((select (value#>>'{q,score}')::numeric=100 from e14_test_results where name='final_state'),'passing score');
-select pg_temp.e14_assert((select (value#>>'{p,balance}')::bigint=:'e14_diagnostic_point_balance'::bigint+:'e14_fixture_rule_points'::bigint from e14_test_results where name='final_state'),'point balance');
-select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=:'e14_diagnostic_point_count'::integer+:'e14_fixture_rule_count'::integer from e14_test_results where name='final_state'),'point count');
+select pg_temp.e14_assert((select (value#>>'{p,balance}')::bigint=:'e14_diagnostic_point_balance'::bigint+:'e14_fixture_rule_points'::bigint+:'e14_lesson_completion_points'::bigint from e14_test_results where name='final_state'),'point balance');
+select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=:'e14_diagnostic_point_count'::integer+:'e14_fixture_rule_count'::integer+:'e14_lesson_completion_rule_count'::integer from e14_test_results where name='final_state'),'point count');
 select pg_temp.e14_assert((select value->>'journey_status'='completed' from e14_test_results where name='operator_result'),'operator result');
 
 select pg_temp.e14_assert((select count(*)-:'e14_events_before'::bigint>0 from eventing.events),'event total');
@@ -247,8 +273,8 @@ select pg_temp.e14_assert((select
 ),'journey event and outbox parity');
 select pg_temp.e14_assert((select count(*)=8 from eventing.events where correlation_id=:'e14_successful_submit_request_id'::uuid),'correlated events');
 select pg_temp.e14_assert((select
-  count(*)=:'e14_diagnostic_point_count'::integer+:'e14_fixture_rule_count'::integer
-  and sum(amount)=:'e14_diagnostic_point_balance'::bigint+:'e14_fixture_rule_points'::bigint
+  count(*)=:'e14_diagnostic_point_count'::integer+:'e14_fixture_rule_count'::integer+:'e14_lesson_completion_rule_count'::integer
+  and sum(amount)=:'e14_diagnostic_point_balance'::bigint+:'e14_fixture_rule_points'::bigint+:'e14_lesson_completion_points'::bigint
   from engagement.point_ledger where journey_instance_id=:'e14_journey_instance_id'::uuid
 ),'point ledger');
 
