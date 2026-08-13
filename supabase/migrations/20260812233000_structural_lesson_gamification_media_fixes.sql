@@ -42,7 +42,7 @@ begin
         status = 'active'
   returning id into v_definition_id;
 
-  if exists (
+  if not exists (
     select 1
     from engagement.point_rule_versions
     where point_rule_definition_id = v_definition_id
@@ -52,33 +52,31 @@ begin
       and eligibility_rule_version_id = v_eligibility_rule_version_id
       and recurrence_policy = v_policy
   ) then
-    return;
+    update engagement.point_rule_versions
+    set status = 'retired'
+    where point_rule_definition_id = v_definition_id
+      and status = 'published';
+
+    select coalesce(max(version_number), 0) + 1
+    into v_next_version
+    from engagement.point_rule_versions
+    where point_rule_definition_id = v_definition_id;
+
+    insert into engagement.point_rule_versions(
+      point_rule_definition_id, version_number, status, amount,
+      eligibility_rule_version_id, recurrence_policy, published_at
+    ) values (
+      v_definition_id, v_next_version, 'published', 5,
+      v_eligibility_rule_version_id, v_policy, now()
+    );
   end if;
-
-  update engagement.point_rule_versions
-  set status = 'retired'
-  where point_rule_definition_id = v_definition_id
-    and status = 'published';
-
-  select coalesce(max(version_number), 0) + 1
-  into v_next_version
-  from engagement.point_rule_versions
-  where point_rule_definition_id = v_definition_id;
-
-  insert into engagement.point_rule_versions(
-    point_rule_definition_id, version_number, status, amount,
-    eligibility_rule_version_id, recurrence_policy, published_at
-  ) values (
-    v_definition_id, v_next_version, 'published', 5,
-    v_eligibility_rule_version_id, v_policy, now()
-  );
 end;
 $migration$;
 
--- A thumbnail describes the lesson itself. Older journey versions may point at
--- the same activity definition while only one path_step contains the uploaded
--- image metadata. Prefer the local path thumbnail, then inherit the newest
--- published thumbnail from the same activity definition.
+-- A thumbnail describes the lesson itself. Prefer the local path thumbnail and
+-- then inherit a clean thumbnail from the same logical lesson. The activity
+-- definition id covers ordinary reuse; activity/step codes cover journey
+-- versions cloned by the Admin builder with new UUIDs.
 create or replace function public.get_participant_lesson_thumbnail_download(
   p_actor_user_account_id uuid,
   p_step_instance_id uuid
@@ -92,17 +90,22 @@ declare
   v_file_id uuid;
   v_org uuid;
   v_activity_definition_id uuid;
+  v_activity_code text;
+  v_step_code text;
   v_file core.file_objects%rowtype;
   v_entrepreneur_id uuid := app_private.e14_entrepreneur_for_account(p_actor_user_account_id);
 begin
   select
     nullif(step.metadata->>'continue_thumbnail_file_object_id','')::uuid,
     definition.owner_organization_id,
-    activity_version.activity_definition_id
-  into v_file_id, v_org, v_activity_definition_id
+    activity_version.activity_definition_id,
+    activity_definition.code,
+    step.code
+  into v_file_id, v_org, v_activity_definition_id, v_activity_code, v_step_code
   from orchestration.step_instances instance
   join orchestration.path_steps step on step.id = instance.path_step_id
   join catalog.activity_versions activity_version on activity_version.id = instance.activity_version_id
+  join catalog.activity_definitions activity_definition on activity_definition.id = activity_version.activity_definition_id
   join orchestration.path_assignments assignment on assignment.id = instance.path_assignment_id
   join orchestration.journey_instances journey on journey.id = assignment.journey_instance_id
   join orchestration.enrollments enrollment on enrollment.id = journey.enrollment_id
@@ -118,13 +121,20 @@ begin
     into v_file_id
     from orchestration.path_steps candidate
     join catalog.activity_versions candidate_version on candidate_version.id = candidate.activity_version_id
+    join catalog.activity_definitions candidate_definition_activity on candidate_definition_activity.id = candidate_version.activity_definition_id
     join orchestration.path_templates candidate_path on candidate_path.id = candidate.path_template_id
     join catalog.journey_versions candidate_journey on candidate_journey.id = candidate_path.journey_version_id
     join catalog.journey_definitions candidate_definition on candidate_definition.id = candidate_journey.journey_definition_id
-    where candidate_version.activity_definition_id = v_activity_definition_id
-      and candidate_definition.owner_organization_id = v_org
+    where candidate_definition.owner_organization_id = v_org
       and nullif(candidate.metadata->>'continue_thumbnail_file_object_id','') is not null
+      and (
+        candidate_version.activity_definition_id = v_activity_definition_id
+        or candidate_definition_activity.code = v_activity_code
+        or candidate.code = v_step_code
+      )
     order by
+      (candidate_version.activity_definition_id = v_activity_definition_id) desc,
+      (candidate_definition_activity.code = v_activity_code) desc,
       (candidate_journey.status = 'published') desc,
       candidate_journey.version_number desc,
       candidate.position_hint,
