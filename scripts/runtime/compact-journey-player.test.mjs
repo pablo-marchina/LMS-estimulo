@@ -24,14 +24,14 @@ test("journey lessons no longer expose supplemental text or prompt editors", () 
   assert.doesNotMatch(actions, /prompt_title_/u);
 });
 
-test("activity navigation follows the ordered journey outline", () => {
+test("activity context follows the ordered journey outline without duplicating continuation controls", () => {
   assert.match(navigation, /getParticipantJourneyOutline/u);
   assert.match(navigation, /module_position/u);
   assert.match(navigation, /previousActivity/u);
   assert.match(navigation, /nextActivity/u);
-  assert.match(navigation, /openJourneyActivityAction/u);
-  assert.match(navigation, /\/empreendedor\/resultado\?journey=/u);
-  assert.match(navigation, /ver resultado/iu);
+  assert.match(navigation, /ação principal no fim da aula/iu);
+  assert.doesNotMatch(navigation, /openJourneyActivityAction/u);
+  assert.doesNotMatch(navigation, /PendingSubmitButton/u);
 });
 
 test("participant activity player is compact and videos have rounded corners", () => {
