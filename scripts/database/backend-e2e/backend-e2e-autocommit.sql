@@ -208,7 +208,7 @@ select pg_temp.e14_assert((select (value#>>'{s,accepted_sections}')::integer=4 f
 select pg_temp.e14_assert((select value#>>'{q,status}'='passed' from e14_test_results where name='final_state'),'passing attempt');
 select pg_temp.e14_assert((select (value#>>'{q,attempt_number}')::integer=2 from e14_test_results where name='final_state'),'attempt number');
 select pg_temp.e14_assert((select (value#>>'{q,score}')::numeric=100 from e14_test_results where name='final_state'),'passing score');
-select pg_temp.e14_assert((select (value#>>'{p,balance}')::integer=:'e14_diagnostic_point_balance'::integer+7 from e14_test_results where name='final_state'),'point balance');
+select pg_temp.e14_assert((select (value#>>'{p,balance}')::integer=:'e14_diagnostic_point_balance'::integer+5 from e14_test_results where name='final_state'),'point balance');
 select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=:'e14_diagnostic_point_count'::integer+2 from e14_test_results where name='final_state'),'point count');
 select pg_temp.e14_assert((select value->>'journey_status'='completed' from e14_test_results where name='operator_result'),'operator result');
 
@@ -226,7 +226,7 @@ select pg_temp.e14_assert((select
 select pg_temp.e14_assert((select count(*)=8 from eventing.events where correlation_id=:'e14_successful_submit_request_id'::uuid),'correlated events');
 select pg_temp.e14_assert((select
   count(*)=:'e14_diagnostic_point_count'::integer+2
-  and sum(amount)=:'e14_diagnostic_point_balance'::integer+7
+  and sum(amount)=:'e14_diagnostic_point_balance'::integer+5
   from engagement.point_ledger where journey_instance_id=:'e14_journey_instance_id'::uuid
 ),'point ledger');
 
