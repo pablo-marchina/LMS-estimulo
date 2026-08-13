@@ -19,9 +19,10 @@ function boundedRatio(value: string, fallback: number) { const parsed = Number.p
 function recurrencePolicy(formData: FormData): Record<string, unknown> {
   const frequency = text(formData, "frequency") || "once";
   const maximum = positiveInteger(text(formData, "maximum_awards"), 1);
-  const scope: Record<string, string> = { once: "participant", per_activity: "enrollment_activity", per_assessment: "enrollment_assessment", per_path: "path", per_journey: "journey", daily: "participant_day", weekly: "participant_week", unlimited: "event" };
+  const scope: Record<string, string> = { once: "participant", per_activity: "enrollment_activity", per_assessment: "enrollment_assessment", per_path: "path", per_journey: "journey", per_certificate: "event", daily: "participant_day", weekly: "participant_week", unlimited: "event" };
   const eventName = text(formData, "trigger_event");
   if (!eventName) throw new Error("POINT_TRIGGER_REQUIRED");
+  if (frequency === "per_certificate") return { scope: "event", frequency: "per_certificate", transferable: false, trigger: { event_name: eventName } };
   return { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false, trigger: { event_name: eventName } };
 }
 function validityPolicy(formData: FormData): Record<string, unknown> { return text(formData, "validity_mode") === "months" ? { expires: true, duration_months: positiveInteger(text(formData, "validity_months"), 12) } : { expires: false }; }
@@ -76,8 +77,6 @@ export async function saveGamificationResourceAction(formData: FormData) {
       idempotencyKey: randomUUID(),
     });
   } catch {
-    // The core certificate draft has already been persisted. Report that fact
-    // instead of presenting this as a total save failure.
     redirect(`/admin/gamificacao?tipo=certificados&sucesso=rascunho_salvo&erro=configuracao_certificado&certificado=${encodeURIComponent(certificateVersionId)}`);
   }
 
@@ -85,14 +84,12 @@ export async function saveGamificationResourceAction(formData: FormData) {
     try {
       await extendedCredentialRuntime.publishCertificate({ actorUserAccountId: auth.identity.user_account_id, organizationId, certificateVersionId, idempotencyKey: randomUUID() });
     } catch {
-      // Configuration is preserved as a draft even when publication is blocked.
       redirect(`/admin/gamificacao?tipo=certificados&sucesso=certificado_configurado&erro=publicacao_certificado&certificado=${encodeURIComponent(certificateVersionId)}`);
     }
   }
 
   redirect(`/admin/gamificacao?tipo=certificados&sucesso=${requestedCertificateStatus === "published" ? "certificado_publicado" : "rascunho_salvo"}&certificado=${encodeURIComponent(certificateVersionId)}`);
 }
-
 
 export async function saveHomeBadgeHighlightsAction(formData: FormData) {
   const auth = await getAuthContext();
@@ -120,7 +117,6 @@ export async function saveHomeBadgeHighlightsAction(formData: FormData) {
   }
   redirect("/admin/gamificacao?tipo=selos&sucesso=destaques");
 }
-
 
 export async function saveCertificateIssuerAction(formData: FormData) {
   const auth = await getAuthContext();
