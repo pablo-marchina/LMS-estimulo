@@ -18,8 +18,8 @@ test("participant authentication exposes password recovery and accessible visibi
 
   assert.match(login, /href="\/recuperar-senha"/u);
   assert.match(login, /Sou da equipe Estímulo/u);
-  assert.match(signup, /terms_version/u);
-  assert.match(signup, /href="\/privacidade"/u);
+  assert.match(signup, /terms_document_version_id/u);
+  assert.match(signup, /\/documentos\/privacidade\?version=/u);
   assert.match(field, /useState\(true\)/u);
   assert.match(field, /aria-label=\{visible \? "Ocultar senha" : "Mostrar senha"\}/u);
   assert.match(requestAction, /resetPasswordForEmail/u);
@@ -104,7 +104,7 @@ test("administrative destructive actions are dependency-safe", async () => {
 });
 
 test("gateway, actionable help, legal and admin recovery contracts are versioned", async () => {
-  const [gateway, layout, usersAction, usersPage, accessPolicy, help, environment, terms, privacy, pointEditor] = await Promise.all([
+  const [gateway, layout, usersAction, usersPage, accessPolicy, help, environment, terms, legalDocuments, pointEditor] = await Promise.all([
     source("supabase/functions/authenticated-rpc/index.ts"),
     source("apps/web/app/layout.tsx"),
     source("apps/web/app/admin/usuarios/actions.ts"),
@@ -113,7 +113,7 @@ test("gateway, actionable help, legal and admin recovery contracts are versioned
     source("apps/web/app/ajuda/page.tsx"),
     source(".env.example"),
     source("apps/web/app/termos/page.tsx"),
-    source("apps/web/app/privacidade/page.tsx"),
+    source("apps/web/app/documentos/[tipo]/page.tsx"),
     source("apps/web/app/admin/gamificacao/point-rule-editor.tsx"),
   ]);
 
@@ -141,8 +141,10 @@ test("gateway, actionable help, legal and admin recovery contracts are versioned
   assert.doesNotMatch(usersAction, /@estimulo\.org/u);
   assert.match(usersPage, /E-mail, papel, status ou ID/u);
   assert.match(accessPolicy, /usesCorporateGoogleIdentity/u);
-  assert.match(terms, /aprovação jurídica/u);
-  assert.match(privacy, /responsável jurídico e de privacidade/u);
+  assert.match(terms, /getPublicSignupLegalDocument\("terms_of_use"/u);
+  assert.match(terms, /legalDocument\.body/u);
+  assert.match(legalDocuments, /privacy_policy/u);
+  assert.match(legalDocuments, /GovernedDocumentPage/u);
   assert.match(pointEditor, /diagnostic\.session\.completed/u);
 });
 
