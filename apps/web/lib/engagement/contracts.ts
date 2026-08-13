@@ -133,7 +133,6 @@ export type OperatorAnnouncement = ParticipantAnnouncement & {
 export type OperatorAnnouncements = {
   organization_id: string;
   announcements: OperatorAnnouncement[];
-  roles: never[];
 };
 
 export type AnnouncementUploadIntent = {
