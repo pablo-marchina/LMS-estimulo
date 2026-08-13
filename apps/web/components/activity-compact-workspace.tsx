@@ -32,6 +32,7 @@ function sectionFromLocation(available: SectionId[]): SectionId {
 export function ActivityCompactWorkspace() {
   const [available, setAvailable] = useState<SectionId[]>([]);
   const [active, setActive] = useState<SectionId>("conteudo");
+  const anchorRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLElement | null>(null);
 
   const detectSections = useCallback((root: HTMLElement) => {
@@ -60,17 +61,18 @@ export function ActivityCompactWorkspace() {
   }, []);
 
   useEffect(() => {
-    const root = document.querySelector<HTMLElement>("[data-activity-workspace]");
+    const root = anchorRef.current?.closest<HTMLElement>("[data-activity-workspace]") ?? null;
     if (!root) return;
 
+    const activityPage = root.querySelector<HTMLElement>("[data-activity-page]");
     rootRef.current = root;
     detectSections(root);
 
-    // Server Actions can replace the activity page while preserving this layout.
-    // Re-detect the sections whenever that happens so the lesson tabs never
-    // depend on a portal target that was removed from the DOM.
-    const observer = new MutationObserver(() => detectSections(root));
-    observer.observe(root, { childList: true, subtree: true });
+    // Server Actions replace the activity page while the surrounding lesson
+    // workspace persists. Observe only that replaceable region so rendering
+    // the tabs themselves cannot retrigger the observer.
+    const observer = activityPage ? new MutationObserver(() => detectSections(root)) : null;
+    observer?.observe(activityPage, { childList: true, subtree: true });
 
     const syncHash = () => selectSection(sectionFromLocation(
       sectionDefinitions
@@ -90,7 +92,7 @@ export function ActivityCompactWorkspace() {
     root.addEventListener("click", followSectionLink, true);
 
     return () => {
-      observer.disconnect();
+      observer?.disconnect();
       window.removeEventListener("hashchange", syncHash);
       root.removeEventListener("click", followSectionLink, true);
       delete root.dataset.activeSection;
@@ -112,37 +114,37 @@ export function ActivityCompactWorkspace() {
     selectSection(available[nextIndex]);
   }
 
-  if (available.length === 0) return null;
-
   return (
-    <div className="mx-auto w-full max-w-[1480px] px-4 pt-4 sm:px-5 lg:px-7 lg:pt-5">
-      <div
-        role="tablist"
-        aria-label="Etapas da aula"
-        onKeyDown={handleKeyDown}
-        className="sticky top-16 z-20 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-white/95 p-1.5 shadow-sm backdrop-blur sm:flex"
-      >
-        {sectionDefinitions.filter((section) => available.includes(section.id)).map((section) => {
-          const Icon = section.icon;
-          const selected = active === section.id;
-          return (
-            <button
-              key={section.id}
-              id={`tab-${section.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-controls={section.id}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => selectSection(section.id)}
-              className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${selected ? "bg-primary text-white shadow-sm" : "text-muted hover:bg-primary-soft hover:text-primary"}`}
-            >
-              <Icon size={16} aria-hidden="true" />
-              <span>{section.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div ref={anchorRef} className={available.length ? "mx-auto w-full max-w-[1480px] px-4 pt-4 sm:px-5 lg:px-7 lg:pt-5" : "hidden"}>
+      {available.length ? (
+        <div
+          role="tablist"
+          aria-label="Etapas da aula"
+          onKeyDown={handleKeyDown}
+          className="sticky top-16 z-20 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-white/95 p-1.5 shadow-sm backdrop-blur sm:flex"
+        >
+          {sectionDefinitions.filter((section) => available.includes(section.id)).map((section) => {
+            const Icon = section.icon;
+            const selected = active === section.id;
+            return (
+              <button
+                key={section.id}
+                id={`tab-${section.id}`}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                aria-controls={section.id}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => selectSection(section.id)}
+                className={`inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-bold transition ${selected ? "bg-primary text-white shadow-sm" : "text-muted hover:bg-primary-soft hover:text-primary"}`}
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span>{section.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
