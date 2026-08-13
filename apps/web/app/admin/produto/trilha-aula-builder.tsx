@@ -31,6 +31,7 @@ function AulaForm({ journeyVersionId, organizationId, pathTemplateId, libraryIte
   const isPractice = Boolean(aula?.practice) || aula?.activity_type === "practice";
   const questions = aula?.assessment?.questions.map((question) => ({ prompt: question.prompt, question_type: question.question_type, options: question.options.map((option) => ({ label: option.label, is_correct: option.is_correct })) })) ?? [];
   const hasOptionalResources = questions.length > 0 || isPractice;
+  const isNewLesson = !aula;
 
   return (
     <form action={saveAulaAction} encType="multipart/form-data" className="grid gap-5 border-t border-border p-4">
@@ -46,8 +47,8 @@ function AulaForm({ journeyVersionId, organizationId, pathTemplateId, libraryIte
       <input type="hidden" name="metadata_snapshot" value={JSON.stringify(aula?.step_metadata ?? {})} />
 
       <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
-        <label className="grid gap-1 text-sm font-medium text-ink">Título<Input name="title" required defaultValue={aula?.title ?? ""} /><span className="text-[11px] font-normal text-muted">Nome mostrado ao participante.</span></label>
-        <label className="grid gap-1 text-sm font-medium text-ink">Duração<Input name="estimated_minutes" type="number" min="1" defaultValue={String(aula?.estimated_minutes ?? 10)} required /><span className="text-[11px] font-normal text-muted">Em minutos.</span></label>
+        <label className="grid gap-1 text-sm font-medium text-ink">Título<Input name="title" required={isNewLesson} defaultValue={aula?.title ?? ""} /><span className="text-[11px] font-normal text-muted">Nome mostrado ao participante.</span></label>
+        <label className="grid gap-1 text-sm font-medium text-ink">Duração<Input name="estimated_minutes" type="number" min="1" defaultValue={String(aula?.estimated_minutes ?? 10)} required={isNewLesson} /><span className="text-[11px] font-normal text-muted">Em minutos.</span></label>
       </div>
       <label className="grid gap-1 text-sm font-medium text-ink">O que a pessoa fará<Textarea name="description" rows={2} defaultValue={aula?.description ?? ""} placeholder="Explique em uma frase." /></label>
 
@@ -67,7 +68,7 @@ function AulaForm({ journeyVersionId, organizationId, pathTemplateId, libraryIte
 
       <ActivityContentFields items={libraryItems} currentLibraryItemVersionId={currentLibraryItemVersionId} currentAsset={currentAsset} currentContentRequired={currentAsset?.is_required === true} />
 
-      <details className="rounded-2xl border border-border bg-white"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-secondary">Ordem e obrigatoriedade</summary><div className="grid gap-4 border-t border-border p-4 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium text-ink">Ordem<Input name="position" type="number" min="1" defaultValue={String(aula?.position ?? position)} required /><span className="text-[11px] font-normal text-muted">1 aparece antes de 2.</span></label><label className="flex items-start gap-3 rounded-xl bg-surface-muted p-3 text-sm text-ink"><input type="checkbox" name="is_required" defaultChecked={aula?.is_required !== false} className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Aula obrigatória</strong><small className="text-muted">Conta para a conclusão da jornada.</small></span></label></div></details>
+      <details className="rounded-2xl border border-border bg-white"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-secondary">Ordem e obrigatoriedade</summary><div className="grid gap-4 border-t border-border p-4 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium text-ink">Ordem<Input name="position" type="number" min="1" defaultValue={String(aula?.position ?? position)} required={isNewLesson} /><span className="text-[11px] font-normal text-muted">1 aparece antes de 2.</span></label><label className="flex items-start gap-3 rounded-xl bg-surface-muted p-3 text-sm text-ink"><input type="checkbox" name="is_required" defaultChecked={aula?.is_required !== false} className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Aula obrigatória</strong><small className="text-muted">Conta para a conclusão da jornada.</small></span></label></div></details>
 
       <details className="rounded-2xl border border-primary/20 bg-primary-soft/20" open={hasOptionalResources}>
         <summary className="cursor-pointer px-4 py-3 text-sm font-black text-secondary">Recursos opcionais <span className="font-normal text-muted">· perguntas e entrega</span></summary>
