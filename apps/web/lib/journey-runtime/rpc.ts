@@ -175,6 +175,15 @@ export const journeyRuntime = {
       p_idempotency_key: key
     }),
 
+  publishAdminJourneyVersion: (actor: string, organizationId: string, journeyVersionId: string, contentHash: string, key: string) =>
+    invoke<RpcEnvelope<unknown>>("publish_admin_journey_version", {
+      p_actor_user_account_id: actor,
+      p_organization_id: organizationId,
+      p_journey_version_id: journeyVersionId,
+      p_expected_content_hash: contentHash,
+      p_idempotency_key: key
+    }),
+
   createEnrollment: (actor: string, organizationId: string, entrepreneurId: string, journeyVersionId: string, source: string, key: string) =>
     invoke<RpcEnvelope<unknown>>("e14_create_enrollment", {
       p_actor_user_account_id: actor,
