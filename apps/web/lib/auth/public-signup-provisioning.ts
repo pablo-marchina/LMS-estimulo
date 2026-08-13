@@ -24,7 +24,7 @@ const signupLegalDocumentSchema = z.object({
   title: z.string().min(1),
   body: z.string().min(1),
   content_hash: z.string().regex(/^[0-9a-f]{64}$/u),
-  published_at: z.string().datetime(),
+  published_at: z.string().min(1),
   status: z.enum(["published", "retired"]),
 });
 
