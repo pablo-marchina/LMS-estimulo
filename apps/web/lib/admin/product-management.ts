@@ -165,7 +165,7 @@ export function saveAdminJourney(input: { actorUserAccountId: string; organizati
 }
 
 export function saveAdminTrack(input: { actorUserAccountId: string; organizationId: string; payload: Record<string, unknown>; idempotencyKey: string }) {
-  return invokeServerRpc<{ path_template_id: string; journey_version_id: string; status: string; live_update: boolean; replayed: boolean }>("save_admin_track", {
+  return invokeServerRpc<{ path_template_id: string; journey_version_id: string; badge_version_id: string | null; status: string; live_update: boolean; replayed: boolean }>("save_admin_track_v2", {
     p_actor_user_account_id: input.actorUserAccountId,
     p_organization_id: input.organizationId,
     p_payload: input.payload,
