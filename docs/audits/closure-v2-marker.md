@@ -1,0 +1,1 @@
+Structural closure branch marker.
