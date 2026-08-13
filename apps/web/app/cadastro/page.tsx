@@ -3,11 +3,13 @@ import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
 import { PasswordField } from "@/components/password-field";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Input, Label } from "@/components/ui/input";
+import { getCurrentSignupLegalSnapshot } from "@/lib/auth/public-signup-provisioning";
 import { createPublicAccountAction } from "./actions";
 
 const errorMessages: Record<string, string> = {
   dados_invalidos: "Revise os campos e aceite os termos para continuar.",
   senhas_diferentes: "As senhas informadas são diferentes.",
+  aceite_legal_invalido: "Os documentos legais mudaram durante o cadastro. Revise as versões atuais antes de continuar.",
   conta_existente_ou_vinculada: "Não foi possível abrir uma nova conta com este e-mail. Entre com o método já utilizado. Contas @estimulo.org com acesso administrativo devem usar o Google.",
   usuario_existente: "Não foi possível abrir uma nova conta com este e-mail. Tente entrar com o acesso já utilizado.",
   limite_email: "O limite temporário do servidor de e-mail foi atingido. Aguarde antes de tentar novamente.",
@@ -17,6 +19,27 @@ const errorMessages: Record<string, string> = {
 
 export default async function PublicSignupPage({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
   const { erro } = await searchParams;
+  let legalSnapshot;
+  try {
+    legalSnapshot = await getCurrentSignupLegalSnapshot();
+  } catch {
+    return (
+      <AuthLayout
+        eyebrow="Crie sua conta grátis"
+        title="Cadastro temporariamente indisponível"
+        description="Os documentos legais publicados não puderam ser carregados com segurança."
+        wide
+      >
+        <FormMessage tone="error">Tente novamente mais tarde. O cadastro só é liberado quando as versões vigentes dos Termos e da Política de Privacidade podem ser vinculadas à sua conta.</FormMessage>
+        <AuthFooter>
+          <p>
+            Já tem conta?{" "}
+            <Link href="/entrar" className="font-semibold text-primary hover:underline">Entrar</Link>
+          </p>
+        </AuthFooter>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -60,18 +83,18 @@ export default async function PublicSignupPage({ searchParams }: { searchParams:
           Seu CPF e telefone só são pedidos depois que você confirma o e-mail, e ficam protegidos com a gente.
         </p>
 
-        <input type="hidden" name="terms_version" value="2026-07-29" />
-        <input type="hidden" name="privacy_version" value="2026-07-29" />
+        <input type="hidden" name="terms_document_version_id" value={legalSnapshot.terms.id} />
+        <input type="hidden" name="privacy_document_version_id" value={legalSnapshot.privacy.id} />
         <label className="flex items-start gap-2.5 text-sm text-ink">
           <input name="terms" type="checkbox" value="accepted" required className="mt-0.5 size-4 accent-primary" />
           <span>
             Li e aceito os{" "}
-            <Link href="/termos" className="font-semibold text-primary hover:underline" target="_blank">
-              Termos de Uso
+            <Link href={`/termos?version=${encodeURIComponent(legalSnapshot.terms.id)}`} className="font-semibold text-primary hover:underline" target="_blank">
+              Termos de Uso (versão {legalSnapshot.terms.version_number})
             </Link>{" "}
             e a{" "}
-            <Link href="/privacidade" className="font-semibold text-primary hover:underline" target="_blank">
-              Política de Privacidade
+            <Link href={`/documentos/privacidade?version=${encodeURIComponent(legalSnapshot.privacy.id)}`} className="font-semibold text-primary hover:underline" target="_blank">
+              Política de Privacidade (versão {legalSnapshot.privacy.version_number})
             </Link>
             .
           </span>

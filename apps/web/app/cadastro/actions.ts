@@ -1,12 +1,16 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import {
+  getSignupLegalSnapshotByIds,
+  legalDocumentPublishedDate,
+  stagePublicSignupLegalSnapshot,
+} from "@/lib/auth/public-signup-provisioning";
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 import { createSessionClient } from "@/lib/supabase/server";
-
-const consentVersionSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u);
 
 const signupSchema = z.object({
   preferredName: z.string().trim().min(2).max(120),
@@ -14,8 +18,8 @@ const signupSchema = z.object({
   password: z.string().min(10).max(128),
   passwordConfirmation: z.string(),
   terms: z.literal("accepted"),
-  termsVersion: consentVersionSchema,
-  privacyVersion: consentVersionSchema,
+  termsDocumentVersionId: z.string().uuid(),
+  privacyDocumentVersionId: z.string().uuid(),
 }).refine((value) => value.password === value.passwordConfirmation, {
   path: ["passwordConfirmation"],
   message: "PASSWORDS_DIFFER",
@@ -54,16 +58,39 @@ export async function createPublicAccountAction(formData: FormData) {
     password: formData.get("password"),
     passwordConfirmation: formData.get("password_confirmation"),
     terms: formData.get("terms"),
-    termsVersion: formData.get("terms_version"),
-    privacyVersion: formData.get("privacy_version"),
+    termsDocumentVersionId: formData.get("terms_document_version_id"),
+    privacyDocumentVersionId: formData.get("privacy_document_version_id"),
   });
   if (!parsed.success) redirect(`/cadastro?erro=${validationError(parsed.error.issues)}`);
 
   if (!(await publicSignupRuntimeIsReady())) redirect("/cadastro?erro=servico_indisponivel");
 
-  const client = await createSessionClient();
+  let legalSnapshot;
+  try {
+    legalSnapshot = await getSignupLegalSnapshotByIds({
+      termsDocumentVersionId: parsed.data.termsDocumentVersionId,
+      privacyDocumentVersionId: parsed.data.privacyDocumentVersionId,
+    });
+  } catch {
+    redirect("/cadastro?erro=aceite_legal_invalido");
+  }
+
   const callback = new URL("/confirm", publicApplicationOrigin()).toString();
   const acceptedAt = new Date().toISOString();
+  const legalSnapshotToken = randomUUID();
+  try {
+    await stagePublicSignupLegalSnapshot({
+      snapshotToken: legalSnapshotToken,
+      email: parsed.data.email,
+      termsDocumentVersionId: legalSnapshot.terms.id,
+      privacyDocumentVersionId: legalSnapshot.privacy.id,
+      acceptedAt,
+    });
+  } catch {
+    redirect("/cadastro?erro=servico_indisponivel");
+  }
+
+  const client = await createSessionClient();
   const { data, error } = await client.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
@@ -71,11 +98,12 @@ export async function createPublicAccountAction(formData: FormData) {
       emailRedirectTo: callback,
       data: {
         preferred_name: parsed.data.preferredName,
-        signup_profile_version: 4,
+        signup_profile_version: 5,
+        signup_legal_snapshot_token: legalSnapshotToken,
         terms_accepted_at: acceptedAt,
-        terms_version: parsed.data.termsVersion,
+        terms_version: legalDocumentPublishedDate(legalSnapshot.terms),
         privacy_accepted_at: acceptedAt,
-        privacy_version: parsed.data.privacyVersion,
+        privacy_version: legalDocumentPublishedDate(legalSnapshot.privacy),
       },
     },
   });
