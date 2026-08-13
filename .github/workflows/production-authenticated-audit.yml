@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/production-authenticated-audit.yml
       - scripts/e2e/production-authenticated-audit.mjs
+      - scripts/e2e/auth-cookie-probe.mjs
 
 permissions:
   contents: read
@@ -54,6 +55,9 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Probe SSR auth cookie persistence
+        run: node scripts/e2e/auth-cookie-probe.mjs
 
       - name: Run authenticated production browser audit
         run: node scripts/e2e/production-authenticated-audit.mjs
