@@ -90,7 +90,12 @@ jobs:
             cat .artifacts/database-gates.log
             rm -f .artifacts/database-gates.log
           else
-            tail -n 260 .artifacts/database-gates.log >> "$GITHUB_STEP_SUMMARY"
+            {
+              echo
+              echo "=== synthetic E14 point ledger diagnostic ==="
+              psql "$DATABASE_URL" -X -P pager=off -c "select to_jsonb(pl) from engagement.point_ledger pl where pl.journey_instance_id in (select ji.id from orchestration.journey_instances ji where ji.journey_version_id=app_private.e14_deterministic_uuid('e14:journey-version:v1')) order by pl.created_at, pl.id;" || true
+            } >> .artifacts/database-gates.log 2>&1
+            tail -n 320 .artifacts/database-gates.log >> "$GITHUB_STEP_SUMMARY"
           fi
           exit 0
 
