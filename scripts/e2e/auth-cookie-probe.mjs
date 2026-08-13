@@ -55,13 +55,11 @@ async function probe(browser, role, email, password, target) {
   await page.locator('button[type="submit"]').click();
   await page.waitForTimeout(1_500);
   result.steps.push(await snapshot(page, "after-submit"));
-  await page.screenshot({ path: path.join(out, `auth-probe-${role}-after-submit.png`), fullPage: true }).catch(() => {});
 
   const first = await page.goto(`${baseUrl}${target}`, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => null);
   await page.waitForTimeout(1_000);
   result.firstTargetStatus = first?.status() ?? null;
   result.steps.push(await snapshot(page, "after-first-target"));
-  await page.screenshot({ path: path.join(out, `auth-probe-${role}-first-target.png`), fullPage: true }).catch(() => {});
 
   const second = await page.goto(`${baseUrl}${target}`, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => null);
   await page.waitForTimeout(1_000);
