@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { saveAdminBadgeCatalog } from "@/lib/admin/badge-management";
 import { getAdminProductWorkspace, saveAdminProductResource } from "@/lib/admin/product-management";
 import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
@@ -19,9 +20,10 @@ function boundedRatio(value: string, fallback: number) { const parsed = Number.p
 function recurrencePolicy(formData: FormData): Record<string, unknown> {
   const frequency = text(formData, "frequency") || "once";
   const maximum = positiveInteger(text(formData, "maximum_awards"), 1);
-  const scope: Record<string, string> = { once: "participant", per_activity: "enrollment_activity", per_assessment: "enrollment_assessment", per_path: "path", per_journey: "journey", daily: "participant_day", weekly: "participant_week", unlimited: "event" };
+  const scope: Record<string, string> = { once: "participant", per_activity: "enrollment_activity", per_assessment: "enrollment_assessment", per_path: "path", per_journey: "journey", per_certificate: "event", daily: "participant_day", weekly: "participant_week", unlimited: "event" };
   const eventName = text(formData, "trigger_event");
   if (!eventName) throw new Error("POINT_TRIGGER_REQUIRED");
+  if (frequency === "per_certificate") return { scope: "event", frequency: "per_certificate", transferable: false, trigger: { event_name: eventName } };
   return { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false, trigger: { event_name: eventName } };
 }
 function validityPolicy(formData: FormData): Record<string, unknown> { return text(formData, "validity_mode") === "months" ? { expires: true, duration_months: positiveInteger(text(formData, "validity_months"), 12) } : { expires: false }; }
@@ -44,11 +46,20 @@ export async function saveGamificationResourceAction(formData: FormData) {
     payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `pontos_${randomUUID().slice(0,8)}`), name, amount: Number(text(formData, "amount")), eligibility_rule_version_id: text(formData, "eligibility_rule_version_id"), recurrence_policy: recurrencePolicy(formData), status: text(formData, "status") || "draft" };
   } else if (resourceType === "badge") {
     const title = text(formData, "title"); const name = text(formData, "name") || title; const existing = workspace?.badges.find((item) => item.definition_id === definitionId);
-    payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `selo_${randomUUID().slice(0,8)}`), name, title, description: text(formData, "description"), criteria_rule_version_id: text(formData, "criteria_rule_version_id"), status: text(formData, "status") || "draft" };
+    payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `selo_${randomUUID().slice(0,8)}`), name, title, description: text(formData, "description"), criteria_rule_version_id: nullable(formData, "criteria_rule_version_id"), status: text(formData, "status") || "draft" };
   } else if (resourceType === "certificate") {
     const name = text(formData, "name"); const existing = workspace?.certificates.find((item) => item.definition_id === definitionId); requestedCertificateStatus = text(formData, "status") || "draft";
     payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `certificado_${randomUUID().slice(0,8)}`), name, journey_version_id: text(formData, "journey_version_id"), requirements_rule_version_id: text(formData, "requirements_rule_version_id"), validity_policy: validityPolicy(formData), status: "draft" };
   } else redirect("/admin/gamificacao?erro=tipo_invalido");
+
+  if (resourceType === "badge") {
+    try {
+      await saveAdminBadgeCatalog({ actorUserAccountId: auth.identity.user_account_id, organizationId, payload, idempotencyKey: randomUUID() });
+    } catch {
+      redirect("/admin/gamificacao?tipo=selos&erro=falha_salvar");
+    }
+    redirect("/admin/gamificacao?tipo=selos&sucesso=salvo");
+  }
 
   let result: Awaited<ReturnType<typeof saveAdminProductResource>>;
   try {
@@ -76,8 +87,6 @@ export async function saveGamificationResourceAction(formData: FormData) {
       idempotencyKey: randomUUID(),
     });
   } catch {
-    // The core certificate draft has already been persisted. Report that fact
-    // instead of presenting this as a total save failure.
     redirect(`/admin/gamificacao?tipo=certificados&sucesso=rascunho_salvo&erro=configuracao_certificado&certificado=${encodeURIComponent(certificateVersionId)}`);
   }
 
@@ -85,14 +94,12 @@ export async function saveGamificationResourceAction(formData: FormData) {
     try {
       await extendedCredentialRuntime.publishCertificate({ actorUserAccountId: auth.identity.user_account_id, organizationId, certificateVersionId, idempotencyKey: randomUUID() });
     } catch {
-      // Configuration is preserved as a draft even when publication is blocked.
       redirect(`/admin/gamificacao?tipo=certificados&sucesso=certificado_configurado&erro=publicacao_certificado&certificado=${encodeURIComponent(certificateVersionId)}`);
     }
   }
 
   redirect(`/admin/gamificacao?tipo=certificados&sucesso=${requestedCertificateStatus === "published" ? "certificado_publicado" : "rascunho_salvo"}&certificado=${encodeURIComponent(certificateVersionId)}`);
 }
-
 
 export async function saveHomeBadgeHighlightsAction(formData: FormData) {
   const auth = await getAuthContext();
@@ -120,7 +127,6 @@ export async function saveHomeBadgeHighlightsAction(formData: FormData) {
   }
   redirect("/admin/gamificacao?tipo=selos&sucesso=destaques");
 }
-
 
 export async function saveCertificateIssuerAction(formData: FormData) {
   const auth = await getAuthContext();

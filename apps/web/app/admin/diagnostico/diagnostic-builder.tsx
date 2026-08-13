@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { StatusPill } from "@/components/ui/status-pill";
+import { diagnosticResultBlocks, normalizeDiagnosticResultBlocks } from "@/lib/diagnostics/result-blocks";
 import { saveDiagnosticAction } from "./actions";
 
 export type DiagnosticProfileInput = { code: string; name: string; description: string };
@@ -25,6 +26,7 @@ export type DiagnosticBuilderInitial = {
   questions: DiagnosticQuestionInput[];
   defaultProfileCode: string;
   rules: DiagnosticRuleInput[];
+  resultBlocks?: string[];
 };
 
 type DiagnosticBuilderProps = {
@@ -49,6 +51,7 @@ export function DiagnosticBuilder({ initial, previousProfiles, canPublish }: Dia
   const [defaultProfileCode, setDefaultProfileCode] = useState(initial.defaultProfileCode || initial.profiles[0]?.code || "perfil_1");
   const [publishNow, setPublishNow] = useState(false);
   const [mapping, setMapping] = useState<Record<string, string>>(() => Object.fromEntries(previousProfiles.map((profile) => [profile.code, initial.profiles.some((item) => item.code === profile.code) ? profile.code : initial.profiles[0]?.code ?? ""])));
+  const enabledResultBlocks = useMemo(() => new Set(normalizeDiagnosticResultBlocks(initial.resultBlocks)), [initial.resultBlocks]);
 
   const initialThresholds = useMemo(() => {
     const result: Record<string, Record<string, number | string>> = {};
@@ -153,6 +156,10 @@ export function DiagnosticBuilder({ initial, previousProfiles, canPublish }: Dia
 
     <AdminDisclosure title="Regras de classificação" description="Defina limites por perfil e dimensão. Campos vazios não participam da regra; limites aceitam valores decimais.">
       <div className="grid gap-5"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th className="p-2 text-left">Perfil</th>{dimensions.map((dimension) => <th key={dimension.code} className="min-w-36 p-2 text-left">{dimension.name}</th>)}</tr></thead><tbody>{profiles.map((profile, profileIndex) => <tr key={profile.code} className="border-t border-border"><td className="p-2 font-medium text-ink">{profile.name}</td>{dimensions.map((dimension, dimensionIndex) => <td key={dimension.code} className="p-2"><Input name={`threshold_${profileIndex}_${dimensionIndex}`} type="number" step="0.1" placeholder="—" defaultValue={initialThresholds[profile.code]?.[dimension.code] ?? ""} /></td>)}</tr>)}</tbody></table></div><Label>Perfil padrão<Select name="default_archetype_code" value={defaultProfileCode} onChange={(event) => setDefaultProfileCode(event.target.value)} required><option value="">Selecione</option>{profiles.map((profile) => <option key={profile.code} value={profile.code}>{profile.name}</option>)}</Select><span className="text-[11px] font-normal text-muted">Usado quando nenhuma regra específica é atendida.</span></Label></div>
+    </AdminDisclosure>
+
+    <AdminDisclosure title="Blocos do resultado" description="Escolha quais blocos o participante verá após concluir o diagnóstico. O mesmo contrato é usado no resultado publicado.">
+      <div className="grid gap-3 sm:grid-cols-2">{diagnosticResultBlocks.map((block) => <label key={block.code} className="flex items-start gap-3 rounded-xl border border-border bg-white p-4 text-sm text-ink"><input type="checkbox" name="result_blocks" value={block.code} defaultChecked={enabledResultBlocks.has(block.code)} className="mt-0.5 size-4 accent-primary" /><span><strong className="block text-secondary">{block.label}</strong><small className="mt-1 block leading-5 text-muted">{block.description}</small></span></label>)}</div>
     </AdminDisclosure>
 
     {publishNow && previousProfiles.length ? <Card className="grid gap-4 border-warning/30 bg-warning-soft"><div><h2 className="font-semibold text-ink">Migração dos perfis atuais</h2><p className="mt-1 text-sm text-muted">Para cada perfil do diagnóstico publicado, escolha o perfil correspondente neste novo diagnóstico. A publicação atualiza usuários e restrições das jornadas em uma única operação.</p></div>{previousProfiles.map((oldProfile, index) => <div key={oldProfile.code} className="grid gap-1 sm:grid-cols-[1fr_1fr] sm:items-center"><input type="hidden" name={`mapping_old_code_${index}`} value={oldProfile.code} /><span className="text-sm font-semibold text-secondary">{oldProfile.name}</span><Select name={`mapping_target_code_${index}`} value={mapping[oldProfile.code] ?? ""} onChange={(event) => setMapping((current) => ({ ...current, [oldProfile.code]: event.target.value }))} required><option value="">Selecione o novo perfil</option>{profiles.map((profile) => <option key={profile.code} value={profile.code}>{profile.name}</option>)}</Select></div>)}</Card> : null}

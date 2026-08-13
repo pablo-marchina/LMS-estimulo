@@ -10,6 +10,7 @@ import { saveAdminProductResource } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
+import { normalizeDiagnosticResultBlocks } from "@/lib/diagnostics/result-blocks";
 
 const uuid = z.string().uuid();
 const codePattern = /^[a-z][a-z0-9_-]{1,79}$/;
@@ -83,6 +84,7 @@ export async function saveDiagnosticAction(formData: FormData) {
   }).filter((rule) => Object.keys(rule.thresholds).length > 0);
   const defaultArchetypeCode = text(formData, "default_archetype_code").toLowerCase();
   if (!profileCodes.has(defaultArchetypeCode)) redirect("/admin/diagnostico?erro=perfil_padrao_invalido");
+  const resultBlocks = normalizeDiagnosticResultBlocks(formData.getAll("result_blocks").map(String));
 
   const name = text(formData, "name");
   const existingCode = text(formData, "definition_code");
@@ -106,7 +108,7 @@ export async function saveDiagnosticAction(formData: FormData) {
     name,
     purpose: text(formData, "purpose"),
     status: "draft",
-    configuration: { archetype_codes: profiles.map((profile) => profile.code) },
+    configuration: { archetype_codes: profiles.map((profile) => profile.code), result_blocks: resultBlocks },
     dimensions,
     items,
     archetypes: profiles,

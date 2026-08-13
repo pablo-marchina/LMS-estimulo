@@ -92,9 +92,9 @@ export type DiagnosticDimensionSummary = {
 export type ParticipantDiagnosticSummary = {
   diagnostic_name: string | null;
   completed_at: string | null;
+  result_blocks: string[];
   dimensions: DiagnosticDimensionSummary[];
 };
-
 
 export type AdminHomeBadgeHighlight = {
   badge_version_id: string;
