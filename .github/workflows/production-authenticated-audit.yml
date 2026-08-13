@@ -26,7 +26,7 @@ jobs:
       E2E_PRODUCTION_URL: ${{ secrets.E2E_PRODUCTION_URL }}
       E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
       E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
-      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
 
     steps:
@@ -45,13 +45,13 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Verify required secrets are present
+      - name: Verify required E2E inputs are present
         shell: bash
         run: |
           set -euo pipefail
           for name in E2E_PRODUCTION_URL E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
             if [ -z "${!name:-}" ]; then
-              echo "Missing required repository secret: $name" >&2
+              echo "Missing required E2E input: $name" >&2
               exit 1
             fi
           done
