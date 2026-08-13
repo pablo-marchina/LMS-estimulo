@@ -53,8 +53,12 @@ async function probe(browser, role, email, password, target) {
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForTimeout(1_500);
-  result.steps.push(await snapshot(page, "after-submit"));
+
+  // Next.js Server Actions can take several seconds before the redirect response
+  // commits Supabase's Set-Cookie headers. Never interrupt the in-flight submit.
+  await page.waitForURL((url) => url.pathname !== "/entrar", { timeout: 30_000 }).catch(() => {});
+  await page.waitForLoadState("domcontentloaded", { timeout: 10_000 }).catch(() => {});
+  result.steps.push(await snapshot(page, "after-submit-settled"));
 
   const first = await page.goto(`${baseUrl}${target}`, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => null);
   await page.waitForTimeout(1_000);
