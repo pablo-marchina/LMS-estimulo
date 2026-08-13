@@ -27,14 +27,16 @@ const triggerOptions = [
   ["assessment.attempt.submitted", "Enviar uma atividade rápida ou avaliação"],
   ["assessment.attempt.passed", "Ser aprovado em uma avaliação"],
   ["learning.practice.evidence.confirmed", "Enviar uma atividade prática"],
+  ["learning.external_credential.confirmed", "Enviar um certificado"],
   ["journey.path.completed", "Concluir uma trilha"],
   ["engagement.social.shared", "Compartilhar diagnóstico ou certificado"],
 ] as const;
 
 function objectValue(value: unknown): Record<string, unknown> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
-function frequencyFromScope(scope: unknown) {
+function frequencyFromPolicy(recurrence: Record<string, unknown>) {
+  if (recurrence.frequency === "per_certificate") return "per_certificate";
   const map: Record<string, string> = { participant: "once", enrollment_activity: "per_activity", enrollment_assessment: "per_assessment", path: "per_path", journey: "per_journey", participant_day: "daily", participant_week: "weekly", event: "unlimited" };
-  return map[String(scope ?? "")] ?? "once";
+  return map[String(recurrence.scope ?? "")] ?? "once";
 }
 
 export function PointRuleEditor({ pointRules, eligibilityRules }: { pointRules: PointRule[]; eligibilityRules: EligibilityRule[] }) {
@@ -43,13 +45,13 @@ export function PointRuleEditor({ pointRules, eligibilityRules }: { pointRules: 
   const version = selected ? [...selected.versions].sort((a, b) => b.version_number - a.version_number).find((item) => item.status === "published") ?? [...selected.versions].sort((a, b) => b.version_number - a.version_number)[0] ?? null : null;
   const recurrence = objectValue(version?.recurrence_policy);
   const trigger = objectValue(recurrence.trigger);
-  const [frequency, setFrequency] = useState(frequencyFromScope(recurrence.scope));
+  const [frequency, setFrequency] = useState(frequencyFromPolicy(recurrence));
 
   function selectRule(value: string) {
     setSelectedDefinitionId(value);
     const next = pointRules.find((item) => item.definition_id === value);
     const nextVersion = next ? [...next.versions].sort((a, b) => b.version_number - a.version_number).find((item) => item.status === "published") ?? [...next.versions].sort((a, b) => b.version_number - a.version_number)[0] : null;
-    setFrequency(frequencyFromScope(objectValue(nextVersion?.recurrence_policy).scope));
+    setFrequency(frequencyFromPolicy(objectValue(nextVersion?.recurrence_policy)));
   }
 
   return <Card>
@@ -64,8 +66,8 @@ export function PointRuleEditor({ pointRules, eligibilityRules }: { pointRules: 
       </div>
       <AdminDisclosure title="Limites, condição e publicação" description="Controle repetição, regra de elegibilidade e entrada em vigor.">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Label>Frequência<Select name="frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}><option value="once">Uma única vez por participante</option><option value="per_activity">Uma vez por aula</option><option value="per_assessment">Uma vez por avaliação</option><option value="per_path">Uma vez por trilha</option><option value="per_journey">Uma vez por jornada</option><option value="daily">Limite por dia</option><option value="weekly">Limite por semana</option><option value="unlimited">Sempre que acontecer</option></Select></Label>
-          <Label>Máximo no período<Input name="maximum_awards" type="number" min="1" defaultValue={String(recurrence.maximum ?? recurrence.maximum_awards ?? 1)} disabled={frequency === "unlimited"} /><span className="text-[11px] font-normal text-muted">{frequency === "unlimited" ? "Sem limite para esta frequência." : "Quantidade máxima de concessões dentro da frequência escolhida."}</span></Label>
+          <Label>Frequência<Select name="frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}><option value="once">Uma única vez por participante</option><option value="per_activity">Uma vez por aula</option><option value="per_assessment">Uma vez por avaliação</option><option value="per_certificate">Uma vez por certificado</option><option value="per_path">Uma vez por trilha</option><option value="per_journey">Uma vez por jornada</option><option value="daily">Limite por dia</option><option value="weekly">Limite por semana</option><option value="unlimited">Sempre que acontecer</option></Select></Label>
+          <Label>Máximo no período<Input name="maximum_awards" type="number" min="1" defaultValue={String(recurrence.maximum ?? recurrence.maximum_awards ?? 1)} disabled={frequency === "unlimited" || frequency === "per_certificate"} /><span className="text-[11px] font-normal text-muted">{frequency === "per_certificate" ? "Cada certificado confirmado possui sua própria referência idempotente." : frequency === "unlimited" ? "Sem limite para esta frequência." : "Quantidade máxima de concessões dentro da frequência escolhida."}</span></Label>
           <Label>Condição necessária<Select name="eligibility_rule_version_id" required defaultValue={version?.eligibility_rule_version_id ?? ""}><option value="">Selecione</option>{eligibilityRules.map((item) => <option value={item.id} key={item.id}>{item.definitionName} · versão {item.version_number}</option>)}</Select></Label>
           <Label>Estado<Select name="status" defaultValue={version?.status === "published" ? "published" : "draft"}><option value="draft">Salvar rascunho</option><option value="published">Publicar agora</option></Select></Label>
         </div>
