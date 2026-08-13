@@ -102,8 +102,12 @@ async function signIn(page, { email, password, role }) {
   await page.locator('input[name="email"]').fill(email);
   await page.locator('input[name="password"]').fill(password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
-  await page.waitForTimeout(1_000);
+
+  // Do not interrupt the Next.js Server Action before its redirect response has
+  // committed Supabase's Set-Cookie headers. The production auth probe proved
+  // that a fixed sleep can race the Server Action and create a false logout.
+  await page.waitForURL((url) => url.pathname !== "/entrar", { timeout: 30_000 }).catch(() => {});
+  await page.waitForLoadState("domcontentloaded", { timeout: 10_000 }).catch(() => {});
 
   const body = await page.locator("body").innerText().catch(() => "");
   if (/E-mail ou senha inválidos|Confirme seu e-mail/i.test(body)) {
@@ -275,9 +279,6 @@ async function auditRole(browser, role, credentials, staticRoutes) {
   if (roleReport.pageErrors.length) report.criticalFailures.push(`${role}: ${roleReport.pageErrors.length} uncaught page error(s)`);
   if (roleReport.serverErrors.length) report.criticalFailures.push(`${role}: ${roleReport.serverErrors.length} HTTP 5xx response(s) observed`);
 
-  roleReport.storageState = await context.storageState();
-  delete roleReport.storageState.cookies?.forEach;
-
   return { context, page };
 }
 
@@ -322,9 +323,6 @@ try {
   await adminSession?.context?.close().catch(() => {});
   await browser.close();
 }
-
-// Never persist cookies/tokens in the artifact.
-for (const role of Object.values(report.roles)) delete role.storageState;
 
 report.finishedAt = new Date().toISOString();
 report.summary = {
