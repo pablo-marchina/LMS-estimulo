@@ -13,6 +13,8 @@ Este repositório é a fonte oficial do código da Plataforma Estímulo. Código
 
 Commits diretos em `main` são uma exceção operacional. Exigem autorização explícita do proprietário e não dispensam revisão do diff, testes, build, verificação de banco, documentação e acompanhamento do deploy.
 
+PRs empilhados devem declarar a branch-base da qual dependem. Depois que o PR-base for integrado, a branch dependente deve ser reconciliada e todos os gates devem rodar novamente no SHA final antes do merge. Não retargete uma branch dependente apenas para ocultar sua dependência.
+
 Tipos permitidos:
 
 ```text
@@ -30,7 +32,20 @@ Formato:
 - o status de release pertence ao SHA avaliado;
 - preview pronto não substitui replay, testes, typecheck, build ou scans;
 - uma aprovação anterior não cobre mudanças posteriores;
-- documentação permanente descreve comportamento vigente e decisões ativas, não resultados transitórios de CI.
+- documentação permanente descreve comportamento vigente e decisões ativas, não resultados transitórios de CI;
+- screenshots, traces, relatórios e resultados de navegador pertencem aos artifacts do workflow/deploy, não ao Git.
+
+## Documentação e manutenção
+
+[`PROJECT_INDEX.md`](PROJECT_INDEX.md) é o índice canônico da documentação permanente. A política completa de organização, limpeza e ciclo de vida está em [`docs/REPOSITORY_MAINTENANCE.md`](docs/REPOSITORY_MAINTENANCE.md).
+
+Ao alterar comportamento, estrutura, ambiente, integração, contrato ou operação:
+
+1. atualize a documentação afetada no mesmo PR;
+2. atualize `PROJECT_INDEX.md` ao adicionar, renomear ou remover Markdown em `docs/`;
+3. substitua afirmações obsoletas em vez de acumular versões contraditórias;
+4. mantenha SHAs, métricas de CI e evidências transitórias fora dos documentos permanentes;
+5. só remova compatibilidade legada depois de comprovar que runtime, testes, contracts e migrations não dependem dela.
 
 ## Nomenclatura
 
@@ -74,9 +89,14 @@ npm run scan:secrets
 .secrets/
 .tmp/
 .artifacts/
+artifacts/
+test-results/
+playwright-report/
+blob-report/
 coverage/
 outputs de build ou teste
 cookies ou sessões
 payloads reais
 credenciais, tokens ou chaves
+gatilhos one-off de deploy
 ```
