@@ -76,6 +76,23 @@ export async function getSignupLegalSnapshotByIds(input: {
   return snapshot;
 }
 
+export async function stagePublicSignupLegalSnapshot(input: {
+  snapshotToken: string;
+  email: string;
+  termsDocumentVersionId: string;
+  privacyDocumentVersionId: string;
+  acceptedAt: string;
+}): Promise<void> {
+  const { error } = await createPrivilegedClient().rpc("stage_public_signup_legal_snapshot", {
+    p_snapshot_token: input.snapshotToken,
+    p_email: input.email,
+    p_terms_document_version_id: input.termsDocumentVersionId,
+    p_privacy_document_version_id: input.privacyDocumentVersionId,
+    p_accepted_at: input.acceptedAt,
+  });
+  if (error) throw new Error("LEGAL_DOCUMENT_SNAPSHOT_STAGE_FAILED");
+}
+
 export async function getPublicSignupLegalDocument(
   documentType: SignupLegalDocument["document_type"],
   versionId?: string,
