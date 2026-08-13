@@ -93,7 +93,7 @@ export default async function PublicSignupPage({ searchParams }: { searchParams:
               Termos de Uso (versão {legalSnapshot.terms.version_number})
             </Link>{" "}
             e a{" "}
-            <Link href={`/privacidade?version=${encodeURIComponent(legalSnapshot.privacy.id)}`} className="font-semibold text-primary hover:underline" target="_blank">
+            <Link href={`/documentos/privacidade?version=${encodeURIComponent(legalSnapshot.privacy.id)}`} className="font-semibold text-primary hover:underline" target="_blank">
               Política de Privacidade (versão {legalSnapshot.privacy.version_number})
             </Link>
             .
