@@ -91,8 +91,8 @@ export async function validateSchemaEquivalence(databaseUrl) {
 
   assert.equal(actual.schema_version, expected.schema_version, 'inventory schema version differs');
   assert.equal(actual.postgres_major, expected.postgres_major, 'PostgreSQL major version differs');
+  const diagnostic = runJsonSql(databaseUrl, diagnosticSqlPath, 'diagnostic');
   if (differences.length > 0) {
-    const diagnostic = runJsonSql(databaseUrl, diagnosticSqlPath, 'diagnostic');
     throw new Error(
       `schema equivalence failed\n${JSON.stringify({ differences, diagnostic }, null, 2)}`,
     );
@@ -104,6 +104,7 @@ export async function validateSchemaEquivalence(databaseUrl) {
     observed_at: baseline.observed_at,
     postgres_major: actual.postgres_major,
     categories: actual.categories,
+    audited_routine_sources: diagnostic.audited_routine_sources,
   };
 }
 
