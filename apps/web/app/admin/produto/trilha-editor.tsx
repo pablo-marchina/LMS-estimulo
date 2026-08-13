@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { getAdminGamificationWorkspace } from "@/lib/admin/gamification-management";
 import type { Trilha } from "@/lib/admin/product-management";
+import { administrativeOrganization } from "@/lib/auth/administrative-access";
+import { getAuthContext } from "@/lib/auth/context";
 import { archiveTrackAction } from "./track-actions";
 import { saveTrackAction } from "./track-save-action";
 
@@ -11,17 +14,30 @@ export type EditableTrilha = Omit<Trilha, "aulas"> & {
   status?: string;
 };
 
-export type TrackBadgeOption = { id: string; title: string };
-
 function stringValue(value: unknown) { return typeof value === "string" ? value : ""; }
 
-export function TrilhaEditor({ journeyVersionId, trilha, badgeOptions }: { journeyVersionId: string; trilha: EditableTrilha; badgeOptions: TrackBadgeOption[] }) {
+export async function TrilhaEditor({ journeyVersionId, trilha }: { journeyVersionId: string; trilha: EditableTrilha }) {
   if (trilha.status === "retired") return null;
 
   const presentation = trilha.presentation ?? {};
   const tone = stringValue(presentation.tone) || "cyan";
   const icon = stringValue(presentation.icon) || "sparkles";
   const completionBadgeVersionId = stringValue(presentation.completion_badge_version_id);
+  const auth = await getAuthContext();
+  const organization = auth.status === "authenticated" ? administrativeOrganization(auth.identity) : null;
+  const gamification = auth.status === "authenticated" && organization
+    ? await getAdminGamificationWorkspace(auth.identity.user_account_id, organization.organization_id).catch(() => null)
+    : null;
+  const badgeOptions = (gamification?.badges ?? [])
+    .filter((definition) => definition.status !== "retired")
+    .flatMap((definition) => {
+      const published = definition.versions
+        .filter((version) => version.status === "published")
+        .slice()
+        .sort((a, b) => b.version_number - a.version_number)[0];
+      return published ? [{ id: String(published.id), title: stringValue(published.title) || definition.name }] : [];
+    })
+    .sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
 
   return (
     <details className="rounded-2xl border border-border bg-white shadow-sm">
