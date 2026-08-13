@@ -14,8 +14,12 @@ coverage/
 **/coverage/
 **/*.tsbuildinfo
 
-# Runtime and generated artifacts
+# Runtime, browser-test and generated artifacts
 .artifacts/
+artifacts/
+test-results/
+playwright-report/
+blob-report/
 .tmp/
 **/.tmp/
 *.log
