@@ -68,11 +68,11 @@ export function ActivityCompactWorkspace() {
     rootRef.current = root;
     detectSections(root);
 
-    // Server Actions replace the activity page while the surrounding lesson
-    // workspace persists. Observe only that replaceable region so rendering
-    // the tabs themselves cannot retrigger the observer.
-    const observer = activityPage ? new MutationObserver(() => detectSections(root)) : null;
-    observer?.observe(activityPage, { childList: true, subtree: true });
+    let observer: MutationObserver | null = null;
+    if (activityPage) {
+      observer = new MutationObserver(() => detectSections(root));
+      observer.observe(activityPage, { childList: true, subtree: true });
+    }
 
     const syncHash = () => selectSection(sectionFromLocation(
       sectionDefinitions
