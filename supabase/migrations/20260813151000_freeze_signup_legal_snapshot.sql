@@ -130,12 +130,40 @@ grant execute on function public.stage_public_signup_legal_snapshot(uuid,text,uu
 -- command and idempotency contract.
 do $migration$
 declare
+  v_function_oid oid;
+  v_function_count integer;
   v_definition text;
   v_needle text := 'where d.id=(p_payload->>''legal_document_version_id'')::uuid and d.organization_id=v_organization_id and d.status=''published''';
   v_replacement text := 'where d.id=(p_payload->>''legal_document_version_id'')::uuid and d.organization_id=v_organization_id and d.status in (''published'',''retired'') and d.published_at is not null';
   v_occurrences integer;
 begin
-  v_definition := pg_get_functiondef('public.perform_participant_extension(uuid,text,jsonb,text)'::regprocedure);
+  -- Resolve the live four-argument command handler from PostgreSQL's catalog
+  -- instead of pinning this migration to a historical argument-type signature.
+  -- Failing on zero or multiple matches keeps the migration conservative if the
+  -- command boundary itself ever becomes ambiguous.
+  select count(*)
+    into v_function_count
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'perform_participant_extension'
+    and p.prokind = 'f'
+    and p.pronargs = 4;
+
+  if v_function_count <> 1 then
+    raise exception 'PERFORM_PARTICIPANT_EXTENSION_SIGNATURE_AMBIGUOUS: expected exactly one four-argument function, found %', v_function_count;
+  end if;
+
+  select p.oid
+    into v_function_oid
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname = 'perform_participant_extension'
+    and p.prokind = 'f'
+    and p.pronargs = 4;
+
+  v_definition := pg_get_functiondef(v_function_oid);
   v_occurrences := (length(v_definition) - length(replace(v_definition, v_needle, ''))) / length(v_needle);
 
   if v_occurrences <> 1 then
