@@ -23,10 +23,7 @@ function editableItem(items: OperatorLibraryItem[], id: string | undefined) {
   if (!id) return null;
   const selected = items.find((item) => item.library_item_version_id === id);
   if (!selected) return null;
-  if (selected.status === "published") {
-    return items.find((item) => item.library_item_id === selected.library_item_id && item.status === "draft") ?? selected;
-  }
-  return selected.status === "draft" ? selected : null;
+  return items.find((item) => item.library_item_id === selected.library_item_id && item.status === "draft") ?? selected;
 }
 
 function textValue(value: unknown) {
@@ -87,10 +84,7 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
         {view === "novo" && canEdit ? (
           <div className="grid gap-5">
             <Card className="grid gap-5">
-              <div>
-                <h2 className="text-lg font-black text-secondary">{editing ? `Editar ${editing.title}` : "Informações principais"}</h2>
-                <p className="mt-1 text-sm text-muted">{editing?.status === "published" ? "As alterações são salvas como uma nova revisão em rascunho. A versão publicada continua ativa até a nova publicação." : "Título, tipo e resumo são suficientes para criar o rascunho. Abra as opções somente quando precisar."}</p>
-              </div>
+              <div><h2 className="text-lg font-black text-secondary">{editing ? `Editar ${editing.title}` : "Informações principais"}</h2><p className="mt-1 text-sm text-muted">{editing?.status === "published" ? "Ao salvar, uma nova revisão em rascunho será criada. A versão publicada continua ativa até a revisão ser publicada." : "Título, tipo e resumo são suficientes para criar o rascunho. Abra as opções somente quando precisar."}</p></div>
               <form action={saveLibraryContentAction} className="grid gap-4">
                 <input type="hidden" name="organization_id" value={organization.organization_id} />
                 <input type="hidden" name="library_item_id" value={editing?.library_item_id ?? ""} />
@@ -101,21 +95,14 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
                 <input type="hidden" name="source_name" value="Estímulo" />
                 <input type="hidden" name="language_code" value="pt-BR" />
                 <input type="hidden" name="visibility" value="authenticated" />
-                <div className="grid gap-4 sm:grid-cols-[1fr_12rem]">
-                  <Label>Título<Input name="title" required minLength={3} maxLength={200} defaultValue={editing?.title ?? ""} /><span className="text-[11px] font-normal text-muted">Nome mostrado para administradores e participantes.</span></Label>
-                  <Label>Tipo<Select name="content_kind" defaultValue={editing?.content_kind ?? (currentFileObjectId ? "file" : "article")}><option value="article">Texto</option><option value="external_link">Link ou vídeo</option><option value="file">Arquivo</option></Select><span className="text-[11px] font-normal text-muted">Define como o conteúdo será aberto.</span></Label>
-                </div>
+                {editing?.journey_version_ids.map((id) => <input key={id} type="hidden" name="journey_version_ids" value={id} />)}
+                <div className="grid gap-4 sm:grid-cols-[1fr_12rem]"><Label>Título<Input name="title" required minLength={3} maxLength={200} defaultValue={editing?.title ?? ""} /><span className="text-[11px] font-normal text-muted">Nome mostrado para administradores e participantes.</span></Label><Label>Tipo<Select name="content_kind" defaultValue={editing?.content_kind ?? (currentFileObjectId ? "file" : "article")}><option value="article">Texto</option><option value="external_link">Link ou vídeo</option><option value="file">Arquivo</option></Select><span className="text-[11px] font-normal text-muted">Define como o conteúdo será aberto.</span></Label></div>
                 <Label>Resumo<Textarea name="summary" required minLength={10} maxLength={600} rows={3} defaultValue={editing?.summary ?? ""} /><span className="text-[11px] font-normal text-muted">Explique em uma ou duas frases o que a pessoa encontrará.</span></Label>
                 <AdminDisclosure title="Conteúdo ou destino" description="Preencha apenas o campo correspondente ao tipo escolhido.">
                   <div className="grid gap-4">
                     <Label>Texto completo<Textarea name="body" rows={8} maxLength={30000} defaultValue={editing?.body ?? ""} placeholder="Use quando o tipo for Texto." /></Label>
                     <Label>Endereço HTTPS<Input name="external_url" type="url" defaultValue={editing?.external_url ?? ""} placeholder="Use para link, vídeo ou ferramenta." /></Label>
-                    {currentFilename ? (
-                      <div className="rounded-xl bg-success-soft p-3 text-sm text-success">
-                        <strong>Arquivo preparado:</strong> {currentFilename}
-                        {hasPreparedUpload ? <ButtonLink href={clearPreparedFileHref} variant="ghost" size="sm" className="ml-2">Remover arquivo preparado</ButtonLink> : null}
-                      </div>
-                    ) : <p className="text-sm text-muted">Nenhum arquivo foi preparado.</p>}
+                    {currentFilename ? <div className="rounded-xl bg-success-soft p-3 text-sm text-success"><strong>Arquivo preparado:</strong> {currentFilename}{hasPreparedUpload ? <ButtonLink href={clearPreparedFileHref} variant="ghost" size="sm" className="ml-2">Remover arquivo preparado</ButtonLink> : null}</div> : <p className="text-sm text-muted">Nenhum arquivo foi preparado.</p>}
                   </div>
                 </AdminDisclosure>
                 <AdminDisclosure title="Organização e visibilidade" description="Campos opcionais usados para busca, recomendação, público e tempo estimado.">
@@ -174,9 +161,9 @@ function LibraryTable({ title, items, organizationId, empty, canEdit }: { title:
                 <Td>{item.journey_version_ids.length || "Nenhuma"}</Td>
                 <Td>
                   <div className="flex flex-wrap justify-end gap-2">
-                    {canEdit ? <ButtonLink href={`/admin/biblioteca?view=novo&edit=${item.library_item_version_id}`} variant="secondary" size="sm">{item.status === "published" ? "Editar / criar revisão" : "Editar"}</ButtonLink> : null}
+                    {canEdit ? <ButtonLink href={`/admin/biblioteca?view=novo&edit=${item.library_item_version_id}`} variant="secondary" size="sm">Editar</ButtonLink> : null}
                     {item.status === "draft" && canEdit ? <form action={publishLibraryContentAction}><input type="hidden" name="organization_id" value={organizationId} /><input type="hidden" name="library_item_version_id" value={item.library_item_version_id} /><input type="hidden" name="content_hash" value={item.content_hash} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" size="sm">Publicar</Button></form> : null}
-                    {item.status === "published" ? <ButtonLink href={`/capacitacao/biblioteca/${item.slug}`} variant="secondary" size="sm">Visualizar</ButtonLink> : null}
+                    {item.status === "published" ? (item.external_url ? <ButtonLink href={item.external_url} target="_blank" rel="noreferrer" variant="secondary" size="sm">Visualizar</ButtonLink> : <ButtonLink href={`/capacitacao/biblioteca/${item.slug}`} variant="secondary" size="sm">Visualizar</ButtonLink>) : null}
                     {canEdit ? (
                       <details className="rounded-lg border border-border bg-white text-left">
                         <summary className="cursor-pointer px-3 py-2 text-xs font-bold text-danger">Arquivar</summary>
