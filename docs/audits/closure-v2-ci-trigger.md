@@ -1,0 +1,1 @@
+CI validation trigger for structural closure v2. The merge decision remains gated by automated checks.
