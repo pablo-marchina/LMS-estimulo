@@ -280,6 +280,7 @@ $ranking_fix$;
 do $verify$
 declare
   v_definition text;
+  v_forbidden_rank_pattern text := 'dense_rank\(\)\s+over\s*\(\s*order\s+by\s+balance\.points\s+desc\s*,\s*balance\.entrepreneur_id\s*\)';
 begin
   select pg_get_functiondef(routine.oid) into v_definition
   from pg_proc routine
@@ -288,7 +289,7 @@ begin
     and routine.proname = 'get_participant_engagement_hub'
     and pg_get_function_identity_arguments(routine.oid) = 'p_actor_user_account_id uuid';
 
-  if v_definition ~* 'dense_rank\(\).*balance\.entrepreneur_id' then
+  if regexp_count(v_definition, v_forbidden_rank_pattern, 1, 'i') <> 0 then
     raise exception 'RANKING_TIE_BREAKER_STILL_AFFECTS_POSITION';
   end if;
 
