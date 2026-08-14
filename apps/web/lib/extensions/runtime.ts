@@ -116,6 +116,14 @@ export type RewardImageDownload = {
   original_filename: string | null;
 };
 
+export type CertificateTemplatePreviewDownload = {
+  file_object_id: string;
+  bucket: string;
+  object_key: string;
+  content_type: string;
+  original_filename: string | null;
+};
+
 type Envelope<T> = { data?: T } & JsonRecord;
 
 export const extensionsRuntime = {
@@ -231,6 +239,14 @@ export const extensionsRuntime = {
     return invokeExtensionsGateway<RewardImageDownload>("get_reward_image_download", {
       p_actor_user_account_id: actorUserAccountId,
       p_reward_id: rewardId,
+    });
+  },
+
+  certificateTemplatePreviewDownload(actorUserAccountId: string, organizationId: string, fileObjectId: string) {
+    return invokeExtensionsGateway<CertificateTemplatePreviewDownload>("get_admin_certificate_template_preview_download", {
+      p_actor_user_account_id: actorUserAccountId,
+      p_organization_id: organizationId,
+      p_file_object_id: fileObjectId,
     });
   },
 
