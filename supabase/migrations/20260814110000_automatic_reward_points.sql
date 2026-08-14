@@ -171,7 +171,7 @@ begin
     select
       entrepreneur.id as entrepreneur_id,
       coalesce(
-        max(wallet.organization_id),
+        (array_agg(wallet.organization_id) filter (where wallet.organization_id is not null))[1],
         (array_agg(definition.owner_organization_id order by ledger.occurred_at desc))[1]
       ) as organization_id,
       coalesce(sum(ledger.amount), 0)::integer as net_points,
