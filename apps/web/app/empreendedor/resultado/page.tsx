@@ -70,7 +70,7 @@ export default async function ResultPage({
       {credentialsResult.status === "rejected" ? <StatusPanel title="Credenciais temporariamente indisponíveis" tone="warning"><p>Não foi possível consultar seus selos e certificados agora. Isso não significa que você não possui credenciais; tente recarregar a página.</p></StatusPanel> : null}
       {engagementResult.status === "rejected" || diagnosticSummaryResult.status === "rejected" ? <StatusPanel title="Parte do diagnóstico está temporariamente indisponível" tone="warning"><p>Seu progresso da jornada foi carregado, mas o resumo do perfil não pôde ser consultado neste momento.</p></StatusPanel> : null}
 
-      {archetype ? <DiagnosticResultDashboard archetype={archetype} dimensions={diagnosticSummary?.dimensions ?? []} primaryHref={participantNextHref(state)} primaryLabel={state.journey_status === "completed" ? "Explorar outras jornadas" : "Acessar minha trilha"} /> : null}
+      {archetype ? <DiagnosticResultDashboard archetype={archetype} dimensions={diagnosticSummary?.dimensions ?? []} resultBlocks={diagnosticSummary?.result_blocks ?? []} primaryHref={participantNextHref(state)} primaryLabel={state.journey_status === "completed" ? "Explorar outras jornadas" : "Acessar minha trilha"} /> : null}
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo do resultado da jornada">
         <MetricTile index={0} label="Status" value={statusLabel(state.journey_status)} />
