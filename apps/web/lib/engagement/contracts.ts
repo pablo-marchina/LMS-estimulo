@@ -34,7 +34,7 @@ export type ParticipantPointRule = {
   name: string;
   description: string;
   amount: number;
-  frequency: "once" | "per_activity" | "per_assessment" | "per_path" | "per_journey" | "daily" | "weekly" | "unlimited";
+  frequency: "once" | "per_activity" | "per_assessment" | "per_certificate" | "per_path" | "per_journey" | "daily" | "weekly" | "unlimited";
   maximum_awards: number;
 };
 
