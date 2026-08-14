@@ -92,7 +92,7 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
   });
 
   return (
-    <div className={`participant-stage min-h-screen bg-background ${styles.density}`} data-wide-lesson={wideLesson ? "true" : "false"}>
+    <div className={`participant-stage min-h-screen bg-[#f8f8f8] ${styles.density}`} data-wide-lesson={wideLesson ? "true" : "false"}>
       <InterfacePreviewGuard />
       {!preview ? <BehaviorEventTracker /> : null}
       <InterfacePreviewBridge />
@@ -119,7 +119,7 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
       <InterfaceSlot area="participant" placement="before_content" />
       <main
         id="conteudo-principal"
-        className={wideLesson ? "w-full min-w-0 max-w-none [&>div]:max-w-none" : "mx-auto w-full max-w-[1400px]"}
+        className={`${wideLesson ? "w-full min-w-0 max-w-none [&>div]:max-w-none" : "mx-auto w-full max-w-[1400px]"} bg-[#f8f8f8]`}
         tabIndex={-1}
       >
         {children}
