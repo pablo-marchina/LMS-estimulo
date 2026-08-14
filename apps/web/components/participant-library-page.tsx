@@ -97,20 +97,19 @@ export async function ParticipantLibraryPage({ searchParams, basePath }: { searc
 
   const selectedTopic = typeof query.tema === "string" ? query.tema : "";
   const selectedFormat = typeof query.formato === "string" ? query.formato : "";
-  const selectedLevel = typeof query.nivel === "string" ? query.nivel : "";
   const rawSearch = typeof query.q === "string" ? query.q : "";
   let rawData: LibraryListing | null = null;
   try {
     rawData = previewMode && adminOrganization
       ? await adminPreviewListing(auth.identity.user_account_id, adminOrganization.organization_id)
-      : await libraryRuntime.list({ actorUserAccountId: auth.identity.user_account_id, query: rawSearch || null, topic: selectedTopic || null, contentFormat: selectedFormat || null, level: selectedLevel || null });
+      : await libraryRuntime.list({ actorUserAccountId: auth.identity.user_account_id, query: rawSearch || null, topic: selectedTopic || null, contentFormat: selectedFormat || null, level: null });
   } catch {
     rawData = null;
   }
 
   if (!rawData) {
     return <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-      <PageHeader eyebrow={previewMode ? "Prévia administrativa" : "Conteúdo complementar"} title="Biblioteca" description={previewMode ? "Visualização com o mesmo layout do participante. Esta prévia não registra acesso, progresso, pontos ou entregas." : "Encontre materiais por assunto, formato ou momento de aprendizagem."} actions={previewMode ? <ButtonLink href="/admin/biblioteca?view=conteudos" variant="secondary">Voltar à administração</ButtonLink> : undefined} />
+      <PageHeader eyebrow={previewMode ? "Prévia administrativa" : "Conteúdo complementar"} title="Biblioteca" description={previewMode ? "Visualização com o mesmo layout do participante. Esta prévia não registra acesso, progresso, pontos ou entregas." : "Encontre materiais por assunto ou formato."} actions={previewMode ? <ButtonLink href="/admin/biblioteca?view=conteudos" variant="secondary">Voltar à administração</ButtonLink> : undefined} />
       <StatusPanel title="Biblioteca temporariamente indisponível" tone="warning">Não foi possível consultar os materiais publicados. Isso não significa que a Biblioteca esteja vazia; tente recarregar a página.</StatusPanel>
     </div>;
   }
@@ -120,14 +119,13 @@ export async function ParticipantLibraryPage({ searchParams, basePath }: { searc
     if (normalizedSearch && !searchableText(item).includes(normalizedSearch)) return false;
     if (selectedTopic && !item.topics.includes(selectedTopic)) return false;
     if (selectedFormat && item.content_format !== selectedFormat) return false;
-    if (selectedLevel && item.level !== selectedLevel) return false;
     return true;
   });
   const topics = rawData.facets.topics.length ? rawData.facets.topics : [...new Set(rawData.items.flatMap((item) => item.topics))].sort((a, b) => a.localeCompare(b, "pt-BR"));
 
   return <div className="mx-auto grid max-w-[1400px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
-    <PageHeader eyebrow={previewMode ? "Prévia administrativa" : "Conteúdo complementar"} title="Biblioteca" description={previewMode ? "Visualização com o mesmo layout do participante. Esta prévia não registra acesso, progresso, pontos ou entregas." : "Encontre materiais por assunto, formato ou momento de aprendizagem. Conteúdos ligados às jornadas também aparecem nos resultados quando estão publicados para a Biblioteca."} actions={previewMode ? <ButtonLink href="/admin/biblioteca?view=conteudos" variant="secondary">Voltar à administração</ButtonLink> : undefined} />
-    <Card><form method="get" role="search" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5"><Label className="sm:col-span-2">Buscar<Input name="q" defaultValue={rawSearch} placeholder="Ex.: OpenAI, ChatGPT, contabilidade ou atendimento" /></Label><Label>Tema<Select name="tema" defaultValue={selectedTopic}><option value="">Todos</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</Select></Label><Label>Formato<Select name="formato" defaultValue={selectedFormat}><option value="">Todos</option>{rawData.facets.formats.map((format) => <option value={format} key={format}>{formatLabels[format] ?? format}</option>)}</Select></Label><Label>Momento<Select name="nivel" defaultValue={selectedLevel}><option value="">Todos</option>{rawData.facets.levels.map((level) => <option value={level} key={level}>{levelLabels[level] ?? level}</option>)}</Select></Label><div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-5"><Button type="submit" size="sm" icon={<Search size={16} />}>BUSCAR</Button><ButtonLink href={basePath} variant="secondary" size="sm">Limpar filtros</ButtonLink></div></form></Card>
+    <PageHeader eyebrow={previewMode ? "Prévia administrativa" : "Conteúdo complementar"} title="Biblioteca" description={previewMode ? "Visualização com o mesmo layout do participante. Esta prévia não registra acesso, progresso, pontos ou entregas." : "Encontre materiais por assunto ou formato. Conteúdos ligados às jornadas também aparecem nos resultados quando estão publicados para a Biblioteca."} actions={previewMode ? <ButtonLink href="/admin/biblioteca?view=conteudos" variant="secondary">Voltar à administração</ButtonLink> : undefined} />
+    <Card><form method="get" role="search" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Label className="sm:col-span-2">Buscar<Input name="q" defaultValue={rawSearch} placeholder="Ex.: OpenAI, ChatGPT, contabilidade ou atendimento" /></Label><Label>Tema<Select name="tema" defaultValue={selectedTopic}><option value="">Todos</option>{topics.map((topic) => <option value={topic} key={topic}>{topic}</option>)}</Select></Label><Label>Formato<Select name="formato" defaultValue={selectedFormat}><option value="">Todos</option>{rawData.facets.formats.map((format) => <option value={format} key={format}>{formatLabels[format] ?? format}</option>)}</Select></Label><div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-4"><Button type="submit" size="sm" icon={<Search size={16} />}>BUSCAR</Button><ButtonLink href={basePath} variant="secondary" size="sm">Limpar filtros</ButtonLink></div></form></Card>
     {items.length ? <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Materiais da biblioteca">{items.map((item) => <LibraryCard item={item} basePath={basePath} key={item.library_item_version_id} />)}</section> : <EmptyState icon={<BookOpen size={24} />} title="Nenhum material encontrado" tone="info">Revise a busca ou os filtros. Temas disponíveis são criados a partir dos conteúdos publicados pela administração.</EmptyState>}
   </div>;
 }
