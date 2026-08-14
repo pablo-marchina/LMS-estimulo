@@ -6,7 +6,12 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
 import { decodeFirstTouch, FIRST_TOUCH_COOKIE } from "@/lib/auth/first-touch";
-import { provisionPublicSignupParticipant } from "@/lib/auth/public-signup-provisioning";
+import {
+  getSignupLegalSnapshotByIds,
+  legalDocumentPublishedDate,
+  provisionPublicSignupParticipant,
+  stagePublicSignupLegalSnapshot,
+} from "@/lib/auth/public-signup-provisioning";
 import { assertCpfProtectionReady, isValidCpf, protectCpf, unprotectCpf, type ProtectedCpf } from "@/lib/identity/cpf";
 import { isValidCnpj, normalizeCnpj } from "@/lib/identity/cnpj-core.mjs";
 import { isValidPhoneBr, toE164Br } from "@/lib/identity/phone-br.mjs";
@@ -24,6 +29,8 @@ const schema = z.object({
   message: "CNPJ_REQUIRES_BUSINESS_NAME",
 });
 
+const uuidSchema = z.string().uuid();
+
 function encryptedCpfFromMetadata(value: unknown): ProtectedCpf | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const item = value as Record<string, unknown>;
@@ -35,6 +42,11 @@ function encryptedCpfFromMetadata(value: unknown): ProtectedCpf | null {
     authenticationTag: String(item.authenticationTag),
     keyVersion: Number(item.keyVersion),
   };
+}
+
+function hasSignupLegalSnapshotToken(metadata: Record<string, unknown>): boolean {
+  const token = metadata.signup_legal_snapshot_token;
+  return typeof token === "string" && uuidSchema.safeParse(token).success;
 }
 
 function logCpfProtectionFailure(stage: "legacy_recovery" | "final_protection", error: unknown) {
@@ -54,7 +66,61 @@ export async function completePublicSignupAction(formData: FormData) {
   const session = await createSessionClient();
   const { data: userData } = await session.auth.getUser();
   if (!userData.user) redirect("/entrar?erro=confirmacao_necessaria");
-  const metadata = userData.user.user_metadata ?? {};
+  const metadata = (userData.user.user_metadata ?? {}) as Record<string, unknown>;
+
+  // Accounts created before immutable legal snapshots were introduced can still
+  // authenticate, but they do not have the token required by provisioning v3.
+  // Recover that compatibility gap here by collecting an explicit acceptance of
+  // the exact governed versions shown on /cadastro/concluir, then stage the same
+  // server-side snapshot used by new signups. New accounts keep their original
+  // signup-time snapshot untouched.
+  if (!hasSignupLegalSnapshotToken(metadata)) {
+    const termsDocumentVersionId = uuidSchema.safeParse(String(formData.get("terms_document_version_id") ?? ""));
+    const privacyDocumentVersionId = uuidSchema.safeParse(String(formData.get("privacy_document_version_id") ?? ""));
+    if (formData.get("terms") !== "accepted" || !termsDocumentVersionId.success || !privacyDocumentVersionId.success) {
+      redirect("/cadastro/concluir?erro=aceite_legal_necessario");
+    }
+
+    let legalSnapshot;
+    try {
+      legalSnapshot = await getSignupLegalSnapshotByIds({
+        termsDocumentVersionId: termsDocumentVersionId.data,
+        privacyDocumentVersionId: privacyDocumentVersionId.data,
+      });
+    } catch {
+      redirect("/cadastro/concluir?erro=aceite_legal_invalido");
+    }
+
+    const acceptedAt = new Date().toISOString();
+    const legalSnapshotToken = randomUUID();
+    try {
+      await stagePublicSignupLegalSnapshot({
+        snapshotToken: legalSnapshotToken,
+        email: userData.user.email ?? auth.email,
+        termsDocumentVersionId: legalSnapshot.terms.id,
+        privacyDocumentVersionId: legalSnapshot.privacy.id,
+        acceptedAt,
+      });
+
+      const { error: metadataError } = await createPrivilegedClient().auth.admin.updateUserById(userData.user.id, {
+        user_metadata: {
+          ...metadata,
+          signup_legal_snapshot_token: legalSnapshotToken,
+          terms_accepted_at: acceptedAt,
+          terms_version: legalDocumentPublishedDate(legalSnapshot.terms),
+          privacy_accepted_at: acceptedAt,
+          privacy_version: legalDocumentPublishedDate(legalSnapshot.privacy),
+        },
+      });
+      if (metadataError) throw metadataError;
+    } catch (error) {
+      console.error("LEGACY_SIGNUP_LEGAL_SNAPSHOT_STAGE_FAILED", {
+        errorCode: error && typeof error === "object" && "code" in error ? error.code : null,
+        errorMessage: error instanceof Error ? error.message : null,
+      });
+      redirect("/cadastro/concluir?erro=aceite_legal_indisponivel");
+    }
+  }
 
   let cpf = String(formData.get("cpf") ?? "").trim();
   if (!cpf) {
@@ -134,6 +200,7 @@ export async function completePublicSignupAction(formData: FormData) {
         signup_phone_e164: null,
         signup_cnpj: null,
         signup_cpf_encrypted: null,
+        signup_legal_snapshot_token: null,
       },
     });
     if (cleanupError) throw cleanupError;

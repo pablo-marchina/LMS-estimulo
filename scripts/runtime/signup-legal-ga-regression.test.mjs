@@ -27,6 +27,28 @@ test('public signup freezes governed legal document ids instead of client suppli
   assert.match(provisioning, /stage_public_signup_legal_snapshot/u);
 });
 
+test('legacy authenticated accounts can complete onboarding by staging an explicit governed legal snapshot', async () => {
+  const [page, action] = await Promise.all([
+    read('apps/web/app/cadastro/concluir/page.tsx'),
+    read('apps/web/app/cadastro/concluir/actions.ts'),
+  ]);
+
+  assert.match(page, /needsLegacyLegalAcceptance/u);
+  assert.match(page, /getCurrentSignupLegalSnapshot/u);
+  assert.match(page, /terms_document_version_id/u);
+  assert.match(page, /privacy_document_version_id/u);
+  assert.match(page, /name="terms"[^>]*required/u);
+  assert.match(page, /Seu login não foi rejeitado/u);
+
+  assert.match(action, /hasSignupLegalSnapshotToken/u);
+  assert.match(action, /getSignupLegalSnapshotByIds/u);
+  assert.match(action, /stagePublicSignupLegalSnapshot/u);
+  assert.match(action, /signup_legal_snapshot_token:\s*legalSnapshotToken/u);
+  assert.match(action, /updateUserById/u);
+  assert.match(action, /signup_legal_snapshot_token:\s*null/u);
+  assert.match(action, /if \(!hasSignupLegalSnapshotToken\(metadata\)\)/u);
+});
+
 test('provisioning persists the staged legal snapshot without widening generic legal_accept', async () => {
   const [migration, participantExtension] = await Promise.all([
     read('supabase/migrations/20260813151000_freeze_signup_legal_snapshot.sql'),
