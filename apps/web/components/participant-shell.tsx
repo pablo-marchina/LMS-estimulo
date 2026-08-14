@@ -92,7 +92,11 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
   });
 
   return (
-    <div className={`participant-stage min-h-screen bg-[#f8f8f8] ${styles.density}`} data-wide-lesson={wideLesson ? "true" : "false"}>
+    <div
+      className={`participant-stage min-h-screen bg-[#f8f8f8] ${styles.density}`}
+      style={{ backgroundColor: "#f8f8f8", backgroundImage: "none" }}
+      data-wide-lesson={wideLesson ? "true" : "false"}
+    >
       <InterfacePreviewGuard />
       {!preview ? <BehaviorEventTracker /> : null}
       <InterfacePreviewBridge />
