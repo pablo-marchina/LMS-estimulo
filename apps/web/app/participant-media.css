@@ -1,0 +1,13 @@
+/* Participant learning media should stay readable without dominating the full page width. */
+.brand-media-card > .relative.aspect-video,
+.brand-media-card > video.aspect-video {
+  width: min(100%, 56rem);
+  margin-inline: auto;
+}
+
+@media (max-width: 720px) {
+  .brand-media-card > .relative.aspect-video,
+  .brand-media-card > video.aspect-video {
+    width: 100%;
+  }
+}
