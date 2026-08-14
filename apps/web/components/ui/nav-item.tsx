@@ -38,7 +38,7 @@ export function NavItem({
         variant === "dark"
           ? isActive ? "bg-white !text-primary" : "!text-white/75 hover:bg-white/10 hover:!text-white"
           : variant === "top"
-            ? isActive ? "bg-white !text-primary shadow-sm" : "!text-white/75 hover:bg-white/10 hover:!text-white"
+            ? isActive ? "bg-primary-soft !text-primary shadow-sm" : "!text-secondary hover:bg-slate-100 hover:!text-primary"
             : isActive ? "bg-primary text-white" : "text-ink hover:bg-primary-light",
         className,
       )}
