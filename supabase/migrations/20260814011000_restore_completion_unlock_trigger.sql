@@ -65,11 +65,11 @@ end;
 $$;
 
 -- Run after the transaction's completion command has finished writing its own
--- progress projection. This makes the multi-lesson availability reconciliation
--- authoritative regardless of which command completed the lesson.
+-- progress projection. Constraint triggers cannot use UPDATE OF columns, so
+-- the transition predicate below limits execution to real completions.
 drop trigger if exists trg_reconcile_after_step_completion on orchestration.step_instances;
 create constraint trigger trg_reconcile_after_step_completion
-after update of status on orchestration.step_instances
+after update on orchestration.step_instances
 deferrable initially deferred
 for each row
 when (new.status = 'completed' and old.status is distinct from new.status)
