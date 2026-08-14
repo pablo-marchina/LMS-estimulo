@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ClipboardList, FileCheck2, UserRound } from "lucide-react";
+import { Award, ClipboardList, FileCheck2, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ const tabs = [
   { href: "/empreendedor/perfil/diagnostico", label: "Diagnóstico", icon: ClipboardList },
   { href: "/empreendedor/perfil", label: "Informações", icon: UserRound, exact: true },
   { href: "/empreendedor/perfil/entregas", label: "Entregas", icon: FileCheck2 },
+  { href: "/empreendedor/perfil/conquistas", label: "Conquistas", icon: Award },
 ];
 
 export function ParticipantProfileTabs() {
