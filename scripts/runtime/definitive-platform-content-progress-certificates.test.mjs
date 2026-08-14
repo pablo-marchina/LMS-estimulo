@@ -19,6 +19,7 @@ const [
   certificateIssuer,
   certificatePdf,
   migration,
+  lessonUnlockMigration,
   gateway,
 ] = await Promise.all([
   read("apps/web/components/announcement-carousel.tsx"),
@@ -36,6 +37,7 @@ const [
   read("apps/web/app/admin/gamificacao/certificate-issuer-manager.tsx"),
   read("apps/web/lib/credentials/pdf.ts"),
   read("supabase/migrations/20260806023000_definitive_platform_content_progress_certificates.sql"),
+  read("supabase/migrations/20260814011000_restore_completion_unlock_trigger.sql"),
   read("supabase/functions/authenticated-rpc/index.ts"),
 ]);
 
@@ -67,6 +69,18 @@ test("rewards, journeys and lesson continuation expose the requested behavior", 
   assert.match(home, /continueJourneyAction/u);
   assert.match(journeyOutline, /activity-thumbnails/u);
   assert.match(lessonBuilder, /continue_thumbnail_file/u);
+});
+
+test("lesson completion always unlocks newly eligible following content", () => {
+  assert.match(lessonUnlockMigration, /reconcile_participant_step_availability/u);
+  assert.match(lessonUnlockMigration, /step_instance\.status = 'locked'/u);
+  assert.match(lessonUnlockMigration, /previous_step\.is_required/u);
+  assert.match(lessonUnlockMigration, /previous_instance\.status, 'locked'\) <> 'completed'/u);
+  assert.match(lessonUnlockMigration, /create constraint trigger trg_reconcile_after_step_completion/u);
+  assert.match(lessonUnlockMigration, /deferrable initially deferred/u);
+  assert.match(lessonUnlockMigration, /new\.status = 'completed'/u);
+  assert.match(lessonUnlockMigration, /refresh_participant_journey_progress/u);
+  assert.match(lessonUnlockMigration, /for v_journey_instance_id in/u);
 });
 
 test("CMS and uploads expose responsive media and explicit validation guidance", () => {

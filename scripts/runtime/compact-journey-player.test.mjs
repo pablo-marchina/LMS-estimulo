@@ -24,15 +24,13 @@ test("journey lessons no longer expose supplemental text or prompt editors", () 
   assert.doesNotMatch(actions, /prompt_title_/u);
 });
 
-test("activity context follows the participant journey outline without duplicating continuation controls", () => {
+test("activity navigation follows the ordered journey outline", () => {
   assert.match(navigation, /getParticipantJourneyOutline/u);
-  assert.match(navigation, /outline\.progress/u);
-  assert.match(navigation, /outline\.completed_required_steps/u);
-  assert.match(navigation, /outline\.total_required_steps/u);
-  assert.match(navigation, /stepStatus === "completed"/u);
-  assert.match(navigation, /ação principal ao final da página/iu);
-  assert.doesNotMatch(navigation, /openJourneyActivityAction/u);
-  assert.doesNotMatch(navigation, /PendingSubmitButton/u);
+  assert.match(navigation, /module_position/u);
+  assert.match(navigation, /previousActivity/u);
+  assert.match(navigation, /nextActivity/u);
+  assert.match(navigation, /openJourneyActivityAction/u);
+  assert.match(navigation, /Ver resultado/u);
 });
 
 test("participant activity player is compact and videos have rounded corners", () => {
