@@ -17,10 +17,6 @@ const moderationStatus = z.enum(["visible", "hidden"]);
 const practiceReviewStatus = z.enum(["accepted", "rejected"]);
 const utilityRatingValue = z.coerce.number().int().min(1).max(5);
 
-function inlineActivityHref(journey: string, step: string, query = "", hash = "aula") {
-  return `/empreendedor/jornada/${journey}?conteudo=${step}${query}${hash ? `#${hash}` : ""}`;
-}
-
 async function actorId() {
   await assertParticipantMutationAllowed();
   const auth = await getAuthContext();
@@ -69,7 +65,7 @@ export async function submitDiagnosisAction(formData: FormData) {
   await journeyRuntime.completeDiagnostic(actor, sessionId, aggregate, `${baseKey}:complete`);
   const updated = await journeyRuntime.getParticipantExperience(actor, journey);
   const step = updated.state.s?.step_instance_id;
-  redirect(step ? inlineActivityHref(journey, step) : `/empreendedor/resultado?journey=${journey}`);
+  redirect(step ? `/empreendedor/atividade/${step}?journey=${journey}` : `/empreendedor/resultado?journey=${journey}`);
 }
 
 export async function acknowledgeActivityAction(formData: FormData) {
@@ -95,7 +91,7 @@ export async function acknowledgeActivityAction(formData: FormData) {
       await journeyRuntime.acknowledgeSection(actor, sessionId, section.code, `${baseKey}:section:${section.code}`);
     }
   }
-  redirect(inlineActivityHref(journey, step));
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}`);
 }
 
 export async function createActivityCommentAction(formData: FormData) {
@@ -105,7 +101,7 @@ export async function createActivityCommentAction(formData: FormData) {
   const body = commentBody.parse(String(formData.get("body") ?? ""));
   const key = String(formData.get("idempotency_key") || randomUUID());
   await journeyRuntime.createActivityComment(actor, step, body, key);
-  redirect(inlineActivityHref(journey, step, "&comentario=criado", "comentarios"));
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&comentario=criado#comentarios`);
 }
 
 export async function moderateActivityCommentAction(formData: FormData) {
@@ -149,7 +145,7 @@ export async function rateActivityUtilityAction(formData: FormData) {
     rating,
     String(formData.get("idempotency_key") || randomUUID())
   );
-  redirect(inlineActivityHref(journey, step, "&utilidade=registrada", "conteudo"));
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&utilidade=registrada#conteudo`);
 }
 
 export async function submitQuickCheckAction(formData: FormData) {
@@ -197,7 +193,7 @@ export async function submitQuickCheckAction(formData: FormData) {
     await credentialRuntime.issue(actor, journey, step, `${baseKey}:credentials`);
     redirect(`/empreendedor/resultado?journey=${journey}&avaliacao=aprovada`);
   }
-  redirect(inlineActivityHref(journey, step, "&avaliacao=reprovada", "avaliacao"));
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&avaliacao=reprovada#avaliacao`);
 }
 
 export async function issueLearningCredentialsAction(formData: FormData) {
