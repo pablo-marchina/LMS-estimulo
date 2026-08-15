@@ -15,17 +15,23 @@ declare
   v_privacy_title text := 'Política de Privacidade';
   v_privacy_body text := E'1. Dados tratados\nPodemos tratar dados de cadastro e contato, informações de identificação necessárias para confirmar a conta, dados opcionais do negócio, respostas de diagnóstico, progresso, atividades, comentários, certificados, arquivos enviados e registros técnicos de segurança.\n\n2. Finalidades\nOs dados são usados para autenticar a conta, evitar duplicidade, operar jornadas, personalizar recomendações, registrar progresso, emitir certificados, prestar suporte, prevenir abuso e produzir informações operacionais e educacionais autorizadas.\n\n3. CPF e informações sensíveis\nO CPF é solicitado somente após a confirmação do e-mail. Ele é validado e protegido no servidor e não deve ser exibido integralmente nas telas administrativas ou de participante.\n\n4. Compartilhamento\nO acesso é limitado a pessoas e fornecedores necessários para operar a plataforma, conforme permissões, contratos e requisitos de segurança. Não vendemos dados pessoais.\n\n5. Arquivos\nCertificados e evidências são armazenados de forma privada. Downloads dependem de autenticação e autorização, e os arquivos podem passar por validações de tipo, tamanho e segurança.\n\n6. Retenção e segurança\nOs dados são mantidos pelo período necessário para as finalidades informadas, obrigações aplicáveis, segurança e auditoria. São utilizados controles de acesso, rastreabilidade, proteção criptográfica e segregação por organização.\n\n7. Direitos da pessoa titular\nVocê pode solicitar confirmação de tratamento, acesso, correção, informações sobre compartilhamento e, quando aplicável, eliminação, oposição ou revogação de consentimentos opcionais.\n\n8. Alterações\nVersões materiais serão identificadas e poderão exigir novo aceite. A versão aceita fica vinculada ao cadastro.\n\n9. Revisão institucional\nEste aviso implementa a transparência mínima da interface e deve ser validado pelo responsável jurídico e de privacidade antes da liberação definitiva para usuários reais.';
 begin
+  -- Use the canonical technical operator created by the recovered E14 history.
+  -- This keeps clean database replay deterministic and avoids depending on a
+  -- real administrator having signed up before migrations are executed.
   select account.id
   into v_actor_user_account_id
   from iam.user_accounts account
-  where account.status = 'active'
-    and app_private.e14_actor_has_permission(
-      account.id,
-      v_organization_id,
-      'engagement.manage'
-    )
+  where account.email_normalized = 'e14.operator@invalid.example'
   order by account.created_at, account.id
   limit 1;
+
+  if v_actor_user_account_id is null then
+    select account.id
+    into v_actor_user_account_id
+    from iam.user_accounts account
+    order by account.created_at, account.id
+    limit 1;
+  end if;
 
   if v_actor_user_account_id is null then
     raise exception 'LEGAL_DOCUMENT_SEED_ACTOR_NOT_FOUND' using errcode = 'P0002';
