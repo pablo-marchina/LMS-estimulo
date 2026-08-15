@@ -113,9 +113,11 @@ test("point configuration exposes domain choices only and resolves eligibility s
   assert.match(rewardMigration, /trg_block_manual_reward_conversion/u);
   assert.match(pointEligibilityMigration, /general_point_eligibility/u);
   assert.match(pointDedupeMigration, /partition by pd\.owner_organization_id, pd\.code/u);
-  assert.match(pointDedupeMigration, /pv\.recurrence_policy ->> 'event_type' = 'learning\.activity\.completed'/u);
-  assert.match(pointDedupeMigration, /pv\.amount = 10/u);
-  assert.match(pointDedupeMigration, /set status = 'deprecated'/u);
+  assert.match(pointDedupeMigration, /pv\.amount = 5/u);
+  assert.match(pointDedupeMigration, /pv\.recurrence_policy ->> 'scope' = 'enrollment_activity'/u);
+  assert.match(pointDedupeMigration, /pv\.recurrence_policy ->> 'maximum' = '1'/u);
+  assert.match(pointDedupeMigration, /pv\.recurrence_policy #>> '\{trigger,event_name\}' = 'learning\.activity\.completed'/u);
+  assert.match(pointDedupeMigration, /set status = 'retired'/u);
 });
 
 test("badge and certificate rule lists are derived from current domain entities, not names", () => {
