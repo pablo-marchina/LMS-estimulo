@@ -148,9 +148,11 @@ export default async function ParticipantProfileAchievementsPage({
       </section>
 
       <section className="grid gap-5" id="certificados-externos">
-        <div>
-          <h2 className="display-font text-2xl text-secondary">Certificados de outros cursos</h2>
-          <p className="mt-2 text-sm text-muted">{participantCopy.certificates.externalSectionDescription}</p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="display-font text-2xl text-secondary">Certificados de outros cursos</h2>
+            <p className="mt-2 text-sm text-muted">{participantCopy.certificates.externalSectionDescription}</p>
+          </div>
         </div>
         {query.certificadoExterno === "enviado" ? (
           <StatusPanel title="Certificado adicionado" tone="success">
@@ -162,27 +164,33 @@ export default async function ParticipantProfileAchievementsPage({
         ) : null}
 
         {issuersUnavailable ? (
-          <StatusPanel title="Formulário temporariamente indisponível" tone="warning">
+          <StatusPanel title="Adicionar certificado temporariamente indisponível" tone="warning">
             Não foi possível carregar a lista de instituições. Seus certificados já salvos continuam disponíveis.
           </StatusPanel>
         ) : (
-          <Card>
-            <form action="/api/external-credential-uploads" method="post" encType="multipart/form-data" className="grid gap-4 sm:grid-cols-2">
-              <Label>{participantCopy.certificates.fields.courseName}<Input name="title" required minLength={3} maxLength={180} placeholder="Ex.: Marketing e Vendas" /></Label>
-              <ExternalCredentialIssuerFields issuers={issuers?.items ?? []} />
-              <Label>{participantCopy.certificates.fields.issuedOn}<Input name="issued_on" type="date" /></Label>
-              <Label>{participantCopy.certificates.fields.expiresOn}<Input name="expires_on" type="date" /></Label>
-              <Label className="sm:col-span-2">{participantCopy.certificates.fields.verificationUrl}<Input name="verification_url" type="url" placeholder="https://..." /></Label>
-              <FileUploadPreview className="sm:col-span-2" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp" required label={participantCopy.certificates.fields.file} help="PDF ou imagem, até 8 MB." />
-              <PendingSubmitButton pendingLabel="Enviando certificado…" className="w-fit sm:col-span-2" icon={<FileUp size={16} />}>{participantCopy.certificates.submit}</PendingSubmitButton>
-            </form>
-          </Card>
+          <details className="rounded-2xl border border-border bg-white shadow-sm" open={query.certificadoExterno === "erro"}>
+            <summary className="cursor-pointer list-none p-4 sm:p-5">
+              <span className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-95"><FileUp size={17} />Adicione seu certificado</span>
+              <span className="ml-3 hidden text-sm text-muted sm:inline">Abra somente quando quiser registrar uma formação externa.</span>
+            </summary>
+            <div className="border-t border-border p-4 sm:p-5">
+              <form action="/api/external-credential-uploads" method="post" encType="multipart/form-data" className="grid gap-4 sm:grid-cols-2">
+                <Label>{participantCopy.certificates.fields.courseName}<Input name="title" required minLength={3} maxLength={180} placeholder="Ex.: Marketing e Vendas" /></Label>
+                <ExternalCredentialIssuerFields issuers={issuers?.items ?? []} />
+                <Label>{participantCopy.certificates.fields.issuedOn}<Input name="issued_on" type="date" /></Label>
+                <Label>{participantCopy.certificates.fields.expiresOn}<Input name="expires_on" type="date" /></Label>
+                <Label className="sm:col-span-2">{participantCopy.certificates.fields.verificationUrl}<Input name="verification_url" type="url" placeholder="https://..." /></Label>
+                <FileUploadPreview className="sm:col-span-2" name="file" accept=".pdf,.png,.jpg,.jpeg,.webp" required label={participantCopy.certificates.fields.file} help="PDF ou imagem, até 8 MB." />
+                <PendingSubmitButton pendingLabel="Enviando certificado…" className="w-fit sm:col-span-2" icon={<FileUp size={16} />}>{participantCopy.certificates.submit}</PendingSubmitButton>
+              </form>
+            </div>
+          </details>
         )}
 
         {externalUnavailable ? (
           <StatusPanel title="Certificados externos temporariamente indisponíveis" tone="warning">A consulta falhou, mas nenhum registro foi removido.</StatusPanel>
         ) : external?.items.length === 0 ? (
-          <EmptyState title="Nenhum certificado externo" tone="info">Use o formulário acima para adicionar sua primeira formação.</EmptyState>
+          <EmptyState title="Nenhum certificado externo" tone="info">Use “Adicione seu certificado” quando quiser registrar sua primeira formação.</EmptyState>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {external?.items.map((item) => (
