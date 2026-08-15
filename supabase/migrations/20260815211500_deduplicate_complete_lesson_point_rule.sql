@@ -1,6 +1,10 @@
 -- Keep exactly one canonical published complete-lesson point rule per organization.
 -- Historical versions remain preserved as retired records.
 -- This migration is intentionally DML-only and idempotent.
+-- Published rows are changed only inside the repository's trusted postgres
+-- transaction escape hatch and the escape hatch is closed immediately after.
+
+select set_config('app.admin_live_edit', 'on', true);
 
 with ranked_complete_lesson_rules as (
   select
@@ -30,3 +34,5 @@ set status = 'retired'
 from ranked_complete_lesson_rules ranked
 where pv.id = ranked.id
   and ranked.publication_rank > 1;
+
+select set_config('app.admin_live_edit', 'off', true);
