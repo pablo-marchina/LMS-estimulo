@@ -5,6 +5,7 @@ declare
   v_user_account_id uuid := gen_random_uuid();
   v_auth_user_id uuid := gen_random_uuid();
   v_snapshot_token uuid := gen_random_uuid();
+  v_replay_snapshot_token uuid := gen_random_uuid();
   v_terms_document_version_id uuid;
   v_privacy_document_version_id uuid;
   v_result jsonb;
@@ -82,7 +83,20 @@ begin
   assert v_result->>'phone_status' = 'stored', 'result must report phone_status=stored';
   assert v_result->>'cnpj_status' = 'stored', 'result must report cnpj_status=stored';
 
-  -- idempotent replay with the same key must not error and must return the same result
+  -- A consumed legal snapshot is single-use. A legitimate retry stages a fresh
+  -- snapshot, keeps the same idempotency key and must return the existing result.
+  perform public.stage_public_signup_legal_snapshot(
+    v_replay_snapshot_token,
+    'contato-teste@estimulo.org',
+    v_terms_document_version_id,
+    v_privacy_document_version_id,
+    now()
+  );
+  update auth.users
+     set raw_user_meta_data = jsonb_build_object('signup_legal_snapshot_token',v_replay_snapshot_token),
+         updated_at = now()
+   where id = v_auth_user_id;
+
   perform public.provision_public_signup_participant_v3(
     v_user_account_id, 'Maria Teste', 'Negócio Teste', '{}'::jsonb,
     encode(sha256('lookup-1'::bytea), 'hex'), repeat('a', 20), repeat('b', 20), repeat('c', 24),
