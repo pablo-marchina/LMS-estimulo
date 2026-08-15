@@ -43,11 +43,10 @@ begin
   );
 
   insert into auth.users(
-    id,email,email_confirmed_at,raw_user_meta_data,created_at,updated_at
+    id,email,raw_user_meta_data,created_at,updated_at
   ) values (
     v_auth_user_id,
     'contato-teste@estimulo.org',
-    now(),
     jsonb_build_object('signup_legal_snapshot_token',v_snapshot_token),
     now(),
     now()
