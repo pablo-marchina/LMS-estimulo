@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { StatusPill } from "@/components/ui/status-pill";
-import { diagnosticResultBlocks, normalizeDiagnosticResultBlocks } from "@/lib/diagnostics/result-blocks";
+import {
+  diagnosticResultBlocks,
+  normalizeDiagnosticResultBlocks,
+  type DiagnosticProfileResultContent,
+  type DiagnosticResultContentByProfile,
+} from "@/lib/diagnostics/result-blocks";
 import { saveDiagnosticAction } from "./actions";
 
 export type DiagnosticProfileInput = { code: string; name: string; description: string };
@@ -27,6 +32,7 @@ export type DiagnosticBuilderInitial = {
   defaultProfileCode: string;
   rules: DiagnosticRuleInput[];
   resultBlocks?: string[];
+  resultContent?: DiagnosticResultContentByProfile;
 };
 
 type DiagnosticBuilderProps = {
@@ -42,6 +48,27 @@ function codeFrom(value: string, fallback: string) {
 
 function blankOptions() {
   return [1, 2, 3, 4].map((score) => ({ label: "", score }));
+}
+
+const resultCopySections: Array<{ key: keyof DiagnosticProfileResultContent; label: string; help: string }> = [
+  { key: "strength", label: "Pontos fortes", help: "Capacidades que já favorecem este perfil." },
+  { key: "challenge", label: "Próximo desafio", help: "Principal oportunidade de evolução deste perfil." },
+  { key: "practical_tip", label: "Dica prática", help: "Uma ação concreta que a pessoa pode aplicar agora." },
+  { key: "takeaway", label: "Frase para levar", help: "Mensagem curta de fechamento para este perfil." },
+];
+
+function ProfileResultCopyFields({ index, initial }: { index: number; initial?: DiagnosticProfileResultContent }) {
+  return <details className="sm:col-span-2 rounded-xl border border-border bg-surface-muted/35">
+    <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-secondary">Textos exibidos no resultado deste perfil</summary>
+    <div className="grid gap-4 border-t border-border p-4">
+      <p className="text-xs leading-5 text-muted">Preencha somente o que quiser personalizar. Títulos e textos são opcionais; título vazio não cria uma trava ao salvar. Se nenhum campo for preenchido, versões antigas continuam usando o texto padrão atual.</p>
+      {resultCopySections.map((section) => <div key={section.key} className="grid gap-3 rounded-xl border border-border bg-white p-4 sm:grid-cols-2">
+        <div className="sm:col-span-2"><strong className="text-sm text-secondary">{section.label}</strong><p className="mt-1 text-xs text-muted">{section.help}</p></div>
+        <Label>Título <span className="font-normal text-muted">(opcional)</span><Input name={`profile_result_${section.key}_title_${index}`} defaultValue={initial?.[section.key].title ?? ""} placeholder="Deixe em branco para não mostrar título" /></Label>
+        <Label>Texto <span className="font-normal text-muted">(opcional)</span><Textarea name={`profile_result_${section.key}_body_${index}`} rows={3} defaultValue={initial?.[section.key].body ?? ""} placeholder="Texto mostrado ao participante" /></Label>
+      </div>)}
+    </div>
+  </details>;
 }
 
 export function DiagnosticBuilder({ initial, previousProfiles, canPublish }: DiagnosticBuilderProps) {
@@ -139,8 +166,8 @@ export function DiagnosticBuilder({ initial, previousProfiles, canPublish }: Dia
 
     <Card className="grid gap-4"><div><h2 className="text-lg font-black text-secondary">Informações principais</h2><p className="mt-1 text-sm text-muted">Nome e objetivo identificam o formulário para a equipe.</p></div><Label>Nome do diagnóstico<Input name="name" defaultValue={initial.name} required /><span className="text-[11px] font-normal text-muted">Nome interno usado pela equipe.</span></Label><Label>Objetivo<Textarea name="purpose" rows={3} defaultValue={initial.purpose} required /><span className="text-[11px] font-normal text-muted">Explique o que o diagnóstico pretende compreender.</span></Label></Card>
 
-    <AdminDisclosure title="Perfis de resultado" description="Adicione quantos perfis forem necessários e defina os textos apresentados após a classificação.">
-      <div className="grid gap-3">{profiles.map((profile, index) => <div key={`profile-${index}`} className="grid gap-3 rounded-xl border border-border bg-white p-4 sm:grid-cols-2"><Label>Nome do perfil<Input name={`profile_name_${index}`} value={profile.name} onChange={(event) => updateProfile(index, { name: event.target.value })} required /></Label><Label>Código interno<Input name={`profile_code_${index}`} value={profile.code} onChange={(event) => updateProfileCode(index, event.target.value)} pattern="[a-z][a-z0-9_-]{1,79}" required /><span className="text-[11px] font-normal text-muted">Sem espaços; identifica o perfil nas jornadas.</span></Label><Label className="sm:col-span-2">Descrição<Textarea name={`profile_description_${index}`} rows={3} value={profile.description} onChange={(event) => updateProfile(index, { description: event.target.value })} /></Label><Button type="button" variant="secondary" size="sm" className="w-fit" icon={<Trash2 size={14} />} disabled={profiles.length <= 1} onClick={() => removeProfile(index)}>Remover perfil</Button></div>)}</div>
+    <AdminDisclosure title="Perfis de resultado" description="Adicione quantos perfis forem necessários e edite, no próprio perfil, os textos que aparecem para o participante.">
+      <div className="grid gap-3">{profiles.map((profile, index) => <div key={`profile-${index}`} className="grid gap-3 rounded-xl border border-border bg-white p-4 sm:grid-cols-2"><Label>Nome do perfil<Input name={`profile_name_${index}`} value={profile.name} onChange={(event) => updateProfile(index, { name: event.target.value })} required /></Label><Label>Código interno<Input name={`profile_code_${index}`} value={profile.code} onChange={(event) => updateProfileCode(index, event.target.value)} pattern="[a-z][a-z0-9_-]{1,79}" required /><span className="text-[11px] font-normal text-muted">Sem espaços; identifica o perfil nas jornadas.</span></Label><Label className="sm:col-span-2">Descrição<Textarea name={`profile_description_${index}`} rows={3} value={profile.description} onChange={(event) => updateProfile(index, { description: event.target.value })} /></Label><ProfileResultCopyFields index={index} initial={initial.resultContent?.[profile.code]} /><Button type="button" variant="secondary" size="sm" className="w-fit" icon={<Trash2 size={14} />} disabled={profiles.length <= 1} onClick={() => removeProfile(index)}>Remover perfil</Button></div>)}</div>
       <Button type="button" variant="secondary" size="sm" className="mt-4 w-fit" icon={<Plus size={14} />} onClick={addProfile}>Adicionar perfil</Button>
     </AdminDisclosure>
 
@@ -158,7 +185,7 @@ export function DiagnosticBuilder({ initial, previousProfiles, canPublish }: Dia
       <div className="grid gap-5"><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th className="p-2 text-left">Perfil</th>{dimensions.map((dimension) => <th key={dimension.code} className="min-w-36 p-2 text-left">{dimension.name}</th>)}</tr></thead><tbody>{profiles.map((profile, profileIndex) => <tr key={profile.code} className="border-t border-border"><td className="p-2 font-medium text-ink">{profile.name}</td>{dimensions.map((dimension, dimensionIndex) => <td key={dimension.code} className="p-2"><Input name={`threshold_${profileIndex}_${dimensionIndex}`} type="number" step="0.1" placeholder="—" defaultValue={initialThresholds[profile.code]?.[dimension.code] ?? ""} /></td>)}</tr>)}</tbody></table></div><Label>Perfil padrão<Select name="default_archetype_code" value={defaultProfileCode} onChange={(event) => setDefaultProfileCode(event.target.value)} required><option value="">Selecione</option>{profiles.map((profile) => <option key={profile.code} value={profile.code}>{profile.name}</option>)}</Select><span className="text-[11px] font-normal text-muted">Usado quando nenhuma regra específica é atendida.</span></Label></div>
     </AdminDisclosure>
 
-    <AdminDisclosure title="Blocos do resultado" description="Escolha quais blocos o participante verá após concluir o diagnóstico. O mesmo contrato é usado no resultado publicado.">
+    <AdminDisclosure title="Blocos do resultado" description="Escolha quais blocos aparecem no resultado. Os textos específicos de cada perfil ficam dentro de “Perfis de resultado”, acima.">
       <div className="grid gap-3 sm:grid-cols-2">{diagnosticResultBlocks.map((block) => <label key={block.code} className="flex items-start gap-3 rounded-xl border border-border bg-white p-4 text-sm text-ink"><input type="checkbox" name="result_blocks" value={block.code} defaultChecked={enabledResultBlocks.has(block.code)} className="mt-0.5 size-4 accent-primary" /><span><strong className="block text-secondary">{block.label}</strong><small className="mt-1 block leading-5 text-muted">{block.description}</small></span></label>)}</div>
     </AdminDisclosure>
 
