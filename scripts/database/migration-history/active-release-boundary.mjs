@@ -1,4 +1,4 @@
-export const expectedLastMigration = '20260814011000_restore_completion_unlock_trigger.sql';
+export const expectedLastMigration = '20260814111500_certificate_template_persisted_preview.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -79,4 +79,6 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260813181856_sync_library_assets_on_publish.sql',
   '20260813185028_prepare_semantic_activity_session_routine_kind.sql',
   '20260814011000_restore_completion_unlock_trigger.sql',
+  '20260814110000_automatic_reward_points.sql',
+  '20260814111500_certificate_template_persisted_preview.sql',
 ]);
