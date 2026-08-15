@@ -93,6 +93,7 @@ export type ParticipantDiagnosticSummary = {
   diagnostic_name: string | null;
   completed_at: string | null;
   result_blocks: string[];
+  result_content: Record<string, unknown>;
   dimensions: DiagnosticDimensionSummary[];
 };
 
