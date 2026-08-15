@@ -1,6 +1,6 @@
 import type { DefinitionSummary, VersionSummary } from "@/lib/admin/product-management";
 import type { DiagnosticBuilderInitial } from "./diagnostic-builder";
-import { blockInputs, classification, date, dimensionInputs, profileInputs, questionInputs, ruleInputs, str } from "./page-model-utils";
+import { blockInputs, classification, date, dimensionInputs, profileInputs, questionInputs, resultContentInputs, ruleInputs, str } from "./page-model-utils";
 
 type EditorVersion = VersionSummary & { definitionName?: string; definitionId?: string; definitionCode?: string; definitionPurpose?: string };
 
@@ -31,6 +31,7 @@ export function buildDiagnosticPageModel(diagnostics: DefinitionSummary[], reque
     defaultProfileCode: str(classification(seed).default_archetype_code) || seedProfiles[0]?.code || "",
     rules: ruleInputs(seed),
     resultBlocks: blockInputs(seed),
+    resultContent: resultContentInputs(seed),
   };
   const selectorValue = selected ? String(selected.id) : published ? "publicado" : "";
   const selectorOptions = [
