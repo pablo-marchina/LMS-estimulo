@@ -1,4 +1,4 @@
-export const expectedLastMigration = '20260814111500_certificate_template_persisted_preview.sql';
+export const expectedLastMigration = '20260815202101_certificate_template_persisted_preview_live_alignment.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -79,6 +79,10 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260813181856_sync_library_assets_on_publish.sql',
   '20260813185028_prepare_semantic_activity_session_routine_kind.sql',
   '20260814011000_restore_completion_unlock_trigger.sql',
-  '20260814110000_automatic_reward_points.sql',
-  '20260814111500_certificate_template_persisted_preview.sql',
+  '20260815194105_restore_operational_legal_documents_and_harden_rls.sql',
+  '20260815194313_enforce_open_participant_lessons.sql',
+  '20260815195528_return_configured_diagnostic_result_content.sql',
+  '20260815200021_align_certificate_rules_to_journeys.sql',
+  '20260815202049_automatic_reward_points_live_alignment.sql',
+  '20260815202101_certificate_template_persisted_preview_live_alignment.sql',
 ]);
