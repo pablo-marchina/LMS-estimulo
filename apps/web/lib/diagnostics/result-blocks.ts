@@ -17,6 +17,20 @@ type AvailableDiagnosticResultBlockCode = typeof diagnosticResultBlocks[number][
 // retired “próximos três movimentos” block from both new and existing results.
 export type DiagnosticResultBlockCode = AvailableDiagnosticResultBlockCode | "next_moves";
 
+export type DiagnosticResultText = {
+  title: string;
+  body: string;
+};
+
+export type DiagnosticProfileResultContent = {
+  strength: DiagnosticResultText;
+  challenge: DiagnosticResultText;
+  practical_tip: DiagnosticResultText;
+  takeaway: DiagnosticResultText;
+};
+
+export type DiagnosticResultContentByProfile = Record<string, DiagnosticProfileResultContent>;
+
 const validCodes = new Set<string>(diagnosticResultBlocks.map((block) => block.code));
 export const defaultDiagnosticResultBlocks: AvailableDiagnosticResultBlockCode[] = diagnosticResultBlocks.map((block) => block.code);
 
@@ -26,4 +40,37 @@ export function normalizeDiagnosticResultBlocks(value: unknown): DiagnosticResul
     .map(String)
     .filter((code): code is AvailableDiagnosticResultBlockCode => validCodes.has(code));
   return normalized.length ? Array.from(new Set(normalized)) : [...defaultDiagnosticResultBlocks];
+}
+
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function text(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+export function normalizeDiagnosticProfileResultContent(value: unknown): DiagnosticProfileResultContent | null {
+  const source = record(value);
+  if (Object.keys(source).length === 0) return null;
+  const section = (key: keyof DiagnosticProfileResultContent): DiagnosticResultText => {
+    const item = record(source[key]);
+    return { title: text(item.title), body: text(item.body) };
+  };
+  return {
+    strength: section("strength"),
+    challenge: section("challenge"),
+    practical_tip: section("practical_tip"),
+    takeaway: section("takeaway"),
+  };
+}
+
+export function normalizeDiagnosticResultContentByProfile(value: unknown): DiagnosticResultContentByProfile {
+  const source = record(value);
+  const result: DiagnosticResultContentByProfile = {};
+  for (const [profileCode, raw] of Object.entries(source)) {
+    const content = normalizeDiagnosticProfileResultContent(raw);
+    if (profileCode && content) result[profileCode] = content;
+  }
+  return result;
 }
