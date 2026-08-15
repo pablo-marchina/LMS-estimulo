@@ -29,22 +29,34 @@ function editableVersion(item: CertificateDefinition | null) {
   const sorted = [...item.versions].sort((a, b) => b.version_number - a.version_number);
   return sorted.find((version) => version.status === "draft") ?? sorted[0] ?? null;
 }
+function ruleJourneyId(rule: JourneyRuleVersion) { return String(objectValue(rule.expression).journey_version_id ?? ""); }
 
 export function CertificateEditor({ certificates, journeyVersions, ruleVersions }: { certificates: CertificateDefinition[]; journeyVersions: NamedVersion[]; ruleVersions: JourneyRuleVersion[] }) {
   const [selectedDefinitionId, setSelectedDefinitionId] = useState("");
   const selected = useMemo(() => certificates.find((item) => item.definition_id === selectedDefinitionId) ?? null, [certificates, selectedDefinitionId]);
   const version = editableVersion(selected);
   const [journeyVersionId, setJourneyVersionId] = useState("");
+  const [requirementsRuleVersionId, setRequirementsRuleVersionId] = useState("");
   const selectedJourneyVersionId = journeyVersionId || version?.journey_version_id || "";
   const validity = objectValue(version?.validity_policy);
   const layout = objectValue(version?.template_layout);
-  const compatibleRules = ruleVersions.filter((rule) => String(objectValue(rule.expression).journey_version_id ?? "") === selectedJourneyVersionId);
-  const currentRuleIsCompatible = compatibleRules.some((rule) => rule.id === version?.requirements_rule_version_id);
+  const compatibleRules = ruleVersions.filter((rule) => ruleJourneyId(rule) === selectedJourneyVersionId);
+  const selectedRuleIsCompatible = compatibleRules.some((rule) => rule.id === requirementsRuleVersionId);
+  const effectiveRuleVersionId = selectedRuleIsCompatible ? requirementsRuleVersionId : "";
 
   function selectCertificate(value: string) {
     setSelectedDefinitionId(value);
     const next = certificates.find((item) => item.definition_id === value) ?? null;
-    setJourneyVersionId(editableVersion(next)?.journey_version_id ?? "");
+    const nextVersion = editableVersion(next);
+    const nextJourney = nextVersion?.journey_version_id ?? "";
+    const nextRule = nextVersion?.requirements_rule_version_id ?? "";
+    setJourneyVersionId(nextJourney);
+    setRequirementsRuleVersionId(ruleVersions.some((rule) => rule.id === nextRule && ruleJourneyId(rule) === nextJourney) ? nextRule : "");
+  }
+
+  function selectJourney(value: string) {
+    setJourneyVersionId(value);
+    setRequirementsRuleVersionId((current) => ruleVersions.some((rule) => rule.id === current && ruleJourneyId(rule) === value) ? current : "");
   }
 
   return <Card>
@@ -55,11 +67,11 @@ export function CertificateEditor({ certificates, journeyVersions, ruleVersions 
       <div className="grid gap-4 sm:grid-cols-2">
         <Label>Certificado existente<Select name="definition_id" value={selectedDefinitionId} onChange={(event) => selectCertificate(event.target.value)}><option value="">Criar novo</option>{certificates.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select><span className="text-[11px] font-normal text-muted">Ao selecionar, a jornada e a regra atualmente usadas ficam visíveis para edição.</span></Label>
         <Label>Nome do certificado<Input name="name" required defaultValue={selected?.name ?? ""} placeholder="Ex.: Certificado de conclusão" /></Label>
-        <Label className="sm:col-span-2">Jornada que emite o certificado<Select name="journey_version_id" required value={selectedJourneyVersionId} onChange={(event) => setJourneyVersionId(event.target.value)}><option value="">Selecione</option>{journeyVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select><span className="text-[11px] font-normal text-muted">As opções vêm das jornadas cadastradas e ativas no LMS.</span></Label>
+        <Label className="sm:col-span-2">Jornada que emite o certificado<Select name="journey_version_id" required value={selectedJourneyVersionId} onChange={(event) => selectJourney(event.target.value)}><option value="">Selecione</option>{journeyVersions.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select><span className="text-[11px] font-normal text-muted">As opções vêm das jornadas cadastradas e ativas no LMS.</span></Label>
       </div>
       <AdminDisclosure title="Condição, validade e posição dos textos" description="Abra somente quando precisar ajustar a emissão ou o PDF.">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Label>Condição de conclusão desta jornada<Select name="requirements_rule_version_id" required defaultValue={currentRuleIsCompatible ? version?.requirements_rule_version_id ?? "" : ""} disabled={!selectedJourneyVersionId}><option value="">{selectedJourneyVersionId ? "Selecione" : "Escolha a jornada primeiro"}</option>{compatibleRules.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select><span className="text-[11px] font-normal text-muted">Só aparecem regras cujo gatilho é a conclusão da jornada escolhida. Regras de trilha, aula ou testes internos não aparecem aqui.</span></Label>
+          <Label>Condição de conclusão desta jornada<Select name="requirements_rule_version_id" required value={effectiveRuleVersionId} onChange={(event) => setRequirementsRuleVersionId(event.target.value)} disabled={!selectedJourneyVersionId}><option value="">{selectedJourneyVersionId ? "Selecione" : "Escolha a jornada primeiro"}</option>{compatibleRules.map((item) => <option value={item.id} key={item.id}>{item.definitionName}</option>)}</Select><span className="text-[11px] font-normal text-muted">Ao trocar de jornada, uma condição incompatível é removida automaticamente. Regras de trilha, aula ou testes internos não aparecem aqui.</span></Label>
           <Label>Validade<Select name="validity_mode" defaultValue={validity.expires === true ? "months" : "never"}><option value="never">Não expira</option><option value="months">Expira depois de alguns meses</option></Select></Label>
           <Label>Meses de validade<Input name="validity_months" type="number" min="1" max="120" defaultValue={String(numberValue(validity.duration_months, 12))} /></Label>
           <Label>Disponibilidade<Select name="status" defaultValue={version?.status === "published" ? "published" : "draft"}><option value="draft">Preparar sem emitir</option><option value="published">Ativar emissão</option></Select></Label>
