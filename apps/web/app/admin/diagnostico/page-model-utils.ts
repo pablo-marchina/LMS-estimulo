@@ -1,4 +1,5 @@
 import type { VersionSummary } from "@/lib/admin/product-management";
+import { normalizeDiagnosticResultContentByProfile } from "@/lib/diagnostics/result-blocks";
 import type { DiagnosticDimensionInput, DiagnosticProfileInput, DiagnosticQuestionInput, DiagnosticRuleInput } from "./diagnostic-builder";
 
 export const one = (v: string | string[] | undefined) => Array.isArray(v) ? v[0] ?? "" : v ?? "";
@@ -19,3 +20,4 @@ export function ruleInputs(v: VersionSummary | null): DiagnosticRuleInput[] {
   return (Array.isArray(raw) ? raw : []).map(obj).map((x) => ({ archetype_code: str(x.archetype_code), thresholds: obj(x.thresholds) as Record<string, number | string> })).filter((x) => x.archetype_code);
 }
 export function blockInputs(v: VersionSummary | null) { const value = obj(v?.configuration).result_blocks; return Array.isArray(value) ? value.map(String) : undefined; }
+export function resultContentInputs(v: VersionSummary | null) { return normalizeDiagnosticResultContentByProfile(obj(v?.configuration).result_content); }
