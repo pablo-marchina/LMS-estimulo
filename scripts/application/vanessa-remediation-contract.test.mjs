@@ -22,6 +22,7 @@ const [
   rewardMigration,
   badgeMigration,
   pointEligibilityMigration,
+  pointDedupeMigration,
   migrationBoundary,
 ] = await Promise.all([
   readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8"),
@@ -43,6 +44,7 @@ const [
   readFile("supabase/migrations/20260815202049_automatic_reward_points_live_alignment.sql", "utf8"),
   readFile("supabase/migrations/20260815203254_rebind_orphaned_path_badges_to_current_tracks.sql", "utf8"),
   readFile("supabase/migrations/20260815203650_canonical_point_rule_eligibility.sql", "utf8"),
+  readFile("supabase/migrations/20260815211500_deduplicate_complete_lesson_point_rule.sql", "utf8"),
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
 ]);
 
@@ -110,6 +112,10 @@ test("point configuration exposes domain choices only and resolves eligibility s
   assert.match(rewardMigration, /trg_credit_reward_wallet_from_point_ledger/u);
   assert.match(rewardMigration, /trg_block_manual_reward_conversion/u);
   assert.match(pointEligibilityMigration, /general_point_eligibility/u);
+  assert.match(pointDedupeMigration, /partition by pd\.owner_organization_id, pd\.code/u);
+  assert.match(pointDedupeMigration, /pv\.recurrence_policy ->> 'event_type' = 'learning\.activity\.completed'/u);
+  assert.match(pointDedupeMigration, /pv\.amount = 10/u);
+  assert.match(pointDedupeMigration, /set status = 'deprecated'/u);
 });
 
 test("badge and certificate rule lists are derived from current domain entities, not names", () => {
@@ -129,5 +135,6 @@ test("migration release boundary includes the audited structural migrations", ()
   assert.match(migrationBoundary, /20260815202049_automatic_reward_points_live_alignment\.sql/u);
   assert.match(migrationBoundary, /20260815203254_rebind_orphaned_path_badges_to_current_tracks\.sql/u);
   assert.match(migrationBoundary, /20260815203650_canonical_point_rule_eligibility\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260815204402_index_vanessa_remediation_foreign_keys\.sql'/u);
+  assert.match(migrationBoundary, /20260815211500_deduplicate_complete_lesson_point_rule\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260815211500_deduplicate_complete_lesson_point_rule\.sql'/u);
 });
