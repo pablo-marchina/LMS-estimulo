@@ -13,7 +13,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
   }
 
   const fileId = z.string().uuid().safeParse((await params).fileObjectId);
-  const organizationId = z.string().uuid().safeParse(new URL(request.url).searchParams.get("organization"));
+  const searchParams = new URL(request.url).searchParams;
+  const organizationId = z.string().uuid().safeParse(searchParams.get("organization_id") ?? searchParams.get("organization"));
   if (!fileId.success || !organizationId.success) {
     return NextResponse.json({ error: "CERTIFICATE_TEMPLATE_PREVIEW_REQUEST_INVALID" }, { status: 400 });
   }
