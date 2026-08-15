@@ -72,7 +72,7 @@ const [
   read("apps/web/app/admin/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/rewards-experience.tsx"),
-  read("supabase/migrations/20260814110000_automatic_reward_points.sql"),
+  read("supabase/migrations/20260815202049_automatic_reward_points_live_alignment.sql"),
   read("apps/web/components/admin-delivery-configuration-manager.tsx"),
   read("apps/web/components/participant-profile-materials.tsx"),
   read("apps/web/app/api/delivery-uploads/route.ts"),
