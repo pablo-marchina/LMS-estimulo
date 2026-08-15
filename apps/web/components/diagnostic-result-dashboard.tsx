@@ -3,7 +3,12 @@ import { PrintResultButton } from "@/components/print-result-button";
 import { ShareAction } from "@/components/share-action";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { normalizeDiagnosticResultBlocks, type DiagnosticResultBlockCode } from "@/lib/diagnostics/result-blocks";
+import {
+  normalizeDiagnosticProfileResultContent,
+  normalizeDiagnosticResultBlocks,
+  type DiagnosticProfileResultContent,
+  type DiagnosticResultBlockCode,
+} from "@/lib/diagnostics/result-blocks";
 import type { DiagnosticDimensionSummary } from "@/lib/engagement/contracts";
 
 type ArchetypeInsight = { strength: string; challenge: string; tip: string; phrase: string };
@@ -42,18 +47,29 @@ function insightForArchetype(name: string): ArchetypeInsight {
   };
 }
 
+function legacyResultContent(insight: ArchetypeInsight): DiagnosticProfileResultContent {
+  return {
+    strength: { title: "O que já joga a seu favor", body: insight.strength },
+    challenge: { title: "Onde concentrar energia agora", body: insight.challenge },
+    practical_tip: { title: "Um passo para começar", body: insight.tip },
+    takeaway: { title: "Uma frase para o seu momento", body: insight.phrase },
+  };
+}
+
 function percent(value: number) { return Math.min(100, Math.max(0, Math.round(value))); }
 
 export function DiagnosticResultDashboard({
   archetype,
   dimensions,
   resultBlocks,
+  resultContent,
   primaryHref = "/empreendedor/jornadas",
   primaryLabel = "Acessar minhas jornadas",
 }: {
   archetype: { name?: string | null; description?: string | null };
   dimensions: DiagnosticDimensionSummary[];
   resultBlocks?: string[];
+  resultContent?: unknown;
   primaryHref?: string;
   primaryLabel?: string;
 }) {
@@ -62,11 +78,12 @@ export function DiagnosticResultDashboard({
   const score = normalized.length ? Math.round(normalized.reduce((total, dimension) => total + dimension.percentage, 0) / normalized.length) : null;
   const priority = normalized.slice().sort((a, b) => a.percentage - b.percentage)[0] ?? null;
   const name = archetype.name?.trim() || "Perfil identificado";
-  const insight = insightForArchetype(name);
+  const legacyInsight = insightForArchetype(name);
+  const copy = normalizeDiagnosticProfileResultContent(resultContent) ?? legacyResultContent(legacyInsight);
   const shareText = `Meu perfil empreendedor é “${name}”. ${priority ? `Minha prioridade agora é ${priority.name}.` : ""}`.trim();
   const movements = [
     { title: priority ? `Fortaleça ${priority.name}` : "Escolha seu foco", body: "Comece pela área com maior espaço de evolução e transforme-a em uma prioridade concreta." },
-    { title: "Aplique uma ação prática", body: insight.tip },
+    { title: "Aplique uma ação prática", body: copy.practical_tip.body || legacyInsight.tip },
     { title: "Acompanhe o que mudou", body: "Revise seus indicadores e o progresso nas jornadas para decidir o próximo passo com evidências." },
   ];
 
@@ -106,10 +123,10 @@ export function DiagnosticResultDashboard({
     </div> : null}
 
     {enabled.has("strengths") || enabled.has("challenge") || enabled.has("practical_tip") || enabled.has("takeaway") ? <div className="grid gap-4 sm:grid-cols-2">
-      {enabled.has("strengths") ? <InsightCard icon={<CheckCircle2 size={20} />} eyebrow="Pontos fortes" title="O que já joga a seu favor" body={insight.strength} /> : null}
-      {enabled.has("challenge") ? <InsightCard icon={<Target size={20} />} eyebrow="Seu próximo desafio" title="Onde concentrar energia agora" body={insight.challenge} /> : null}
-      {enabled.has("practical_tip") ? <InsightCard icon={<Lightbulb size={20} />} eyebrow="Dica prática" title="Um passo para começar" body={insight.tip} /> : null}
-      {enabled.has("takeaway") ? <InsightCard icon={<Quote size={20} />} eyebrow="Para levar com você" title="Uma frase para o seu momento" body={insight.phrase} /> : null}
+      {enabled.has("strengths") && (copy.strength.title || copy.strength.body) ? <InsightCard icon={<CheckCircle2 size={20} />} eyebrow="Pontos fortes" title={copy.strength.title} body={copy.strength.body} /> : null}
+      {enabled.has("challenge") && (copy.challenge.title || copy.challenge.body) ? <InsightCard icon={<Target size={20} />} eyebrow="Seu próximo desafio" title={copy.challenge.title} body={copy.challenge.body} /> : null}
+      {enabled.has("practical_tip") && (copy.practical_tip.title || copy.practical_tip.body) ? <InsightCard icon={<Lightbulb size={20} />} eyebrow="Dica prática" title={copy.practical_tip.title} body={copy.practical_tip.body} /> : null}
+      {enabled.has("takeaway") && (copy.takeaway.title || copy.takeaway.body) ? <InsightCard icon={<Quote size={20} />} eyebrow="Para levar com você" title={copy.takeaway.title} body={copy.takeaway.body} /> : null}
     </div> : null}
 
     <p className="text-xs leading-5 text-muted">Seu resultado ajuda a personalizar sua experiência e indicar conteúdos e jornadas que fazem mais sentido para você. Ele é uma leitura de desenvolvimento, não uma avaliação de crédito.</p>
@@ -120,6 +137,6 @@ function MiniInsight({ icon, title, body }: { icon: React.ReactNode; title: stri
   return <Card className="flex gap-3 border border-primary/10 bg-white p-4 after:!hidden"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">{icon}</span><div><h4 className="font-black text-secondary">{title}</h4><p className="mt-1 text-sm leading-5 text-muted">{body}</p></div></Card>;
 }
 
-function InsightCard({ icon, eyebrow, title, body }: { icon: React.ReactNode; eyebrow: string; title: string; body: string }) {
-  return <Card className="flex gap-4 border border-primary/10 bg-white"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">{icon}</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{eyebrow}</p><h3 className="mt-1 font-black text-secondary">{title}</h3><p className="mt-2 text-sm leading-6 text-muted">{body}</p></div></Card>;
+function InsightCard({ icon, eyebrow, title, body }: { icon: React.ReactNode; eyebrow: string; title?: string; body?: string }) {
+  return <Card className="flex gap-4 border border-primary/10 bg-white"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">{icon}</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{eyebrow}</p>{title ? <h3 className="mt-1 font-black text-secondary">{title}</h3> : null}{body ? <p className="mt-2 text-sm leading-6 text-muted">{body}</p> : null}</div></Card>;
 }
