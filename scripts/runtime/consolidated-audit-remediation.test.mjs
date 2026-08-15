@@ -44,7 +44,8 @@ test("announcement editor supports responsive artwork and image-wide links", asy
   assert.match(runtime, /isMissingAnnouncementMobileSignature/u);
   assert.match(runtime, /ANNOUNCEMENT_MOBILE_SCHEMA_REQUIRED/u);
   assert.match(carousel, /className="absolute inset-0 z-20"/u);
-  assert.match(carousel, /max-\[720px\]:!max-h-\[40svh\]/u);
+  assert.match(carousel, /!max-h-\[38svh\]/u);
+  assert.match(carousel, /max-\[720px\]:!max-h-\[36svh\]/u);
   assert.match(carousel, /variant=mobile/u);
 });
 

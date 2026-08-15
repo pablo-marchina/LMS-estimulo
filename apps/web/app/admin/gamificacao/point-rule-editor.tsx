@@ -17,7 +17,6 @@ type RuleVersion = {
 };
 
 type PointRule = { definition_id: string; name: string; versions: RuleVersion[] };
-type EligibilityRule = { id: string; definitionName: string; version_number: number };
 
 const triggerOptions = [
   ["journey.instance.started", "Iniciar uma jornada"],
@@ -39,7 +38,7 @@ function frequencyFromPolicy(recurrence: Record<string, unknown>) {
   return map[String(recurrence.scope ?? "")] ?? "once";
 }
 
-export function PointRuleEditor({ pointRules, eligibilityRules }: { pointRules: PointRule[]; eligibilityRules: EligibilityRule[] }) {
+export function PointRuleEditor({ pointRules }: { pointRules: PointRule[] }) {
   const [selectedDefinitionId, setSelectedDefinitionId] = useState("");
   const selected = useMemo(() => pointRules.find((item) => item.definition_id === selectedDefinitionId) ?? null, [pointRules, selectedDefinitionId]);
   const version = selected ? [...selected.versions].sort((a, b) => b.version_number - a.version_number).find((item) => item.status === "published") ?? [...selected.versions].sort((a, b) => b.version_number - a.version_number)[0] ?? null : null;
@@ -55,7 +54,7 @@ export function PointRuleEditor({ pointRules, eligibilityRules }: { pointRules: 
   }
 
   return <Card>
-    <div><h2 className="text-lg font-black text-secondary">Criar ou atualizar regra</h2><p className="mt-1 text-sm text-muted">Ao escolher uma regra existente, os campos carregam a versão atual para criar a próxima versão com segurança.</p></div>
+    <div><h2 className="text-lg font-black text-secondary">Criar ou atualizar regra</h2><p className="mt-1 text-sm text-muted">Configure somente o comportamento que muda para o participante. A elegibilidade técnica geral é aplicada automaticamente pelo servidor.</p></div>
     <form key={selectedDefinitionId || "new"} action={saveGamificationResourceAction} className="mt-5 grid gap-4">
       <input type="hidden" name="resource_type" value="point_rule" />
       <div className="grid gap-4 sm:grid-cols-2">
@@ -64,12 +63,12 @@ export function PointRuleEditor({ pointRules, eligibilityRules }: { pointRules: 
         <Label>Ação que gera pontos<Select name="trigger_event" required defaultValue={String(trigger.event_name ?? "")}><option value="">Selecione</option>{triggerOptions.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</Select></Label>
         <Label>Pontos por ação<Input name="amount" type="number" min="1" required defaultValue={String(version?.amount ?? 10)} /></Label>
       </div>
-      <AdminDisclosure title="Limites, condição e publicação" description="Controle repetição, regra de elegibilidade e entrada em vigor.">
+      <AdminDisclosure title="Limites e publicação" description="Controle quantas vezes a mesma ação pode gerar pontos e quando a regra entra em vigor.">
         <div className="grid gap-4 sm:grid-cols-2">
           <Label>Frequência<Select name="frequency" value={frequency} onChange={(event) => setFrequency(event.target.value)}><option value="once">Uma única vez por participante</option><option value="per_activity">Uma vez por aula</option><option value="per_assessment">Uma vez por avaliação</option><option value="per_certificate">Uma vez por certificado</option><option value="per_path">Uma vez por trilha</option><option value="per_journey">Uma vez por jornada</option><option value="daily">Limite por dia</option><option value="weekly">Limite por semana</option><option value="unlimited">Sempre que acontecer</option></Select></Label>
           <Label>Máximo no período<Input name="maximum_awards" type="number" min="1" defaultValue={String(recurrence.maximum ?? recurrence.maximum_awards ?? 1)} disabled={frequency === "unlimited" || frequency === "per_certificate"} /><span className="text-[11px] font-normal text-muted">{frequency === "per_certificate" ? "Cada certificado confirmado possui sua própria referência idempotente." : frequency === "unlimited" ? "Sem limite para esta frequência." : "Quantidade máxima de concessões dentro da frequência escolhida."}</span></Label>
-          <Label>Condição necessária<Select name="eligibility_rule_version_id" required defaultValue={version?.eligibility_rule_version_id ?? ""}><option value="">Selecione</option>{eligibilityRules.map((item) => <option value={item.id} key={item.id}>{item.definitionName} · versão {item.version_number}</option>)}</Select></Label>
           <Label>Estado<Select name="status" defaultValue={version?.status === "published" ? "published" : "draft"}><option value="draft">Salvar rascunho</option><option value="published">Publicar agora</option></Select></Label>
+          <div className="rounded-xl border border-success/25 bg-success-soft p-3 text-xs leading-5 text-ink"><strong className="block text-secondary">Elegibilidade geral</strong>A regra técnica de elegibilidade é vinculada automaticamente. Você não precisa escolher regras internas, jornadas ou IDs para que esta ação funcione.</div>
         </div>
       </AdminDisclosure>
       <PendingSubmitButton pendingLabel="Salvando regra…" className="w-fit">Salvar regra</PendingSubmitButton>

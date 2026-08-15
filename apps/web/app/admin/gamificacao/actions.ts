@@ -42,8 +42,24 @@ export async function saveGamificationResourceAction(formData: FormData) {
   let requestedCertificateStatus = "draft";
 
   if (resourceType === "point_rule") {
-    const name = text(formData, "name"); const existing = workspace?.point_rules.find((item) => item.definition_id === definitionId);
-    payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `pontos_${randomUUID().slice(0,8)}`), name, amount: Number(text(formData, "amount")), eligibility_rule_version_id: text(formData, "eligibility_rule_version_id"), recurrence_policy: recurrencePolicy(formData), status: text(formData, "status") || "draft" };
+    const name = text(formData, "name");
+    const existing = workspace?.point_rules.find((item) => item.definition_id === definitionId);
+    const eligibilityDefinition = workspace?.rules.find((item) => item.code === "general_point_eligibility" && String(item.rule_type ?? "") === "eligibility" && item.status === "active");
+    const eligibilityVersion = eligibilityDefinition
+      ? [...eligibilityDefinition.versions]
+          .filter((version) => version.status === "published")
+          .sort((a, b) => Number(b.version_number) - Number(a.version_number))[0]
+      : null;
+    if (!eligibilityVersion) redirect("/admin/gamificacao?tipo=pontos&erro=elegibilidade_indisponivel");
+    payload = {
+      definition_id: definitionId,
+      code: existing?.code ?? deriveCode(name, `pontos_${randomUUID().slice(0,8)}`),
+      name,
+      amount: Number(text(formData, "amount")),
+      eligibility_rule_version_id: String(eligibilityVersion.id),
+      recurrence_policy: recurrencePolicy(formData),
+      status: text(formData, "status") || "draft",
+    };
   } else if (resourceType === "badge") {
     const title = text(formData, "title"); const name = text(formData, "name") || title; const existing = workspace?.badges.find((item) => item.definition_id === definitionId);
     payload = { definition_id: definitionId, code: existing?.code ?? deriveCode(name, `selo_${randomUUID().slice(0,8)}`), name, title, description: text(formData, "description"), criteria_rule_version_id: nullable(formData, "criteria_rule_version_id"), status: text(formData, "status") || "draft" };

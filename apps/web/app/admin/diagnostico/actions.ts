@@ -85,6 +85,28 @@ export async function saveDiagnosticAction(formData: FormData) {
   const defaultArchetypeCode = text(formData, "default_archetype_code").toLowerCase();
   if (!profileCodes.has(defaultArchetypeCode)) redirect("/admin/diagnostico?erro=perfil_padrao_invalido");
   const resultBlocks = normalizeDiagnosticResultBlocks(formData.getAll("result_blocks").map(String));
+  const resultContent: Record<string, Record<string, { title: string; body: string }>> = {};
+  profiles.forEach((profile, index) => {
+    const profileContent = {
+      strength: {
+        title: text(formData, `profile_result_strength_title_${index}`),
+        body: text(formData, `profile_result_strength_body_${index}`),
+      },
+      challenge: {
+        title: text(formData, `profile_result_challenge_title_${index}`),
+        body: text(formData, `profile_result_challenge_body_${index}`),
+      },
+      practical_tip: {
+        title: text(formData, `profile_result_practical_tip_title_${index}`),
+        body: text(formData, `profile_result_practical_tip_body_${index}`),
+      },
+      takeaway: {
+        title: text(formData, `profile_result_takeaway_title_${index}`),
+        body: text(formData, `profile_result_takeaway_body_${index}`),
+      },
+    };
+    if (Object.values(profileContent).some((section) => section.title || section.body)) resultContent[profile.code] = profileContent;
+  });
 
   const name = text(formData, "name");
   const existingCode = text(formData, "definition_code");
@@ -108,7 +130,11 @@ export async function saveDiagnosticAction(formData: FormData) {
     name,
     purpose: text(formData, "purpose"),
     status: "draft",
-    configuration: { archetype_codes: profiles.map((profile) => profile.code), result_blocks: resultBlocks },
+    configuration: {
+      archetype_codes: profiles.map((profile) => profile.code),
+      result_blocks: resultBlocks,
+      result_content: resultContent,
+    },
     dimensions,
     items,
     archetypes: profiles,

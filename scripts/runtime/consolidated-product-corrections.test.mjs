@@ -82,7 +82,13 @@ test("certificate wallet and consolidated templates remain discoverable after up
   assert.match(page, /CertificateTemplateManager/u);
   assert.match(templateManager, /Modelos em uso/u);
   assert.match(templateManager, /Modelo geral/u);
-  assert.match(editor, /O fundo é escolhido automaticamente/u);
+  assert.match(templateManager, /Usar este arquivo/u);
+  assert.match(templateManager, /Visualizar arquivo/u);
+  assert.match(editor, /Regra de emissão/u);
+  assert.match(editor, /Jornada que emite o certificado/u);
+  assert.match(editor, /Condição de conclusão desta jornada/u);
+  assert.match(editor, /compatibleRules/u);
+  assert.match(editor, /setRequirementsRuleVersionId/u);
   assert.match(redirect, /\/admin\/gamificacao\?tipo=certificados/u);
 });
 

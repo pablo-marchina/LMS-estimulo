@@ -3,10 +3,11 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const page = await readFile("apps/web/app/admin/diagnostico/page.tsx", "utf8");
+const principal = await readFile("apps/web/app/admin/diagnostico/principal-section.tsx", "utf8");
 const builder = await readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8");
 const actions = await readFile("apps/web/app/admin/diagnostico/actions.ts", "utf8");
 
-const editorSource = `${page}\n${builder}`;
+const editorSource = `${page}\n${principal}\n${builder}`;
 
 test("diagnostic editor uses structured dynamic fields instead of raw JSON textareas", () => {
   assert.doesNotMatch(editorSource, /name="dimensions"/u);
@@ -21,7 +22,7 @@ test("diagnostic editor uses structured dynamic fields instead of raw JSON texta
 });
 
 test("diagnostic editor keeps publication behind an explicit migration choice", () => {
-  assert.match(page, /Somente um diagnóstico permanece publicado por vez/u);
+  assert.match(principal, /Somente um diagnóstico permanece publicado por vez/u);
   assert.match(builder, /Publicar agora/u);
   assert.match(builder, /Migração dos perfis atuais/u);
   assert.match(builder, /mapping_target_code_/u);

@@ -10,6 +10,9 @@ declare
   v_journey jsonb;
   v_activity jsonb;
   v_rule jsonb;
+  v_certificate_rule_definition_id uuid:=gen_random_uuid();
+  v_certificate_rule_version_id uuid:=gen_random_uuid();
+  v_certificate_rule_expression jsonb;
   v_path jsonb;
   v_diagnostic jsonb;
   v_point jsonb;
@@ -61,6 +64,33 @@ begin
     'configuration',jsonb_build_object('visibility','test_only')
   ),'admin-product-e2e-journey');
 
+  v_certificate_rule_expression:=jsonb_build_object(
+    'scope','journey',
+    'journey_version_id',(v_journey->>'version_id')::uuid,
+    'requires_completed_status',true,
+    'requires_required_steps_completed',true
+  );
+
+  insert into orchestration.rule_definitions(
+    id,owner_organization_id,code,rule_type,name,status
+  ) values (
+    v_certificate_rule_definition_id,v_org,'admin_e2e_certificate_rule','credential',
+    'Conclusão da jornada administrativa E2E','active'
+  );
+
+  insert into orchestration.rule_versions(
+    id,rule_definition_id,version_number,status,language,expression,input_schema,
+    output_schema,published_at,content_hash,created_at
+  ) values (
+    v_certificate_rule_version_id,v_certificate_rule_definition_id,1,'published','json-logic',
+    v_certificate_rule_expression,'{}'::jsonb,'{}'::jsonb,now(),
+    app_private.e14_request_hash(jsonb_build_object(
+      'expression',v_certificate_rule_expression,
+      'input_schema','{}'::jsonb,
+      'output_schema','{}'::jsonb
+    )),now()
+  );
+
   v_activity:=public.save_admin_product_resource(v_actor,v_org,'activity',jsonb_build_object(
     'code','admin_e2e_activity','name','Atividade administrativa E2E','title','Atividade administrativa E2E',
     'description','Prática privada','activity_type','practice','estimated_minutes',15,
@@ -100,7 +130,7 @@ begin
 
   v_certificate:=public.save_admin_product_resource(v_actor,v_org,'certificate',jsonb_build_object(
     'code','admin_e2e_certificate','name','Certificado administrativo E2E',
-    'journey_version_id',v_journey->>'version_id','requirements_rule_version_id',v_rule->>'version_id',
+    'journey_version_id',v_journey->>'version_id','requirements_rule_version_id',v_certificate_rule_version_id,
     'validity_policy',jsonb_build_object('expires',false),'status','draft'
   ),'admin-product-e2e-certificate');
 

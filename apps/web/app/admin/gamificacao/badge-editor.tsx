@@ -42,7 +42,7 @@ export function BadgeEditor({ badges, ruleVersions }: { badges: BadgeDefinition[
     <Card>
       <div>
         <h2 className="text-lg font-black text-secondary">Criar ou atualizar selo</h2>
-        <p className="mt-1 text-sm text-muted">Cadastre o reconhecimento aqui e vincule-o depois à trilha que deve concedê-lo.</p>
+        <p className="mt-1 text-sm text-muted">Cadastre o reconhecimento aqui. Para premiar a conclusão de um módulo específico, vincule este selo à trilha correspondente no editor de Jornadas e aulas.</p>
       </div>
       <form key={selectedDefinitionId || "new"} action={saveGamificationResourceAction} className="mt-5 grid gap-4">
         <input type="hidden" name="resource_type" value="badge" />
@@ -63,7 +63,11 @@ export function BadgeEditor({ badges, ruleVersions }: { badges: BadgeDefinition[
           O que o selo reconhece
           <Textarea name="description" rows={3} required defaultValue={version?.description ?? ""} />
         </Label>
-        <AdminDisclosure title="Identificação e disponibilidade" description="O vínculo com uma trilha é configurado na própria trilha. Uma condição automática é opcional e serve apenas para selos concedidos fora desse vínculo.">
+        <div className="rounded-2xl border border-primary/20 bg-primary-soft/40 p-4 text-sm text-ink">
+          <strong className="text-secondary">Como vincular a um módulo</strong>
+          <p className="mt-1 text-muted">Em Jornadas e aulas, cada trilha funciona como um módulo/bloco de conteúdos. Abra a trilha que deve conceder o selo e selecione este selo na configuração da própria trilha. A concessão ocorre quando a condição de conclusão daquela trilha for atendida.</p>
+        </div>
+        <AdminDisclosure title="Identificação e disponibilidade" description="O vínculo principal com uma trilha é configurado na própria trilha. A condição abaixo é mostrada para manutenção de selos já vinculados.">
           <div className="grid gap-4 sm:grid-cols-2">
             <Label>
               Nome interno
@@ -77,12 +81,12 @@ export function BadgeEditor({ badges, ruleVersions }: { badges: BadgeDefinition[
               </Select>
             </Label>
             <Label className="sm:col-span-2">
-              Condição automática opcional
+              Trilha que concede este selo
               <Select name="criteria_rule_version_id" defaultValue={version?.criteria_rule_version_id ?? ""}>
-                <option value="">Nenhuma — conceder somente pelos vínculos configurados</option>
-                {ruleVersions.map((rule) => <option key={rule.id} value={rule.id}>{rule.definitionName} · versão {rule.version_number}</option>)}
+                <option value="">Nenhuma — vincular depois no editor da trilha</option>
+                {ruleVersions.map((rule) => <option key={rule.id} value={rule.id}>{rule.definitionName}</option>)}
               </Select>
-              <span className="text-[11px] font-normal text-muted">Não selecione uma regra de conclusão de trilha aqui. Para esse caso, escolha o selo no editor da trilha.</span>
+              <span className="text-[11px] font-normal text-muted">A lista contém somente condições publicadas ligadas a trilhas que existem hoje. Regras internas, testes e referências órfãs não aparecem.</span>
             </Label>
           </div>
         </AdminDisclosure>

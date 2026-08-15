@@ -8,6 +8,7 @@ import { getPublishedInterfaceContent } from "@/lib/interface-content/runtime";
 import "./globals.css";
 import "./brand-motion.css";
 import "./responsive-media.css";
+import "./participant-media.css";
 
 export const metadata: Metadata = {
   title: { default: "Plataforma Estímulo", template: "%s | Estímulo" },

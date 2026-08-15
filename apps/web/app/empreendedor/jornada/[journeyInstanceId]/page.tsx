@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { BookOpen, CheckCircle2, ChevronDown, Clock3, FileText, Headphones, PlayCircle, Route, Sparkles, Wrench } from "lucide-react";
+import ActivityPage from "@/app/empreendedor/atividade/[stepInstanceId]/page";
+import { ActivityWorkspaceFrame } from "@/components/activity-workspace-frame";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -16,6 +18,15 @@ import { getParticipantJourneyOutline } from "@/lib/journey-runtime/outline-runt
 import { openJourneyActivityAction } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+type JourneyQuery = {
+  conteudo?: string;
+  comentario?: string;
+  pratica?: string;
+  codigo?: string;
+  avaliacao?: string;
+  utilidade?: string;
+};
 
 const heroToneClasses: Record<string, string> = {
   blue: "bg-primary",
@@ -105,8 +116,14 @@ function ActivityMetadata({ activity }: { activity: JourneyOutlineActivity }) {
   );
 }
 
-export default async function JourneyOutlinePage({ params }: { params: Promise<{ journeyInstanceId: string }> }) {
-  const { journeyInstanceId } = await params;
+export default async function JourneyOutlinePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ journeyInstanceId: string }>;
+  searchParams: Promise<JourneyQuery>;
+}) {
+  const [{ journeyInstanceId }, query] = await Promise.all([params, searchParams]);
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
 
@@ -119,6 +136,9 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
   const interfaceContent = await getPublishedInterfaceContent().catch(() => ({}));
   const firstIncompleteModuleIndex = outline.modules.findIndex((module) => module.completed_count < module.activity_count);
   const initiallyOpenModuleIndex = firstIncompleteModuleIndex >= 0 ? firstIncompleteModuleIndex : 0;
+  const selectedActivity = query.conteudo
+    ? outline.modules.flatMap((module) => module.activities).find((activity) => activity.step_instance_id === query.conteudo && (activity.step_status === "completed" || activity.can_open || activity.can_start)) ?? null
+    : null;
 
   return (
     <div className="mx-auto grid max-w-6xl gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -194,6 +214,28 @@ export default async function JourneyOutlinePage({ params }: { params: Promise<{
       ) : (
         <EmptyState icon={<Route size={24} />} title={interfaceText(interfaceContent, "participant.journey.empty_title", "Conteúdos em preparação")} tone="info">{interfaceText(interfaceContent, "participant.journey.empty_body", "A equipe ainda está organizando os conteúdos desta jornada.")}</EmptyState>
       )}
+
+      {selectedActivity ? (
+        <section id="aula" className="scroll-mt-20 overflow-hidden rounded-[2rem] border border-primary/15 bg-white shadow-lg" aria-label={`Conteúdo aberto: ${selectedActivity.activity_title}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-primary-soft/35 px-4 py-3 sm:px-5">
+            <div><p className="text-[11px] font-black uppercase tracking-[.13em] text-primary">Conteúdo aberto</p><h2 className="text-lg font-black text-secondary">{selectedActivity.activity_title}</h2></div>
+            <ButtonLink href={`/empreendedor/jornada/${journeyInstanceId}`} variant="secondary" size="sm">Fechar conteúdo</ButtonLink>
+          </div>
+          <ActivityWorkspaceFrame>
+            <ActivityPage
+              params={Promise.resolve({ stepInstanceId: selectedActivity.step_instance_id })}
+              searchParams={Promise.resolve({
+                journey: journeyInstanceId,
+                comentario: query.comentario,
+                pratica: query.pratica,
+                codigo: query.codigo,
+                avaliacao: query.avaliacao,
+                utilidade: query.utilidade,
+              })}
+            />
+          </ActivityWorkspaceFrame>
+        </section>
+      ) : null}
     </div>
   );
 }

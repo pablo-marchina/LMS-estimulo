@@ -29,11 +29,13 @@ const [
   rewardsAdmin,
   rewardsParticipant,
   rewardsExperience,
+  automaticRewardMigration,
   deliveryConfigurationManager,
   deliveriesParticipant,
   deliveryUploadRoute,
   aiGrader,
   diagnosticsAdmin,
+  optionalSection,
   optionalForm,
   optionalParticipant,
   optionalActions,
@@ -70,11 +72,13 @@ const [
   read("apps/web/app/admin/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/page.tsx"),
   read("apps/web/app/empreendedor/recompensas/rewards-experience.tsx"),
+  read("supabase/migrations/20260815202049_automatic_reward_points_live_alignment.sql"),
   read("apps/web/components/admin-delivery-configuration-manager.tsx"),
   read("apps/web/components/participant-profile-materials.tsx"),
   read("apps/web/app/api/delivery-uploads/route.ts"),
   read("supabase/functions/ai-grade-submission/index.ts"),
   read("apps/web/app/admin/diagnostico/page.tsx"),
+  read("apps/web/app/admin/diagnostico/optional-section.tsx"),
   read("apps/web/app/admin/diagnosticos-opcionais/optional-diagnostic-form.tsx"),
   read("apps/web/app/empreendedor/perfil/diagnosticos/[availabilityId]/page.tsx"),
   read("apps/web/app/empreendedor/perfil/diagnosticos/[availabilityId]/actions.ts"),
@@ -157,11 +161,14 @@ test("B2B access is selected by users or groups and enforced in the participant 
   assert.match(participantWorkspaceMigration, /gm\.user_account_id=p_actor_user_account_id/u);
 });
 
-test("reward cancellation refunds points and stock transactionally", () => {
+test("reward points are automatic while cancellation still refunds points and stock transactionally", () => {
   assert.match(rewardsAdmin, /redemption_status/u);
   assert.match(rewardsParticipant, /RewardsExperience/u);
-  assert.match(rewardsExperience, /reward_convert/u);
+  assert.doesNotMatch(rewardsExperience, /reward_convert/u);
+  assert.match(rewardsExperience, /Não é necessário converter nada/u);
   assert.match(rewardsExperience, /reward_redeem/u);
+  assert.match(automaticRewardMigration, /credit_reward_wallet_from_point_ledger/u);
+  assert.match(automaticRewardMigration, /REWARD_CONVERSION_DISABLED/u);
   assert.match(adminRuntimeMigration, /redemption_refund/u);
   assert.match(adminRuntimeMigration, /stock_quantity\+v_redemption\.quantity/u);
   assert.match(adminRuntimeMigration, /balance=balance\+v_redemption\.points_spent/u);
@@ -182,7 +189,8 @@ test("deliveries support library content, activities and safe AI review modes", 
 
 test("optional diagnostics remain inside diagnostics and never update archetype or journey eligibility", () => {
   assert.match(diagnosticsAdmin, /Opcionais no perfil/u);
-  assert.match(diagnosticsAdmin, /OptionalDiagnosticForm/u);
+  assert.match(diagnosticsAdmin, /OptionalDiagnosticSection/u);
+  assert.match(optionalSection, /OptionalDiagnosticForm/u);
   assert.match(optionalForm, /resource_type" value="optional_diagnostic"/u);
   assert.match(optionalParticipant, /startOptionalDiagnosticAction/u);
   assert.match(optionalActions, /optional_start/u);

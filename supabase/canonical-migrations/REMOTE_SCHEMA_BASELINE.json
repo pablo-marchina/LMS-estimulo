@@ -2,20 +2,20 @@
   "schema_version": "1.0",
   "artifact": "e14_release_schema_baseline",
   "source": "Canonical clean migration replay preserving runtime activity content for the final software release candidate",
-  "observed_at": "2026-08-13",
+  "observed_at": "2026-08-15",
   "inventory": {
     "schema_version": "1.0",
     "postgres_major": 17,
     "categories": {
       "types": { "count": 0, "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" },
-      "columns": { "count": 2163, "sha256": "724396963758dcf26972afcde219da6d63f3f131a66f40a70de93558747a34ad" },
-      "indexes": { "count": 670, "sha256": "77cce44405416eba766bdbc0b431b6cc627561a187c938e23c213debbe926de8" },
+      "columns": { "count": 2174, "sha256": "3020b10d153fabb83eddbb68cbd072f4cfe87d455b774e48ca3d4f06473025cc" },
+      "indexes": { "count": 686, "sha256": "ee7e40f22d6be86ca19c95ae93d39c01f937c01a700b288fede3ca4ff11ceb8a" },
       "schemas": { "count": 14, "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344" },
       "policies": { "count": 622, "sha256": "063a0f31004017b207b3ffaddce320e9efe0f1f5723604092c66b1fb82215248" },
-      "routines": { "count": 256, "sha256": "d128db16a9469cfc9467c4e0eb583b4abb1f2f024932876a96ec951ce967aaee" },
-      "triggers": { "count": 89, "sha256": "cda78d0dcf6e23a6436909b07fca1edd3ab5e30567f99abfbcd9e111ae141e11" },
-      "relations": { "count": 209, "sha256": "241f846c5483d77718d1fc7b228f47863bbe67c714b461cc85cf9af19387d362" },
-      "constraints": { "count": 1096, "sha256": "9ee244b723646d7c3b955a4f3e2fc90150c23410aadc6771eb18df66d0db1491" }
+      "routines": { "count": 265, "sha256": "9e338394a7a97f5f92ad90f65333387c103eef79004ccd9d08f4255882a6d81d" },
+      "triggers": { "count": 95, "sha256": "acf890e8ab33e3582fb114e47fbf762b58384518074480d4e5850f6ac521967a" },
+      "relations": { "count": 211, "sha256": "5644c4ba864e5ef6c839e8d922a559a90a57a107e441cd006c62ab95271eca9e" },
+      "constraints": { "count": 1104, "sha256": "51ac1061b59e0c00c8658b3ea87ef013aca96d301379400d1d005374a32b01f3" }
     }
   }
 }

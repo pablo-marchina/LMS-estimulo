@@ -26,7 +26,7 @@ function versionsOf(item: DefinitionSummary): VersionSummary[] { return Array.is
 const frequencyLabels: Record<string, string> = {
   participant: "Uma única vez",
   enrollment_activity: "Uma vez por aula",
-  enrollment_assessment: "Uma vez por avaliação",
+  enrollment_assessment: "Uma vez por avaliação da aula",
   path: "Uma vez por trilha",
   journey: "Uma vez por jornada",
   participant_day: "Limite diário",
@@ -54,8 +54,37 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
   const homeBadgeHighlights = type === "selos"
     ? await engagementRuntime.adminHomeBadgeHighlights(auth.identity.user_account_id, organization.organization_id).catch(() => null)
     : null;
-  const ruleVersions = rules.flatMap((item) => versionsOf(item).filter((version) => version.status === "published").map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
-  const journeyVersions = journeys.filter((item) => item.status !== "retired").flatMap((item) => versionsOf(item).map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
+
+  const activePathIds = new Set(journeys.flatMap((journey) => versionsOf(journey)
+    .filter((version) => version.status !== "retired")
+    .flatMap((version) => (version.trilhas ?? []).filter((track) => track.status !== "retired").map((track) => track.id))));
+  const activeJourneyVersionIds = new Set(journeys.flatMap((journey) => versionsOf(journey)
+    .filter((version) => version.status !== "retired")
+    .map((version) => String(version.id))));
+
+  const ruleVersions = rules.flatMap((item) => versionsOf(item).filter((version) => version.status === "published").map((version) => ({
+    id: String(version.id),
+    definitionName: item.name,
+    definitionCode: item.code,
+    definitionStatus: item.status,
+    ruleType: String(item.rule_type ?? ""),
+    version_number: Number(version.version_number),
+    expression: objectValue(version.expression),
+  })));
+
+  const badgeRuleVersions = ruleVersions.filter((rule) =>
+    rule.definitionStatus === "active" &&
+    rule.ruleType === "credential" &&
+    String(rule.expression.scope ?? "") === "path" &&
+    activePathIds.has(String(rule.expression.path_template_id ?? "")),
+  );
+  const certificateRuleVersions = ruleVersions.filter((rule) =>
+    rule.definitionStatus === "active" &&
+    rule.ruleType === "credential" &&
+    String(rule.expression.scope ?? "") === "journey" &&
+    activeJourneyVersionIds.has(String(rule.expression.journey_version_id ?? "")),
+  );
+  const journeyVersions = journeys.filter((item) => item.status !== "retired").flatMap((item) => versionsOf(item).filter((version) => version.status !== "retired").map((version) => ({ id: String(version.id), definitionName: item.name, version_number: Number(version.version_number) })));
   const activePointRules = pointRules.filter((item) => item.status !== "retired");
   const pointRuleEditorData = activePointRules.map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), amount: Number(version.amount ?? 10), eligibility_rule_version_id: String(version.eligibility_rule_version_id ?? ""), recurrence_policy: objectValue(version.recurrence_policy) })) }));
   const badgeEditorData = badges.filter((item) => item.status !== "retired").map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), title: String(version.title ?? item.name), description: String(version.description ?? ""), criteria_rule_version_id: String(version.criteria_rule_version_id ?? "") })) }));
@@ -74,11 +103,11 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
 
     {type === "pontos" ? <div className="grid gap-5">
       <Card><h2 className="text-lg font-semibold text-ink">Regras em uso</h2><p className="mt-1 text-sm text-muted">Veja quais ações geram pontos, o valor e a frequência.</p>{activePointRules.length ? <TableScroll className="mt-4"><Table><thead><tr><Th>Ação</Th><Th>Pontos</Th><Th>Frequência</Th></tr></thead><tbody>{activePointRules.map((item) => { const itemVersions = versionsOf(item); const version = [...itemVersions].sort((a,b) => Number(b.version_number)-Number(a.version_number)).find((entry) => String(entry.status)==="published") ?? itemVersions[0]; const recurrence=objectValue(version?.recurrence_policy); const frequencyLabel = recurrence.frequency === "per_certificate" ? "Uma vez por certificado" : frequencyLabels[String(recurrence.scope ?? "")] ?? "Uma única vez"; return <tr key={item.definition_id}><Td><strong>{item.name}</strong></Td><Td>{String(version?.amount ?? "—")}</Td><Td>{frequencyLabel}</Td></tr>; })}</tbody></Table></TableScroll> : <p className="mt-4 text-sm text-muted">Nenhuma regra criada.</p>}</Card>
-      <fieldset disabled={!canEdit} className="contents"><PointRuleEditor pointRules={pointRuleEditorData} eligibilityRules={ruleVersions} /></fieldset>
+      <fieldset disabled={!canEdit} className="contents"><PointRuleEditor pointRules={pointRuleEditorData} /></fieldset>
     </div> : null}
 
-    {type === "selos" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5">{homeBadgeHighlights ? <HomeBadgeHighlights workspace={homeBadgeHighlights} /> : <StatusPanel title="Destaques da Home indisponíveis" tone="warning">Os selos continuam acessíveis. Apenas a configuração opcional de destaques não pôde ser carregada.</StatusPanel>}<BadgeEditor badges={badgeEditorData} ruleVersions={ruleVersions} /></div></fieldset> : null}
+    {type === "selos" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5">{homeBadgeHighlights ? <HomeBadgeHighlights workspace={homeBadgeHighlights} /> : <StatusPanel title="Destaques da Home indisponíveis" tone="warning">Os selos continuam acessíveis. Apenas a configuração opcional de destaques não pôde ser carregada.</StatusPanel>}<BadgeEditor badges={badgeEditorData} ruleVersions={badgeRuleVersions} /></div></fieldset> : null}
 
-    {type === "certificados" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5"><CertificateIssuerManager /><CertificateTemplateManager /><CertificateEditor certificates={certificateEditorData} journeyVersions={journeyVersions} ruleVersions={ruleVersions} /></div></fieldset> : null}
+    {type === "certificados" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5"><CertificateIssuerManager /><CertificateTemplateManager /><CertificateEditor certificates={certificateEditorData} journeyVersions={journeyVersions} ruleVersions={certificateRuleVersions} /></div></fieldset> : null}
   </div></AppShell>;
 }
