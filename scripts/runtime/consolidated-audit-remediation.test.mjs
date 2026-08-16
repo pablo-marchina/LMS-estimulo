@@ -51,19 +51,22 @@ test("announcement editor supports responsive artwork, image-wide links and comp
   assert.match(carousel, /variant=mobile/u);
 });
 
-test("diagnostic result and profile objective use the approved participant copy and placement", async () => {
-  const [diagnostic, dashboard, chart, profile, actions] = await Promise.all([
+test("diagnostic result uses the configured participant copy without retired score blocks", async () => {
+  const [diagnostic, dashboard, chart, profile, actions, blocks] = await Promise.all([
     source("apps/web/app/empreendedor/perfil/diagnostico/page.tsx"),
     source("apps/web/components/diagnostic-result-dashboard.tsx"),
     source("apps/web/components/diagnostic-dimension-chart.tsx"),
     source("apps/web/app/empreendedor/perfil/page.tsx"),
     source("apps/web/app/empreendedor/perfil/actions.ts"),
+    source("apps/web/lib/diagnostics/result-blocks.ts"),
   ]);
 
   assert.match(diagnostic, /Um olhar mais de perto/u);
-  assert.match(dashboard, /Seu nível de maturidade/u);
+  assert.match(dashboard, /Seu perfil empreendedor/u);
   assert.match(dashboard, /Seu mapa de maturidade/u);
-  assert.match(dashboard, /Seus próximos três movimentos/u);
+  assert.doesNotMatch(dashboard, /Seus próximos três movimentos/u);
+  assert.doesNotMatch(dashboard, />\/100</u);
+  assert.match(blocks, /intentionally excluded from[\s\S]*validCodes/u);
   assert.match(dashboard, /Pontos fortes/u);
   assert.match(dashboard, /Seu próximo desafio/u);
   assert.match(dashboard, /Dica prática/u);
@@ -124,4 +127,6 @@ test("library and participant navigation follow the consolidated UX", async () =
   assert.doesNotMatch(participantShell, /participant\.nav\.points/u);
   assert.doesNotMatch(participantShell, /participant\.nav\.submissions/u);
   assert.match(participantShell, /participant\.nav\.rewards/u);
+  assert.doesNotMatch(participantShell, /participant\.nav\.profile/u);
+  assert.match(participantShell, /Meu perfil/u);
 });
