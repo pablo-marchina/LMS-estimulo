@@ -15,7 +15,7 @@ where status = 'published'
   and cta_url ~* '/empreendedor/(jornada|trilha|atividade|validacao)/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(/|[?#]|$)';
 
 -- Existing published point-rule rows are immutable by default. The maintenance
--- flag is transaction-local and is used only to retire superseded publications.
+-- flag is transaction-local and is used only while superseded publications retire.
 select set_config('app.admin_live_edit', 'on', true);
 
 with ranked as (
@@ -33,12 +33,16 @@ from ranked
 where version.id = ranked.id
   and ranked.publication_rank > 1;
 
+select set_config('app.admin_live_edit', 'off', true);
+
 create or replace function app_private.retire_superseded_point_rule_publications()
 returns trigger
 language plpgsql
 security definer
 set search_path = pg_catalog
 as $$
+declare
+  v_previous_live_edit text := current_setting('app.admin_live_edit', true);
 begin
   if new.status = 'published' then
     perform set_config('app.admin_live_edit', 'on', true);
@@ -47,6 +51,7 @@ begin
      where point_rule_definition_id = new.point_rule_definition_id
        and status = 'published'
        and id <> new.id;
+    perform set_config('app.admin_live_edit', coalesce(v_previous_live_edit, 'off'), true);
   end if;
   return new;
 end;
