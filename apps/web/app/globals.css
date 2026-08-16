@@ -14,11 +14,11 @@
   --color-primary-soft: #e9eaff;
   --color-ink: #17145f;
   --color-muted: #55527a;
-  --color-background: #f2f3ff;
+  --color-background: #fbfaf7;
   --color-surface: #ffffff;
-  --color-surface-muted: #f7f8fc;
-  --color-border: #d9dcf5;
-  --color-border-strong: #b9beed;
+  --color-surface-muted: #f7f7f4;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
   --color-ring: #0020d8;
   --color-success: #1d9479;
   --color-success-soft: #eafbf1;
@@ -83,7 +83,7 @@
   .brand-dots-bg { background-image: url("/brand/estimulo-dots-cyan.svg"); background-repeat: no-repeat; background-position: right -40px top -40px; background-size: 320px auto; }
   .brand-chevrons-bg { background-image: url("/brand/estimulo-chevrons-magenta.svg"); background-repeat: no-repeat; background-position: left -60px bottom -60px; background-size: 280px auto; }
 
-  .participant-stage { position: relative; isolation: isolate; background-color: var(--color-background); background-image: radial-gradient(rgba(0,0,141,.055) 1px, transparent 1px); background-size: 24px 24px; }
+  .participant-stage { position: relative; isolation: isolate; background-color: #fbfaf7; background-image: none; }
   .participant-stage-orb,.brand-app-header-glow,.brand-admin-orb { display: none; }
   .brand-app-header,.brand-admin-sidebar { background: var(--color-primary); }
   .brand-logo-capsule { display: inline-flex; align-items: center; width: fit-content; border: 1px solid rgba(255,255,255,.7); border-radius: .9rem; background: white; padding: .5rem .7rem; box-shadow: 0 8px 20px rgba(0,0,60,.16); }
@@ -104,17 +104,17 @@
   .brand-button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,141,.22); }
   .brand-button:active { transform: translateY(1px) scale(.985); }
 
-  .brand-page-header { position: relative; overflow: hidden; border-color: var(--color-border-strong) !important; background-color: white; background-image: url("/brand/estimulo-dots-cyan.svg"); background-repeat: no-repeat; background-position: right -4rem top -5rem; background-size: 15rem auto; box-shadow: 0 14px 35px rgba(23,20,95,.08); }
-  .brand-page-header::after { content: ""; position: absolute; right: 0; bottom: 0; width: 5rem; height: .42rem; background: var(--color-accent-green); }
+  .brand-page-header { position: relative; overflow: hidden; border-color: transparent !important; background: transparent; box-shadow: none; }
+  .brand-page-header::after { display: none; }
   .brand-spark-card::after { content: "✦"; position: absolute; right: 1.2rem; top: .85rem; color: var(--color-primary); font-size: 1.15rem; animation: estimulo-pulse 2.6s ease-in-out infinite; }
 
   .brand-carousel { margin-top: 0; }
   .brand-carousel-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: .9rem; }
   .brand-carousel-control { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 999px; border: 1px solid var(--color-border-strong); color: var(--color-primary); background: white; box-shadow: var(--shadow-sm); transition: transform 160ms ease, background 160ms ease, color 160ms ease; }
   .brand-carousel-control:hover { transform: translateY(-2px); background: var(--color-primary); color: white; }
-  .brand-carousel-viewport { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 2rem; box-shadow: 0 20px 48px rgba(23,20,95,.16); }
+  .brand-carousel-viewport { display: flex; gap: 1rem; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 1.25rem; box-shadow: 0 12px 32px rgba(23,20,95,.10); }
   .brand-carousel-viewport::-webkit-scrollbar { display: none; }
-  .brand-carousel-slide { position: relative; isolation: isolate; aspect-ratio: 8 / 3; min-height: 18rem; width: 100%; min-width: 100%; overflow: hidden; scroll-snap-align: start; border-radius: 2rem; background: var(--color-primary); }
+  .brand-carousel-slide { position: relative; isolation: isolate; aspect-ratio: 8 / 3; min-height: 14rem; width: 100%; min-width: 100%; overflow: hidden; scroll-snap-align: start; border-radius: 1.25rem; background: var(--color-primary); }
   .brand-carousel-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.015); transition: transform 8s ease-out; }
   .brand-carousel-slide:hover .brand-carousel-image { transform: scale(1.055); }
   .brand-carousel-overlay { position: absolute; inset: 0; background: rgba(0,0,80,.72); }
@@ -145,9 +145,11 @@
 }
 
 @media (max-width: 720px) {
-  .brand-carousel-copy { width: 100%; justify-content: flex-end; padding: 1.5rem; }
-  .brand-carousel-overlay { background: rgba(0,0,80,.76); }
-  .brand-carousel-slide { aspect-ratio: 4 / 5; min-height: 0; }
+  .brand-carousel-copy { width: 100%; justify-content: flex-end; padding: 1.1rem; }
+  .brand-carousel-copy h3 { font-size: 1.35rem; line-height: 1.05; }
+  .brand-carousel-copy p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .brand-carousel-overlay { background: rgba(0,0,80,.72); }
+  .brand-carousel-slide { aspect-ratio: 16 / 10; min-height: 0; }
   .brand-welcome-bubbles { display: none; }
 }
 

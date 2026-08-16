@@ -6,10 +6,10 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { href: "/empreendedor/perfil/diagnostico", label: "Diagnóstico", icon: ClipboardList },
-  { href: "/empreendedor/perfil", label: "Informações", icon: UserRound, exact: true },
+  { href: "/empreendedor/perfil/diagnostico", label: "Perfil empreendedor", icon: ClipboardList },
+  { href: "/empreendedor/perfil", label: "Minha conta", icon: UserRound, exact: true },
   { href: "/empreendedor/perfil/entregas", label: "Entregas", icon: FileCheck2 },
-  { href: "/empreendedor/perfil/conquistas", label: "Conquistas", icon: Award },
+  { href: "/empreendedor/perfil/conquistas", label: "Certificados", icon: Award },
 ];
 
 export function ParticipantProfileTabs() {

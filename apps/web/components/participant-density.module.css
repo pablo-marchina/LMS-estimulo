@@ -121,3 +121,18 @@
     padding: 1.25rem !important;
   }
 }
+
+@media (max-width: 640px) {
+  .density :global(.brand-featured-journey) {
+    min-height: 0 !important;
+    border-radius: 1.25rem !important;
+  }
+
+  .density :global(.brand-featured-journey) > :global(.relative.z-10) {
+    min-height: 0 !important;
+  }
+
+  .density :global(.brand-journey-card) > :global(.aspect-square) {
+    aspect-ratio: 16 / 7 !important;
+  }
+}
