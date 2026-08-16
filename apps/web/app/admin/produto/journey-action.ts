@@ -41,7 +41,7 @@ async function uploadJourneyCover(input: { actor: string; organizationId: string
     objectKey = intent.data.object_key;
     const uploaded = await uploadLibraryContent({ bucket, objectKey, file: input.file });
     objectCreated = uploaded.created;
-    const confirmed = await libraryRuntime.confirmUpload({ actorUserAccountId: input.actor, organizationId: input.organization_id, uploadIntentId: intentId, actualContentType: input.file.type, actualSizeBytes: input.file.size, sha256: uploaded.sha256, providerObjectVersion: uploaded.providerObjectVersion, etag: uploaded.etag, metadata: { source: "journey_cover", role: input.role, originalFilename: input.file.name }, idempotencyKey: `${key}:confirm` });
+    const confirmed = await libraryRuntime.confirmUpload({ actorUserAccountId: input.actor, organizationId: input.organizationId, uploadIntentId: intentId, actualContentType: input.file.type, actualSizeBytes: input.file.size, sha256: uploaded.sha256, providerObjectVersion: uploaded.providerObjectVersion, etag: uploaded.etag, metadata: { source: "journey_cover", role: input.role, originalFilename: input.file.name }, idempotencyKey: `${key}:confirm` });
     return confirmed.data.file_object_id;
   } catch (error) {
     if (intentId) await libraryRuntime.abortUpload(input.actor, input.organizationId, intentId, "JOURNEY_COVER_UPLOAD_FAILED", `${key}:abort`).catch(() => undefined);
@@ -114,7 +114,7 @@ export async function saveJourneyAction(formData: FormData) {
       eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
     };
 
-    let result;
+    let result: Awaited<ReturnType<typeof saveAdminJourney>>;
     try {
       result = await saveAdminJourney({
         actorUserAccountId: auth.identity.user_account_id,
