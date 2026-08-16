@@ -15,14 +15,6 @@ function liveRpcName(name: string): string {
   if (name === "e14_get_participant_experience") {
     return "get_participant_experience_with_default_diagnostic";
   }
-  // The admin track editor was switched to the v2 client contract before the
-  // corresponding database RPC was deployed. Production exposes the canonical
-  // save_admin_track RPC, which already supports the fields used by creation
-  // and editing. Keep the compatibility mapping at the gateway boundary so all
-  // callers share the same working backend contract.
-  if (name === "save_admin_track_v2") {
-    return "save_admin_track";
-  }
   return name;
 }
 
