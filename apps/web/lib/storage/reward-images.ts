@@ -8,6 +8,7 @@ import {
 
 export const REWARD_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
 export const REWARD_IMAGE_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+export const REWARD_IMAGE_SIGNED_URL_SECONDS = 900;
 
 const MIME_EXTENSIONS: Record<string, string[]> = {
   "image/png": ["png"],
@@ -69,7 +70,7 @@ export async function removeRewardImage(bucket: string, objectKey: string): Prom
 
 export async function createRewardImageUrl(input: { bucket: string; objectKey: string }): Promise<string> {
   try {
-    return await createPrivateDownloadUrl({ ...input, expiresInSeconds: 300 });
+    return await createPrivateDownloadUrl({ ...input, expiresInSeconds: REWARD_IMAGE_SIGNED_URL_SECONDS });
   } catch (error) {
     throw new Error(`REWARD_IMAGE_SIGNED_URL_FAILED:${detail(error)}`);
   }
