@@ -1,4 +1,4 @@
-export const expectedLastMigration = '20260816035500_scope_quick_activity_points_per_assessment.sql';
+export const expectedLastMigration = '20260816120000_public_signup_legal_documents_anon_read.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -93,4 +93,6 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260816012704_fix_completion_progress_current_step_reference.sql',
   '20260816031000_restore_live_point_award_function.sql',
   '20260816035500_scope_quick_activity_points_per_assessment.sql',
+  '20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql',
+  '20260816120000_public_signup_legal_documents_anon_read.sql',
 ]);
