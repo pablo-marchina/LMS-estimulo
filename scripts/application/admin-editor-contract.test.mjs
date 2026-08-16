@@ -54,10 +54,11 @@ test("journeys have an optional program, one visible lifecycle state, image guid
   assert.match(correctionMigration, /create or replace function public\.unpublish_admin_journey_to_draft/u);
 });
 
-test("participant journey covers preserve their original colors", () => {
+test("participant journey covers preserve their original colors with a neutral readability overlay", () => {
   assert.doesNotMatch(participantJourneys, /absolute inset-0 bg-primary\/25/u);
   assert.doesNotMatch(participantJourneys, /absolute inset-0 bg-primary\/80/u);
-  assert.match(participantJourneys, /bg-gradient-to-r from-black\/75/u);
+  assert.match(participantJourneys, /bg-gradient-to-r from-black\/80 via-black\/60 to-black\/25/u);
+  assert.match(participantJourneys, /max-sm:opacity-25/u);
 });
 
 test("lesson editor keeps the main content visible without supplemental text or prompt editors", () => {
