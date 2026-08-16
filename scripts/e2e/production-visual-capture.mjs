@@ -426,3 +426,11 @@ manifest.summary = {
 };
 
 await writeFile(path.join(outputDir, "visual-manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+console.log(JSON.stringify(manifest.summary));
+if (manifest.failures.length) {
+  console.error(`Visual capture found ${manifest.failures.length} failure(s). Evidence was still uploaded.`);
+  process.exitCode = 1;
+} else {
+  console.log("Visual capture completed without critical failures.");
+}
