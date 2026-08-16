@@ -5,9 +5,14 @@ import test from "node:test";
 const source = await readFile("supabase/functions/authenticated-rpc/index.ts", "utf8");
 
 function setBody(name) {
-  const match = source.match(new RegExp(`const ${name} = new Set\\(\\`([^\\`]*)\\`\\.split`, "u"));
-  assert.ok(match, `${name} must remain statically auditable`);
-  return new Set(match[1].trim().split(/\s+/u));
+  const marker = `const ${name} = new Set(\``;
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, `${name} must remain statically auditable`);
+  const bodyStart = start + marker.length;
+  const endMarker = "`.split(/\\s+/u));";
+  const end = source.indexOf(endMarker, bodyStart);
+  assert.notEqual(end, -1, `${name} must keep the static split form`);
+  return new Set(source.slice(bodyStart, end).trim().split(/\s+/u));
 }
 
 const allowed = setBody("allowedRpcs");
