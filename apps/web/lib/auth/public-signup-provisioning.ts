@@ -5,6 +5,7 @@ import type { FirstTouchAttribution } from "@/lib/auth/first-touch";
 import type { ProtectedCpf } from "@/lib/identity/cpf";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
+import { createSessionClient } from "@/lib/supabase/server";
 
 export type PublicSignupProvisioningResult = {
   user_account_id: string;
@@ -35,7 +36,8 @@ export type SignupLegalSnapshot = {
 };
 
 async function loadSignupLegalDocuments(versionIds?: string[]): Promise<SignupLegalDocument[]> {
-  const { data, error } = await createPrivilegedClient().rpc("get_signup_legal_documents", {
+  const client = await createSessionClient();
+  const { data, error } = await client.rpc("get_signup_legal_documents", {
     p_version_ids: versionIds?.length ? versionIds : null,
   });
   if (error) throw new Error("LEGAL_DOCUMENT_SNAPSHOT_UNAVAILABLE");
