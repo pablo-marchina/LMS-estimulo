@@ -23,6 +23,7 @@ export async function saveTrackAction(formData: FormData) {
   const journeyVersionId = text(formData, "journey_version_id");
   const pathTemplateId = nullable(formData, "path_template_id");
   const name = text(formData, "name");
+  const completionBadgeVersionId = nullable(formData, "completion_badge_version_id");
   const back = `/admin/produto?etapa=conteudo&versao=${journeyVersionId}`;
   if (!journeyVersionId || !name) redirect(`${back}&erro=campos_incompletos`);
 
@@ -43,13 +44,20 @@ export async function saveTrackAction(formData: FormData) {
         presentation: {
           tone: text(formData, "tone") || "cyan",
           icon: text(formData, "icon") || "sparkles",
+          completion_badge_version_id: completionBadgeVersionId,
         },
-        completion_badge_version_id: nullable(formData, "completion_badge_version_id"),
       },
       idempotencyKey: randomUUID(),
     });
     liveUpdate = result.live_update;
   } catch (error) {
+    console.error(JSON.stringify({
+      level: "error",
+      event: "admin_track_save_failed",
+      code: error instanceof Error && "code" in error ? String((error as Error & { code?: unknown }).code ?? "") : "",
+      message: error instanceof Error ? error.message : String(error),
+      editing_existing_track: Boolean(pathTemplateId),
+    }));
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
     redirect(`${back}&erro=${reason}`);
   }
