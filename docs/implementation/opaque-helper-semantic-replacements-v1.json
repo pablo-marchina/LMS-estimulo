@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "artifact": "opaque_helper_semantic_replacements",
+  "replacements": [
+    {
+      "key": "app_private.e14_complete_progress(uuid)",
+      "reason": "Replace the legacy completion helper with the FK-correct implementation that stores orchestration.path_steps.id in progress_projections.current_step_id.",
+      "from_definition_path": "supabase/migrations/20260709055422_m13j8e_e14_complete_progress.sql",
+      "to_definition_path": "supabase/migrations/20260816012704_fix_completion_progress_current_step_reference.sql"
+    }
+  ]
+}
