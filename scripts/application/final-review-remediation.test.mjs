@@ -108,8 +108,8 @@ test("private participant media reuses signed redirects instead of reauthenticat
   assert.match(certificatePreviewRoute, /SIGNED_URL_SECONDS = 900/u);
 });
 
-test("certificate template preview avoids the redundant extensions gateway while retaining SQL authorization", () => {
-  assert.match(certificatePreviewRoute, /createPrivilegedClient\(\)\.rpc\("get_admin_certificate_template_preview_download"/u);
-  assert.match(certificatePreviewRoute, /p_actor_user_account_id: auth\.identity\.user_account_id/u);
-  assert.doesNotMatch(certificatePreviewRoute, /extensionsRuntime/u);
+test("certificate template preview stays on the canonical extensions gateway while reusing its signed redirect", () => {
+  assert.match(certificatePreviewRoute, /extensionsRuntime\.certificateTemplatePreviewDownload/u);
+  assert.match(certificatePreviewRoute, /p_actor_user_account_id/u);
+  assert.doesNotMatch(certificatePreviewRoute, /createPrivilegedClient/u);
 });
