@@ -1,3 +1,4 @@
+import { WalletCards } from "lucide-react";
 import { RewardsExperience } from "@/app/empreendedor/recompensas/rewards-experience";
 import { StatusPanel } from "@/components/status-panel";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,6 +8,7 @@ import { extensionsRuntime } from "@/lib/extensions/runtime";
 
 export const dynamic = "force-dynamic";
 
+const pointFormatter = new Intl.NumberFormat("pt-BR");
 const emptyRewards = {
   engagement_points: 0,
   converted_source_points: 0,
@@ -29,6 +31,7 @@ export default async function ParticipantRewardsPage({ searchParams }: { searchP
   const workspace = workspaceResult.status === "fulfilled" ? workspaceResult.value : null;
   const engagement = engagementResult.status === "fulfilled" ? engagementResult.value : null;
   const pointRules = pointRulesResult.status === "fulfilled" ? pointRulesResult.value : null;
+  const rewardBalance = workspace?.rewards.reward_balance ?? 0;
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pb-24 pt-8 sm:px-6 sm:pt-12">
@@ -37,6 +40,15 @@ export default async function ParticipantRewardsPage({ searchParams }: { searchP
         eyebrow="Benefícios"
         title="Recompensas"
         description="Use os pontos conquistados no aprendizado para acessar benefícios disponíveis para você."
+        actions={(
+          <div className="flex min-w-[190px] items-center gap-3 rounded-2xl border border-primary/20 bg-primary-soft px-4 py-3 shadow-sm" aria-label={`${pointFormatter.format(rewardBalance)} pontos na carteira`}>
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-white shadow-sm"><WalletCards size={20} aria-hidden="true" /></span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[.14em] text-muted">Pontos na carteira</p>
+              <p className="mt-0.5 text-2xl font-black leading-none tracking-[-.03em] text-primary tabular-nums">{pointFormatter.format(rewardBalance)} <span className="text-xs font-bold tracking-normal text-secondary">pts</span></p>
+            </div>
+          </div>
+        )}
       />
       <div className="grid gap-6">
         {query.sucesso ? <StatusPanel title="Conquista atualizada" tone="success">Seu saldo e histórico já foram atualizados.</StatusPanel> : null}
