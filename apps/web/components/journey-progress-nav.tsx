@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Clock3, Flag, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Clock3 } from "lucide-react";
 import { openJourneyActivityAction } from "@/app/empreendedor/jornada/[journeyInstanceId]/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { getAuthContext } from "@/lib/auth/context";
@@ -18,9 +18,9 @@ type Props = {
 };
 
 const statusCopy: Record<string, string> = {
-  available: "Disponível para começar",
-  in_progress: "Conteúdo em andamento",
-  completed: "Conteúdo concluído",
+  available: "Disponível",
+  in_progress: "Em andamento",
+  completed: "Concluída",
 };
 
 function ActivityNavigationForm({
@@ -40,7 +40,6 @@ function ActivityNavigationForm({
   direction: "previous" | "next";
 }) {
   const enabled = activity.step_status === "completed" || activity.can_open || activity.can_start;
-  const label = direction === "previous" ? "Anterior" : "Próxima";
   return (
     <form action={openJourneyActivityAction} className="min-w-0">
       <input type="hidden" name="journey_instance_id" value={journeyInstanceId} />
@@ -50,16 +49,16 @@ function ActivityNavigationForm({
       <input type="hidden" name="idempotency_key" value={randomUUID()} />
       <PendingSubmitButton
         pendingLabel="Abrindo…"
-        variant="secondary"
+        variant="ghost"
         size="sm"
         type="submit"
         disabled={!enabled}
-        className="max-w-full gap-1.5"
+        className={`max-w-full gap-1.5 px-2 ${direction === "previous" ? "-ml-2" : "-mr-2"}`}
         title={activity.activity_title}
       >
         {direction === "previous" ? <ArrowLeft size={15} aria-hidden="true" /> : null}
-        <span className="hidden sm:inline">{label}:</span>
-        <span className="max-w-40 truncate">{activity.activity_title}</span>
+        <span className="hidden sm:inline">{direction === "previous" ? "Anterior" : "Próxima aula"}</span>
+        {direction === "next" ? <span className="max-w-56 truncate text-xs font-medium text-muted">{activity.activity_title}</span> : null}
         {direction === "next" ? <ArrowRight size={15} aria-hidden="true" /> : null}
       </PendingSubmitButton>
     </form>
@@ -69,7 +68,6 @@ function ActivityNavigationForm({
 export async function JourneyProgressNav({ state, current, activityTitle, estimatedMinutes }: Props) {
   const stepStatus = state.s?.status ?? "available";
   const title = current === "activity" ? activityTitle ?? "Conteúdo da jornada" : current === "result" ? "Resultado da jornada" : "Conheça seu perfil";
-  const Icon = current === "activity" ? PlayCircle : current === "result" ? Flag : CircleDot;
 
   const auth = await getAuthContext();
   const outline = auth.status === "authenticated"
@@ -93,22 +91,27 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
   }
 
   return (
-    <aside className="no-print brand-activity-context relative mb-0 overflow-hidden rounded-2xl border border-primary/15 bg-white p-4 shadow-sm" aria-label={`Contexto de ${title}`}>
-      <div className="flex flex-wrap items-center gap-3">
-        <Link href={`/empreendedor/jornada/${state.journey_instance_id}`} className="brand-button inline-flex items-center gap-2 rounded-xl border border-primary/20 bg-primary-soft px-3 py-2 text-sm font-bold text-primary hover:bg-primary hover:text-white">
-          <ArrowLeft size={16} aria-hidden="true" /> Jornada
-        </Link>
-        <div className="grid size-10 place-items-center rounded-xl bg-primary text-white shadow-sm"><Icon size={19} aria-hidden="true" /></div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold uppercase tracking-[.13em] text-primary/70">{journeyLabel}</p>
-          <p className="mt-0.5 truncate text-base font-black text-secondary">{title}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {current === "activity" && estimatedMinutes ? <span className="inline-flex items-center gap-1.5 rounded-full bg-info-soft px-3 py-1.5 text-xs font-bold text-info"><Clock3 size={14} /> {estimatedMinutes} min</span> : null}
-          {current === "activity" ? <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${stepStatus === "completed" ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>{stepStatus === "completed" ? <CheckCircle2 size={14} /> : <CircleDot size={14} />}{statusCopy[stepStatus] ?? "Conteúdo disponível"}</span> : null}
+    <aside className="no-print border-b border-slate-200 pb-5" aria-label={`Contexto de ${title}`}>
+      <Link href={`/empreendedor/jornada/${state.journey_instance_id}`} className="inline-flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-primary">
+        <ArrowLeft size={15} aria-hidden="true" /> Voltar para a jornada
+      </Link>
+      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 max-w-3xl">
+          <p className="text-[11px] font-bold uppercase tracking-[.14em] text-primary">{journeyLabel}</p>
+          <h1 className="mt-1.5 text-[22px] font-bold leading-tight text-ink sm:text-[28px]">{title}</h1>
+          {current === "activity" ? <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+            {estimatedMinutes ? <span className="inline-flex items-center gap-1"><Clock3 size={13} /> {estimatedMinutes} min</span> : null}
+            {estimatedMinutes ? <span aria-hidden="true">•</span> : null}
+            <span className={`inline-flex items-center gap-1 font-semibold ${stepStatus === "completed" ? "text-success" : "text-primary"}`}>
+              {stepStatus === "completed" ? <CheckCircle2 size={13} /> : <CircleDot size={13} />}{statusCopy[stepStatus] ?? "Disponível"}
+            </span>
+          </div> : null}
         </div>
       </div>
-      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">{previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}{nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-sm font-bold text-white hover:bg-primary-active">Ver resultado <ArrowRight size={15} /></Link>}</div> : null}
+      {current === "activity" && (previousActivity || nextActivity) ? <div className="mt-4 flex items-start justify-between gap-3">
+        {previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}
+        {nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-primary hover:underline">Ver resultado <ArrowRight size={15} /></Link>}
+      </div> : null}
     </aside>
   );
 }
