@@ -18,6 +18,8 @@ test("global announcements reject participant-private runtime destinations", () 
   assert.match(announcementRoute, /privateParticipantDestination/u);
   assert.match(announcementRoute, /ANNOUNCEMENT_PRIVATE_DESTINATION_NOT_ALLOWED/u);
   assert.match(announcementRoute, /validatedAnnouncementDestination\(nullable\(formData\.get\("cta_url"\)\)\)/u);
+  assert.match(announcementRoute, /parsed\.protocol !== "https:"/u);
+  assert.match(announcementRoute, /!normalized\.startsWith\("\/\/"\)/u);
   assert.match(engagementPage, /páginas compartilháveis/u);
   assert.match(migration, /update engagement\.announcements/u);
   assert.match(migration, /\/empreendedor\/jornadas/u);
@@ -51,9 +53,10 @@ test("point-rule publication is versioned with one live publication per definiti
   assert.match(migration, /retire_superseded_point_rule_publications/u);
   assert.match(migration, /before insert on engagement\.point_rule_versions/u);
   assert.match(migration, /uq_point_rule_versions_single_published/u);
+  assert.match(migration, /v_previous_live_edit/u);
+  assert.match(migration, /coalesce\(v_previous_live_edit, 'off'\)/u);
   assert.doesNotMatch(migration, /delete from engagement\.point_rule_versions/u);
 });
-
 
 test("visual auditor preserves query-state coverage and rejects semantic broken pages", () => {
   assert.ok(visualCapture.includes('return `${url.pathname}${url.search}`;'));
