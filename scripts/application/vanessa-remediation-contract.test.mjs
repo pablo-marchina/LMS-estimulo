@@ -25,6 +25,7 @@ const [
   completeRemediationMigration,
   completionCtaMigration,
   progressReferenceMigration,
+  pointAwardReplayMigration,
   migrationBoundary,
 ] = await Promise.all([
   readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8"),
@@ -49,6 +50,7 @@ const [
   readFile("supabase/migrations/20260816011759_complete_vanessa_video_remediation.sql", "utf8"),
   readFile("supabase/migrations/20260816012301_participant_lesson_completion_cta.sql", "utf8"),
   readFile("supabase/migrations/20260816012704_fix_completion_progress_current_step_reference.sql", "utf8"),
+  readFile("supabase/migrations/20260816031000_restore_live_point_award_function.sql", "utf8"),
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
 ]);
 
@@ -142,6 +144,14 @@ test("participant lesson completion is explicit, guarded and emits the canonical
   assert.match(progressReferenceMigration, /candidate_step\.id/u);
 });
 
+test("point award replay restores the hardened live function", () => {
+  assert.match(pointAwardReplayMigration, /award_participant_action_points/u);
+  assert.match(pointAwardReplayMigration, /p_journey_instance_id/u);
+  assert.doesNotMatch(pointAwardReplayMigration, /where\s+ji\.id\s*=\s*p_journey_instance(?!_id)/u);
+  assert.match(pointAwardReplayMigration, /JOURNEY_INSTANCE_NOT_AVAILABLE/u);
+  assert.match(pointAwardReplayMigration, /definition\.owner_organization_id\s*=\s*v_org/u);
+});
+
 test("badge and certificate rule lists are derived from current domain entities, not names", () => {
   assert.match(gamificationPage, /activePathIds/u);
   assert.match(gamificationPage, /activeJourneyVersionIds/u);
@@ -162,5 +172,6 @@ test("migration release boundary includes the audited structural migrations", ()
   assert.match(migrationBoundary, /20260816011759_complete_vanessa_video_remediation\.sql/u);
   assert.match(migrationBoundary, /20260816012301_participant_lesson_completion_cta\.sql/u);
   assert.match(migrationBoundary, /20260816012704_fix_completion_progress_current_step_reference\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260816012704_fix_completion_progress_current_step_reference\.sql'/u);
+  assert.match(migrationBoundary, /20260816031000_restore_live_point_award_function\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260816031000_restore_live_point_award_function\.sql'/u);
 });
