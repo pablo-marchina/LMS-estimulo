@@ -27,6 +27,7 @@ function configuration(formData: FormData) {
 }
 function selectedFile(formData: FormData, name: string) { const entry = formData.get(name); return entry instanceof File && entry.size > 0 ? entry : null; }
 function recordText(value: unknown, field: string) { return value && typeof value === "object" && !Array.isArray(value) && typeof (value as Record<string, unknown>)[field] === "string" ? String((value as Record<string, unknown>)[field]) : ""; }
+function presentationTags(value: unknown) { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").slice(0, 8) : []; }
 
 async function uploadJourneyCover(input: { actor: string; organizationId: string; file: File; role: "card" | "featured" }) {
   validateAnnouncementBanner(input.file);
@@ -75,9 +76,20 @@ export async function saveJourneyAction(formData: FormData) {
   const commandKey = randomUUID();
 
   try {
-    const extensionWorkspace = await extensionsRuntime.adminWorkspace(auth.identity.user_account_id, organization.organization_id);
-    const themeNameById = new Map(extensionWorkspace.themes.filter((theme) => recordText(theme, "status") === "active").map((theme) => [recordText(theme, "id"), recordText(theme, "name")]));
-    const tags = themeIds.map((id) => themeNameById.get(id) ?? "").filter(Boolean).slice(0, 8);
+    // Theme metadata is an optional extension of the journey. A transient failure
+    // in the extensions gateway must never prevent the primary journey draft
+    // from being persisted.
+    let tags = themeIds.length === 0 ? [] : presentationTags(previousPresentation.tags);
+    if (themeIds.length > 0) {
+      try {
+        const extensionWorkspace = await extensionsRuntime.adminWorkspace(auth.identity.user_account_id, organization.organization_id);
+        const themeNameById = new Map(extensionWorkspace.themes.filter((theme) => recordText(theme, "status") === "active").map((theme) => [recordText(theme, "id"), recordText(theme, "name")]));
+        tags = themeIds.map((id) => themeNameById.get(id) ?? "").filter(Boolean).slice(0, 8);
+      } catch {
+        themeSaveFailed = true;
+      }
+    }
+
     const cardFile = selectedFile(formData, "card_background_file");
     const featuredFile = selectedFile(formData, "featured_background_file");
     const cardBackgroundId = cardFile ? await uploadJourneyCover({ actor: auth.identity.user_account_id, organizationId: organization.organization_id, file: cardFile, role: "card" }) : text(formData, "current_card_background_file_object_id") || previousPresentation.card_background_file_object_id;
@@ -155,6 +167,13 @@ export async function saveJourneyAction(formData: FormData) {
       themeSaveFailed = true;
     }
   } catch (error) {
+    console.error(JSON.stringify({
+      level: "error",
+      event: "admin_journey_save_failed",
+      code: error instanceof Error && "code" in error ? String((error as Error & { code?: unknown }).code ?? "") : "",
+      message: error instanceof Error ? error.message : String(error),
+      editing_existing_journey: Boolean(journeyId),
+    }));
     const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
     redirect(`/admin/produto?etapa=geral&versao=${journeyId ?? ""}&erro=${reason}`);
   }
