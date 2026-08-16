@@ -2,14 +2,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [lessonLayout, rewardsPage, contentViewer, serverInvoke, trackAction, nextConfig, mediaUpload] = await Promise.all([
+const [lessonLayout, rewardsPage, contentViewer, serverInvoke, productManagement, trackAction, trackEditor, nextConfig, mediaUpload, trackMigration] = await Promise.all([
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css", "utf8"),
   readFile("apps/web/app/empreendedor/recompensas/page.tsx", "utf8"),
   readFile("apps/web/components/content-asset-viewer.tsx", "utf8"),
   readFile("apps/web/lib/rpc/server-invoke.ts", "utf8"),
+  readFile("apps/web/lib/admin/product-management.ts", "utf8"),
   readFile("apps/web/app/admin/produto/track-save-action.ts", "utf8"),
+  readFile("apps/web/app/admin/produto/trilha-editor.tsx", "utf8"),
   readFile("apps/web/next.config.ts", "utf8"),
   readFile("apps/web/lib/admin/media-upload.ts", "utf8"),
+  readFile("supabase/migrations/20260813162500_save_admin_track_v2.sql", "utf8"),
 ]);
 
 test("lesson canvas keeps its centered max-width layout", () => {
@@ -28,10 +31,23 @@ test("rewards header gives wallet points a dedicated visual treatment", () => {
   assert.match(rewardsPage, /text-2xl font-black/u);
 });
 
-test("admin track saves use the RPC that is actually deployed", () => {
-  assert.match(serverInvoke, /name === "save_admin_track_v2"[\s\S]*?return "save_admin_track"/u);
-  assert.match(trackAction, /presentation:\s*\{[\s\S]*?completion_badge_version_id:\s*completionBadgeVersionId/u);
+test("admin track saves use the restored v2 RPC contract", () => {
+  assert.doesNotMatch(serverInvoke, /name === "save_admin_track_v2"/u);
+  assert.match(productManagement, /"save_admin_track_v2"/u);
+  assert.match(trackMigration, /create or replace function public\.save_admin_track_v2/u);
+  assert.match(trackMigration, /p_payload->>'completion_badge_version_id'/u);
+  assert.match(trackAction, /completion_badge_version_id:\s*completionBadgeVersionId/u);
+  assert.doesNotMatch(trackAction, /badge_title/u);
+  assert.doesNotMatch(trackAction, /badge_description/u);
   assert.match(trackAction, /event:\s*"admin_track_save_failed"/u);
+});
+
+test("track editor selects an explicit published completion badge", () => {
+  assert.match(trackEditor, /getAdminGamificationWorkspace/u);
+  assert.match(trackEditor, /name="completion_badge_version_id"/u);
+  assert.match(trackEditor, /completion_badge_version_id/u);
+  assert.doesNotMatch(trackEditor, /name="badge_title"/u);
+  assert.doesNotMatch(trackEditor, /name="badge_description"/u);
 });
 
 test("administrative image transport allows the validated image payload", () => {
