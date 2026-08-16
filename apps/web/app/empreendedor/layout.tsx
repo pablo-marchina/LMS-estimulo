@@ -1,19 +1,18 @@
 import { AppShell } from "@/components/app-shell";
 import { LegalReacceptanceGate } from "@/components/legal-reacceptance-gate";
 import { requireParticipantContext } from "@/lib/auth/participant-context";
-import { extensionsRuntime } from "@/lib/extensions/runtime";
+import { participantShellRuntime } from "@/lib/extensions/participant-shell-runtime";
 
 export const dynamic = "force-dynamic";
 
 export default async function ParticipantLayout({ children }: { children: React.ReactNode }) {
   const auth = await requireParticipantContext();
-  const extensions = await extensionsRuntime.participantWorkspace(auth.identity.user_account_id).catch(() => null);
-  const hasB2BAccess = (extensions?.b2b_pages?.length ?? 0) > 0;
+  const shellContext = await participantShellRuntime.get(auth.identity.user_account_id).catch(() => null);
 
   return (
-    <AppShell area="empreendedor" email={auth.email} participantHasB2B={hasB2BAccess}>
+    <AppShell area="empreendedor" email={auth.email} participantHasB2B={Boolean(shellContext?.has_b2b_access)}>
       {children}
-      <LegalReacceptanceGate documents={extensions?.pending_legal_documents ?? []} />
+      <LegalReacceptanceGate documents={shellContext?.pending_legal_documents ?? []} />
     </AppShell>
   );
 }
