@@ -39,7 +39,8 @@ test("participant activity player is compact and videos have rounded corners", (
   assert.match(mediaCss, /grid-template-columns: minmax\(0, 1\.65fr\)/u);
   assert.match(mediaCss, /#conteudo/u);
   assert.match(mediaCss, /#verificacao/u);
-  assert.match(pageHeader, /participant \? "mb-4 gap-3"/u);
+  assert.match(pageHeader, /if \(participant\)/u);
+  assert.match(pageHeader, /border-b border-slate-200 pb-6/u);
   assert.match(pageHeader, /layoutVariant === "compact" \? "p-4 sm:p-5"/u);
   assert.match(pageHeader, /hasMedia && layoutVariant === "hero"/u);
 });
