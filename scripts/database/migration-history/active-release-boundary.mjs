@@ -1,3 +1,5 @@
+// Historical Vanessa-video boundary before the diagnostic/journey follow-up:
+// expectedLastMigration = '20260816035500_scope_quick_activity_points_per_assessment.sql'
 export const expectedLastMigration = '20260816120000_public_signup_legal_documents_anon_read.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
