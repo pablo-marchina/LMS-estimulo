@@ -23,7 +23,8 @@ function BannerImage({ announcement, index }: { announcement: ParticipantAnnounc
   const [mobileFailed, setMobileFailed] = useState(false);
   const desktopSrc = !desktopFailed && customDesktop ? customDesktop : fallback;
   const mobileSrc = !mobileFailed && customMobile ? customMobile : desktopSrc;
-  return <picture><source media="(max-width: 639px)" srcSet={mobileSrc} /><img src={desktopSrc} alt={announcement.image_alt ?? ""} onError={() => { setDesktopFailed(true); setMobileFailed(true); }} className="brand-carousel-image" /></picture>;
+  const priority = index === 0;
+  return <picture><source media="(max-width: 639px)" srcSet={mobileSrc} /><img src={desktopSrc} alt={announcement.image_alt ?? ""} onError={() => { setDesktopFailed(true); setMobileFailed(true); }} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" className="brand-carousel-image" /></picture>;
 }
 
 function SlideLink({ announcement, index }: { announcement: ParticipantAnnouncement; index: number }) {
@@ -77,8 +78,7 @@ export function AnnouncementCarousel({ announcements }: { announcements: Partici
           return (
             <article key={announcement.id} className="brand-carousel-slide" aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
               <BannerImage announcement={announcement} index={index} />
-              <div className={`brand-carousel-overlay ${imageOnly ? "!bg-[linear-gradient(90deg,rgba(0,0,80,.78),rgba(0,0,80,.28),transparent)]" : ""}`} aria-hidden="true" />
-              <div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-3 max-w-2xl text-2xl leading-none text-white sm:text-3xl lg:text-4xl">{announcement.title}</h3>{announcement.body ? <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p> : null}</div>
+              {!imageOnly ? <><div className="brand-carousel-overlay !bg-[linear-gradient(90deg,rgba(0,0,80,.58),rgba(0,0,80,.22),rgba(0,0,80,.04))]" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-3 max-w-2xl text-2xl leading-none text-white sm:text-3xl lg:text-4xl">{announcement.title}</h3>{announcement.body ? <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p> : null}</div></> : null}
               <SlideLink announcement={announcement} index={index} />
             </article>
           );
