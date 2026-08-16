@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, visualWorkflow, migration, outlineRuntime, carousel, bannerImageRoute, bannerStorage, journeyCoverRoute, thumbnailRoute, certificatePreviewRoute, authenticatedRpc] = await Promise.all([
+const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, visualWorkflow, migration, outlineRuntime, openJourneyAction, carousel, bannerImageRoute, bannerStorage, journeyCoverRoute, thumbnailRoute, certificatePreviewRoute, authenticatedRpc] = await Promise.all([
   readFile("apps/web/app/api/announcement-banner-uploads/route.ts", "utf8"),
   readFile("apps/web/app/admin/engajamento/page.tsx", "utf8"),
   readFile("apps/web/app/admin/certificados/page.tsx", "utf8"),
@@ -14,6 +14,7 @@ const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAl
   readFile(".github/workflows/production-visual-capture.yml", "utf8"),
   readFile("supabase/migrations/20260816170000_complete_review_remediation.sql", "utf8"),
   readFile("apps/web/lib/journey-runtime/outline-runtime.ts", "utf8"),
+  readFile("apps/web/app/actions/open-journey.ts", "utf8"),
   readFile("apps/web/components/announcement-carousel.tsx", "utf8"),
   readFile("apps/web/app/api/announcements/[announcementId]/image/route.ts", "utf8"),
   readFile("apps/web/lib/storage/announcement-banners.ts", "utf8"),
@@ -83,11 +84,13 @@ test("visual workflow validates pull requests without auditing stale production"
   assert.match(visualWorkflow, /Capture desktop and mobile visual evidence/u);
 });
 
-test("participant journey reading survives auxiliary reconcile failures", () => {
-  assert.match(outlineRuntime, /const currentOutline = await loadOutline/u);
-  assert.match(outlineRuntime, /ensure_participant_open_paths/u);
-  assert.match(outlineRuntime, /catch \{\s*return currentOutline;/u);
-  assert.ok((authenticatedRpc.match(/ensure_participant_open_paths/gu) ?? []).length >= 2, "open-path reconcile must be allowlisted and participant-scoped");
+test("participant journey reads are pure while path reconciliation happens at journey entry", () => {
+  assert.match(outlineRuntime, /get_participant_journey_outline/u);
+  assert.equal((outlineRuntime.match(/get_participant_journey_outline/gu) ?? []).length, 1);
+  assert.doesNotMatch(outlineRuntime, /ensure_participant_open_paths/u);
+  assert.match(openJourneyAction, /state\.journey_status !== "completed"/u);
+  assert.match(openJourneyAction, /ensureDefaultPath/u);
+  assert.ok((authenticatedRpc.match(/ensure_participant_open_paths/gu) ?? []).length >= 2, "open-path reconcile must remain allowlisted and participant-scoped");
 });
 
 test("image-only announcements preserve the uploaded artwork without a text overlay", () => {

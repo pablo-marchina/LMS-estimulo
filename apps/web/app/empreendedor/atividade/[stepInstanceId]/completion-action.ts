@@ -9,6 +9,12 @@ import { completeParticipantActivity } from "@/lib/journey-runtime/completion-ru
 
 const uuid = z.string().uuid();
 
+const completionCode = {
+  REQUIRED_CONTENT_INCOMPLETE: "conteudo_pendente",
+  ASSESSMENT_NOT_PASSED: "avaliacao_pendente",
+  PRACTICE_COMPLETION_MANAGED_BY_REVIEW: "pratica_pendente",
+} as const;
+
 export async function completeParticipantActivityAction(formData: FormData) {
   await assertParticipantMutationAllowed();
   const auth = await getAuthContext();
@@ -17,24 +23,20 @@ export async function completeParticipantActivityAction(formData: FormData) {
   const journey = uuid.parse(formData.get("journey_instance_id"));
   const step = uuid.parse(formData.get("step_instance_id"));
   const key = String(formData.get("idempotency_key") || randomUUID());
+  let outcome: "ok" | "conteudo_pendente" | "avaliacao_pendente" | "pratica_pendente" | "falha" = "ok";
 
   try {
-    await completeParticipantActivity({
+    const result = await completeParticipantActivity({
       actorUserAccountId: auth.identity.user_account_id,
       stepInstanceId: step,
       idempotencyKey: key,
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    const code = message.includes("REQUIRED_CONTENT_INCOMPLETE")
-      ? "conteudo_pendente"
-      : message.includes("ASSESSMENT_NOT_PASSED")
-        ? "avaliacao_pendente"
-        : message.includes("PRACTICE_COMPLETION_MANAGED_BY_REVIEW")
-          ? "pratica_pendente"
-          : "falha";
-    redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=${code}#concluir-aula`);
+    if (result.status === "blocked") {
+      outcome = result.code ? completionCode[result.code] ?? "falha" : "falha";
+    }
+  } catch {
+    outcome = "falha";
   }
 
-  redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=ok#concluir-aula`);
+  redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=${outcome}#concluir-aula`);
 }

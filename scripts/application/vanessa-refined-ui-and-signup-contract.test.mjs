@@ -104,5 +104,6 @@ test("post-video product fixes are part of the same release boundary", () => {
   assert.match(migrationBoundary, /20260816180000_reconcile_participant_navigation_registry\.sql/u);
   assert.match(migrationBoundary, /20260816190000_normalize_internal_announcement_destinations\.sql/u);
   assert.match(migrationBoundary, /20260816220130_retire_unimplemented_application_objective_point_rule\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260816220438_participant_shell_context\.sql'/u);
+  assert.match(migrationBoundary, /20260816220438_participant_shell_context\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260816230537_structured_participant_activity_completion\.sql'/u);
 });
