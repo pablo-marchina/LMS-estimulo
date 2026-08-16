@@ -24,7 +24,7 @@ test("participant home keeps the editable greeting personalized", async () => {
   assert.match(migration, /published_value->>'text'.*Olá!/su);
 });
 
-test("announcement editor supports responsive artwork and image-wide links", async () => {
+test("announcement editor supports responsive artwork, image-wide links and compact participant banners", async () => {
   const [page, action, upload, runtime, carousel] = await Promise.all([
     source("apps/web/app/admin/engajamento/page.tsx"),
     source("apps/web/app/admin/engajamento/actions.ts"),
@@ -44,8 +44,10 @@ test("announcement editor supports responsive artwork and image-wide links", asy
   assert.match(runtime, /isMissingAnnouncementMobileSignature/u);
   assert.match(runtime, /ANNOUNCEMENT_MOBILE_SCHEMA_REQUIRED/u);
   assert.match(carousel, /className="absolute inset-0 z-20"/u);
-  assert.match(carousel, /!max-h-\[38svh\]/u);
-  assert.match(carousel, /max-\[720px\]:!max-h-\[36svh\]/u);
+  assert.match(carousel, /!h-\[32svh\]/u);
+  assert.match(carousel, /!max-h-\[32svh\]/u);
+  assert.match(carousel, /max-\[720px\]:!h-\[30svh\]/u);
+  assert.match(carousel, /max-\[720px\]:!max-h-\[30svh\]/u);
   assert.match(carousel, /variant=mobile/u);
 });
 
