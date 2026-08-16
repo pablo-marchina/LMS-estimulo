@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Crown, Gift, History, ImageIcon, LockKeyhole, Medal, Trophy } from "lucide-react";
+import { CheckCircle2, Gift, History, ImageIcon, LockKeyhole, Medal, Trophy } from "lucide-react";
 import { performExtensionAction } from "@/app/empreendedor/extension-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
@@ -25,7 +25,7 @@ const frequencyLabels: Record<ParticipantPointRule["frequency"], string> = {
 
 type RewardsWorkspace = { reward_balance: number; catalog: JsonRecord[]; redemptions: JsonRecord[] };
 
-export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, pointRules, activeTab }: {
+export function RewardsExperience({ rewards, ranking, pointHistory, pointRules, activeTab }: {
   rewards: RewardsWorkspace;
   ranking: RankingEntry[];
   ownRank: { position: number; points: number } | null;
@@ -33,33 +33,13 @@ export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, poi
   pointRules: ParticipantPointRule[];
   activeTab: "recompensas" | "como-conseguir-pontos" | "historico" | "ranking";
 }) {
-  const nextReward = rewards.catalog.slice().sort((a, b) => number(a.cost_points) - number(b.cost_points)).find((reward) => number(reward.cost_points) > rewards.reward_balance);
-  const nextCost = nextReward ? number(nextReward.cost_points) : 0;
-  const progress = nextCost > 0 ? Math.min(100, Math.round((rewards.reward_balance / nextCost) * 100)) : 100;
-
   return <div className="grid gap-7">
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-center">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.14em] text-primary"><Crown size={17} /> Central de recompensas</div>
-          <h1 className="mt-2 text-3xl font-bold tracking-[-.02em] text-primary sm:text-4xl">Transforme seu progresso em conquistas</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Os pontos que você conquista já ficam disponíveis automaticamente para resgatar recompensas. Não é necessário converter nada.</p>
-          <div className="mt-4"><Link href="/empreendedor/recompensas?tab=como-conseguir-pontos" className="inline-flex min-h-10 items-center rounded-md border border-primary/20 bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary-soft">Como conseguir pontos</Link></div>
-        </div>
-        <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-          <div><p className="text-xs font-bold uppercase tracking-wide text-muted">Seu saldo</p><p className="mt-1 text-4xl font-bold text-secondary">{rewards.reward_balance}</p><p className="text-sm text-muted">pontos disponíveis</p></div>
-          <div className="border-t border-slate-200 pt-3"><p className="text-xs text-muted">Ranking de aprendizagem</p><p className="mt-1 font-black text-secondary">{ownRank ? `#${ownRank.position} · ${ownRank.points} pontos` : "Ainda sem posição"}</p></div>
-        </div>
-      </div>
-      {nextReward ? <div className="mt-5 rounded-xl border border-slate-200 bg-white p-3"><div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted"><span>Próximo objetivo: <strong className="text-secondary">{text(nextReward.name)}</strong></span><span>{Math.max(0, nextCost - rewards.reward_balance)} pontos restantes</span></div><div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} /></div></div> : null}
-    </section>
-
-    <nav aria-label="Abas da central de recompensas" className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-transparent pb-1">
-      {[["recompensas", "Recompensas"],["como-conseguir-pontos", "Como conseguir pontos"],["historico", "Histórico"],["ranking", "Ranking"]].map(([tab, label]) => <Link key={tab} href={tab === "recompensas" ? "/empreendedor/recompensas" : `/empreendedor/recompensas?tab=${tab}`} aria-current={activeTab === tab ? "page" : undefined} className={`inline-flex min-h-10 min-w-fit items-center justify-center border-b-2 px-3 py-2 text-sm font-semibold ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted hover:text-primary"}`}>{label}</Link>)}
+    <nav aria-label="Abas da central de recompensas" className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-transparent">
+      {[["recompensas", "Recompensas"],["como-conseguir-pontos", "Como conseguir pontos"],["historico", "Histórico"],["ranking", "Ranking"]].map(([tab, label]) => <Link key={tab} href={tab === "recompensas" ? "/empreendedor/recompensas" : `/empreendedor/recompensas?tab=${tab}`} aria-current={activeTab === tab ? "page" : undefined} className={`inline-flex min-h-11 min-w-fit items-center justify-center border-b-2 px-3 py-2.5 text-sm font-semibold ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted hover:text-primary"}`}>{label}</Link>)}
     </nav>
 
     {activeTab === "recompensas" ? <section id="catalogo" className="grid scroll-mt-24 gap-4">
-      <div className="flex items-end justify-between gap-4"><div><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Escolha sua próxima conquista</p><h2 className="mt-1 text-2xl font-bold text-ink">Recompensas disponíveis</h2></div><Trophy className="hidden text-primary sm:block" size={30} /></div>
+      <div className="flex items-end justify-between gap-4"><div><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Escolha sua próxima conquista</p><h2 className="mt-1 text-2xl font-bold text-ink">Recompensas disponíveis</h2><p className="mt-1.5 text-sm text-muted">Saldo disponível: <strong className="text-secondary">{rewards.reward_balance} pontos</strong></p></div><Trophy className="hidden text-primary sm:block" size={30} /></div>
       {rewards.catalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{rewards.catalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}
     </section> : null}
 
