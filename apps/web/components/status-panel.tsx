@@ -7,6 +7,7 @@ const toneStyles = {
   neutral: { wrap: "border-border bg-surface-muted text-ink", icon: null },
   info: { wrap: "border-info/25 bg-info-soft text-info", icon: Info },
   warning: { wrap: "border-warning/25 bg-warning-soft text-warning", icon: AlertTriangle },
+  danger: { wrap: "border-danger/25 bg-danger-soft text-danger", icon: AlertTriangle },
   success: { wrap: "border-success/25 bg-success-soft text-success", icon: CheckCircle2 }
 } as const;
 
