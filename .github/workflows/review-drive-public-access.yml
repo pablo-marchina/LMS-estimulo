@@ -23,8 +23,8 @@ jobs:
       - name: Check every official Drive video without Google credentials
         shell: bash
         run: |
-          node <<'NODE'
-          const { readFile } = require('node:fs/promises');
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
 
           const migrationPath = 'supabase/migrations/20260730150000_openai_official_drive_videos.sql';
           const source = await readFile(migrationPath, 'utf8');
