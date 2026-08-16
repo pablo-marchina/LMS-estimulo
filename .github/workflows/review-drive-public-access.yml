@@ -28,9 +28,8 @@ jobs:
 
           const migrationPath = 'supabase/migrations/20260730150000_openai_official_drive_videos.sql';
           const source = await readFile(migrationPath, 'utf8');
-          const ids = [...source.matchAll(/'([A-Za-z0-9_-]{20,})',\s*'M(?:ódulo|\d|0|Conclusão)/gu)].map((match) => match[1]);
-          const fallbackIds = [...source.matchAll(/\b(1[A-Za-z0-9_-]{20,})\b/gu)].map((match) => match[1]);
-          const uniqueIds = [...new Set(ids.length === 24 ? ids : fallbackIds)].filter((id) => id !== '1JIU-6NZhNI84zUMxHgYal_i8nb7up4ET');
+          const ids = [...source.matchAll(/\('[0-9a-f-]{36}'::uuid,\s*\d+,\s*'([A-Za-z0-9_-]{20,})',/gu)].map((match) => match[1]);
+          const uniqueIds = [...new Set(ids)];
           if (uniqueIds.length !== 24) throw new Error(`Expected 24 official Drive video IDs, found ${uniqueIds.length}`);
 
           const failures = [];
