@@ -136,7 +136,7 @@ test("rejects added or removed opaque helpers", () => {
 
   assert.throws(
     () => validateApprovedSemanticReplacements(expected, actual, semanticApproval),
-    /cannot authorize added or removed legacy functions/,
+    /opaque helper inventory metadata changed: legacy_function_count/,
   );
 });
 
