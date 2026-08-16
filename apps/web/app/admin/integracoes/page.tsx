@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import AdminOverviewPage from "../page";
 
 export default function IntegrationsPage() {
-  redirect("/admin");
+  return <AdminOverviewPage />;
 }
