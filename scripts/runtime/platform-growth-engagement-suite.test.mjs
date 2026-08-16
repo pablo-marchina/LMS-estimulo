@@ -172,7 +172,7 @@ test("reward points are automatic while cancellation still refunds points and st
   assert.match(automaticRewardMigration, /REWARD_CONVERSION_DISABLED/u);
   assert.match(adminRuntimeMigration, /redemption_refund/u);
   assert.match(adminRuntimeMigration, /stock_quantity\+v_redemption\.quantity/u);
-  assert.match(adminRuntimeMigration, /balance=balance\vv_redemption\.points_spent/u);
+  assert.match(adminRuntimeMigration, /balance=balance\+v_redemption\.points_spent/u);
 });
 
 test("deliveries support library content, activities and safe AI review modes", () => {
