@@ -8,7 +8,10 @@ const [
   pageHeader,
   card,
   home,
+  rewardsPage,
   rewards,
+  profileLayout,
+  profileTabs,
   signupProvisioning,
   diagnosticJourneyMigration,
   legalReadMigration,
@@ -19,7 +22,10 @@ const [
   readFile("apps/web/components/ui/page-header.tsx", "utf8"),
   readFile("apps/web/components/ui/card.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/page.tsx", "utf8"),
+  readFile("apps/web/app/empreendedor/recompensas/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/recompensas/rewards-experience.tsx", "utf8"),
+  readFile("apps/web/app/empreendedor/perfil/layout.tsx", "utf8"),
+  readFile("apps/web/components/participant-profile-tabs.tsx", "utf8"),
   readFile("apps/web/lib/auth/public-signup-provisioning.ts", "utf8"),
   readFile("supabase/migrations/20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql", "utf8"),
   readFile("supabase/migrations/20260816120000_public_signup_legal_documents_anon_read.sql", "utf8"),
@@ -53,10 +59,22 @@ test("home prioritizes the next learning action instead of decorative metrics", 
   assert.doesNotMatch(home, /brand-recognition-strip/u);
 });
 
-test("rewards opens on the catalog without redundant balance explanation blocks", () => {
+test("rewards opens on the catalog without redundant summary blocks", () => {
+  assert.match(rewardsPage, /max-w-\[1200px\]/u);
+  assert.match(rewardsPage, /title="Recompensas"/u);
   assert.doesNotMatch(rewards, /Pontos prontos para usar/u);
   assert.doesNotMatch(rewards, /Crédito automático/u);
+  assert.doesNotMatch(rewards, /Central de recompensas/u);
+  assert.doesNotMatch(rewards, /Transforme seu progresso em conquistas/u);
   assert.match(rewards, /Recompensas disponíveis/u);
+});
+
+test("profile uses the same restrained canvas and flat tabs as the refined reference", () => {
+  assert.match(profileLayout, /max-w-\[1200px\]/u);
+  assert.match(profileTabs, /border-b border-slate-200/u);
+  assert.match(profileTabs, /border-b-2/u);
+  assert.doesNotMatch(profileTabs, /rounded-2xl border border-border bg-white p-2 shadow-sm/u);
+  assert.doesNotMatch(profileTabs, /bg-primary text-white shadow-sm/u);
 });
 
 test("public legal document reads do not require service-role credentials", () => {
