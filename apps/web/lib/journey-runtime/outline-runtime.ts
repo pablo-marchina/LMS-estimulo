@@ -1,5 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { cache } from "react";
 import type { ParticipantJourneyOutline } from "@/lib/journey-runtime/outline-contracts";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
@@ -10,10 +11,7 @@ function loadOutline(actorUserAccountId: string, journeyInstanceId: string) {
   });
 }
 
-export async function getParticipantJourneyOutline(actorUserAccountId: string, journeyInstanceId: string) {
-  // Reading an already-materialized journey must not depend on a maintenance/reconcile
-  // command being available. New enrollments materialize a default path in the write
-  // flow; this reconcile only expands open-all-path journeys and is therefore best effort.
+export const getParticipantJourneyOutline = cache(async (actorUserAccountId: string, journeyInstanceId: string) => {
   const currentOutline = await loadOutline(actorUserAccountId, journeyInstanceId);
   try {
     await invokeServerRpc<Record<string, unknown>>("ensure_participant_open_paths", {
@@ -25,4 +23,4 @@ export async function getParticipantJourneyOutline(actorUserAccountId: string, j
   } catch {
     return currentOutline;
   }
-}
+});
