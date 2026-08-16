@@ -1,0 +1,176 @@
+name: Focused lesson review 2026-08-16
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/focused-lesson-review-20260816.yml
+
+permissions:
+  contents: read
+
+jobs:
+  lesson-production-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      E2E_PRODUCTION_URL: ${{ secrets.E2E_PRODUCTION_URL }}
+      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
+      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
+      - run: npx playwright install --with-deps chromium
+      - name: Exercise the lesson workspace and admin gamification
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from 'playwright';
+          import { mkdir, writeFile } from 'node:fs/promises';
+          import path from 'node:path';
+
+          const required = ['E2E_PRODUCTION_URL','E2E_PARTICIPANT_EMAIL','E2E_PARTICIPANT_PASSWORD','E2E_ADMIN_EMAIL','E2E_ADMIN_PASSWORD'];
+          for (const name of required) if (!process.env[name]) throw new Error(`Missing ${name}`);
+          const baseUrl = process.env.E2E_PRODUCTION_URL.replace(/\/$/, '');
+          const out = path.resolve('artifacts/focused-final-review');
+          await mkdir(out, { recursive: true });
+          const report = { baseUrl, startedAt: new Date().toISOString(), checks: {}, failures: [], warnings: [] };
+          const fail = (message) => { report.failures.push(message); };
+          const browser = await chromium.launch({ headless: true });
+
+          async function login(page, email, password, target) {
+            await page.goto(`${baseUrl}/entrar`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+            await page.locator('input[name="email"]').fill(email);
+            await page.locator('input[name="password"]').fill(password);
+            await page.locator('button[type="submit"]').click();
+            await page.waitForURL((url) => url.pathname !== '/entrar', { timeout: 30_000 });
+            await page.goto(`${baseUrl}${target}`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+            if (!new URL(page.url()).pathname.startsWith(target.split('/').slice(0,2).join('/'))) throw new Error(`Login did not reach ${target}`);
+          }
+
+          try {
+            const participant = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+            const page = await participant.newPage();
+            const consoleErrors = [];
+            const pageErrors = [];
+            page.on('console', (msg) => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
+            page.on('pageerror', (err) => pageErrors.push(err.message));
+            await login(page, process.env.E2E_PARTICIPANT_EMAIL, process.env.E2E_PARTICIPANT_PASSWORD, '/empreendedor');
+
+            await page.goto(`${baseUrl}/empreendedor/jornadas`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+            let journeyHref = await page.locator('a[href^="/empreendedor/jornada/"]').first().getAttribute('href').catch(() => null);
+            if (!journeyHref) {
+              await page.goto(`${baseUrl}/empreendedor`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+              journeyHref = await page.locator('a[href^="/empreendedor/jornada/"]').first().getAttribute('href').catch(() => null);
+            }
+            if (!journeyHref) throw new Error('No participant journey link was discoverable');
+            await page.goto(new URL(journeyHref, baseUrl).href, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+
+            const openForms = page.locator('form:has(input[name="step_instance_id"]):has(button:not([disabled]))');
+            const openCount = await openForms.count();
+            report.checks.openableLessons = openCount;
+            if (!openCount) throw new Error('No openable lesson form was found in the journey');
+            const openStarted = Date.now();
+            await openForms.first().locator('button[type="submit"]').click();
+            await page.waitForURL((url) => url.searchParams.has('conteudo'), { timeout: 45_000 });
+            await page.locator('#aula #conteudo').waitFor({ state: 'visible', timeout: 45_000 });
+            report.checks.lessonOpenMs = Date.now() - openStarted;
+
+            const lessonUrl = page.url();
+            report.checks.lessonUrl = lessonUrl.replace(baseUrl, '');
+            const lessonText = await page.locator('#aula').innerText();
+            report.checks.hasCompletionCta = /Marcar como concluída|Aula concluída/u.test(lessonText);
+            report.checks.hasRatingPrompt = /O que achou desta aula\?|Obrigado pela avaliação!/u.test(lessonText);
+            report.checks.hasCommentPrompt = /Converse sobre esta aula/u.test(lessonText);
+            report.checks.hasVisibleDuplicateChrome = /(^|\n)Conteúdo aberto(\n|$)/u.test(lessonText);
+            report.checks.starButtons = await page.locator('#aula button[aria-label^="Avaliar com "]').count();
+            report.checks.commentTextarea = await page.locator('#aula textarea[name="body"]').count();
+            report.checks.driveFrames = await page.locator('#aula iframe[src*="drive.google.com/file/d/"][src*="/preview"]').count();
+            report.checks.desktopOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
+
+            if (!report.checks.hasCompletionCta) fail('Lesson completion CTA is missing');
+            if (!report.checks.hasRatingPrompt || report.checks.starButtons !== 5) fail('Five-star lesson rating is not rendered correctly');
+            if (!report.checks.hasCommentPrompt || report.checks.commentTextarea !== 1) fail('Inline lesson comments are missing');
+            if (report.checks.hasVisibleDuplicateChrome) fail('Duplicate visible Conteúdo aberto chrome remains');
+            if (report.checks.desktopOverflow) fail('Desktop lesson has horizontal overflow');
+            if (report.checks.driveFrames < 1) report.warnings.push('The selected lesson did not use a Google Drive iframe; anonymous Drive access was validated separately for all 24 official files.');
+
+            await page.screenshot({ path: path.join(out, 'lesson-desktop-before-actions.png'), fullPage: true });
+
+            const ratingButton = page.locator('#aula button[aria-label="Avaliar com 4 estrelas"]');
+            if (await ratingButton.count()) {
+              await ratingButton.click();
+              await page.waitForURL((url) => url.searchParams.get('utilidade') === 'registrada', { timeout: 30_000 });
+              report.checks.ratingPersisted = /Obrigado pela avaliação!|Avaliação registrada/u.test(await page.locator('#aula').innerText());
+              if (!report.checks.ratingPersisted) fail('Rating action returned without persisted confirmation');
+            } else fail('Four-star rating control was not found');
+
+            const auditComment = `Auditoria final Vanessa ${Date.now()}`;
+            const textarea = page.locator('#aula textarea[name="body"]');
+            await textarea.fill(auditComment);
+            await page.locator('#aula button[type="submit"]', { hasText: 'Publicar' }).click();
+            await page.getByText(auditComment, { exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
+            report.checks.commentPublishedInline = true;
+
+            const completion = page.locator('#aula form#concluir-aula button[type="submit"]');
+            if (await completion.count() && !(await completion.isDisabled())) {
+              await completion.click();
+              await page.waitForURL((url) => url.searchParams.has('conclusao'), { timeout: 30_000 });
+              const completionCode = new URL(page.url()).searchParams.get('conclusao');
+              report.checks.completionResult = completionCode;
+              if (!['ok','conteudo_pendente','avaliacao_pendente','pratica_pendente','falha'].includes(completionCode ?? '')) fail(`Unexpected completion result: ${completionCode}`);
+              if (completionCode === 'falha') fail('Completion CTA returned generic failure');
+            } else {
+              report.checks.completionResult = 'already_completed';
+            }
+
+            await page.setViewportSize({ width: 390, height: 844 });
+            await page.goto(lessonUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+            await page.locator('#aula #conteudo').waitFor({ state: 'visible', timeout: 30_000 });
+            report.checks.mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
+            if (report.checks.mobileOverflow) fail('Mobile lesson has horizontal overflow');
+            await page.screenshot({ path: path.join(out, 'lesson-mobile.png'), fullPage: true });
+            report.checks.consoleErrors = consoleErrors.length;
+            report.checks.pageErrors = pageErrors.length;
+            if (pageErrors.length) fail(`Participant lesson emitted ${pageErrors.length} uncaught page error(s)`);
+            await participant.close();
+
+            const admin = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+            const adminPage = await admin.newPage();
+            await login(adminPage, process.env.E2E_ADMIN_EMAIL, process.env.E2E_ADMIN_PASSWORD, '/admin');
+            await adminPage.goto(`${baseUrl}/admin/gamificacao`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+            await adminPage.waitForTimeout(800);
+            const adminText = await adminPage.locator('body').innerText();
+            report.checks.invalidObjectiveRuleVisible = /Escolher um objetivo de aplicação/u.test(adminText);
+            if (report.checks.invalidObjectiveRuleVisible) fail('Retired application objective points rule is still visible in admin');
+            report.checks.gamificationHasTriggerCopy = /gatilho|quando|evento|avaliaç/u.test(adminText.toLowerCase());
+            await adminPage.screenshot({ path: path.join(out, 'admin-gamificacao.png'), fullPage: true });
+            await admin.close();
+          } catch (error) {
+            fail(error instanceof Error ? error.message : String(error));
+          } finally {
+            await browser.close();
+          }
+
+          report.finishedAt = new Date().toISOString();
+          await writeFile(path.join(out, 'focused-report.json'), JSON.stringify(report, null, 2) + '\n');
+          console.log(JSON.stringify({ failures: report.failures, checks: report.checks }));
+          if (report.failures.length) process.exit(1);
+          NODE
+      - name: Upload focused evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: focused-final-review-${{ github.run_id }}
+          path: artifacts/focused-final-review
+          if-no-files-found: error
+          retention-days: 14
