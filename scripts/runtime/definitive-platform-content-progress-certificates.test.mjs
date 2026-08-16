@@ -54,9 +54,10 @@ test("announcements use responsive artwork, same-tab destinations and preserve t
 test("participant home and profile follow the consolidated navigation contract", () => {
   assert.ok(home.indexOf("<PageHeader") < home.indexOf("<AnnouncementCarousel"));
   assert.ok(home.indexOf("<AnnouncementCarousel") < home.indexOf("<form action={continueJourneyAction}"));
-  assert.match(profileTabs, /Diagnóstico/u);
-  assert.match(profileTabs, /Informações/u);
-  assert.match(profileTabs, /Entregas/u);
+  assert.match(profileTabs, /href: "\/empreendedor\/perfil\/diagnostico", label: "Perfil empreendedor"/u);
+  assert.match(profileTabs, /href: "\/empreendedor\/perfil", label: "Minha conta"/u);
+  assert.match(profileTabs, /href: "\/empreendedor\/perfil\/entregas", label: "Entregas"/u);
+  assert.match(profileTabs, /href: "\/empreendedor\/perfil\/conquistas", label: "Certificados"/u);
   assert.doesNotMatch(shell, /\/empreendedor\/pontuacao/u);
   assert.doesNotMatch(shell, /\/empreendedor\/entregas/u);
 });

@@ -89,13 +89,15 @@ test('landing uses the approved copy and a secured edge projection', async () =>
     read('supabase/functions/public-landing-journey/index.ts'),
   ]);
 
-  assert.match(landing, /Seu negócio evolui\. A forma de aprender também\./);
-  assert.match(landing, /Conhecimento que vira resultado no seu negócio\./);
-  assert.match(landing, /Cada empreendedor aprende de um jeito\./);
-  assert.match(landing, /O que você encontra na plataforma/);
-  assert.match(landing, /Criar conta gratuitamente/);
-  assert.match(landing, /Conteúdos práticos, ferramentas e jornadas com parceiros como a OpenAI para apoiar seu crescimento\./);
-  assert.doesNotMatch(landing, /Conhecer o curso/);
+  assert.match(landing, /Parceria Estímulo \+ OpenAI/);
+  assert.match(landing, /ChatGPT para o seu negócio/);
+  assert.match(landing, /Começar gratuitamente/);
+  assert.match(landing, /O que você vai aprender/);
+  assert.match(landing, /GANHE PONTOS/);
+  assert.match(landing, /Dúvidas rápidas/);
+  assert.match(landing, /href="\/cadastro"/);
+  assert.match(landing, /href="\/entrar"/);
+  assert.doesNotMatch(landing, /Seu negócio evolui\. A forma de aprender também\./);
   assert.doesNotMatch(landing, /CURSO EM DESTAQUE/iu);
   assert.match(publicJourneyMigration, /get_public_landing_journey/);
   assert.match(publicJourneyMigration, /jv\.status='published'/);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Gift, History, ImageIcon, LockKeyhole, Medal, Trophy } from "lucide-react";
+import { CheckCircle2, Gift, History, LockKeyhole, Medal, Trophy } from "lucide-react";
 import { performExtensionAction } from "@/app/empreendedor/extension-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
@@ -71,9 +71,9 @@ function RewardCard({ reward, balance }: { reward: JsonRecord; balance: number }
   const imageFileObjectId = text(reward.image_file_object_id);
 
   return <Card className={`flex flex-col overflow-hidden p-0 ${unlocked ? "ring-1 ring-primary/10" : ""}`}>
-    <div className="relative aspect-[16/9] overflow-hidden bg-slate-50">{imageFileObjectId ? <img src={`/api/rewards/${text(reward.id)}/image`} alt="" className="size-full object-cover" /> : <div className="grid size-full place-items-center text-primary/35"><ImageIcon size={44} aria-hidden="true" /></div>}<span className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-muted shadow-sm">{typeLabels[text(reward.reward_type)] ?? "Recompensa"}</span></div>
+    {imageFileObjectId ? <div className="relative aspect-[16/7] overflow-hidden bg-slate-50"><img src={`/api/rewards/${text(reward.id)}/image`} alt="" className="size-full object-cover" /></div> : <div className="h-1.5 bg-primary/80" aria-hidden="true" />}
     <div className="flex flex-1 flex-col p-5">
-      <div className="flex items-start justify-between gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-md ${unlocked ? "bg-primary-soft text-primary" : "bg-slate-100 text-muted"}`}>{unlocked ? <Gift size={20} /> : <LockKeyhole size={19} />}</span></div>
+      <div className="flex items-start justify-between gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-md ${unlocked ? "bg-primary-soft text-primary" : "bg-slate-100 text-muted"}`}>{unlocked ? <Gift size={20} /> : <LockKeyhole size={19} />}</span><span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-muted">{typeLabels[text(reward.reward_type)] ?? "Recompensa"}</span></div>
       <h3 className="mt-4 text-lg font-bold text-ink">{text(reward.name)}</h3>
       <p className="mt-2 flex-1 text-sm leading-6 text-muted">{text(reward.description)}</p>
       <div className="mt-5 flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-muted">Custo</p><p className="text-2xl font-bold text-secondary">{cost}</p></div><span className={`text-xs font-bold ${unlocked ? "text-success" : "text-muted"}`}>{unlocked ? "Pronta para resgatar" : `Faltam ${missing}`}</span></div>

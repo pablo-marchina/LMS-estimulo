@@ -16,13 +16,14 @@ const artwork = [
 ];
 
 function BannerImage({ announcement, index }: { announcement: ParticipantAnnouncement; index: number }) {
-  const desktopSrc = announcement.image_file_object_id
-    ? `/api/announcements/${announcement.id}/image`
-    : artwork[index % artwork.length];
-  const mobileSrc = announcement.mobile_image_file_object_id
-    ? `/api/announcements/${announcement.id}/image?variant=mobile`
-    : desktopSrc;
-  return <picture><source media="(max-width: 639px)" srcSet={mobileSrc} /><img src={desktopSrc} alt={announcement.image_alt ?? ""} className="brand-carousel-image" /></picture>;
+  const customDesktop = announcement.image_file_object_id ? `/api/announcements/${announcement.id}/image` : null;
+  const customMobile = announcement.mobile_image_file_object_id ? `/api/announcements/${announcement.id}/image?variant=mobile` : null;
+  const fallback = artwork[index % artwork.length];
+  const [desktopFailed, setDesktopFailed] = useState(false);
+  const [mobileFailed, setMobileFailed] = useState(false);
+  const desktopSrc = !desktopFailed && customDesktop ? customDesktop : fallback;
+  const mobileSrc = !mobileFailed && customMobile ? customMobile : desktopSrc;
+  return <picture><source media="(max-width: 639px)" srcSet={mobileSrc} /><img src={desktopSrc} alt={announcement.image_alt ?? ""} onError={() => { setDesktopFailed(true); setMobileFailed(true); }} className="brand-carousel-image" /></picture>;
 }
 
 function SlideLink({ announcement, index }: { announcement: ParticipantAnnouncement; index: number }) {
@@ -67,19 +68,17 @@ export function AnnouncementCarousel({ announcements }: { announcements: Partici
   if (!slides.length) return null;
 
   return (
-    <section className="brand-carousel animate-in" aria-labelledby="anuncios-titulo">
-      <div className="brand-carousel-heading">
-        <div><p className="brand-kicker">DESCUBRA</p><h2 id="anuncios-titulo" className="display-font mt-1 text-2xl text-secondary sm:text-3xl">Novidades para você</h2></div>
-        {slides.length > 1 ? <div className="flex items-center gap-2"><button type="button" onClick={() => goTo(active - 1)} className="brand-carousel-control" aria-label="Anúncio anterior"><ChevronLeft size={20} /></button><button type="button" onClick={() => goTo(active + 1)} className="brand-carousel-control" aria-label="Próximo anúncio"><ChevronRight size={20} /></button></div> : null}
-      </div>
+    <section className="brand-carousel animate-in" aria-label="Novidades para você">
+      {slides.length > 1 ? <div className="mb-3 flex items-center justify-end gap-2"><button type="button" onClick={() => goTo(active - 1)} className="brand-carousel-control" aria-label="Anúncio anterior"><ChevronLeft size={20} /></button><button type="button" onClick={() => goTo(active + 1)} className="brand-carousel-control" aria-label="Próximo anúncio"><ChevronRight size={20} /></button></div> : null}
 
       <div ref={viewportRef} onScroll={syncActiveSlide} className="brand-carousel-viewport" role="region" aria-label="Carrossel de anúncios" tabIndex={0}>
         {slides.map((announcement, index) => {
           const imageOnly = announcement.display_mode === "image_only";
           return (
-            <article key={announcement.id} className="brand-carousel-slide !h-[32svh] !max-h-[32svh] !min-h-0 !aspect-auto max-[720px]:!h-[30svh] max-[720px]:!max-h-[30svh]" aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
+            <article key={announcement.id} className="brand-carousel-slide" aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
               <BannerImage announcement={announcement} index={index} />
-              {imageOnly ? <span className="sr-only">{announcement.title}. {announcement.body}</span> : <><div className="brand-carousel-overlay" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-3 max-w-2xl text-2xl leading-none text-white sm:text-3xl lg:text-4xl">{announcement.title}</h3><p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p></div></>}
+              <div className={`brand-carousel-overlay ${imageOnly ? "!bg-[linear-gradient(90deg,rgba(0,0,80,.78),rgba(0,0,80,.28),transparent)]" : ""}`} aria-hidden="true" />
+              <div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-3 max-w-2xl text-2xl leading-none text-white sm:text-3xl lg:text-4xl">{announcement.title}</h3>{announcement.body ? <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p> : null}</div>
               <SlideLink announcement={announcement} index={index} />
             </article>
           );

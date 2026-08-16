@@ -25,12 +25,13 @@ test("participant home keeps the editable greeting personalized", async () => {
 });
 
 test("announcement editor supports responsive artwork, image-wide links and compact participant banners", async () => {
-  const [page, action, upload, runtime, carousel] = await Promise.all([
+  const [page, action, upload, runtime, carousel, globals] = await Promise.all([
     source("apps/web/app/admin/engajamento/page.tsx"),
     source("apps/web/app/admin/engajamento/actions.ts"),
     source("apps/web/app/api/announcement-banner-uploads/route.ts"),
     source("apps/web/lib/engagement/runtime.ts"),
     source("apps/web/components/announcement-carousel.tsx"),
+    source("apps/web/app/globals.css"),
   ]);
 
   assert.doesNotMatch(page, /name="cta_label"/u);
@@ -44,10 +45,9 @@ test("announcement editor supports responsive artwork, image-wide links and comp
   assert.match(runtime, /isMissingAnnouncementMobileSignature/u);
   assert.match(runtime, /ANNOUNCEMENT_MOBILE_SCHEMA_REQUIRED/u);
   assert.match(carousel, /className="absolute inset-0 z-20"/u);
-  assert.match(carousel, /!h-\[32svh\]/u);
-  assert.match(carousel, /!max-h-\[32svh\]/u);
-  assert.match(carousel, /max-\[720px\]:!h-\[30svh\]/u);
-  assert.match(carousel, /max-\[720px\]:!max-h-\[30svh\]/u);
+  assert.match(carousel, /brand-carousel-slide/u);
+  assert.match(globals, /\.brand-carousel-slide \{[^}]*aspect-ratio: 8 \/ 3;[^}]*min-height: 14rem;/su);
+  assert.match(globals, /@media \(max-width: 720px\)[\s\S]*\.brand-carousel-slide \{[^}]*aspect-ratio: 16 \/ 10;[^}]*min-height: 0;/su);
   assert.match(carousel, /variant=mobile/u);
 });
 
