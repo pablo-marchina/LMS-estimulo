@@ -290,7 +290,7 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
           {downloadHref ? <a href={downloadHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft">{type === "image" ? <FileImage size={15} /> : <FileText size={15} />} Abrir arquivo</a> : null}
           {progressEndpoint && !completed && (!(["video", "audio"].includes(type)) || requiresManualCompletion) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">{["video", "audio"].includes(type) ? "Concluí este conteúdo" : "Marcar como concluído"}</button> : null}
         </div>
-        {googleDriveUrl ? <p className="text-xs text-muted">Este vídeo usa o player do Google Drive, que não fornece o tempo assistido à plataforma. Ao terminar, clique em “Concluí este conteúdo” para registrar a aula e a pontuação. Para retomada automática por segundo, o vídeo precisa ser hospedado em um player compatível com controle de reprodução.</p> : embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
+        {!googleDriveUrl && embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
       </div>
     </article>
   );
