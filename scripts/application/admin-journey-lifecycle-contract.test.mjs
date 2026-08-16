@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [page, archiveAction, saveAction, lifecycle] = await Promise.all([
+const [page, archiveAction, saveAction, lifecycle, nextConfig, bannerStorage] = await Promise.all([
   readFile("apps/web/app/admin/produto/page.tsx", "utf8"),
   readFile("apps/web/app/admin/produto/retire-journey-action.ts", "utf8"),
   readFile("apps/web/app/admin/produto/journey-action.ts", "utf8"),
   readFile("apps/web/lib/admin/product-lifecycle.ts", "utf8"),
+  readFile("apps/web/next.config.ts", "utf8"),
+  readFile("apps/web/lib/storage/announcement-banners.ts", "utf8"),
 ]);
 
 test("published journeys expose archive separately from disruptive unpublish", () => {
@@ -33,4 +35,11 @@ test("journey draft save does not require the optional theme workspace", () => {
   assert.match(saveAction, /catch \{\s*themeSaveFailed = true;\s*\}\s*\}/u);
   assert.match(saveAction, /result = await saveAdminJourney/u);
   assert.match(saveAction, /event: "admin_journey_save_failed"/u);
+});
+
+test("journey cover transport supports both bounded cover uploads", () => {
+  assert.match(bannerStorage, /ANNOUNCEMENT_BANNER_MAX_BYTES = 4 \* 1024 \* 1024/u);
+  assert.match(saveAction, /selectedFile\(formData, "card_background_file"\)/u);
+  assert.match(saveAction, /selectedFile\(formData, "featured_background_file"\)/u);
+  assert.match(nextConfig, /serverActions:\s*\{\s*[\s\S]*?bodySizeLimit: "9mb"/u);
 });
