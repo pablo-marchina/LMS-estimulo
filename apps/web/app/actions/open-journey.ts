@@ -26,8 +26,8 @@ export async function openJourneyAction(formData: FormData) {
       );
       state = await journeyRuntime.getParticipantState(auth.identity.user_account_id, journeyInstanceId);
     }
-    if (state.journey_status !== "completed" && !state.s?.step_instance_id) {
-      await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:default-path`);
+    if (state.journey_status !== "completed") {
+      await journeyRuntime.ensureDefaultPath(auth.identity.user_account_id, journeyInstanceId, `${key}:paths`);
     }
   } catch {
     redirect("/empreendedor/jornadas?erro=abrir_jornada");
