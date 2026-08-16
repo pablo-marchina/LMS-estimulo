@@ -2,18 +2,23 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [lessonLayout, rewardsPage, serverInvoke, trackAction, nextConfig, mediaUpload] = await Promise.all([
+const [lessonLayout, rewardsPage, contentViewer, serverInvoke, trackAction, nextConfig, mediaUpload] = await Promise.all([
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css", "utf8"),
   readFile("apps/web/app/empreendedor/recompensas/page.tsx", "utf8"),
+  readFile("apps/web/components/content-asset-viewer.tsx", "utf8"),
   readFile("apps/web/lib/rpc/server-invoke.ts", "utf8"),
   readFile("apps/web/app/admin/produto/track-save-action.ts", "utf8"),
   readFile("apps/web/next.config.ts", "utf8"),
   readFile("apps/web/lib/admin/media-upload.ts", "utf8"),
 ]);
 
-test("lesson canvas keeps its centered max-width layout and hides Drive implementation copy", () => {
+test("lesson canvas keeps its centered max-width layout", () => {
   assert.doesNotMatch(lessonLayout, /\.activityPage\s*,\s*\.activityPage > div[\s\S]*?margin-inline:\s*0/u);
-  assert.match(lessonLayout, /brand-media-card:has\(iframe\[src\^="https:\/\/drive\.google\.com\/"\]\)[\s\S]*?display:\s*none/u);
+});
+
+test("Google Drive videos omit implementation-detail copy", () => {
+  assert.doesNotMatch(contentViewer, /Este vídeo usa o player do Google Drive/u);
+  assert.match(contentViewer, /!googleDriveUrl && embedded/u);
 });
 
 test("rewards header gives wallet points a dedicated visual treatment", () => {
