@@ -21,6 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const url = await createPrivateDownloadUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key, expiresInSeconds: SIGNED_URL_SECONDS });
     const response = NextResponse.redirect(url, 303);
     response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
+    response.headers.set("vary", "Cookie");
     return response;
   } catch {
     return new NextResponse("Thumb não disponível.", { status: 404, headers: { "cache-control": "no-store" } });
