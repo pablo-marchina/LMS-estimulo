@@ -114,11 +114,14 @@ test("diagnostic result content belongs to profile state and is persisted as ver
 
 test("point configuration exposes domain choices only and resolves eligibility server-side", () => {
   assert.doesNotMatch(pointEditor, /name="eligibility_rule_version_id"/u);
-  assert.match(pointEditor, /A elegibilidade técnica geral é aplicada automaticamente pelo servidor/u);
+  assert.match(pointEditor, /A regra técnica de elegibilidade é vinculada automaticamente/u);
   assert.match(pointEditor, /Qual avaliação dispara esta regra/u);
+  assert.match(pointEditor, /O servidor salva os códigos da aula e da trilha juntos/u);
   assert.match(gamificationActions, /general_point_eligibility/u);
   assert.match(gamificationActions, /eligibility_rule_version_id: String\(eligibilityVersion\.id\)/u);
   assert.match(gamificationActions, /POINT_ASSESSMENT_TARGET_REQUIRED/u);
+  assert.match(gamificationActions, /trigger_activity_code/u);
+  assert.match(gamificationActions, /trigger_path_code/u);
   assert.match(rewardMigration, /trg_credit_reward_wallet_from_point_ledger/u);
   assert.match(rewardMigration, /trg_block_manual_reward_conversion/u);
   assert.match(pointEligibilityMigration, /general_point_eligibility/u);
