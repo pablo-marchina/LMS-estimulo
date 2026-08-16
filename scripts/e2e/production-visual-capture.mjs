@@ -73,6 +73,20 @@ const roleConfig = {
   },
 };
 
+const dynamicRouteTemplates = {
+  participant: [
+    { key: "activity-step", regex: /^\/empreendedor\/atividade\/[^/]+$/ },
+    { key: "competency", regex: /^\/empreendedor\/competencias\/[^/]+$/ },
+    { key: "diagnostic", regex: /^\/empreendedor\/diagnostico\/[^/]+$/ },
+    { key: "journey", regex: /^\/empreendedor\/jornada\/[^/]+$/ },
+    { key: "journey-module", regex: /^\/empreendedor\/jornada\/[^/]+\/modulo\/[^/]+$/ },
+    { key: "trail", regex: /^\/empreendedor\/trilha\/[^/]+$/ },
+    { key: "trail-lesson", regex: /^\/empreendedor\/trilha\/[^/]+\/aula\/[^/]+$/ },
+    { key: "validation-activity", regex: /^\/empreendedor\/validacao\/[^/]+$/ },
+  ],
+  admin: [],
+};
+
 const manifest = {
   schemaVersion: 1,
   startedAt: new Date().toISOString(),
@@ -92,6 +106,11 @@ function safeSegment(value) {
     .replace(/[^a-zA-Z0-9._-]+/g, "__") || "root";
 }
 
+function routeCoverageKey(role, route) {
+  const template = dynamicRouteTemplates[role]?.find(({ regex }) => regex.test(route));
+  return template ? `template:${template.key}` : `route:${route}`;
+}
+
 function normalizeScopedHref(href, scopePrefix) {
   if (!href) return null;
   try {
@@ -107,7 +126,7 @@ function normalizeScopedHref(href, scopePrefix) {
 
 async function settle(page) {
   await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => {});
-  await page.waitForLoadState("networkidle", { timeout: 4_000 }).catch(() => {});
+  await page.waitForLoadState("networkidle", { timeout: 2_000 }).catch(() => {});
   await page.waitForTimeout(350);
 }
 
@@ -258,6 +277,7 @@ async function captureRole(browser, role, credentials, viewport) {
 
     const queue = [...seeds];
     const visited = new Set();
+    const queuedCoverage = new Set(seeds.map((route) => routeCoverageKey(role, route)));
     while (queue.length && visited.size < maxPagesPerRole) {
       const route = queue.shift();
       if (!route || visited.has(route)) continue;
@@ -283,7 +303,11 @@ async function captureRole(browser, role, credentials, viewport) {
         .catch(() => []);
       for (const href of hrefs) {
         const discovered = normalizeScopedHref(href, scopePrefix);
-        if (discovered && !visited.has(discovered) && !queue.includes(discovered)) queue.push(discovered);
+        if (!discovered || visited.has(discovered)) continue;
+        const coverageKey = routeCoverageKey(role, discovered);
+        if (queuedCoverage.has(coverageKey)) continue;
+        queuedCoverage.add(coverageKey);
+        queue.push(discovered);
       }
     }
 
