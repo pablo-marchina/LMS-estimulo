@@ -16,16 +16,22 @@ const [edge, client, banner, cover, thumbnail, reward, interfaceImage, carousel,
 
 const operations = [
   "get_announcement_banner_download",
+  "get_interface_content_image_download",
   "get_journey_cover_download",
   "get_participant_lesson_thumbnail_download",
   "get_reward_image_download",
-  "get_interface_content_image_download",
-];
+].sort();
+
+function edgeAllowlist() {
+  const match = edge.match(/const allowed = new Set\(\[([\s\S]*?)\]\);/u);
+  assert.ok(match, "media gateway allowlist must remain statically auditable");
+  return Array.from(match[1].matchAll(/"([a-z0-9_]+)"/gu), (entry) => entry[1]).sort();
+}
 
 test("media edge gateway is read-only and always injects the authenticated actor", () => {
-  for (const operation of operations) assert.match(edge, new RegExp(`\\"${operation}\\"`, "u"));
+  assert.deepEqual(edgeAllowlist(), operations);
+  assert.equal(operations.every((operation) => operation.startsWith("get_")), true);
   assert.match(edge, /args\.p_actor_user_account_id = userAccountId/u);
-  assert.doesNotMatch(edge, /save_|confirm_|create_|delete_|retire_/u);
   assert.match(edge, /auth\.getUser\(token\)/u);
   assert.match(edge, /e14_resolve_identity/u);
 });
