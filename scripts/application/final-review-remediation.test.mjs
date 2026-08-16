@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, migration] = await Promise.all([
+const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, visualWorkflow, migration] = await Promise.all([
   readFile("apps/web/app/api/announcement-banner-uploads/route.ts", "utf8"),
   readFile("apps/web/app/admin/engajamento/page.tsx", "utf8"),
   readFile("apps/web/app/admin/certificados/page.tsx", "utf8"),
@@ -11,6 +11,7 @@ const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAl
   readFile("apps/web/components/file-upload-preview.tsx", "utf8"),
   readFile("apps/web/components/ui/table.tsx", "utf8"),
   readFile("scripts/e2e/production-visual-capture.mjs", "utf8"),
+  readFile(".github/workflows/production-visual-capture.yml", "utf8"),
   readFile("supabase/migrations/20260816170000_complete_review_remediation.sql", "utf8"),
 ]);
 
@@ -64,4 +65,12 @@ test("visual auditor preserves query-state coverage and rejects semantic broken 
   assert.match(visualCapture, /rendered semantic not-found state/u);
   assert.match(visualCapture, /authenticated page rendered insufficient meaningful content/u);
   assert.match(visualCapture, /finalRoute/u);
+});
+
+test("visual workflow validates pull requests without auditing stale production", () => {
+  assert.match(visualWorkflow, /Validate visual capture tooling/u);
+  assert.match(visualWorkflow, /github\.event_name == 'pull_request'/u);
+  assert.match(visualWorkflow, /node --check scripts\/e2e\/production-visual-capture\.mjs/u);
+  assert.match(visualWorkflow, /github\.event_name == 'workflow_dispatch'/u);
+  assert.match(visualWorkflow, /Capture desktop and mobile visual evidence/u);
 });
