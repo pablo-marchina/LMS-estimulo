@@ -22,6 +22,7 @@ export async function GET(
     const url = await createAnnouncementBannerUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key });
     const response = NextResponse.redirect(url, 307);
     response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
+    response.headers.set("vary", "Cookie");
     return response;
   } catch {
     return new NextResponse("Imagem não disponível", { status: 404, headers: { "cache-control": "no-store" } });
