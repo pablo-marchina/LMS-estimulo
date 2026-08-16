@@ -34,9 +34,11 @@ test("comments publish in place and remain part of the lesson flow", () => {
   assert.doesNotMatch(commentPanel, /lg:grid-cols/u);
 });
 
-test("journey outline work is deduplicated inside one server render", () => {
+test("journey outline is deduplicated and performs one participant read per render", () => {
   assert.match(outlineRuntime, /import \{ cache \} from "react"/u);
-  assert.match(outlineRuntime, /getParticipantJourneyOutline = cache\(async/u);
+  assert.match(outlineRuntime, /getParticipantJourneyOutline = cache\(\(/u);
+  assert.equal((outlineRuntime.match(/get_participant_journey_outline/gu) ?? []).length, 1);
+  assert.doesNotMatch(outlineRuntime, /ensure_participant_open_paths/u);
 });
 
 test("unimplemented points actions cannot stay active", () => {
