@@ -80,7 +80,7 @@ test('behavior score is editable, continuous, indexed and ETL ready', async () =
   assert.match(editor, /Faixas de classificação/);
 });
 
-test('landing uses the approved copy and a secured edge projection', async () => {
+test('landing preserves approved institutional copy, separates the OpenAI preview and keeps the secured edge projection', async () => {
   const [landing, publicJourneyMigration, filterMigration, securityMigration, edgeFunction] = await Promise.all([
     read('apps/web/app/page.tsx'),
     read('supabase/migrations/20260731221500_public_landing_journey.sql'),
@@ -89,16 +89,16 @@ test('landing uses the approved copy and a secured edge projection', async () =>
     read('supabase/functions/public-landing-journey/index.ts'),
   ]);
 
-  assert.match(landing, /Parceria Estímulo \+ OpenAI/);
+  assert.match(landing, /Seu negócio evolui\. A forma de aprender também\./);
+  assert.match(landing, /Criar conta gratuitamente/);
+  assert.match(landing, /O que você encontra na plataforma/);
+  assert.match(landing, /Cada empreendedor aprende de um jeito\./);
+  assert.match(landing, /id="curso-chatgpt"/);
+  assert.match(landing, /Curso em destaque · Estímulo \+ OpenAI/);
   assert.match(landing, /ChatGPT para o seu negócio/);
-  assert.match(landing, /Começar gratuitamente/);
-  assert.match(landing, /O que você vai aprender/);
-  assert.match(landing, /GANHE PONTOS/);
-  assert.match(landing, /Dúvidas rápidas/);
   assert.match(landing, /href="\/cadastro"/);
   assert.match(landing, /href="\/entrar"/);
-  assert.doesNotMatch(landing, /Seu negócio evolui\. A forma de aprender também\./);
-  assert.doesNotMatch(landing, /CURSO EM DESTAQUE/iu);
+  assert.doesNotMatch(landing, /Parceria Estímulo \+ OpenAI/);
   assert.match(publicJourneyMigration, /get_public_landing_journey/);
   assert.match(publicJourneyMigration, /jv\.status='published'/);
   assert.match(filterMigration, /not like '%openai%'/i);
