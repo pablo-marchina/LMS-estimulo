@@ -75,7 +75,6 @@ export function DiagnosticResultDashboard({
 }) {
   const enabled = new Set<DiagnosticResultBlockCode>(normalizeDiagnosticResultBlocks(resultBlocks));
   const normalized = dimensions.map((dimension) => ({ ...dimension, percentage: percent(dimension.percentage) }));
-  const score = normalized.length ? Math.round(normalized.reduce((total, dimension) => total + dimension.percentage, 0) / normalized.length) : null;
   const priority = normalized.slice().sort((a, b) => a.percentage - b.percentage)[0] ?? null;
   const name = archetype.name?.trim() || "Perfil identificado";
   const legacyInsight = insightForArchetype(name);
@@ -93,8 +92,7 @@ export function DiagnosticResultDashboard({
         <Compass className="absolute right-5 top-5 text-primary/10" size={74} aria-hidden="true" />
         <div className="relative">
           <span className="inline-flex rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-[.14em] text-white">Seu nível de maturidade</span>
-          {score !== null ? <div className="mt-5 flex items-end gap-1"><strong className="display-font text-6xl leading-none text-primary sm:text-7xl">{score}</strong><span className="pb-1 text-sm font-bold text-secondary/60">/100</span></div> : null}
-          <h2 className="display-font mt-3 text-3xl text-secondary sm:text-4xl">{name}</h2>
+          <h2 className="display-font mt-5 text-3xl text-secondary sm:text-4xl">{name}</h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-muted">{archetype.description || "Seu resultado reúne suas respostas e ajuda a transformar o diagnóstico em próximos passos concretos."}</p>
           <div className="no-print mt-6 flex flex-wrap gap-2">
             <ButtonLink href={primaryHref} size="sm">{primaryLabel}</ButtonLink>
