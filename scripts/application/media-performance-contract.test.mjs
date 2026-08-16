@@ -11,6 +11,7 @@ const [
   thumbnailRoute,
   rewardRoute,
   interfaceImageRoute,
+  certificatePreviewRoute,
   bannerStorage,
   rewardStorage,
 ] = await Promise.all([
@@ -22,22 +23,25 @@ const [
   readFile("apps/web/app/api/activity-thumbnails/[stepInstanceId]/route.ts", "utf8"),
   readFile("apps/web/app/api/rewards/[rewardId]/image/route.ts", "utf8"),
   readFile("apps/web/app/api/interface-content/image/route.ts", "utf8"),
+  readFile("apps/web/app/api/certificate-template-previews/[fileObjectId]/route.ts", "utf8"),
   readFile("apps/web/lib/storage/announcement-banners.ts", "utf8"),
   readFile("apps/web/lib/storage/reward-images.ts", "utf8"),
 ]);
 
-const cachedPrivateRoutes = [bannerRoute, coverRoute, thumbnailRoute, rewardRoute, interfaceImageRoute];
+const cachedPrivateRoutes = [bannerRoute, coverRoute, thumbnailRoute, rewardRoute, interfaceImageRoute, certificatePreviewRoute];
 
-test("participant image redirects are reusable but remain private", () => {
+test("authenticated image redirects are reusable, private and segregated by session", () => {
   for (const source of cachedPrivateRoutes) {
     assert.match(source, /private, max-age=300/u);
     assert.doesNotMatch(source, /cache-control[^\n]*public/u);
+    assert.match(source, /vary[^\n]*Cookie|headers\.set\("vary", "Cookie"\)/u);
   }
   assert.match(bannerStorage, /ANNOUNCEMENT_BANNER_SIGNED_URL_SECONDS = 900/u);
   assert.match(rewardStorage, /REWARD_IMAGE_SIGNED_URL_SECONDS = 900/u);
   assert.match(coverRoute, /SIGNED_URL_SECONDS = 900/u);
   assert.match(thumbnailRoute, /SIGNED_URL_SECONDS = 900/u);
   assert.match(interfaceImageRoute, /SIGNED_URL_SECONDS = 900/u);
+  assert.match(certificatePreviewRoute, /SIGNED_URL_SECONDS = 900/u);
 });
 
 test("critical artwork loads first while secondary catalog imagery is deferred", () => {
