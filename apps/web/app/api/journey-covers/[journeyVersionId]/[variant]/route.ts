@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 
 const uuid = z.string().uuid();
 const variantSchema = z.enum(["card", "featured"]);
+const SIGNED_URL_SECONDS = 900;
+const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
 type CoverDescriptor = { bucket: string; object_key: string; filename: string; content_type: string };
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ journeyVersionId: string; variant: string }> }) {
@@ -22,12 +24,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       p_variant: variantSchema.parse(variant),
     });
     const client = createPrivilegedClient();
-    const { data, error } = await client.storage.from(descriptor.bucket).createSignedUrl(descriptor.object_key, 300);
+    const { data, error } = await client.storage.from(descriptor.bucket).createSignedUrl(descriptor.object_key, SIGNED_URL_SECONDS);
     if (error || !data?.signedUrl) throw new Error("JOURNEY_COVER_SIGNED_URL_FAILED");
     const response = NextResponse.redirect(data.signedUrl, 303);
-    response.headers.set("cache-control", "private, no-store");
+    response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
+    response.headers.set("vary", "Cookie");
     return response;
   } catch {
-    return new NextResponse("Imagem da jornada não encontrada.", { status: 404 });
+    return new NextResponse("Imagem da jornada não encontrada.", { status: 404, headers: { "cache-control": "no-store" } });
   }
 }

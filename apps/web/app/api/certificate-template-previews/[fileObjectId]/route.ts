@@ -5,6 +5,8 @@ import { extensionsRuntime } from "@/lib/extensions/runtime";
 import { createPrivateDownloadUrl } from "@/lib/platform/object-storage";
 
 export const dynamic = "force-dynamic";
+const SIGNED_URL_SECONDS = 900;
+const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
 
 export async function GET(request: Request, { params }: { params: Promise<{ fileObjectId: string }> }) {
   const auth = await getAuthContext();
@@ -28,11 +30,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
     const url = await createPrivateDownloadUrl({
       bucket: descriptor.bucket,
       objectKey: descriptor.object_key,
-      expiresInSeconds: 300,
+      expiresInSeconds: SIGNED_URL_SECONDS,
     });
     return NextResponse.redirect(url, {
       status: 302,
-      headers: { "cache-control": "private, no-store" },
+      headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL, vary: "Cookie" },
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
@@ -47,6 +49,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
         : status === 403
           ? "FORBIDDEN"
           : "CERTIFICATE_TEMPLATE_PREVIEW_UNAVAILABLE",
-    }, { status });
+    }, { status, headers: { "cache-control": "no-store" } });
   }
 }

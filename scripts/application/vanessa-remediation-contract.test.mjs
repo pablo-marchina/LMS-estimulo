@@ -90,7 +90,8 @@ test("certificate templates persist a private preview and remain reusable", () =
   assert.match(certificateTemplates, /Usar na jornada/u);
   assert.match(certificatePreviewRoute, /certificateTemplatePreviewDownload/u);
   assert.match(certificatePreviewRoute, /organization_id/u);
-  assert.match(certificatePreviewRoute, /cache-control": "private, no-store/u);
+  assert.match(certificatePreviewRoute, /private, max-age=300/u);
+  assert.doesNotMatch(certificatePreviewRoute, /cache-control[^\n]*public/u);
   assert.match(completeRemediationMigration, /uq_certificate_template_assignments_active_scope/u);
 });
 

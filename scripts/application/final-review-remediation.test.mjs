@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, visualWorkflow, migration] = await Promise.all([
+const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, visualWorkflow, migration, outlineRuntime, carousel, bannerImageRoute, bannerStorage, journeyCoverRoute, thumbnailRoute, certificatePreviewRoute, authenticatedRpc] = await Promise.all([
   readFile("apps/web/app/api/announcement-banner-uploads/route.ts", "utf8"),
   readFile("apps/web/app/admin/engajamento/page.tsx", "utf8"),
   readFile("apps/web/app/admin/certificados/page.tsx", "utf8"),
@@ -13,6 +13,14 @@ const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAl
   readFile("scripts/e2e/production-visual-capture.mjs", "utf8"),
   readFile(".github/workflows/production-visual-capture.yml", "utf8"),
   readFile("supabase/migrations/20260816170000_complete_review_remediation.sql", "utf8"),
+  readFile("apps/web/lib/journey-runtime/outline-runtime.ts", "utf8"),
+  readFile("apps/web/components/announcement-carousel.tsx", "utf8"),
+  readFile("apps/web/app/api/announcements/[announcementId]/image/route.ts", "utf8"),
+  readFile("apps/web/lib/storage/announcement-banners.ts", "utf8"),
+  readFile("apps/web/app/api/journey-covers/[journeyVersionId]/[variant]/route.ts", "utf8"),
+  readFile("apps/web/app/api/activity-thumbnails/[stepInstanceId]/route.ts", "utf8"),
+  readFile("apps/web/app/api/certificate-template-previews/[fileObjectId]/route.ts", "utf8"),
+  readFile("supabase/functions/authenticated-rpc/index.ts", "utf8"),
 ]);
 
 test("global announcements reject participant-private runtime destinations", () => {
@@ -73,4 +81,35 @@ test("visual workflow validates pull requests without auditing stale production"
   assert.match(visualWorkflow, /node --check scripts\/e2e\/production-visual-capture\.mjs/u);
   assert.match(visualWorkflow, /github\.event_name == 'workflow_dispatch'/u);
   assert.match(visualWorkflow, /Capture desktop and mobile visual evidence/u);
+});
+
+test("participant journey reading survives auxiliary reconcile failures", () => {
+  assert.match(outlineRuntime, /const currentOutline = await loadOutline/u);
+  assert.match(outlineRuntime, /ensure_participant_open_paths/u);
+  assert.match(outlineRuntime, /catch \{\s*return currentOutline;/u);
+  assert.ok((authenticatedRpc.match(/ensure_participant_open_paths/gu) ?? []).length >= 2, "open-path reconcile must be allowlisted and participant-scoped");
+});
+
+test("image-only announcements preserve the uploaded artwork without a text overlay", () => {
+  assert.match(carousel, /const imageOnly = announcement\.display_mode === "image_only"/u);
+  assert.match(carousel, /\{!imageOnly \? <>/u);
+  assert.doesNotMatch(carousel, /imageOnly \? "!bg-/u);
+  assert.match(carousel, /loading=\{priority \? "eager" : "lazy"\}/u);
+  assert.match(carousel, /fetchPriority=\{priority \? "high" : "auto"\}/u);
+});
+
+test("private participant media reuses signed redirects instead of reauthenticating on every render", () => {
+  assert.match(bannerStorage, /ANNOUNCEMENT_BANNER_SIGNED_URL_SECONDS = 900/u);
+  for (const route of [bannerImageRoute, journeyCoverRoute, thumbnailRoute, certificatePreviewRoute]) {
+    assert.match(route, /private, max-age=300/u);
+  }
+  assert.match(journeyCoverRoute, /SIGNED_URL_SECONDS = 900/u);
+  assert.match(thumbnailRoute, /SIGNED_URL_SECONDS = 900/u);
+  assert.match(certificatePreviewRoute, /SIGNED_URL_SECONDS = 900/u);
+});
+
+test("certificate template preview stays on the canonical extensions gateway while reusing its signed redirect", () => {
+  assert.match(certificatePreviewRoute, /extensionsRuntime\.certificateTemplatePreviewDownload/u);
+  assert.match(certificatePreviewRoute, /auth\.identity\.user_account_id/u);
+  assert.doesNotMatch(certificatePreviewRoute, /createPrivilegedClient/u);
 });

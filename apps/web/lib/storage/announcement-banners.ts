@@ -8,6 +8,7 @@ import {
 
 export const ANNOUNCEMENT_BANNER_MAX_BYTES = 4 * 1024 * 1024;
 export const ANNOUNCEMENT_BANNER_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"] as const;
+export const ANNOUNCEMENT_BANNER_SIGNED_URL_SECONDS = 900;
 
 const MIME_EXTENSIONS: Record<string, string[]> = {
   "image/png": ["png"],
@@ -70,7 +71,7 @@ export async function removeAnnouncementBanner(bucket: string, objectKey: string
 
 export async function createAnnouncementBannerUrl(input: { bucket: string; objectKey: string }): Promise<string> {
   try {
-    return await createPrivateDownloadUrl({ ...input, expiresInSeconds: 300 });
+    return await createPrivateDownloadUrl({ ...input, expiresInSeconds: ANNOUNCEMENT_BANNER_SIGNED_URL_SECONDS });
   } catch (error) {
     throw new Error(`ANNOUNCEMENT_SIGNED_URL_FAILED:${detail(error)}`);
   }

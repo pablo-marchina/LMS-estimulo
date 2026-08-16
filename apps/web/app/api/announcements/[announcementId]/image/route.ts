@@ -6,6 +6,7 @@ import { createAnnouncementBannerUrl } from "@/lib/storage/announcement-banners"
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
 
 export async function GET(
   request: NextRequest,
@@ -19,7 +20,10 @@ export async function GET(
     const variant = request.nextUrl.searchParams.get("variant") === "mobile" ? "mobile" : "desktop";
     const descriptor = await engagementRuntime.getAnnouncementBannerDownload(auth.identity.user_account_id, id, variant);
     const url = await createAnnouncementBannerUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key });
-    return NextResponse.redirect(url, 307);
+    const response = NextResponse.redirect(url, 307);
+    response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
+    response.headers.set("vary", "Cookie");
+    return response;
   } catch {
     return new NextResponse("Imagem não disponível", { status: 404, headers: { "cache-control": "no-store" } });
   }

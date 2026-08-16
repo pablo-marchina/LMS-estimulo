@@ -71,7 +71,7 @@ function RewardCard({ reward, balance }: { reward: JsonRecord; balance: number }
   const imageFileObjectId = text(reward.image_file_object_id);
 
   return <Card className={`flex flex-col overflow-hidden p-0 ${unlocked ? "ring-1 ring-primary/10" : ""}`}>
-    {imageFileObjectId ? <div className="relative aspect-[16/7] overflow-hidden bg-slate-50"><img src={`/api/rewards/${text(reward.id)}/image`} alt="" className="size-full object-cover" /></div> : <div className="h-1.5 bg-primary/80" aria-hidden="true" />}
+    {imageFileObjectId ? <div className="relative aspect-[16/7] overflow-hidden bg-slate-50"><img src={`/api/rewards/${text(reward.id)}/image`} alt="" loading="lazy" decoding="async" className="size-full object-cover" /></div> : <div className="h-1.5 bg-primary/80" aria-hidden="true" />}
     <div className="flex flex-1 flex-col p-5">
       <div className="flex items-start justify-between gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-md ${unlocked ? "bg-primary-soft text-primary" : "bg-slate-100 text-muted"}`}>{unlocked ? <Gift size={20} /> : <LockKeyhole size={19} />}</span><span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-muted">{typeLabels[text(reward.reward_type)] ?? "Recompensa"}</span></div>
       <h3 className="mt-4 text-lg font-bold text-ink">{text(reward.name)}</h3>
