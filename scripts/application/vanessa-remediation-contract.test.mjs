@@ -173,5 +173,6 @@ test("migration release boundary includes the audited structural migrations", ()
   assert.match(migrationBoundary, /20260816012301_participant_lesson_completion_cta\.sql/u);
   assert.match(migrationBoundary, /20260816012704_fix_completion_progress_current_step_reference\.sql/u);
   assert.match(migrationBoundary, /20260816031000_restore_live_point_award_function\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260816031000_restore_live_point_award_function\.sql'/u);
+  assert.match(migrationBoundary, /20260816035500_scope_quick_activity_points_per_assessment\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260816035500_scope_quick_activity_points_per_assessment\.sql'/u);
 });
