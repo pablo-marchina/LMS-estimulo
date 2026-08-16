@@ -1,4 +1,4 @@
-export const expectedLastMigration = '20260815211500_deduplicate_complete_lesson_point_rule.sql';
+export const expectedLastMigration = '20260816012704_fix_completion_progress_current_step_reference.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -88,5 +88,7 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260815203254_rebind_orphaned_path_badges_to_current_tracks.sql',
   '20260815203650_canonical_point_rule_eligibility.sql',
   '20260815204402_index_vanessa_remediation_foreign_keys.sql',
-  '20260815211500_deduplicate_complete_lesson_point_rule.sql',
+  '20260816011759_complete_vanessa_video_remediation.sql',
+  '20260816012301_participant_lesson_completion_cta.sql',
+  '20260816012704_fix_completion_progress_current_step_reference.sql',
 ]);
