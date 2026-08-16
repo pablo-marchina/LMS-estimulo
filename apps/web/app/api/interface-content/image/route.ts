@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
+import { INTERFACE_PREVIEW_REQUEST_HEADER } from "@/lib/interface-preview/constants";
 import { createPrivateDownloadUrl } from "@/lib/platform/object-storage";
+import { invokeMediaDescriptorGateway, MediaGatewayError } from "@/lib/rpc/media-gateway";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 export const runtime = "nodejs";
@@ -14,16 +16,27 @@ const keySchema = z.string().min(3).max(160).regex(/^[a-z][a-z0-9_.-]+$/);
 const variantSchema = z.enum(["desktop", "mobile"]);
 
 export async function GET(request: NextRequest) {
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
-
   try {
-    const descriptor = await invokeServerRpc<Descriptor>("get_interface_content_image_download", {
-      p_actor_user_account_id: auth.identity.user_account_id,
-      p_content_key: keySchema.parse(request.nextUrl.searchParams.get("key")),
-      p_variant: variantSchema.parse(request.nextUrl.searchParams.get("variant") ?? "desktop"),
-      p_include_draft: request.nextUrl.searchParams.get("draft") === "1",
-    });
+    const contentKey = keySchema.parse(request.nextUrl.searchParams.get("key"));
+    const variant = variantSchema.parse(request.nextUrl.searchParams.get("variant") ?? "desktop");
+    const includeDraft = request.nextUrl.searchParams.get("draft") === "1";
+    let descriptor: Descriptor;
+    if (request.headers.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1") {
+      const auth = await getAuthContext();
+      if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
+      descriptor = await invokeServerRpc<Descriptor>("get_interface_content_image_download", {
+        p_actor_user_account_id: auth.identity.user_account_id,
+        p_content_key: contentKey,
+        p_variant: variant,
+        p_include_draft: includeDraft,
+      });
+    } else {
+      descriptor = await invokeMediaDescriptorGateway<Descriptor>("get_interface_content_image_download", {
+        p_content_key: contentKey,
+        p_variant: variant,
+        p_include_draft: includeDraft,
+      });
+    }
     const signedUrl = await createPrivateDownloadUrl({
       bucket: descriptor.bucket,
       objectKey: descriptor.object_key,
@@ -33,7 +46,10 @@ export async function GET(request: NextRequest) {
     response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
     response.headers.set("vary", "Cookie");
     return response;
-  } catch {
+  } catch (error) {
+    if (error instanceof MediaGatewayError && ["AUTHENTICATED_SESSION_REQUIRED", "VERIFIED_SESSION_REQUIRED"].includes(error.code)) {
+      return NextResponse.redirect(new URL("/entrar", request.url), 303);
+    }
     return new NextResponse("Imagem não disponível.", { status: 404, headers: { "cache-control": "no-store" } });
   }
 }
