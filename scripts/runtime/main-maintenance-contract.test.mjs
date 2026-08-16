@@ -15,16 +15,20 @@ test("platform loading uses one global progress bar and no page skeletons", asyn
   assert.doesNotMatch(shell, /ParticipantNavigationProgress/);
 });
 
-test("lesson consumes the full participant content area without a permanent side column", async () => {
-  const [shell, layoutCss] = await Promise.all([
+test("lesson consumes one continuous centered content area without a permanent side column", async () => {
+  const [shell, layoutCss, lesson] = await Promise.all([
     read("apps/web/components/participant-shell.tsx"),
     read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css"),
+    read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx"),
   ]);
   assert.match(shell, /pathname\.startsWith\("\/empreendedor\/atividade\/"\)/);
   assert.match(shell, /max-w-none \[&>div\]:max-w-none/);
-  assert.match(layoutCss, /grid-template-columns: minmax\(0, 1fr\) 18rem !important/);
-  assert.match(layoutCss, /position: sticky !important/);
-  assert.match(layoutCss, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+  assert.match(lesson, /max-w-\[1100px\]/u);
+  assert.doesNotMatch(lesson, /ActivityContentProgress/u);
+  assert.doesNotMatch(lesson, /300px/u);
+  assert.doesNotMatch(layoutCss, /18rem/u);
+  assert.doesNotMatch(layoutCss, /position: sticky/u);
+  assert.match(layoutCss, /#aula:has\(\[data-activity-workspace\]\)/u);
 });
 
 test("admin extension saves do not catch successful Next redirects", async () => {
