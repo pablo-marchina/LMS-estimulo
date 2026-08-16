@@ -16,7 +16,7 @@ const [
   journeyPage,
   journeyAction,
   settingsPage,
-  certificateRedirect,
+  certificateAlias,
   certificateManager,
   certificateUpload,
   credentialFiles,
@@ -137,7 +137,9 @@ test("certificate templates accept PDF or image and support inherited scopes ins
   assert.match(certificateManager, /Modelo geral/u);
   assert.match(certificateManager, /Modelo de um programa/u);
   assert.match(certificateManager, /Modelo de uma jornada/u);
-  assert.match(certificateRedirect, /\/admin\/gamificacao\?tipo=certificados/u);
+  assert.match(certificateAlias, /AdminGamificationPage/u);
+  assert.match(certificateAlias, /tipo: "certificados"/u);
+  assert.doesNotMatch(certificateAlias, /redirect\(/u);
   assert.match(adminRuntimeMigration, /certificate_template_assignment/u);
 });
 
@@ -170,7 +172,7 @@ test("reward points are automatic while cancellation still refunds points and st
   assert.match(automaticRewardMigration, /REWARD_CONVERSION_DISABLED/u);
   assert.match(adminRuntimeMigration, /redemption_refund/u);
   assert.match(adminRuntimeMigration, /stock_quantity\+v_redemption\.quantity/u);
-  assert.match(adminRuntimeMigration, /balance=balance\+v_redemption\.points_spent/u);
+  assert.match(adminRuntimeMigration, /balance=balance\vv_redemption\.points_spent/u);
 });
 
 test("deliveries support library content, activities and safe AI review modes", () => {

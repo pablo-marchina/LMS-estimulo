@@ -65,7 +65,7 @@ test("diagnostic completion persists answers, result navigation and transactiona
 });
 
 test("certificate wallet and consolidated templates remain discoverable after upload", async () => {
-  const [upload, page, templateManager, runtime, migration, editor, redirect] = await Promise.all([
+  const [upload, page, templateManager, runtime, migration, editor, certificateAlias] = await Promise.all([
     source("apps/web/app/api/external-credential-uploads/route.ts"),
     source("apps/web/app/admin/gamificacao/page.tsx"),
     source("apps/web/app/admin/gamificacao/certificate-template-manager.tsx"),
@@ -89,7 +89,9 @@ test("certificate wallet and consolidated templates remain discoverable after up
   assert.match(editor, /Condição de conclusão desta jornada/u);
   assert.match(editor, /compatibleRules/u);
   assert.match(editor, /setRequirementsRuleVersionId/u);
-  assert.match(redirect, /\/admin\/gamificacao\?tipo=certificados/u);
+  assert.match(certificateAlias, /AdminGamificationPage/u);
+  assert.match(certificateAlias, /tipo: "certificados"/u);
+  assert.doesNotMatch(certificateAlias, /redirect\(/u);
 });
 
 test("administrative destructive actions are dependency-safe", async () => {
