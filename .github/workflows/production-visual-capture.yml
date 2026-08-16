@@ -50,7 +50,7 @@ jobs:
 
   capture:
     name: Capture desktop and mobile visual evidence
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.head_ref == 'audit/final-production-visual')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
