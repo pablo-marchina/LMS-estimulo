@@ -23,6 +23,7 @@ export async function completeParticipantActivityAction(formData: FormData) {
   const journey = uuid.parse(formData.get("journey_instance_id"));
   const step = uuid.parse(formData.get("step_instance_id"));
   const key = String(formData.get("idempotency_key") || randomUUID());
+  let outcome: "ok" | "conteudo_pendente" | "avaliacao_pendente" | "pratica_pendente" | "falha" = "ok";
 
   try {
     const result = await completeParticipantActivity({
@@ -31,12 +32,11 @@ export async function completeParticipantActivityAction(formData: FormData) {
       idempotencyKey: key,
     });
     if (result.status === "blocked") {
-      const code = result.code ? completionCode[result.code] : undefined;
-      redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=${code ?? "falha"}#concluir-aula`);
+      outcome = result.code ? completionCode[result.code] ?? "falha" : "falha";
     }
   } catch {
-    redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=falha#concluir-aula`);
+    outcome = "falha";
   }
 
-  redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=ok#concluir-aula`);
+  redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=${outcome}#concluir-aula`);
 }
