@@ -31,12 +31,6 @@
   border-radius: 0.75rem;
 }
 
-/* O aviso técnico sobre limitações do player do Google Drive não faz parte da
-   experiência da aula. O botão de conclusão manual continua disponível. */
-.activityLayout :global(.brand-media-card:has(iframe[src^="https://drive.google.com/"]) > div:last-child > p.text-xs.text-muted) {
-  display: none;
-}
-
 @media (max-width: 640px) {
   .activityPage > div {
     padding-inline: 1rem !important;
