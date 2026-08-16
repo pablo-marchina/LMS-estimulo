@@ -136,7 +136,7 @@ export function FileUploadPreview({
   ].filter((item): item is string => Boolean(item)), [accept, maxFiles, maxSizeBytes, multiple, recommendedAspectRatio, recommendedDimensions]);
 
   return (
-    <div className={cn("grid gap-2", className)}>
+    <div className={cn("grid min-w-0 max-w-full gap-2", className)}>
       <label className="grid gap-1.5 text-sm font-medium text-ink">
         {label}
         <input
@@ -158,7 +158,7 @@ export function FileUploadPreview({
             event.currentTarget.setCustomValidity("");
             setFiles(selected);
           }}
-          className="rounded-xl border border-border bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary"
+          className="min-w-0 w-full max-w-full rounded-xl border border-border bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary"
         />
       </label>
       <div className="rounded-xl border border-border bg-surface-muted px-3 py-2 text-xs leading-5 text-muted">

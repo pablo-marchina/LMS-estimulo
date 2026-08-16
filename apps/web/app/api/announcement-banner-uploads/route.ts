@@ -42,6 +42,27 @@ function code(error: unknown): string {
   return /^[A-Z0-9_]+$/.test(value) ? value : "ANNOUNCEMENT_SAVE_FAILED";
 }
 
+const privateParticipantDestination = /^\/empreendedor\/(?:jornada|trilha|atividade|validacao)\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/|$)/i;
+
+function validatedAnnouncementDestination(value: string | null): string | null {
+  if (!value) return null;
+  const normalized = value.trim();
+  const internalPath = normalized.startsWith("/") && !normalized.startsWith("//");
+  let parsed: URL;
+  try {
+    parsed = internalPath ? new URL(normalized, "https://estimulo.invalid") : new URL(normalized);
+  } catch {
+    throw new Error("ANNOUNCEMENT_DESTINATION_INVALID");
+  }
+  if (!internalPath && parsed.protocol !== "https:") {
+    throw new Error("ANNOUNCEMENT_DESTINATION_INVALID");
+  }
+  if (privateParticipantDestination.test(parsed.pathname)) {
+    throw new Error("ANNOUNCEMENT_PRIVATE_DESTINATION_NOT_ALLOWED");
+  }
+  return normalized;
+}
+
 function redirectToAdmin(request: NextRequest, params: Record<string, string>) {
   const target = new URL("/admin/engajamento", request.url);
   for (const [key, value] of Object.entries(params)) if (value) target.searchParams.set(key, value);
@@ -78,7 +99,7 @@ export async function POST(request: NextRequest) {
     const title = String(formData.get("title") ?? "").trim();
     const body = String(formData.get("body") ?? "").trim();
     const imageAlt = nullable(formData.get("image_alt"));
-    const ctaUrl = nullable(formData.get("cta_url"));
+    const ctaUrl = validatedAnnouncementDestination(nullable(formData.get("cta_url")));
     // The participant experience makes the entire artwork clickable. The RPC still
     // accepts the legacy label/url pair, so keep an internal accessible label without
     // exposing a redundant button-label field in Admin.

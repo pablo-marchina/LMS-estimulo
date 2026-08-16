@@ -25,6 +25,8 @@ const errorMessages: Record<string, string> = {
   ANNOUNCEMENT_IMAGE_REQUIRED: "Selecione uma imagem para o modo somente imagem.",
   ANNOUNCEMENT_IMAGE_ALT_REQUIRED: "Descreva a imagem para acessibilidade.",
   ANNOUNCEMENT_WINDOW_INVALID: "O término deve acontecer depois do início.",
+  ANNOUNCEMENT_DESTINATION_INVALID: "Informe um destino válido para o anúncio.",
+  ANNOUNCEMENT_PRIVATE_DESTINATION_NOT_ALLOWED: "Use uma página compartilhável da plataforma. Links para jornadas, trilhas, aulas ou validações de um participante específico não podem ser publicados globalmente.",
   ANNOUNCEMENT_VERSION_CONFLICT: "O anúncio foi alterado por outra pessoa. Recarregue a página.",
   ANNOUNCEMENT_SAVE_FAILED: "Não foi possível salvar o anúncio.",
 };
@@ -80,18 +82,18 @@ async function AnnouncementList({ actor, organizationId, canEdit }: { actor: str
 function AnnouncementForm({ organizationId, announcement }: { organizationId: string; announcement?: OperatorAnnouncement }) {
   const desktopUrl = announcement?.image_file_object_id ? `/api/announcements/${announcement.id}/image` : null;
   const mobileUrl = announcement?.mobile_image_file_object_id ? `/api/announcements/${announcement.id}/image?variant=mobile` : desktopUrl;
-  return <form action="/api/announcement-banner-uploads" method="post" encType="multipart/form-data" className="grid gap-5">
+  return <form action="/api/announcement-banner-uploads" method="post" encType="multipart/form-data" className="grid min-w-0 gap-5">
     <input type="hidden" name="organization_id" value={organizationId} />
     <input type="hidden" name="announcement_id" value={announcement?.id ?? ""} />
     <input type="hidden" name="expected_version" value={announcement?.aggregate_version ?? ""} />
     <input type="hidden" name="current_image_file_object_id" value={announcement?.image_file_object_id ?? ""} />
     <input type="hidden" name="current_mobile_image_file_object_id" value={announcement?.mobile_image_file_object_id ?? ""} />
 
-    <section className="grid gap-4 lg:grid-cols-2">
-      <div className="rounded-2xl border border-border bg-surface-muted p-4">
+    <section className="grid min-w-0 gap-4 lg:grid-cols-2">
+      <div className="min-w-0 rounded-2xl border border-border bg-surface-muted p-4">
         <FileUploadPreview name="desktop_file" accept="image/png,image/jpeg,image/webp" label={desktopUrl ? "Substituir imagem desktop" : "Imagem desktop"} maxSizeBytes={MAX_IMAGE_BYTES} recommendedDimensions="1600 × 600 px" recommendedAspectRatio="8:3" minWidth={1200} existingPreviewUrl={desktopUrl} existingPreviewAlt={announcement?.image_alt ?? "Banner desktop atual"} />
       </div>
-      <div className="rounded-2xl border border-border bg-surface-muted p-4">
+      <div className="min-w-0 rounded-2xl border border-border bg-surface-muted p-4">
         <FileUploadPreview name="mobile_file" accept="image/png,image/jpeg,image/webp" label={announcement?.mobile_image_file_object_id ? "Substituir imagem mobile" : "Imagem mobile"} maxSizeBytes={MAX_IMAGE_BYTES} recommendedDimensions="800 × 1000 px" recommendedAspectRatio="4:5" minWidth={640} existingPreviewUrl={mobileUrl} existingPreviewAlt={announcement?.image_alt ?? "Banner mobile atual"} help={announcement?.mobile_image_file_object_id ? undefined : "Sem uma arte mobile, a versão desktop será usada como fallback."} />
       </div>
     </section>
@@ -100,7 +102,7 @@ function AnnouncementForm({ organizationId, announcement }: { organizationId: st
     <div className="grid gap-4 sm:grid-cols-2"><Label>Título<Input name="title" defaultValue={announcement?.title ?? ""} maxLength={120} /></Label><Label>Estado<Select name="status" defaultValue={announcement?.status ?? "draft"}><option value="draft">Salvar rascunho</option><option value="published">Publicar agora</option><option value="retired">Retirar do ar</option></Select></Label></div>
     <Label>Mensagem<Textarea name="body" defaultValue={announcement?.body ?? ""} maxLength={1200} rows={4} /></Label>
     <AdminDisclosure title="Formato, destino e período" description="Configure a apresentação, a ordem e para onde o clique na arte deve levar.">
-      <div className="grid gap-4 sm:grid-cols-2"><Label>Formato<Select name="display_mode" defaultValue={announcement?.display_mode ?? "image_only"}><option value="image_only">Somente imagem</option><option value="image_with_text">Imagem com título e mensagem</option></Select></Label><Label>Prioridade<Input name="priority" type="number" min={-1000} max={1000} defaultValue={announcement?.priority ?? 0} required /><span className="text-[11px] font-normal text-muted">Números maiores aparecem primeiro.</span></Label><Label>Destino do clique<Input name="cta_url" defaultValue={announcement?.cta_url ?? ""} maxLength={500} placeholder="/pagina ou https://..." /><span className="text-[11px] font-normal text-muted">Quando informado, a arte inteira é clicável e abre o destino na mesma guia.</span></Label><Label>Início<Input name="starts_at" type="datetime-local" defaultValue={localDate(announcement?.starts_at ?? null)} /></Label><Label>Término<Input name="ends_at" type="datetime-local" defaultValue={localDate(announcement?.ends_at ?? null)} /></Label></div>
+      <div className="grid gap-4 sm:grid-cols-2"><Label>Formato<Select name="display_mode" defaultValue={announcement?.display_mode ?? "image_only"}><option value="image_only">Somente imagem</option><option value="image_with_text">Imagem com título e mensagem</option></Select></Label><Label>Prioridade<Input name="priority" type="number" min={-1000} max={1000} defaultValue={announcement?.priority ?? 0} required /><span className="text-[11px] font-normal text-muted">Números maiores aparecem primeiro.</span></Label><Label>Destino do clique<Input name="cta_url" defaultValue={announcement?.cta_url ?? ""} maxLength={500} placeholder="/pagina ou https://..." /><span className="text-[11px] font-normal text-muted">Quando informado, a arte inteira é clicável. Use páginas compartilháveis; destinos de instâncias individuais de participante são bloqueados.</span></Label><Label>Início<Input name="starts_at" type="datetime-local" defaultValue={localDate(announcement?.starts_at ?? null)} /></Label><Label>Término<Input name="ends_at" type="datetime-local" defaultValue={localDate(announcement?.ends_at ?? null)} /></Label></div>
     </AdminDisclosure>
     <Button type="submit" className="w-fit">{announcement ? "Salvar alterações" : "Criar anúncio"}</Button>
   </form>;

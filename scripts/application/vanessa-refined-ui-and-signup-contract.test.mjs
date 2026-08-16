@@ -99,5 +99,6 @@ test("post-video product fixes are part of the same release boundary", () => {
   assert.match(diagnosticJourneyMigration, /v_presentation_configuration/u);
   assert.match(diagnosticJourneyMigration, /order by template\.position,template\.id/u);
   assert.match(migrationBoundary, /20260816050000_fix_diagnostic_presentation_and_journey_track_order\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260816120000_public_signup_legal_documents_anon_read\.sql'/u);
+  assert.match(migrationBoundary, /20260816120000_public_signup_legal_documents_anon_read\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260816170000_complete_review_remediation\.sql'/u);
 });

@@ -16,7 +16,7 @@ const [
   journeyPage,
   journeyAction,
   settingsPage,
-  certificateRedirect,
+  certificateAlias,
   certificateManager,
   certificateUpload,
   credentialFiles,
@@ -137,7 +137,9 @@ test("certificate templates accept PDF or image and support inherited scopes ins
   assert.match(certificateManager, /Modelo geral/u);
   assert.match(certificateManager, /Modelo de um programa/u);
   assert.match(certificateManager, /Modelo de uma jornada/u);
-  assert.match(certificateRedirect, /\/admin\/gamificacao\?tipo=certificados/u);
+  assert.match(certificateAlias, /AdminGamificationPage/u);
+  assert.match(certificateAlias, /tipo: "certificados"/u);
+  assert.doesNotMatch(certificateAlias, /redirect\(/u);
   assert.match(adminRuntimeMigration, /certificate_template_assignment/u);
 });
 
