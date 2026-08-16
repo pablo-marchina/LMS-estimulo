@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import AdminGamificationPage from "../gamificacao/page";
 
-export default function CertificateTemplatesRedirect() {
-  redirect("/admin/gamificacao?tipo=certificados");
+export const dynamic = "force-dynamic";
+
+export default function AdminCertificatesPage() {
+  return <AdminGamificationPage searchParams={Promise.resolve({ tipo: "certificados" })} />;
 }

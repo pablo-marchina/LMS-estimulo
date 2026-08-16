@@ -86,22 +86,24 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
     .filter((version) => version.status !== "retired")
     .map((version) => String(version.id))));
 
-  const assessmentTargets: AssessmentTargetOption[] = Array.from(new Map(journeys
+  const catalogActivityTargets = Array.from(new Map(journeys
     .filter((journey) => journey.status !== "retired")
     .flatMap((journey) => versionsOf(journey)
       .filter((version) => version.status !== "retired")
       .flatMap((version) => (version.trilhas ?? [])
         .filter((track) => track.status !== "retired")
-        .flatMap((track) => track.aulas
-          .filter((activity) => Boolean(activity.assessment))
-          .map((activity) => [`${track.code}:${activity.code}`, {
-            activityCode: activity.code,
-            activityTitle: activity.title,
-            pathCode: track.code,
-            pathName: track.name,
-            journeyName: journey.name,
-          }] as const)))),
+        .flatMap((track) => track.aulas.map((activity) => [`${track.code}:${activity.code}`, {
+          activityCode: activity.code,
+          activityTitle: activity.title,
+          pathCode: track.code,
+          pathName: track.name,
+          journeyName: journey.name,
+          hasAssessment: Boolean(activity.assessment),
+        }] as const)))),
   ).values());
+  const assessmentTargets: AssessmentTargetOption[] = catalogActivityTargets
+    .filter((target) => target.hasAssessment)
+    .map(({ hasAssessment: _hasAssessment, ...target }) => target);
 
   const ruleVersions = rules.flatMap((item) => versionsOf(item).filter((version) => version.status === "published").map((version) => ({
     id: String(version.id),
@@ -143,7 +145,7 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
     {single(query.erro) ? <StatusPanel title="Não foi possível salvar" tone="warning">{single(query.erro) === "avaliacao_obrigatoria" ? "Selecione pelo menos uma avaliação real para uma regra de aprovação." : "Revise os campos e tente novamente."}</StatusPanel> : null}
 
     {type === "pontos" ? <div className="grid gap-5">
-      <Card><h2 className="text-lg font-semibold text-ink">Regras em uso</h2><p className="mt-1 text-sm text-muted">Veja a ação, o valor, a frequência e exatamente onde o gatilho acontece.</p>{activePointRules.length ? <TableScroll className="mt-4"><Table><thead><tr><Th>Ação</Th><Th>Onde acontece</Th><Th>Pontos</Th><Th>Frequência</Th></tr></thead><tbody>{activePointRules.map((item) => { const itemVersions = versionsOf(item); const version = [...itemVersions].sort((a,b) => Number(b.version_number)-Number(a.version_number)).find((entry) => String(entry.status)==="published") ?? itemVersions[0]; const recurrence=objectValue(version?.recurrence_policy); const frequencyLabel = recurrence.frequency === "per_certificate" ? "Uma vez por certificado" : frequencyLabels[String(recurrence.scope ?? "")] ?? "Uma única vez"; return <tr key={item.definition_id}><Td><strong>{item.name}</strong></Td><Td><span className="text-sm text-muted">{targetLabel(recurrence, assessmentTargets)}</span></Td><Td>{String(version?.amount ?? "—")}</Td><Td>{frequencyLabel}</Td></tr>; })}</tbody></Table></TableScroll> : <p className="mt-4 text-sm text-muted">Nenhuma regra criada.</p>}</Card>
+      <Card><h2 className="text-lg font-semibold text-ink">Regras em uso</h2><p className="mt-1 text-sm text-muted">Veja a ação, o valor, a frequência e exatamente onde o gatilho acontece.</p>{activePointRules.length ? <TableScroll className="mt-4"><Table><thead><tr><Th>Ação</Th><Th>Onde acontece</Th><Th>Pontos</Th><Th>Frequência</Th></tr></thead><tbody>{activePointRules.map((item) => { const itemVersions = versionsOf(item); const version = [...itemVersions].sort((a,b) => Number(b.version_number)-Number(a.version_number)).find((entry) => String(entry.status)==="published") ?? itemVersions[0]; const recurrence=objectValue(version?.recurrence_policy); const frequencyLabel = recurrence.frequency === "per_certificate" ? "Uma vez por certificado" : frequencyLabels[String(recurrence.scope ?? "")] ?? "Uma única vez"; return <tr key={item.definition_id}><Td><strong>{item.name}</strong></Td><Td><span className="text-sm text-muted">{targetLabel(recurrence, catalogActivityTargets)}</span></Td><Td>{String(version?.amount ?? "—")}</Td><Td>{frequencyLabel}</Td></tr>; })}</tbody></Table></TableScroll> : <p className="mt-4 text-sm text-muted">Nenhuma regra criada.</p>}</Card>
       <fieldset disabled={!canEdit} className="contents"><PointRuleEditor pointRules={pointRuleEditorData} assessmentTargets={assessmentTargets} /></fieldset>
     </div> : null}
 

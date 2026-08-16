@@ -2,7 +2,7 @@ import type { HTMLAttributes, TdHTMLAttributes, ThHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
 export function TableScroll({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("overflow-x-auto rounded-xl border border-border", className)} {...props} />;
+  return <div className={cn("min-w-0 max-w-full overflow-x-auto rounded-xl border border-border", className)} {...props} />;
 }
 
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {

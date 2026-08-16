@@ -88,7 +88,7 @@ const dynamicRouteTemplates = {
 };
 
 const manifest = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   startedAt: new Date().toISOString(),
   targetUrl,
   referenceUrl: referenceUrl || null,
@@ -99,16 +99,32 @@ const manifest = {
   warnings: [],
 };
 
+function parsedRoute(value) {
+  try {
+    const url = new URL(value, targetUrl);
+    return { pathname: url.pathname, search: url.search };
+  } catch {
+    const [pathname = value] = String(value).split(/[?#]/, 1);
+    return { pathname, search: "" };
+  }
+}
+
 function safeSegment(value) {
-  return value
-    .replace(/^\/+/, "")
-    .replace(/[?#].*$/, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "__") || "root";
+  const { pathname, search } = parsedRoute(value);
+  const pathnameSegment = pathname.replace(/^\/+/, "").replace(/[^a-zA-Z0-9._-]+/g, "__") || "root";
+  if (!search) return pathnameSegment;
+  const querySegment = search
+    .slice(1)
+    .replace(/&/g, "__and__")
+    .replace(/=/g, "_")
+    .replace(/[^a-zA-Z0-9._-]+/g, "__");
+  return `${pathnameSegment}__q__${querySegment || "query"}`;
 }
 
 function routeCoverageKey(role, route) {
-  const template = dynamicRouteTemplates[role]?.find(({ regex }) => regex.test(route));
-  return template ? `template:${template.key}` : `route:${route}`;
+  const { pathname, search } = parsedRoute(route);
+  const template = dynamicRouteTemplates[role]?.find(({ regex }) => regex.test(pathname));
+  return template ? `template:${template.key}` : `route:${pathname}${search}`;
 }
 
 function normalizeScopedHref(href, scopePrefix) {
@@ -118,7 +134,7 @@ function normalizeScopedHref(href, scopePrefix) {
     if (url.origin !== new URL(targetUrl).origin) return null;
     if (!url.pathname.startsWith(scopePrefix)) return null;
     if (/\/(?:sair|logout)(?:\/|$)/i.test(url.pathname)) return null;
-    return url.pathname;
+    return `${url.pathname}${url.search}`;
   } catch {
     return null;
   }
@@ -177,13 +193,15 @@ async function capturePage({ page, role, viewport, requestedUrl, filePath }) {
   }
 
   const finalUrl = page.url();
-  const finalPath = (() => {
+  const finalRoute = (() => {
     try {
-      return new URL(finalUrl).pathname;
+      const url = new URL(finalUrl);
+      return `${url.pathname}${url.search}`;
     } catch {
       return finalUrl;
     }
   })();
+  const finalPath = parsedRoute(finalUrl).pathname;
   const status = response?.status() ?? null;
   const bodyText = await page.locator("body").innerText().catch(() => "");
   const title = await page.title().catch(() => "");
@@ -216,6 +234,7 @@ async function capturePage({ page, role, viewport, requestedUrl, filePath }) {
     viewport: viewport.key,
     requestedUrl,
     finalUrl,
+    finalRoute,
     finalPath,
     status,
     navigationError,
@@ -229,9 +248,17 @@ async function capturePage({ page, role, viewport, requestedUrl, filePath }) {
   };
   manifest.captures.push(record);
 
+  const authenticatedRole = role === "participant" || role === "admin";
   if (navigationError) manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: ${navigationError}`);
   if (status !== null && status >= 500) manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: HTTP ${status}`);
-  if (bodyText.trim().length < 20) manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: page rendered effectively blank`);
+  if (bodyText.trim().length < 20) {
+    manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: page rendered effectively blank`);
+  } else if (authenticatedRole && bodyText.trim().length < 60) {
+    manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: authenticated page rendered insufficient meaningful content`);
+  }
+  if (authenticatedRole && /Conteúdo não encontrado/i.test(bodyText)) {
+    manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: rendered semantic not-found state`);
+  }
   if (screenshotError) manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: screenshot failed: ${screenshotError}`);
   if (layout?.horizontalOverflow) manifest.warnings.push(`${role} ${viewport.key} ${requestedUrl}: horizontal overflow detected`);
 
@@ -293,7 +320,7 @@ async function captureRole(browser, role, credentials, viewport) {
       });
 
       if (!record.finalPath.startsWith(scopePrefix)) {
-        manifest.failures.push(`${role} ${viewport.key} ${route}: unexpected redirect to ${record.finalPath}`);
+        manifest.failures.push(`${role} ${viewport.key} ${route}: unexpected redirect to ${record.finalRoute}`);
         continue;
       }
 
