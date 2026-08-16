@@ -9,6 +9,7 @@ import { StatusPanel } from "@/components/status-panel";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill } from "@/components/ui/status-pill";
 import { requireParticipantContext } from "@/lib/auth/participant-context";
 import { participantCopy } from "@/lib/content/participant-copy";
@@ -25,14 +26,14 @@ export default async function ParticipantHome() {
   const auth = await requireParticipantContext();
   const results = await Promise.allSettled([
     journeyRuntime.listParticipantJourneys(auth.identity.user_account_id),
-    engagementRuntime.participantHub(auth.identity.user_account_id),
     participantDiagnosticRuntime.resolveEntry(auth.identity.user_account_id),
+    engagementRuntime.participantHub(auth.identity.user_account_id),
   ] as const);
 
   const participantJourneys = fulfilled(results[0]);
-  const engagement = fulfilled(results[1]);
-  const diagnosticEntry = fulfilled(results[2]);
-  const dataUnavailable = results[0].status === "rejected" || results[1].status === "rejected";
+  const diagnosticEntry = fulfilled(results[1]);
+  const engagement = fulfilled(results[2]);
+  const coreDataUnavailable = results[0].status === "rejected" || results[2].status === "rejected";
   const journeys = [...(participantJourneys?.journeys ?? [])]
     .sort((a, b) => participantJourneyPriority(a) - participantJourneyPriority(b));
   const activeJourneys = journeys.filter((journey) => journey.journey_status !== "completed").slice(0, 3);
@@ -42,19 +43,21 @@ export default async function ParticipantHome() {
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pb-24 pt-8 sm:px-6 sm:pt-12">
-      <section className="pb-10">
-        <p className="mb-3 text-[11px] font-bold uppercase tracking-[.14em] text-muted">Olá, {firstName}!</p>
-        <h1 className="max-w-3xl text-[30px] font-bold leading-[1.15] tracking-[-.02em] text-primary sm:text-[40px]">Vamos fazer seu negócio crescer?</h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Escolha um conteúdo, aprenda no seu ritmo e coloque em prática no dia a dia do seu negócio.</p>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+      <PageHeader
+        cmsKey="participant.page.overview.header"
+        eyebrow="Olá, {{nome}}!"
+        title="Vamos fazer seu negócio crescer?"
+        description="Escolha um conteúdo, aprenda no seu ritmo e coloque em prática no dia a dia do seu negócio."
+        variables={{ nome: firstName }}
+        actions={<>
           <ButtonLink href="/empreendedor/jornadas" icon={<ArrowRight size={16} />}>Continuar aprendendo</ButtonLink>
           <ButtonLink href="/empreendedor/recompensas" variant="secondary">Ver recompensas</ButtonLink>
-        </div>
-      </section>
+        </>}
+      />
 
-      {dataUnavailable ? <StatusPanel title="Não foi possível carregar o resumo completo" tone="warning"><p>Seu progresso continua salvo. Recarregue a página para tentar novamente.</p></StatusPanel> : null}
+      {coreDataUnavailable ? <StatusPanel title="Não foi possível carregar o resumo completo" tone="warning"><p>Seu progresso continua salvo. Recarregue a página para tentar novamente.</p></StatusPanel> : null}
 
-      <section className="border-t border-slate-200 pt-10" aria-labelledby="novidades-titulo">
+      <section className="pt-5" aria-labelledby="novidades-titulo">
         <div className="mb-5">
           <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Descubra</p>
           <h2 id="novidades-titulo" className="mt-1.5 text-xl font-bold text-ink sm:text-[22px]">Novidades para você</h2>
