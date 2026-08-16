@@ -34,7 +34,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
     });
     return NextResponse.redirect(url, {
       status: 302,
-      headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL },
+      headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL, vary: "Cookie" },
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
