@@ -98,6 +98,14 @@ export async function invokeExtensionsGateway<T>(name: string, args: Record<stri
       p_preview_user_account_id: preview.participantUserAccountId,
     });
   }
+  if (preview && name === "get_participant_shell_context") {
+    return invokePlatformExtensionsGateway<T>("preview_participant_rpc", {
+      p_organization_id: preview.organizationId,
+      p_preview_user_account_id: preview.participantUserAccountId,
+      p_operation: "get_participant_shell_context",
+      p_args: {},
+    });
+  }
   if (preview && name === "perform_participant_extension") {
     throw new ExtensionsGatewayError("INTERFACE_PREVIEW_WRITE_BLOCKED", "Preview requests are read-only.");
   }

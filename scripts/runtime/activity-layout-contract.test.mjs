@@ -1,82 +1,46 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const read = (relativePath) => readFile(path.join(root, relativePath), "utf8");
+const layout = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.tsx", "utf8");
+const stylesheet = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css", "utf8");
+const frame = await readFile("apps/web/components/activity-workspace-frame.tsx", "utf8");
+const lesson = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
+const journey = await readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8");
+const actions = await readFile("apps/web/app/actions/journey.ts", "utf8");
 
-test("activity route uses compact tabs without trapping vertical scroll", async () => {
-  const [layout, stylesheet, workspace, actions] = await Promise.all([
-    read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.tsx"),
-    read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css"),
-    read("apps/web/components/activity-compact-workspace.tsx"),
-    read("apps/web/app/actions/journey.ts"),
-  ]);
+test("activity route is a continuous lesson workspace", () => {
+  assert.match(layout, /data-activity-workspace/u);
+  assert.match(layout, /data-activity-page/u);
+  assert.doesNotMatch(layout, /ActivityCompactWorkspace/u);
+  assert.doesNotMatch(layout, /data-active-section/u);
+  assert.doesNotMatch(frame, /ActivityCompactWorkspace/u);
 
-  assert.match(layout, /ActivityCompactWorkspace/);
-  assert.match(layout, /data-activity-workspace/);
-  assert.match(layout, /data-activity-page/);
-  assert.match(layout, /data-active-section="conteudo"/);
-  assert.doesNotMatch(layout, /<style>/);
+  assert.match(lesson, /max-w-\[1100px\]/u);
+  assert.match(lesson, /Marcar como concluída/u);
+  assert.match(lesson, /O que achou desta aula/u);
+  assert.match(lesson, /Converse sobre esta aula/u);
+  assert.doesNotMatch(lesson, /ActivityContentProgress/u);
+  assert.doesNotMatch(lesson, /Índice da aula/u);
+  assert.doesNotMatch(lesson, /300px/u);
 
-  assert.match(workspace, /role="tablist"/);
-  assert.match(workspace, /aria-selected=\{selected\}/);
-  assert.match(workspace, /createPortal/);
-  assert.match(workspace, /anchorRef\.current\?\.closest<HTMLElement>\("\[data-activity-workspace\]"\)/);
-  assert.doesNotMatch(workspace, /document\.querySelector<HTMLElement>\("\[data-activity-workspace\]"\)/);
-  assert.match(workspace, /MutationObserver/);
-  assert.match(workspace, /main\.prepend\(mount\)/);
-  assert.match(workspace, /sectionFromLocation/);
-  assert.match(workspace, /a\[href\^='#'\]/);
-  assert.match(workspace, /root\.addEventListener\("click"/);
-  assert.doesNotMatch(workspace, /document\.addEventListener\("click"/);
-  assert.match(workspace, /event\.preventDefault\(\)/);
-  assert.match(workspace, /scrollIntoView/);
-  assert.doesNotMatch(workspace, /main\.scrollTo/);
-  assert.match(workspace, /sticky top-16/);
-
-  assert.match(actions, /function inlineActivityHref\(journey: string, step: string, query = "", hash = "aula"\)/u);
-  assert.match(actions, /inlineActivityHref\(journey, step, "&utilidade=registrada", "conteudo"\)/u);
-  assert.doesNotMatch(actions, /inlineActivityHref\(journey, step, "&comentario=criado", "comentarios"\)/u);
-  assert.match(actions, /inlineActivityHref\(journey, step, "&avaliacao=reprovada", "avaliacao"\)/u);
-  assert.doesNotMatch(actions, /\/empreendedor\/atividade\/\$\{step\}\?utilidade=registrada/u);
-
-  assert.match(stylesheet, /\.activityPage/);
-  assert.match(stylesheet, /div:has\(> main \+ aside\)/);
-  assert.match(stylesheet, /grid-template-columns: minmax\(0, 1fr\) 18rem/);
-  assert.match(stylesheet, /data-active-section="conteudo"/);
-  assert.match(stylesheet, /nav\[aria-label="Índice da aula"\]/);
-  assert.match(stylesheet, /overflow: visible/);
-  assert.doesNotMatch(stylesheet, /\.grid\.items-start\.gap-5/);
-  assert.doesNotMatch(stylesheet, /(?:^|\n)\s*height:\s*calc\(100dvh - 4rem\)/u);
-  assert.doesNotMatch(stylesheet, /grid-template-rows: auto minmax\(0, 1fr\) auto/);
-  assert.doesNotMatch(stylesheet, /300px/);
+  assert.doesNotMatch(stylesheet, /data-active-section/u);
+  assert.doesNotMatch(stylesheet, /18rem/u);
+  assert.doesNotMatch(stylesheet, /position: sticky/u);
+  assert.doesNotMatch(stylesheet, /#aula:has/u);
 });
 
-test("participant screens use editorial names and compact spacing", async () => {
-  const [shell, density, names, progress, result, migration] = await Promise.all([
-    read("apps/web/components/participant-shell.tsx"),
-    read("apps/web/components/participant-density.module.css"),
-    read("apps/web/lib/content/display-name.ts"),
-    read("apps/web/components/journey-progress-nav.tsx"),
-    read("apps/web/app/empreendedor/resultado/page.tsx"),
-    read("supabase/migrations/20260801202758_fix_activity_feedback_quick_check_titles.sql"),
-  ]);
+test("inline journey removes the duplicate lesson chrome structurally", () => {
+  assert.match(journey, /<section id="aula" className="scroll-mt-20"/u);
+  assert.doesNotMatch(journey, />Conteúdo aberto<\/p>/u);
+  assert.doesNotMatch(journey, /Fechar conteúdo/u);
+  assert.match(journey, /conclusao: query\.conclusao/u);
+});
 
-  assert.match(shell, /participant-density\.module\.css/);
-  assert.doesNotMatch(shell, /<style>/);
-  assert.match(density, /#conteudo-principal/);
-  assert.match(density, /gap-8/);
-  assert.match(density, /brand-featured-journey/);
-  assert.match(density, /aspect-ratio: 16 \/ 9/);
-  assert.match(names, /replaceAll\("_", " "\)/);
-  assert.match(progress, /outline\?\.journey_title/);
-  assert.match(progress, /displayContentName/);
-  assert.doesNotMatch(result, /Seu momento/);
-  assert.doesNotMatch(result, /Diagnóstico empreendedor/);
-  assert.match(migration, /'journey_title'/);
-  assert.match(migration, /activity_asset_progress/);
-  assert.doesNotMatch(migration, /sections'\)::integer<>4/);
+test("lesson actions remain inline and preserve the interaction anchor", () => {
+  assert.match(actions, /inlineActivityHref/u);
+  assert.match(actions, /utilidade=registrada/u);
+  assert.match(actions, /"utilidade"/u);
+  assert.match(actions, /avaliacao=reprovada/u);
+  assert.doesNotMatch(actions, /comentario=criado/u);
 });

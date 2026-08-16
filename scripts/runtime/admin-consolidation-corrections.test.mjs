@@ -18,6 +18,7 @@ const files = await Promise.all([
 ]);
 
 const [adminShell, libraryDeliveries, operationPage, deliveryOperations, interfaceSelector, productPage, deleteAction, unpublishAction, behaviorPage, lessonPage, promptLibrary, migration] = files;
+void behaviorPage;
 
 test("standalone admin deliveries screen is removed and responsibilities are consolidated", async () => {
   assert.doesNotMatch(adminShell, /\/admin\/entregas/u);
@@ -56,19 +57,19 @@ test("published journeys can return to draft and only drafts can be deleted", ()
   assert.match(migration, /delete_admin_journey_draft/u);
 });
 
-test("published lesson hides legacy complementary sections and renders the versioned prompt library", () => {
+test("published lesson keeps versioned prompts inside the continuous lesson flow", () => {
   assert.doesNotMatch(lessonPage, /activity\.sections/u);
   assert.match(lessonPage, /ActivityPromptLibrary/u);
-  assert.match(lessonPage, /activity\.prompts\.length \? <ActivityPromptLibrary prompts=\{activity\.prompts\}/u);
-  assert.match(lessonPage, /href="#prompts"/u);
+  assert.match(lessonPage, /activity\.prompts\.length/u);
+  assert.match(promptLibrary, /id="prompts"/u);
   assert.match(promptLibrary, /Biblioteca de prompts desta aula/u);
   assert.match(promptLibrary, /navigator\.clipboard\.writeText/u);
   assert.doesNotMatch(lessonPage, /Prompts para adaptar/u);
   assert.doesNotMatch(migration, /-'content_sections'-'prompts'/u);
-  assert.match(lessonPage, /xl:grid-cols-\[minmax\(0,1fr\)_300px\]/u);
-  assert.match(lessonPage, /xl:sticky xl:top-20/u);
-  assert.match(lessonPage, /Conteúdo da aula/u);
+  assert.match(lessonPage, /max-w-\[1100px\]/u);
+  assert.match(lessonPage, /Marcar como concluída/u);
   assert.match(lessonPage, /Verifique o que aprendeu/u);
-  assert.match(lessonPage, /Discuta a aula/u);
-  assert.match(lessonPage, /aria-label="Índice da aula"/u);
+  assert.match(lessonPage, /Converse sobre esta aula/u);
+  assert.doesNotMatch(lessonPage, /Índice da aula/u);
+  assert.doesNotMatch(lessonPage, /300px/u);
 });

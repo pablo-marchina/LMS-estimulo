@@ -15,16 +15,24 @@ test("platform loading uses one global progress bar and no page skeletons", asyn
   assert.doesNotMatch(shell, /ParticipantNavigationProgress/);
 });
 
-test("lesson consumes the full participant content area without a permanent side column", async () => {
-  const [shell, layoutCss] = await Promise.all([
+test("lesson consumes one continuous centered content area without a permanent side column", async () => {
+  const [shell, layoutCss, lesson, journey] = await Promise.all([
     read("apps/web/components/participant-shell.tsx"),
     read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css"),
+    read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx"),
+    read("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx"),
   ]);
   assert.match(shell, /pathname\.startsWith\("\/empreendedor\/atividade\/"\)/);
   assert.match(shell, /max-w-none \[&>div\]:max-w-none/);
-  assert.match(layoutCss, /grid-template-columns: minmax\(0, 1fr\) 18rem !important/);
-  assert.match(layoutCss, /position: sticky !important/);
-  assert.match(layoutCss, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+  assert.match(lesson, /max-w-\[1100px\]/u);
+  assert.doesNotMatch(lesson, /ActivityContentProgress/u);
+  assert.doesNotMatch(lesson, /300px/u);
+  assert.doesNotMatch(layoutCss, /18rem/u);
+  assert.doesNotMatch(layoutCss, /position: sticky/u);
+  assert.doesNotMatch(layoutCss, /#aula:has/u);
+  assert.match(journey, /<section id="aula" className="scroll-mt-20"/u);
+  assert.doesNotMatch(journey, />Conteúdo aberto<\/p>/u);
+  assert.doesNotMatch(journey, /Fechar conteúdo/u);
 });
 
 test("admin extension saves do not catch successful Next redirects", async () => {
@@ -57,9 +65,11 @@ test("participant interface preview renders real routes with read-only impersona
   assert.match(proxy, /INTERFACE_PREVIEW_REQUEST_HEADER/);
   assert.match(gateway, /previewReadOnlyRpcs/);
   assert.match(extensionGateway, /preview_participant_extensions/);
+  assert.match(extensionGateway, /get_participant_shell_context/u);
   assert.match(edge, /preview_participant_rpc/);
   assert.match(edge, /INTERFACE_PREVIEW_WRITE_BLOCKED/);
   assert.match(edge, /get_admin_extensions_workspace/);
+  assert.match(edge, /get_participant_shell_context/u);
   assert.match(guard, /preventInteraction/);
   assert.match(bridge, /pathname: window\.location\.pathname/);
   assert.match(shell, /!preview \? <BehaviorEventTracker/);
