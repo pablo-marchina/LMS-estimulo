@@ -1,5 +1,10 @@
 begin;
 
+-- This migration intentionally replaces a published point-rule version. Keep
+-- the immutable-version bypass explicit and transaction-local so clean replay
+-- does not depend on ambient session state from the migration runner.
+select set_config('app.admin_live_edit','on',true);
+
 -- Lesson completion is a product rule, not an implicit UI convention. Keep one
 -- published +5 rule per completed activity and let the event runtime enforce
 -- idempotency by step instance.

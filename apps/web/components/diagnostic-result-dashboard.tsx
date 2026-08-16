@@ -80,19 +80,14 @@ export function DiagnosticResultDashboard({
   const legacyInsight = insightForArchetype(name);
   const copy = normalizeDiagnosticProfileResultContent(resultContent) ?? legacyResultContent(legacyInsight);
   const shareText = `Meu perfil empreendedor é “${name}”. ${priority ? `Minha prioridade agora é ${priority.name}.` : ""}`.trim();
-  const movements = [
-    { title: priority ? `Fortaleça ${priority.name}` : "Escolha seu foco", body: "Comece pela área com maior espaço de evolução e transforme-a em uma prioridade concreta." },
-    { title: "Aplique uma ação prática", body: copy.practical_tip.body || legacyInsight.tip },
-    { title: "Acompanhe o que mudou", body: "Revise seus indicadores e o progresso nas jornadas para decidir o próximo passo com evidências." },
-  ];
 
   return <section className="grid gap-6" aria-label="Resultado do diagnóstico empreendedor">
     {enabled.has("maturity_map") ? <div className="grid gap-4 lg:grid-cols-[1.02fr_.98fr]">
-      <Card className="relative overflow-hidden border border-info/20 bg-info-soft p-6 text-secondary shadow-lg after:!hidden sm:p-7">
+      <Card className="relative overflow-hidden border border-info/20 bg-info-soft p-6 text-secondary shadow-lg sm:p-7">
         <Compass className="absolute right-5 top-5 text-primary/10" size={74} aria-hidden="true" />
         <div className="relative">
-          <span className="inline-flex rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-[.14em] text-white">Seu nível de maturidade</span>
-          <h2 className="display-font mt-5 text-3xl text-secondary sm:text-4xl">{name}</h2>
+          <span className="inline-flex rounded-full bg-primary px-3 py-1 text-[10px] font-black uppercase tracking-[.14em] text-white">Seu perfil empreendedor</span>
+          <h2 className="mt-5 text-3xl font-bold text-secondary sm:text-4xl">{name}</h2>
           <p className="mt-4 max-w-xl text-sm leading-6 text-muted">{archetype.description || "Seu resultado reúne suas respostas e ajuda a transformar o diagnóstico em próximos passos concretos."}</p>
           <div className="no-print mt-6 flex flex-wrap gap-2">
             <ButtonLink href={primaryHref} size="sm">{primaryLabel}</ButtonLink>
@@ -102,17 +97,12 @@ export function DiagnosticResultDashboard({
         </div>
       </Card>
 
-      <Card className="grid gap-5 border border-primary/10 bg-white p-5 after:!hidden sm:p-6">
+      <Card className="grid gap-5 p-5 sm:p-6">
         <div className="flex items-center gap-2"><BarChart3 size={19} className="text-primary" /><div><p className="text-xs font-black uppercase tracking-[.12em] text-primary">Seu mapa de maturidade</p><h3 className="mt-0.5 font-black text-secondary">Um olhar mais de perto</h3></div></div>
         {normalized.length ? <div className="grid gap-4">{normalized.map((dimension) => <div key={dimension.code} className="grid gap-1.5"><div className="flex items-center justify-between gap-3 text-sm"><strong className="text-secondary">{dimension.name}</strong><span className="font-black tabular-nums text-secondary">{dimension.percentage}%</span></div><div className="h-2.5 overflow-hidden rounded-full bg-surface-muted" role="progressbar" aria-label={dimension.name} aria-valuemin={0} aria-valuemax={100} aria-valuenow={dimension.percentage}><div className="h-full rounded-full bg-primary" style={{ width: `${dimension.percentage}%` }} /></div></div>)}</div> : <p className="text-sm text-muted">O mapa aparecerá assim que houver dimensões suficientes para compor o resultado.</p>}
         <div className="rounded-xl bg-success-soft p-4"><p className="text-[10px] font-black uppercase tracking-[.14em] text-success">Sua prioridade agora</p><p className="mt-1 text-lg font-black text-secondary">{priority?.name ?? "Transformar o diagnóstico em ação"}</p>{priority ? <p className="mt-1 text-xs text-muted">Esta é a dimensão com maior espaço de evolução neste resultado.</p> : null}</div>
       </Card>
     </div> : null}
-
-    {enabled.has("next_moves") ? <Card className="border border-primary/10 bg-white p-5 after:!hidden sm:p-6">
-      <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.14em] text-primary">Rota recomendada</p><h3 className="display-font mt-1 text-3xl text-secondary">Seus próximos três movimentos</h3></div><span className="text-xs font-semibold text-muted">Uma sequência simples para sair do diagnóstico e ir para a prática</span></div>
-      <div className="mt-5 grid gap-4 md:grid-cols-3">{movements.map((movement, index) => <article key={movement.title} className="rounded-2xl border border-info/20 bg-info-soft/55 p-5"><span className="grid size-8 place-items-center rounded-full bg-primary text-sm font-black text-white">{index + 1}</span><h4 className="mt-5 font-black text-secondary">{movement.title}</h4><p className="mt-2 text-sm leading-6 text-muted">{movement.body}</p></article>)}</div>
-    </Card> : null}
 
     {enabled.has("focus") || enabled.has("right_content") || enabled.has("real_application") ? <div className="grid gap-4 md:grid-cols-3">
       {enabled.has("focus") ? <MiniInsight icon={<Focus size={18} />} title="Foco claro" body={priority ? `Você sabe que ${priority.name} merece atenção primeiro.` : "Escolha onde colocar sua energia primeiro."} /> : null}
@@ -132,9 +122,9 @@ export function DiagnosticResultDashboard({
 }
 
 function MiniInsight({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
-  return <Card className="flex gap-3 border border-primary/10 bg-white p-4 after:!hidden"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">{icon}</span><div><h4 className="font-black text-secondary">{title}</h4><p className="mt-1 text-sm leading-5 text-muted">{body}</p></div></Card>;
+  return <Card className="flex gap-3 p-4"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">{icon}</span><div><h4 className="font-black text-secondary">{title}</h4><p className="mt-1 text-sm leading-5 text-muted">{body}</p></div></Card>;
 }
 
 function InsightCard({ icon, eyebrow, title, body }: { icon: React.ReactNode; eyebrow: string; title?: string; body?: string }) {
-  return <Card className="flex gap-4 border border-primary/10 bg-white"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">{icon}</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{eyebrow}</p>{title ? <h3 className="mt-1 font-black text-secondary">{title}</h3> : null}{body ? <p className="mt-2 text-sm leading-6 text-muted">{body}</p> : null}</div></Card>;
+  return <Card className="flex gap-4"><span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">{icon}</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{eyebrow}</p>{title ? <h3 className="mt-1 font-black text-secondary">{title}</h3> : null}{body ? <p className="mt-2 text-sm leading-6 text-muted">{body}</p> : null}</div></Card>;
 }

@@ -24,7 +24,7 @@ test("participant home keeps the editable greeting personalized", async () => {
   assert.match(migration, /published_value->>'text'.*Olá!/su);
 });
 
-test("announcement editor supports responsive artwork and image-wide links", async () => {
+test("announcement editor supports responsive artwork, image-wide links and compact participant banners", async () => {
   const [page, action, upload, runtime, carousel] = await Promise.all([
     source("apps/web/app/admin/engajamento/page.tsx"),
     source("apps/web/app/admin/engajamento/actions.ts"),
@@ -44,24 +44,29 @@ test("announcement editor supports responsive artwork and image-wide links", asy
   assert.match(runtime, /isMissingAnnouncementMobileSignature/u);
   assert.match(runtime, /ANNOUNCEMENT_MOBILE_SCHEMA_REQUIRED/u);
   assert.match(carousel, /className="absolute inset-0 z-20"/u);
-  assert.match(carousel, /!max-h-\[38svh\]/u);
-  assert.match(carousel, /max-\[720px\]:!max-h-\[36svh\]/u);
+  assert.match(carousel, /!h-\[32svh\]/u);
+  assert.match(carousel, /!max-h-\[32svh\]/u);
+  assert.match(carousel, /max-\[720px\]:!h-\[30svh\]/u);
+  assert.match(carousel, /max-\[720px\]:!max-h-\[30svh\]/u);
   assert.match(carousel, /variant=mobile/u);
 });
 
-test("diagnostic result and profile objective use the approved participant copy and placement", async () => {
-  const [diagnostic, dashboard, chart, profile, actions] = await Promise.all([
+test("diagnostic result uses the configured participant copy without retired score blocks", async () => {
+  const [diagnostic, dashboard, chart, profile, actions, blocks] = await Promise.all([
     source("apps/web/app/empreendedor/perfil/diagnostico/page.tsx"),
     source("apps/web/components/diagnostic-result-dashboard.tsx"),
     source("apps/web/components/diagnostic-dimension-chart.tsx"),
     source("apps/web/app/empreendedor/perfil/page.tsx"),
     source("apps/web/app/empreendedor/perfil/actions.ts"),
+    source("apps/web/lib/diagnostics/result-blocks.ts"),
   ]);
 
   assert.match(diagnostic, /Um olhar mais de perto/u);
-  assert.match(dashboard, /Seu nível de maturidade/u);
+  assert.match(dashboard, /Seu perfil empreendedor/u);
   assert.match(dashboard, /Seu mapa de maturidade/u);
-  assert.match(dashboard, /Seus próximos três movimentos/u);
+  assert.doesNotMatch(dashboard, /Seus próximos três movimentos/u);
+  assert.doesNotMatch(dashboard, />\/100</u);
+  assert.match(blocks, /intentionally excluded from[\s\S]*validCodes/u);
   assert.match(dashboard, /Pontos fortes/u);
   assert.match(dashboard, /Seu próximo desafio/u);
   assert.match(dashboard, /Dica prática/u);
@@ -122,4 +127,6 @@ test("library and participant navigation follow the consolidated UX", async () =
   assert.doesNotMatch(participantShell, /participant\.nav\.points/u);
   assert.doesNotMatch(participantShell, /participant\.nav\.submissions/u);
   assert.match(participantShell, /participant\.nav\.rewards/u);
+  assert.doesNotMatch(participantShell, /participant\.nav\.profile/u);
+  assert.match(participantShell, /Meu perfil/u);
 });

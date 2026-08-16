@@ -1,4 +1,6 @@
-export const expectedLastMigration = '20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql';
+// Historical Vanessa-video boundary before the diagnostic/journey follow-up:
+// expectedLastMigration = '20260816035500_scope_quick_activity_points_per_assessment.sql'
+export const expectedLastMigration = '20260816120000_public_signup_legal_documents_anon_read.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -88,6 +90,11 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260815203254_rebind_orphaned_path_badges_to_current_tracks.sql',
   '20260815203650_canonical_point_rule_eligibility.sql',
   '20260815204402_index_vanessa_remediation_foreign_keys.sql',
-  '20260815211500_deduplicate_complete_lesson_point_rule.sql',
+  '20260816011759_complete_vanessa_video_remediation.sql',
+  '20260816012301_participant_lesson_completion_cta.sql',
+  '20260816012704_fix_completion_progress_current_step_reference.sql',
+  '20260816031000_restore_live_point_award_function.sql',
+  '20260816035500_scope_quick_activity_points_per_assessment.sql',
   '20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql',
+  '20260816120000_public_signup_legal_documents_anon_read.sql',
 ]);

@@ -125,7 +125,38 @@ jobs:
           npm run validate:repository
 
       - name: Test repository tooling
-        run: npm run test:repository-tooling
+        id: repository_tooling
+        shell: bash
+        run: |
+          set +e
+          mkdir -p .artifacts
+          npm run test:repository-tooling > .artifacts/repository-tooling.log 2>&1
+          exit_code=$?
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+          if [[ "$exit_code" -eq 0 ]]; then
+            cat .artifacts/repository-tooling.log
+            rm -f .artifacts/repository-tooling.log
+          else
+            tail -n 260 .artifacts/repository-tooling.log >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 0
+
+      - name: Upload repository tooling diagnostics
+        if: steps.repository_tooling.outputs.exit_code != '0'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: repository-tooling-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/repository-tooling.log
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 9
+
+      - name: Fail when repository tooling fails
+        if: steps.repository_tooling.outputs.exit_code != '0'
+        shell: bash
+        run: |
+          echo "Repository tooling tests failed. Inspect the uploaded diagnostic artifact."
+          exit 1
 
       - name: Validate migration history
         run: npm run validate:migration-history

@@ -90,6 +90,36 @@ select pg_temp.e14_assert(
   :'e14_product_rule_contract_count'::integer=1 and :'e14_product_rule_points'::bigint=5,
   'complete_lesson published rule contract'
 );
+select
+  count(*)::text quick_rule_count,
+  coalesce(sum(prv.amount),0)::text quick_rule_points,
+  (count(*) filter (where
+    prv.amount=2
+    and prv.recurrence_policy->>'scope'='enrollment_assessment'
+    and prv.recurrence_policy->>'maximum'='1'
+    and prv.recurrence_policy#>>'{trigger,event_name}'='assessment.attempt.submitted'
+  ))::text quick_rule_contract_count
+from engagement.point_rule_versions prv
+join engagement.point_rule_definitions prd on prd.id=prv.point_rule_definition_id
+where prd.owner_organization_id=:'e14_organization_id'::uuid
+  and prd.code='complete_quick_activity'
+  and prd.status='active'
+  and prv.status='published'
+  and prv.published_at is not null
+  and prv.version_number=(
+    select max(latest.version_number)
+    from engagement.point_rule_versions latest
+    where latest.point_rule_definition_id=prd.id
+      and latest.status='published'
+      and latest.published_at is not null
+  )
+\gset e14_
+select pg_temp.e14_assert(
+  :'e14_quick_rule_count'::integer=1
+  and :'e14_quick_rule_contract_count'::integer=1
+  and :'e14_quick_rule_points'::bigint=2,
+  'complete_quick_activity published rule contract'
+);
 select count(*)::text events_before from eventing.events \gset e14_
 select count(*)::text outbox_before from eventing.outbox \gset e14_
 
@@ -137,6 +167,12 @@ select pg_temp.e14_assert((select value->>'replayed'='false' from e14_test_resul
 
 insert into e14_test_results values('start_journey',public.e14_start_journey(
   :'e14_participant_id'::uuid,:'e14_journey_instance_id'::uuid,0,'e14-e2e-start-journey-v1'));
+select pg_temp.e14_assert((select count(*)=1 and coalesce(sum(ledger.amount),0)=10
+  from engagement.point_ledger ledger
+  join engagement.point_rule_versions version on version.id=ledger.point_rule_version_id
+  join engagement.point_rule_definitions definition on definition.id=version.point_rule_definition_id
+  where ledger.journey_instance_id=:'e14_journey_instance_id'::uuid
+    and definition.code='complete_welcome'),'welcome point award');
 select pg_temp.e14_expect_error(format(
   'select public.e14_start_journey(%L::uuid,%L::uuid,0,%L)',
   :'e14_participant_id',:'e14_journey_instance_id','e14-e2e-stale-journey-v1'),
@@ -168,14 +204,20 @@ insert into e14_test_results values('state_after_diagnostic',public.e14_get_part
 select pg_temp.e14_assert((select value#>>'{d,status}'='completed' from e14_test_results where name='state_after_diagnostic'),'diagnostic completion');
 select pg_temp.e14_assert((select value#>>'{d,path_code}'='standard' from e14_test_results where name='state_after_diagnostic'),'standard path assignment');
 select pg_temp.e14_assert((select (value#>>'{d,low_confidence}')::boolean=false from e14_test_results where name='state_after_diagnostic'),'unexpected low confidence');
+select pg_temp.e14_assert((select count(*)=1 and coalesce(sum(ledger.amount),0)=50
+  from engagement.point_ledger ledger
+  join engagement.point_rule_versions version on version.id=ledger.point_rule_version_id
+  join engagement.point_rule_definitions definition on definition.id=version.point_rule_definition_id
+  where ledger.journey_instance_id=:'e14_journey_instance_id'::uuid
+    and definition.code='complete_diagnostic'),'diagnostic point award');
 select
   value#>>'{s,step_instance_id}' step_instance_id,
   value#>>'{s,aggregate_version}' step_aggregate_version,
   coalesce(value#>>'{p,balance}','0') diagnostic_point_balance,
   coalesce(value#>>'{p,ledger_count}','0') diagnostic_point_count
 from e14_test_results where name='state_after_diagnostic' \gset e14_
-select pg_temp.e14_assert(:'e14_diagnostic_point_balance'::integer=50,'diagnostic point balance');
-select pg_temp.e14_assert(:'e14_diagnostic_point_count'::integer=1,'diagnostic point count');
+select pg_temp.e14_assert(:'e14_diagnostic_point_balance'::integer=60,'welcome plus diagnostic point balance');
+select pg_temp.e14_assert(:'e14_diagnostic_point_count'::integer=2,'welcome plus diagnostic point count');
 select pg_temp.e14_expect_error(format(
   'select public.e14_get_participant_state(%L::uuid,%L::uuid)',
   :'e14_operator_id',:'e14_journey_instance_id'),'FORBIDDEN');
@@ -217,8 +259,18 @@ insert into e14_test_results values('state_after_fail',public.e14_get_participan
   :'e14_participant_id'::uuid,:'e14_journey_instance_id'::uuid));
 select pg_temp.e14_assert((select value#>>'{q,status}'='failed' from e14_test_results where name='state_after_fail'),'first check must fail');
 select pg_temp.e14_assert((select (value->>'progress')::numeric=0 from e14_test_results where name='state_after_fail'),'failed progress');
-select pg_temp.e14_assert((select coalesce((value#>>'{p,balance}')::integer,0)=:'e14_diagnostic_point_balance'::integer from e14_test_results where name='state_after_fail'),'failed attempt changed point balance');
-select pg_temp.e14_assert((select coalesce((value#>>'{p,ledger_count}')::integer,0)=:'e14_diagnostic_point_count'::integer from e14_test_results where name='state_after_fail'),'failed attempt changed point ledger');
+select pg_temp.e14_assert((select count(*)=1 and coalesce(sum(ledger.amount),0)=2
+  from engagement.point_ledger ledger
+  join engagement.point_rule_versions version on version.id=ledger.point_rule_version_id
+  join engagement.point_rule_definitions definition on definition.id=version.point_rule_definition_id
+  where ledger.journey_instance_id=:'e14_journey_instance_id'::uuid
+    and definition.code='complete_quick_activity'),'quick activity point award');
+select
+  coalesce(value#>>'{p,balance}','0') quick_activity_point_balance,
+  coalesce(value#>>'{p,ledger_count}','0') quick_activity_point_count
+from e14_test_results where name='state_after_fail' \gset e14_
+select pg_temp.e14_assert(:'e14_quick_activity_point_balance'::integer=:'e14_diagnostic_point_balance'::integer+2,'failed quick activity point balance');
+select pg_temp.e14_assert(:'e14_quick_activity_point_count'::integer=:'e14_diagnostic_point_count'::integer+1,'failed quick activity point count');
 
 insert into e14_test_results values('start_check_2',public.e14_start_quick_check(
   :'e14_participant_id'::uuid,:'e14_step_instance_id'::uuid,'e14-e2e-start-check-2'));
@@ -236,6 +288,12 @@ insert into e14_test_results values('submit_check_2',public.e14_submit_quick_che
   'e14-e2e-submit-check-2'));
 select value->>'request_id' successful_submit_request_id
 from e14_test_results where name='submit_check_2' \gset e14_
+select pg_temp.e14_assert((select count(*)=1 and coalesce(sum(ledger.amount),0)=2
+  from engagement.point_ledger ledger
+  join engagement.point_rule_versions version on version.id=ledger.point_rule_version_id
+  join engagement.point_rule_definitions definition on definition.id=version.point_rule_definition_id
+  where ledger.journey_instance_id=:'e14_journey_instance_id'::uuid
+    and definition.code='complete_quick_activity'),'quick activity retry must not duplicate award');
 select count(*)::text events_before_submit_replay from eventing.events \gset e14_
 select count(*)::text points_before_submit_replay from engagement.point_ledger \gset e14_
 insert into e14_test_results values('submit_check_2_replay',public.e14_submit_quick_check(
@@ -255,8 +313,8 @@ select pg_temp.e14_assert((select (value#>>'{s,accepted_sections}')::integer=4 f
 select pg_temp.e14_assert((select value#>>'{q,status}'='passed' from e14_test_results where name='final_state'),'passing attempt');
 select pg_temp.e14_assert((select (value#>>'{q,attempt_number}')::integer=2 from e14_test_results where name='final_state'),'attempt number');
 select pg_temp.e14_assert((select (value#>>'{q,score}')::numeric=100 from e14_test_results where name='final_state'),'passing score');
-select pg_temp.e14_assert((select (value#>>'{p,balance}')::bigint=:'e14_diagnostic_point_balance'::bigint+:'e14_fixture_rule_points'::bigint+:'e14_product_rule_points'::bigint from e14_test_results where name='final_state'),'point balance');
-select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=:'e14_diagnostic_point_count'::integer+:'e14_fixture_rule_count'::integer+:'e14_product_rule_count'::integer from e14_test_results where name='final_state'),'point count');
+select pg_temp.e14_assert((select (value#>>'{p,balance}')::bigint=:'e14_quick_activity_point_balance'::bigint+:'e14_fixture_rule_points'::bigint+:'e14_product_rule_points'::bigint from e14_test_results where name='final_state'),'point balance');
+select pg_temp.e14_assert((select (value#>>'{p,ledger_count}')::integer=:'e14_quick_activity_point_count'::integer+:'e14_fixture_rule_count'::integer+:'e14_product_rule_count'::integer from e14_test_results where name='final_state'),'point count');
 select pg_temp.e14_assert((select value->>'journey_status'='completed' from e14_test_results where name='operator_result'),'operator result');
 
 select pg_temp.e14_assert((select count(*)-:'e14_events_before'::bigint>0 from eventing.events),'event total');
@@ -272,8 +330,8 @@ select pg_temp.e14_assert((select
 ),'journey event and outbox parity');
 select pg_temp.e14_assert((select count(*)=8 from eventing.events where correlation_id=:'e14_successful_submit_request_id'::uuid),'correlated events');
 select pg_temp.e14_assert((select
-  count(*)=:'e14_diagnostic_point_count'::integer+:'e14_fixture_rule_count'::integer+:'e14_product_rule_count'::integer
-  and sum(amount)=:'e14_diagnostic_point_balance'::bigint+:'e14_fixture_rule_points'::bigint+:'e14_product_rule_points'::bigint
+  count(*)=:'e14_quick_activity_point_count'::integer+:'e14_fixture_rule_count'::integer+:'e14_product_rule_count'::integer
+  and sum(amount)=:'e14_quick_activity_point_balance'::bigint+:'e14_fixture_rule_points'::bigint+:'e14_product_rule_points'::bigint
   from engagement.point_ledger where journey_instance_id=:'e14_journey_instance_id'::uuid
 ),'point ledger');
 

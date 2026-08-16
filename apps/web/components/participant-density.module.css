@@ -69,8 +69,13 @@
   min-height: 14rem !important;
 }
 
+/* Refined Lovable reference: secondary journey cards stay neutral; color is
+   reserved for the featured journey, actions and status semantics. */
 .density :global(.brand-journey-card) {
   min-height: 0 !important;
+  background: #fff !important;
+  border-color: #e5e7eb !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .05) !important;
 }
 
 .density :global(.brand-journey-card) > :global(.aspect-square) {

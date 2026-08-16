@@ -34,12 +34,17 @@ export function NavItem({
       data-interface-content-key={interfaceContentKey}
       onClick={onNavigate}
       className={cn(
-        "focus-ring flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-[background-color,color,transform] duration-150",
+        "focus-ring flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold transition-[background-color,color,border-color,transform] duration-150",
         variant === "dark"
-          ? isActive ? "bg-white !text-primary" : "!text-white/75 hover:bg-white/10 hover:!text-white"
+          ? cn("rounded-xl", isActive ? "bg-white !text-primary" : "!text-white/75 hover:bg-white/10 hover:!text-white")
           : variant === "top"
-            ? isActive ? "bg-primary-soft !text-primary shadow-sm" : "!text-secondary hover:bg-slate-100 hover:!text-primary"
-            : isActive ? "bg-primary text-white" : "text-ink hover:bg-primary-light",
+            ? cn(
+                "rounded-md border-b-2",
+                isActive
+                  ? "border-primary !text-primary"
+                  : "border-transparent !text-muted hover:bg-primary-soft hover:!text-primary",
+              )
+            : cn("rounded-xl", isActive ? "bg-primary text-white" : "text-ink hover:bg-primary-light"),
         className,
       )}
     >

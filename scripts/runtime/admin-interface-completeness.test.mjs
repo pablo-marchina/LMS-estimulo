@@ -29,11 +29,13 @@ test("participant home only raises the global warning for core data", () => {
   assert.doesNotMatch(home, /Algumas informações não puderam ser atualizadas/u);
 });
 
-test("page headers are compact unless media explicitly needs height", () => {
-  assert.match(header, /layoutVariant/u);
-  assert.match(header, /p-4 sm:p-5/u);
+test("participant page headers stay flat while non-participant media remains supported", () => {
+  assert.match(header, /const participant = pathname === "\/empreendedor"/u);
+  assert.match(header, /const hasMedia = !participant/u);
+  assert.match(header, /if \(participant\)/u);
+  assert.match(header, /border-b border-slate-200 pb-6/u);
+  assert.match(header, /layoutVariant === "compact" \? "p-4 sm:p-5"/u);
   assert.match(header, /hasMedia && layoutVariant === "hero"/u);
-  assert.match(header, /hasMedia && layoutVariant === "hero" \? \(participant \? "min-h-40 sm:min-h-44"/u);
 });
 
 test("interface administration catalogs every platform area with preview and specifications", () => {

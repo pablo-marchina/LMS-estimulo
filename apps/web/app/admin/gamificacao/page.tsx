@@ -14,12 +14,13 @@ import { CertificateEditor } from "./certificate-editor";
 import { CertificateIssuerManager } from "./certificate-issuer-manager";
 import { CertificateTemplateManager } from "./certificate-template-manager";
 import { HomeBadgeHighlights } from "./home-badge-highlights";
-import { PointRuleEditor } from "./point-rule-editor";
+import { PointRuleEditor, type AssessmentTargetOption } from "./point-rule-editor";
 
 export const dynamic = "force-dynamic";
 
 function single(value: string | string[] | undefined) { return Array.isArray(value) ? value[0] ?? "" : value ?? ""; }
 function objectValue(value: unknown): Record<string, unknown> { return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
+function stringArray(value: unknown): string[] { return Array.isArray(value) ? value.map(String).filter(Boolean) : []; }
 function definitions(value: unknown): DefinitionSummary[] { return Array.isArray(value) ? value as DefinitionSummary[] : []; }
 function versionsOf(item: DefinitionSummary): VersionSummary[] { return Array.isArray(item.versions) ? item.versions : []; }
 
@@ -33,6 +34,29 @@ const frequencyLabels: Record<string, string> = {
   participant_week: "Limite semanal",
   event: "Sem limite",
 };
+
+function targetLabel(recurrence: Record<string, unknown>, assessmentTargets: AssessmentTargetOption[]) {
+  const trigger = objectValue(recurrence.trigger);
+  const eventName = String(trigger.event_name ?? "");
+  const activityCodes = stringArray(trigger.activity_codes);
+  const pathCodes = stringArray(trigger.path_codes);
+  if (eventName === "assessment.attempt.passed" || eventName === "assessment.attempt.submitted") {
+    const matches = assessmentTargets.filter((target) =>
+      (activityCodes.length === 0 || activityCodes.includes(target.activityCode)) &&
+      (pathCodes.length === 0 || pathCodes.includes(target.pathCode)),
+    );
+    if (matches.length) return matches.map((target) => `${target.activityTitle} · ${target.pathName}`).join("; ");
+    return activityCodes.length || pathCodes.length ? "Avaliação configurada fora do catálogo atual" : "Qualquer avaliação";
+  }
+  if (eventName === "journey.path.completed") return "Conclusão de trilha";
+  if (eventName === "learning.activity.completed") return "Conclusão de conteúdo";
+  if (eventName === "diagnostic.session.completed") return "Diagnóstico empreendedor";
+  if (eventName === "learning.activity.utility.rated") return "Avaliação de utilidade da aula";
+  if (eventName === "learning.practice.evidence.confirmed") return "Atividade prática confirmada";
+  if (eventName === "learning.external_credential.confirmed") return "Certificado externo confirmado";
+  if (eventName === "journey.instance.started") return "Início da jornada";
+  return eventName || "Gatilho não informado";
+}
 
 export default async function AdminGamificationPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const query = await searchParams;
@@ -62,6 +86,23 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
     .filter((version) => version.status !== "retired")
     .map((version) => String(version.id))));
 
+  const assessmentTargets: AssessmentTargetOption[] = Array.from(new Map(journeys
+    .filter((journey) => journey.status !== "retired")
+    .flatMap((journey) => versionsOf(journey)
+      .filter((version) => version.status !== "retired")
+      .flatMap((version) => (version.trilhas ?? [])
+        .filter((track) => track.status !== "retired")
+        .flatMap((track) => track.aulas
+          .filter((activity) => Boolean(activity.assessment))
+          .map((activity) => [`${track.code}:${activity.code}`, {
+            activityCode: activity.code,
+            activityTitle: activity.title,
+            pathCode: track.code,
+            pathName: track.name,
+            journeyName: journey.name,
+          }] as const)))),
+  ).values());
+
   const ruleVersions = rules.flatMap((item) => versionsOf(item).filter((version) => version.status === "published").map((version) => ({
     id: String(version.id),
     definitionName: item.name,
@@ -88,7 +129,7 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
   const activePointRules = pointRules.filter((item) => item.status !== "retired");
   const pointRuleEditorData = activePointRules.map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), amount: Number(version.amount ?? 10), eligibility_rule_version_id: String(version.eligibility_rule_version_id ?? ""), recurrence_policy: objectValue(version.recurrence_policy) })) }));
   const badgeEditorData = badges.filter((item) => item.status !== "retired").map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), title: String(version.title ?? item.name), description: String(version.description ?? ""), criteria_rule_version_id: String(version.criteria_rule_version_id ?? "") })) }));
-  const certificateEditorData = certificates.map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), journey_version_id: String(version.journey_version_id ?? ""), requirements_rule_version_id: String(version.requirements_rule_version_id ?? ""), template_file_object_id: typeof version.template_file_object_id === "string" ? version.template_file_object_id : null, validity_policy: objectValue(version.validity_policy), template_layout: objectValue(version.template_layout) })) }));
+  const certificateEditorData = certificates.filter((item) => item.status !== "retired" && versionsOf(item).length > 0).map((item) => ({ definition_id: item.definition_id, name: item.name, versions: versionsOf(item).map((version) => ({ id: String(version.id), version_number: Number(version.version_number), status: String(version.status), journey_version_id: String(version.journey_version_id ?? ""), requirements_rule_version_id: String(version.requirements_rule_version_id ?? ""), template_file_object_id: typeof version.template_file_object_id === "string" ? version.template_file_object_id : null, validity_policy: objectValue(version.validity_policy), template_layout: objectValue(version.template_layout) })) }));
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
     <PageHeader eyebrow="Reconhecimento" title="Pontos, selos e certificados" description="Configure como a plataforma reconhece o progresso dos participantes." />
@@ -99,11 +140,11 @@ export default async function AdminGamificationPage({ searchParams }: { searchPa
       { href: "/admin/gamificacao?tipo=certificados", label: "Certificados", active: type === "certificados" },
     ]} />
     {single(query.sucesso) ? <StatusPanel title="Configuração salva" tone="success">A alteração já foi registrada.</StatusPanel> : null}
-    {single(query.erro) ? <StatusPanel title="Não foi possível salvar" tone="warning">Revise os campos e tente novamente.</StatusPanel> : null}
+    {single(query.erro) ? <StatusPanel title="Não foi possível salvar" tone="warning">{single(query.erro) === "avaliacao_obrigatoria" ? "Selecione pelo menos uma avaliação real para uma regra de aprovação." : "Revise os campos e tente novamente."}</StatusPanel> : null}
 
     {type === "pontos" ? <div className="grid gap-5">
-      <Card><h2 className="text-lg font-semibold text-ink">Regras em uso</h2><p className="mt-1 text-sm text-muted">Veja quais ações geram pontos, o valor e a frequência.</p>{activePointRules.length ? <TableScroll className="mt-4"><Table><thead><tr><Th>Ação</Th><Th>Pontos</Th><Th>Frequência</Th></tr></thead><tbody>{activePointRules.map((item) => { const itemVersions = versionsOf(item); const version = [...itemVersions].sort((a,b) => Number(b.version_number)-Number(a.version_number)).find((entry) => String(entry.status)==="published") ?? itemVersions[0]; const recurrence=objectValue(version?.recurrence_policy); const frequencyLabel = recurrence.frequency === "per_certificate" ? "Uma vez por certificado" : frequencyLabels[String(recurrence.scope ?? "")] ?? "Uma única vez"; return <tr key={item.definition_id}><Td><strong>{item.name}</strong></Td><Td>{String(version?.amount ?? "—")}</Td><Td>{frequencyLabel}</Td></tr>; })}</tbody></Table></TableScroll> : <p className="mt-4 text-sm text-muted">Nenhuma regra criada.</p>}</Card>
-      <fieldset disabled={!canEdit} className="contents"><PointRuleEditor pointRules={pointRuleEditorData} /></fieldset>
+      <Card><h2 className="text-lg font-semibold text-ink">Regras em uso</h2><p className="mt-1 text-sm text-muted">Veja a ação, o valor, a frequência e exatamente onde o gatilho acontece.</p>{activePointRules.length ? <TableScroll className="mt-4"><Table><thead><tr><Th>Ação</Th><Th>Onde acontece</Th><Th>Pontos</Th><Th>Frequência</Th></tr></thead><tbody>{activePointRules.map((item) => { const itemVersions = versionsOf(item); const version = [...itemVersions].sort((a,b) => Number(b.version_number)-Number(a.version_number)).find((entry) => String(entry.status)==="published") ?? itemVersions[0]; const recurrence=objectValue(version?.recurrence_policy); const frequencyLabel = recurrence.frequency === "per_certificate" ? "Uma vez por certificado" : frequencyLabels[String(recurrence.scope ?? "")] ?? "Uma única vez"; return <tr key={item.definition_id}><Td><strong>{item.name}</strong></Td><Td><span className="text-sm text-muted">{targetLabel(recurrence, assessmentTargets)}</span></Td><Td>{String(version?.amount ?? "—")}</Td><Td>{frequencyLabel}</Td></tr>; })}</tbody></Table></TableScroll> : <p className="mt-4 text-sm text-muted">Nenhuma regra criada.</p>}</Card>
+      <fieldset disabled={!canEdit} className="contents"><PointRuleEditor pointRules={pointRuleEditorData} assessmentTargets={assessmentTargets} /></fieldset>
     </div> : null}
 
     {type === "selos" ? <fieldset disabled={!canEdit} className="contents"><div className="grid gap-5">{homeBadgeHighlights ? <HomeBadgeHighlights workspace={homeBadgeHighlights} /> : <StatusPanel title="Destaques da Home indisponíveis" tone="warning">Os selos continuam acessíveis. Apenas a configuração opcional de destaques não pôde ser carregada.</StatusPanel>}<BadgeEditor badges={badgeEditorData} ruleVersions={badgeRuleVersions} /></div></fieldset> : null}

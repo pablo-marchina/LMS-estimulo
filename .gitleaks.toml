@@ -12,3 +12,11 @@ regexes = [
   '''^\s*CPF_ENCRYPTION_KEY\s*[:=]\s*MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=\s*$''',
   '''^\s*CPF_LOOKUP_HMAC_KEY\s*[:=]\s*ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=\s*$''',
 ]
+
+[[allowlists]]
+description = "Supabase publishable keys are intentionally public; limit this exception to the historical one-shot migration workflow"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^\.github/workflows/migrate-lesson-videos\.yml$''']
+regexes = ['''^\s*SUPABASE_PUBLISHABLE_KEY\s*:\s*sb_publishable_[A-Za-z0-9_]+\s*$''']

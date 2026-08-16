@@ -21,17 +21,18 @@ test("participant shell warms video providers before lesson navigation", async (
   assert.match(viewer, /googleDriveEmbed/);
 });
 
-test("mobile participant menu retracts on selection and route changes", async () => {
+test("mobile participant navigation stays compact without a collapsible drawer", async () => {
   const [shell, navItem] = await Promise.all([
     read("apps/web/components/participant-shell.tsx"),
     read("apps/web/components/ui/nav-item.tsx"),
   ]);
 
-  assert.match(navItem, /onNavigate\?: \(\) => void/);
-  assert.match(navItem, /onClick=\{onNavigate\}/);
-  assert.match(shell, /onNavigate=\{\(\) => setMobileOpen\(false\)\}/);
-  assert.match(shell, /useEffect\(\(\) => \{\s*setMobileOpen\(false\);\s*\}, \[pathname, search\]\)/s);
-  assert.match(shell, /max-h-\[calc\(100dvh-4rem\)\] overflow-y-auto/);
+  assert.match(navItem, /variant === "top"/u);
+  assert.match(shell, /border-t border-border\/70 md:hidden/u);
+  assert.match(shell, /overflow-x-auto/u);
+  assert.match(shell, /hidden min-w-0 items-center gap-1 md:flex/u);
+  assert.doesNotMatch(shell, /setMobileOpen/u);
+  assert.doesNotMatch(shell, /max-h-\[calc\(100dvh-4rem\)\] overflow-y-auto/u);
 });
 
 test("quick-check state is scoped to the currently focused lesson", async () => {

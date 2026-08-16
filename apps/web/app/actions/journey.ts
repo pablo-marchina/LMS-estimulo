@@ -100,12 +100,12 @@ export async function acknowledgeActivityAction(formData: FormData) {
 
 export async function createActivityCommentAction(formData: FormData) {
   const actor = await actorId();
-  const journey = uuid.parse(formData.get("journey_instance_id"));
+  uuid.parse(formData.get("journey_instance_id"));
   const step = uuid.parse(formData.get("step_instance_id"));
   const body = commentBody.parse(String(formData.get("body") ?? ""));
   const key = String(formData.get("idempotency_key") || randomUUID());
-  await journeyRuntime.createActivityComment(actor, step, body, key);
-  redirect(inlineActivityHref(journey, step, "&comentario=criado", "comentarios"));
+  const result = await journeyRuntime.createActivityComment(actor, step, body, key);
+  return result.data;
 }
 
 export async function moderateActivityCommentAction(formData: FormData) {

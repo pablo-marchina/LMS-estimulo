@@ -39,7 +39,7 @@ test("activity route uses compact tabs without trapping vertical scroll", async 
 
   assert.match(actions, /function inlineActivityHref\(journey: string, step: string, query = "", hash = "aula"\)/u);
   assert.match(actions, /inlineActivityHref\(journey, step, "&utilidade=registrada", "conteudo"\)/u);
-  assert.match(actions, /inlineActivityHref\(journey, step, "&comentario=criado", "comentarios"\)/u);
+  assert.doesNotMatch(actions, /inlineActivityHref\(journey, step, "&comentario=criado", "comentarios"\)/u);
   assert.match(actions, /inlineActivityHref\(journey, step, "&avaliacao=reprovada", "avaliacao"\)/u);
   assert.doesNotMatch(actions, /\/empreendedor\/atividade\/\$\{step\}\?utilidade=registrada/u);
 

@@ -13,10 +13,11 @@ const files = await Promise.all([
   readFile("apps/web/app/admin/produto/unpublish-action.ts", "utf8"),
   readFile("apps/web/app/admin/comportamento/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
+  readFile("apps/web/components/activity-prompt-library.tsx", "utf8"),
   readFile("supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql", "utf8"),
 ]);
 
-const [adminShell, libraryDeliveries, operationPage, deliveryOperations, interfaceSelector, productPage, deleteAction, unpublishAction, behaviorPage, lessonPage, migration] = files;
+const [adminShell, libraryDeliveries, operationPage, deliveryOperations, interfaceSelector, productPage, deleteAction, unpublishAction, behaviorPage, lessonPage, promptLibrary, migration] = files;
 
 test("standalone admin deliveries screen is removed and responsibilities are consolidated", async () => {
   assert.doesNotMatch(adminShell, /\/admin\/entregas/u);
@@ -55,9 +56,13 @@ test("published journeys can return to draft and only drafts can be deleted", ()
   assert.match(migration, /delete_admin_journey_draft/u);
 });
 
-test("published lesson UI hides complementary text while migrations preserve runtime content", () => {
+test("published lesson hides legacy complementary sections and renders the versioned prompt library", () => {
   assert.doesNotMatch(lessonPage, /activity\.sections/u);
-  assert.doesNotMatch(lessonPage, /activity\.prompts/u);
+  assert.match(lessonPage, /ActivityPromptLibrary/u);
+  assert.match(lessonPage, /activity\.prompts\.length \? <ActivityPromptLibrary prompts=\{activity\.prompts\}/u);
+  assert.match(lessonPage, /href="#prompts"/u);
+  assert.match(promptLibrary, /Biblioteca de prompts desta aula/u);
+  assert.match(promptLibrary, /navigator\.clipboard\.writeText/u);
   assert.doesNotMatch(lessonPage, /Prompts para adaptar/u);
   assert.doesNotMatch(migration, /-'content_sections'-'prompts'/u);
   assert.match(lessonPage, /xl:grid-cols-\[minmax\(0,1fr\)_300px\]/u);

@@ -12,6 +12,7 @@ import { extendedCredentialRuntime } from "@/lib/credentials/extended-runtime";
 import { engagementRuntime } from "@/lib/engagement/runtime";
 
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
+function texts(formData: FormData, name: string) { return Array.from(new Set(formData.getAll(name).map((value) => String(value).trim()).filter(Boolean))); }
 function nullable(formData: FormData, name: string) { return text(formData, name) || null; }
 function selectedFile(formData: FormData, name: string) { const entry = formData.get(name); return entry instanceof File && entry.size > 0 ? entry : null; }
 function deriveCode(source: string, fallback: string) { const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60); return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback; }
@@ -23,8 +24,16 @@ function recurrencePolicy(formData: FormData): Record<string, unknown> {
   const scope: Record<string, string> = { once: "participant", per_activity: "enrollment_activity", per_assessment: "enrollment_assessment", per_path: "path", per_journey: "journey", per_certificate: "event", daily: "participant_day", weekly: "participant_week", unlimited: "event" };
   const eventName = text(formData, "trigger_event");
   if (!eventName) throw new Error("POINT_TRIGGER_REQUIRED");
-  if (frequency === "per_certificate") return { scope: "event", frequency: "per_certificate", transferable: false, trigger: { event_name: eventName } };
-  return { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false, trigger: { event_name: eventName } };
+  const activityCodes = texts(formData, "trigger_activity_code");
+  const pathCodes = texts(formData, "trigger_path_code");
+  if (eventName === "assessment.attempt.passed" && activityCodes.length === 0) throw new Error("POINT_ASSESSMENT_TARGET_REQUIRED");
+  const trigger: Record<string, unknown> = {
+    event_name: eventName,
+    ...(activityCodes.length ? { activity_codes: activityCodes } : {}),
+    ...(pathCodes.length ? { path_codes: pathCodes } : {}),
+  };
+  if (frequency === "per_certificate") return { scope: "event", frequency: "per_certificate", transferable: false, trigger };
+  return { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false, trigger };
 }
 function validityPolicy(formData: FormData): Record<string, unknown> { return text(formData, "validity_mode") === "months" ? { expires: true, duration_months: positiveInteger(text(formData, "validity_months"), 12) } : { expires: false }; }
 
@@ -51,13 +60,20 @@ export async function saveGamificationResourceAction(formData: FormData) {
           .sort((a, b) => Number(b.version_number) - Number(a.version_number))[0]
       : null;
     if (!eligibilityVersion) redirect("/admin/gamificacao?tipo=pontos&erro=elegibilidade_indisponivel");
+    let recurrence: Record<string, unknown>;
+    try {
+      recurrence = recurrencePolicy(formData);
+    } catch (error) {
+      const code = error instanceof Error ? error.message : "";
+      redirect(`/admin/gamificacao?tipo=pontos&erro=${code === "POINT_ASSESSMENT_TARGET_REQUIRED" ? "avaliacao_obrigatoria" : "gatilho_obrigatorio"}`);
+    }
     payload = {
       definition_id: definitionId,
       code: existing?.code ?? deriveCode(name, `pontos_${randomUUID().slice(0,8)}`),
       name,
       amount: Number(text(formData, "amount")),
       eligibility_rule_version_id: String(eligibilityVersion.id),
-      recurrence_policy: recurrencePolicy(formData),
+      recurrence_policy: recurrence!,
       status: text(formData, "status") || "draft",
     };
   } else if (resourceType === "badge") {

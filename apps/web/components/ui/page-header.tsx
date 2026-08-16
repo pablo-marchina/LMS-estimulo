@@ -40,19 +40,19 @@ export function PageHeader({
   const prefix = cmsKey ?? pageHeaderCmsPrefix(pathname);
   const mediaKey = `${prefix}.media`;
   const media = content[mediaKey] ?? {};
+  const participant = pathname === "/empreendedor" || pathname.startsWith("/empreendedor/");
   const desktopImage = media.image_file_object_id
     ? `/api/interface-content/image?key=${encodeURIComponent(mediaKey)}&variant=desktop`
     : safeMediaUrl(media.image_url);
   const mobileImage = media.mobile_image_file_object_id
     ? `/api/interface-content/image?key=${encodeURIComponent(mediaKey)}&variant=mobile`
     : safeMediaUrl(media.mobile_image_url) ?? desktopImage;
-  const hasMedia = interfaceVisible(content, mediaKey, false) && Boolean(desktopImage);
+  const hasMedia = !participant && interfaceVisible(content, mediaKey, false) && Boolean(desktopImage);
   const configuredLayout = typeof media.layout_variant === "string" ? media.layout_variant : "";
   const layoutVariant = ["compact", "default", "wide", "hero"].includes(configuredLayout)
     ? configuredLayout
     : hasMedia ? "hero" : "compact";
-  const dark = tone === "dark" || hasMedia;
-  const participant = pathname === "/empreendedor" || pathname.startsWith("/empreendedor/");
+  const dark = !participant && (tone === "dark" || hasMedia);
   const resolvedEyebrow = eyebrow ? interpolateInterfaceVariables(interfaceText(content, `${prefix}.eyebrow`, eyebrow), variables) : "";
   const resolvedTitle = typeof title === "string" ? interpolateInterfaceVariables(interfaceText(content, `${prefix}.title`, title), variables) : title;
   const resolvedDescription = typeof description === "string" ? interpolateInterfaceVariables(interfaceText(content, `${prefix}.description`, description), variables) : description;
@@ -61,13 +61,32 @@ export function PageHeader({
     ? Math.min(0.9, Math.max(0, media.overlay_opacity))
     : 0.48;
 
+  if (participant) {
+    return (
+      <header className={cn("mb-6 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 border-b border-slate-200 pb-6", className)}>
+        <div className="min-w-0 max-w-2xl">
+          {resolvedEyebrow && interfaceVisible(content, `${prefix}.eyebrow`) ? (
+            <p data-interface-content-key={`${prefix}.eyebrow`} className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{resolvedEyebrow}</p>
+          ) : null}
+          {interfaceVisible(content, `${prefix}.title`) ? (
+            <h1 data-interface-content-key={`${prefix}.title`} className="text-[26px] font-bold leading-tight tracking-[-.02em] text-primary sm:text-[32px]">{resolvedTitle}</h1>
+          ) : null}
+          {resolvedDescription && interfaceVisible(content, `${prefix}.description`) ? (
+            <p data-interface-content-key={`${prefix}.description`} className="mt-2 text-[15px] leading-relaxed text-muted">{resolvedDescription}</p>
+          ) : null}
+        </div>
+        {actions ? <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div> : null}
+      </header>
+    );
+  }
+
   return (
     <header
       className={cn(
         "relative isolate flex flex-col overflow-hidden rounded-xl sm:flex-row sm:items-end sm:justify-between",
-        participant ? "mb-4 gap-3" : "mb-5 gap-3 sm:gap-4",
+        "mb-5 gap-3 sm:gap-4",
         layoutVariant === "compact" ? "p-4 sm:p-5" : layoutVariant === "wide" ? "p-5 sm:p-7" : "p-5 sm:p-6",
-        hasMedia && layoutVariant === "hero" ? (participant ? "min-h-40 sm:min-h-44" : "min-h-44 sm:min-h-52") : "",
+        hasMedia && layoutVariant === "hero" ? "min-h-44 sm:min-h-52" : "",
         hasMedia && layoutVariant === "wide" ? "min-h-36 sm:min-h-40" : "",
         dark ? "brand-hero text-white" : "brand-page-header border border-border",
         className,

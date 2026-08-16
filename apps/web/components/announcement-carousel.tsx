@@ -77,9 +77,9 @@ export function AnnouncementCarousel({ announcements }: { announcements: Partici
         {slides.map((announcement, index) => {
           const imageOnly = announcement.display_mode === "image_only";
           return (
-            <article key={announcement.id} className="brand-carousel-slide !h-[38svh] !max-h-[38svh] !min-h-0 !aspect-auto max-[720px]:!h-[36svh] max-[720px]:!max-h-[36svh]" aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
+            <article key={announcement.id} className="brand-carousel-slide !h-[32svh] !max-h-[32svh] !min-h-0 !aspect-auto max-[720px]:!h-[30svh] max-[720px]:!max-h-[30svh]" aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
               <BannerImage announcement={announcement} index={index} />
-              {imageOnly ? <span className="sr-only">{announcement.title}. {announcement.body}</span> : <><div className="brand-carousel-overlay" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-4 max-w-2xl text-3xl leading-none text-white sm:text-4xl lg:text-5xl">{announcement.title}</h3><p className="mt-4 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p></div></>}
+              {imageOnly ? <span className="sr-only">{announcement.title}. {announcement.body}</span> : <><div className="brand-carousel-overlay" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-3 max-w-2xl text-2xl leading-none text-white sm:text-3xl lg:text-4xl">{announcement.title}</h3><p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p></div></>}
               <SlideLink announcement={announcement} index={index} />
             </article>
           );

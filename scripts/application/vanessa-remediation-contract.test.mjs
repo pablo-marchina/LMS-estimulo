@@ -22,8 +22,10 @@ const [
   rewardMigration,
   badgeMigration,
   pointEligibilityMigration,
-  pointDedupeMigration,
-  diagnosticJourneyMigration,
+  completeRemediationMigration,
+  completionCtaMigration,
+  progressReferenceMigration,
+  pointAwardReplayMigration,
   migrationBoundary,
 ] = await Promise.all([
   readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8"),
@@ -45,8 +47,10 @@ const [
   readFile("supabase/migrations/20260815202049_automatic_reward_points_live_alignment.sql", "utf8"),
   readFile("supabase/migrations/20260815203254_rebind_orphaned_path_badges_to_current_tracks.sql", "utf8"),
   readFile("supabase/migrations/20260815203650_canonical_point_rule_eligibility.sql", "utf8"),
-  readFile("supabase/migrations/20260815211500_deduplicate_complete_lesson_point_rule.sql", "utf8"),
-  readFile("supabase/migrations/20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql", "utf8"),
+  readFile("supabase/migrations/20260816011759_complete_vanessa_video_remediation.sql", "utf8"),
+  readFile("supabase/migrations/20260816012301_participant_lesson_completion_cta.sql", "utf8"),
+  readFile("supabase/migrations/20260816012704_fix_completion_progress_current_step_reference.sql", "utf8"),
+  readFile("supabase/migrations/20260816031000_restore_live_point_award_function.sql", "utf8"),
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
 ]);
 
@@ -63,6 +67,8 @@ test("all lessons are open by database invariant and journey renders selected le
   assert.match(openLessonsMigration, /before insert or update of status on orchestration\.step_instances/u);
   assert.match(openLessonsMigration, /if new\.status = 'locked'/u);
   assert.match(openLessonsMigration, /new\.status := 'available'/u);
+  assert.match(completeRemediationMigration, /open_all_paths/u);
+  assert.match(completeRemediationMigration, /ensure_participant_open_paths/u);
   assert.match(journeyActions, /redirect\(`\/empreendedor\/jornada\/\$\{journeyInstanceId\}\?conteudo=\$\{stepInstanceId\}#aula`\)/u);
   assert.match(journeyPage, /<ActivityWorkspaceFrame>/u);
   assert.match(journeyPage, /<ActivityPage/u);
@@ -85,6 +91,7 @@ test("certificate templates persist a private preview and remain reusable", () =
   assert.match(certificatePreviewRoute, /certificateTemplatePreviewDownload/u);
   assert.match(certificatePreviewRoute, /organization_id/u);
   assert.match(certificatePreviewRoute, /cache-control": "private, no-store/u);
+  assert.match(completeRemediationMigration, /uq_certificate_template_assignments_active_scope/u);
 });
 
 test("certificate rule selection is scoped by journey in UI and enforced in database", () => {
@@ -104,22 +111,45 @@ test("diagnostic result content belongs to profile state and is persisted as ver
   assert.doesNotMatch(diagnosticBuilder, /profile_result_[^\n]+defaultValue=/u);
   assert.match(diagnosticActions, /result_content: resultContent/u);
   assert.match(diagnosticResult, /normalizeDiagnosticProfileResultContent\(resultContent\)/u);
+  assert.match(completeRemediationMigration, /result_content/u);
 });
 
 test("point configuration exposes domain choices only and resolves eligibility server-side", () => {
   assert.doesNotMatch(pointEditor, /name="eligibility_rule_version_id"/u);
-  assert.match(pointEditor, /A elegibilidade técnica geral é aplicada automaticamente pelo servidor/u);
+  assert.match(pointEditor, /A regra técnica de elegibilidade é vinculada automaticamente/u);
+  assert.match(pointEditor, /Qual avaliação dispara esta regra/u);
+  assert.match(pointEditor, /O servidor salva os códigos da aula e da trilha juntos/u);
   assert.match(gamificationActions, /general_point_eligibility/u);
   assert.match(gamificationActions, /eligibility_rule_version_id: String\(eligibilityVersion\.id\)/u);
+  assert.match(gamificationActions, /POINT_ASSESSMENT_TARGET_REQUIRED/u);
+  assert.match(gamificationActions, /trigger_activity_code/u);
+  assert.match(gamificationActions, /trigger_path_code/u);
   assert.match(rewardMigration, /trg_credit_reward_wallet_from_point_ledger/u);
   assert.match(rewardMigration, /trg_block_manual_reward_conversion/u);
   assert.match(pointEligibilityMigration, /general_point_eligibility/u);
-  assert.match(pointDedupeMigration, /partition by pd\.owner_organization_id, pd\.code/u);
-  assert.match(pointDedupeMigration, /pv\.amount = 5/u);
-  assert.match(pointDedupeMigration, /pv\.recurrence_policy ->> 'scope' = 'enrollment_activity'/u);
-  assert.match(pointDedupeMigration, /pv\.recurrence_policy ->> 'maximum' = '1'/u);
-  assert.match(pointDedupeMigration, /pv\.recurrence_policy #>> '\{trigger,event_name\}' = 'learning\.activity\.completed'/u);
-  assert.match(pointDedupeMigration, /set status = 'retired'/u);
+  assert.match(completeRemediationMigration, /ranked_complete_lesson_rules/u);
+  assert.match(completeRemediationMigration, /row_number\(\) over/u);
+  assert.match(completeRemediationMigration, /trigger,event_name/u);
+  assert.match(completeRemediationMigration, /learning\.activity\.completed/u);
+  assert.match(completeRemediationMigration, /set\s+status\s*=\s*'retired'/u);
+  assert.match(completeRemediationMigration, /publication_rank\s*>\s*1/u);
+});
+
+test("participant lesson completion is explicit, guarded and emits the canonical completion event", () => {
+  assert.match(completionCtaMigration, /complete_participant_activity/u);
+  assert.match(completionCtaMigration, /REQUIRED_CONTENT_INCOMPLETE/u);
+  assert.match(completionCtaMigration, /ASSESSMENT_NOT_PASSED/u);
+  assert.match(completionCtaMigration, /PRACTICE_COMPLETION_MANAGED_BY_REVIEW/u);
+  assert.match(completionCtaMigration, /learning\.activity\.completed/u);
+  assert.match(progressReferenceMigration, /candidate_step\.id/u);
+});
+
+test("point award replay restores the hardened live function", () => {
+  assert.match(pointAwardReplayMigration, /award_participant_action_points/u);
+  assert.match(pointAwardReplayMigration, /p_journey_instance_id/u);
+  assert.doesNotMatch(pointAwardReplayMigration, /where\s+ji\.id\s*=\s*p_journey_instance(?!_id)/u);
+  assert.match(pointAwardReplayMigration, /JOURNEY_INSTANCE_NOT_AVAILABLE/u);
+  assert.match(pointAwardReplayMigration, /definition\.owner_organization_id\s*=\s*v_org/u);
 });
 
 test("badge and certificate rule lists are derived from current domain entities, not names", () => {
@@ -139,9 +169,10 @@ test("migration release boundary includes the audited structural migrations", ()
   assert.match(migrationBoundary, /20260815202049_automatic_reward_points_live_alignment\.sql/u);
   assert.match(migrationBoundary, /20260815203254_rebind_orphaned_path_badges_to_current_tracks\.sql/u);
   assert.match(migrationBoundary, /20260815203650_canonical_point_rule_eligibility\.sql/u);
-  assert.match(migrationBoundary, /20260815211500_deduplicate_complete_lesson_point_rule\.sql/u);
-  assert.match(migrationBoundary, /20260816050000_fix_diagnostic_presentation_and_journey_track_order\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260816050000_fix_diagnostic_presentation_and_journey_track_order\.sql'/u);
-  assert.match(diagnosticJourneyMigration, /v_presentation_configuration/u);
-  assert.match(diagnosticJourneyMigration, /order by template\.position,template\.id/u);
+  assert.match(migrationBoundary, /20260816011759_complete_vanessa_video_remediation\.sql/u);
+  assert.match(migrationBoundary, /20260816012301_participant_lesson_completion_cta\.sql/u);
+  assert.match(migrationBoundary, /20260816012704_fix_completion_progress_current_step_reference\.sql/u);
+  assert.match(migrationBoundary, /20260816031000_restore_live_point_award_function\.sql/u);
+  assert.match(migrationBoundary, /20260816035500_scope_quick_activity_points_per_assessment\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260816035500_scope_quick_activity_points_per_assessment\.sql'/u);
 });

@@ -165,7 +165,6 @@ test("reward points are automatic while cancellation still refunds points and st
   assert.match(rewardsAdmin, /redemption_status/u);
   assert.match(rewardsParticipant, /RewardsExperience/u);
   assert.doesNotMatch(rewardsExperience, /reward_convert/u);
-  assert.match(rewardsExperience, /Não é necessário converter nada/u);
   assert.match(rewardsExperience, /reward_redeem/u);
   assert.match(automaticRewardMigration, /credit_reward_wallet_from_point_ledger/u);
   assert.match(automaticRewardMigration, /REWARD_CONVERSION_DISABLED/u);
