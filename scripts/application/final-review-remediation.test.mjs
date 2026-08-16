@@ -110,6 +110,6 @@ test("private participant media reuses signed redirects instead of reauthenticat
 
 test("certificate template preview stays on the canonical extensions gateway while reusing its signed redirect", () => {
   assert.match(certificatePreviewRoute, /extensionsRuntime\.certificateTemplatePreviewDownload/u);
-  assert.match(certificatePreviewRoute, /p_actor_user_account_id/u);
+  assert.match(certificatePreviewRoute, /auth\.identity\.user_account_id/u);
   assert.doesNotMatch(certificatePreviewRoute, /createPrivilegedClient/u);
 });
