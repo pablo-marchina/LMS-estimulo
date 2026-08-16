@@ -26,6 +26,7 @@ type JourneyQuery = {
   codigo?: string;
   avaliacao?: string;
   utilidade?: string;
+  conclusao?: string;
 };
 
 const heroToneClasses: Record<string, string> = {
@@ -216,11 +217,7 @@ export default async function JourneyOutlinePage({
       )}
 
       {selectedActivity ? (
-        <section id="aula" className="scroll-mt-20 overflow-hidden rounded-[2rem] border border-primary/15 bg-white shadow-lg" aria-label={`Conteúdo aberto: ${selectedActivity.activity_title}`}>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-primary-soft/35 px-4 py-3 sm:px-5">
-            <div><p className="text-[11px] font-black uppercase tracking-[.13em] text-primary">Conteúdo aberto</p><h2 className="text-lg font-black text-secondary">{selectedActivity.activity_title}</h2></div>
-            <ButtonLink href={`/empreendedor/jornada/${journeyInstanceId}`} variant="secondary" size="sm">Fechar conteúdo</ButtonLink>
-          </div>
+        <section id="aula" className="scroll-mt-20" aria-label={`Conteúdo aberto: ${selectedActivity.activity_title}`}>
           <ActivityWorkspaceFrame>
             <ActivityPage
               params={Promise.resolve({ stepInstanceId: selectedActivity.step_instance_id })}
@@ -231,6 +228,7 @@ export default async function JourneyOutlinePage({
                 codigo: query.codigo,
                 avaliacao: query.avaliacao,
                 utilidade: query.utilidade,
+                conclusao: query.conclusao,
               })}
             />
           </ActivityWorkspaceFrame>
