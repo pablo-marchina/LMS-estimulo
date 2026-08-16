@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.110.2";
 const allowed = new Set([
   "get_admin_extensions_workspace",
   "get_admin_ai_grading_provider",
+  "get_admin_certificate_template_preview_download",
   "save_ai_grading_provider",
   "save_admin_extension",
   "get_participant_extensions",

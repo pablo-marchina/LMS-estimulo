@@ -22,7 +22,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
   const metrics = report.metrics;
   const view = query.view === "jornadas" ? "jornadas" : query.view === "aulas" ? "aulas" : "resumo";
 
-  return <AppShell area="admin" email={auth.email}><div className="grid gap-6">
+  return <AppShell area="admin" email={auth.email}><div className="grid min-w-0 gap-6">
     <PageHeader eyebrow="Resultados" title="Relatórios" description="Acompanhe os indicadores principais e abra detalhes somente quando necessário." />
     <AdminSectionNav items={[{ href: "/admin/relatorios?view=resumo", label: "Resumo", active: view === "resumo" }, { href: "/admin/relatorios?view=jornadas", label: "Por jornada", active: view === "jornadas" }, { href: "/admin/relatorios?view=aulas", label: "Por aula", active: view === "aulas" }]} />
     <p className="text-sm text-muted">Atualizado em {date(report.generated_at)}</p>
