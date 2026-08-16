@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ rew
   try {
     const descriptor = await extensionsRuntime.rewardImageDownload(auth.identity.user_account_id, parsed.data);
     const url = await createRewardImageUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key });
-    return NextResponse.redirect(url, { status: 302, headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL } });
+    return NextResponse.redirect(url, { status: 302, headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL, vary: "Cookie" } });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
     const status = raw.includes("FORBIDDEN") || raw.includes("42501") ? 403 : raw.includes("NOT_FOUND") || raw.includes("P0002") ? 404 : 500;
