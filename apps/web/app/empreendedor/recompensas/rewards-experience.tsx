@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Crown, Gift, History, ImageIcon, LockKeyhole, Medal, Sparkles, Trophy, WalletCards, Zap } from "lucide-react";
+import { CheckCircle2, Crown, Gift, History, ImageIcon, LockKeyhole, Medal, Trophy, WalletCards, Zap } from "lucide-react";
 import { performExtensionAction } from "@/app/empreendedor/extension-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
@@ -8,54 +8,22 @@ import { StatusPill } from "@/components/ui/status-pill";
 import type { ParticipantPointRule, PointHistoryEntry, RankingEntry } from "@/lib/engagement/contracts";
 import type { JsonRecord } from "@/lib/extensions/runtime";
 
-function text(value: unknown) {
-  return typeof value === "string" ? value : "";
-}
-
-function number(value: unknown) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
+function text(value: unknown) { return typeof value === "string" ? value : ""; }
+function number(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
 
 const statusLabels: Record<string, string> = {
-  pending: "Pedido recebido",
-  approved: "Aprovada",
-  preparing: "Em preparação",
-  sent: "Enviada",
-  available: "Disponível",
-  delivered: "Concluída",
-  cancelled: "Cancelada",
+  pending: "Pedido recebido", approved: "Aprovada", preparing: "Em preparação", sent: "Enviada",
+  available: "Disponível", delivered: "Concluída", cancelled: "Cancelada",
 };
-
-const typeLabels: Record<string, string> = {
-  digital: "Digital",
-  physical: "Produto",
-  experience: "Experiência",
-  service: "Serviço",
-};
-
-const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  dateStyle: "medium",
-  timeZone: "America/Sao_Paulo",
-});
-
+const typeLabels: Record<string, string> = { digital: "Digital", physical: "Produto", experience: "Experiência", service: "Serviço" };
+const dateFormatter = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "America/Sao_Paulo" });
 const frequencyLabels: Record<ParticipantPointRule["frequency"], string> = {
-  once: "uma única vez por participante",
-  per_activity: "uma vez por aula",
-  per_assessment: "uma vez por avaliação",
-  per_certificate: "uma vez por certificado confirmado",
-  per_path: "uma vez por trilha",
-  per_journey: "uma vez por jornada",
-  daily: "até o limite configurado por dia",
-  weekly: "até o limite configurado por semana",
-  unlimited: "sempre que a ação elegível acontecer",
+  once: "uma única vez por participante", per_activity: "uma vez por aula", per_assessment: "uma vez por avaliação",
+  per_certificate: "uma vez por certificado confirmado", per_path: "uma vez por trilha", per_journey: "uma vez por jornada",
+  daily: "até o limite configurado por dia", weekly: "até o limite configurado por semana", unlimited: "sempre que a ação elegível acontecer",
 };
 
-type RewardsWorkspace = {
-  reward_balance: number;
-  catalog: JsonRecord[];
-  redemptions: JsonRecord[];
-};
+type RewardsWorkspace = { reward_balance: number; catalog: JsonRecord[]; redemptions: JsonRecord[] };
 
 export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, pointRules, activeTab }: {
   rewards: RewardsWorkspace;
@@ -65,43 +33,34 @@ export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, poi
   pointRules: ParticipantPointRule[];
   activeTab: "recompensas" | "como-conseguir-pontos" | "historico" | "ranking";
 }) {
-  const nextReward = rewards.catalog
-    .slice()
-    .sort((a, b) => number(a.cost_points) - number(b.cost_points))
-    .find((reward) => number(reward.cost_points) > rewards.reward_balance);
+  const nextReward = rewards.catalog.slice().sort((a, b) => number(a.cost_points) - number(b.cost_points)).find((reward) => number(reward.cost_points) > rewards.reward_balance);
   const nextCost = nextReward ? number(nextReward.cost_points) : 0;
   const progress = nextCost > 0 ? Math.min(100, Math.round((rewards.reward_balance / nextCost) * 100)) : 100;
 
-  return <div className="grid gap-8">
-    <section className="relative max-h-[40vh] min-h-[280px] overflow-hidden rounded-[2rem] bg-gradient-to-br from-primary via-primary-active to-secondary p-6 text-white shadow-xl sm:p-8">
-      <Sparkles className="absolute right-6 top-5 text-white/25" size={72} aria-hidden="true" />
-      <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+  return <div className="grid gap-7">
+    <section className="overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-sm sm:p-7">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-center">
         <div>
-          <div className="flex items-center gap-2 text-sm font-black uppercase tracking-[.14em] text-white/75"><Crown size={18} /> Central de recompensas</div>
-          <h1 className="display-font mt-3 text-4xl sm:text-5xl">Transforme seu progresso em conquistas</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">Os pontos que você conquista já ficam disponíveis automaticamente para resgatar recompensas. Não é necessário converter nada.</p>
-          <div className="mt-5"><Link href="/empreendedor/recompensas?tab=como-conseguir-pontos" className="inline-flex rounded-xl bg-white px-4 py-2 text-sm font-black text-primary shadow-sm">Como conseguir pontos</Link></div>
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.14em] text-primary"><Crown size={17} /> Central de recompensas</div>
+          <h1 className="display-font mt-2 text-3xl text-secondary sm:text-4xl">Transforme seu progresso em conquistas</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">Os pontos que você conquista já ficam disponíveis automaticamente para resgatar recompensas. Não é necessário converter nada.</p>
+          <div className="mt-4"><Link href="/empreendedor/recompensas?tab=como-conseguir-pontos" className="inline-flex min-h-10 items-center rounded-xl border border-primary/20 bg-primary-soft px-4 py-2 text-sm font-black text-primary transition hover:bg-primary hover:text-white">Como conseguir pontos</Link></div>
         </div>
-        <div className="grid min-w-52 gap-3 rounded-2xl border border-white/20 bg-white/10 p-5 text-center backdrop-blur">
-          <div><p className="text-xs font-bold uppercase tracking-wide text-white/70">Seu saldo</p><p className="display-font mt-1 text-5xl">{rewards.reward_balance}</p><p className="text-sm text-white/75">pontos disponíveis</p></div>
-          <div className="border-t border-white/20 pt-3"><p className="text-xs text-white/65">Ranking de aprendizagem</p><p className="mt-1 font-black">{ownRank ? `#${ownRank.position} · ${ownRank.points} pontos` : "Ainda sem posição"}</p></div>
+        <div className="grid gap-3 rounded-2xl border border-border bg-surface-muted p-4 text-center">
+          <div><p className="text-xs font-bold uppercase tracking-wide text-muted">Seu saldo</p><p className="display-font mt-1 text-4xl text-secondary">{rewards.reward_balance}</p><p className="text-sm text-muted">pontos disponíveis</p></div>
+          <div className="border-t border-border pt-3"><p className="text-xs text-muted">Ranking de aprendizagem</p><p className="mt-1 font-black text-secondary">{ownRank ? `#${ownRank.position} · ${ownRank.points} pontos` : "Ainda sem posição"}</p></div>
         </div>
       </div>
-      {nextReward ? <div className="relative mt-6 rounded-2xl bg-black/15 p-4"><div className="flex flex-wrap items-center justify-between gap-2 text-sm"><span>Próximo objetivo: <strong>{text(nextReward.name)}</strong></span><span>{Math.max(0, nextCost - rewards.reward_balance)} pontos restantes</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/20"><div className="h-full rounded-full bg-white" style={{ width: `${progress}%` }} /></div></div> : null}
+      {nextReward ? <div className="mt-5 rounded-xl border border-border bg-surface p-3"><div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted"><span>Próximo objetivo: <strong className="text-secondary">{text(nextReward.name)}</strong></span><span>{Math.max(0, nextCost - rewards.reward_balance)} pontos restantes</span></div><div className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface-muted"><div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} /></div></div> : null}
     </section>
 
     <nav aria-label="Abas da central de recompensas" className="flex gap-2 overflow-x-auto rounded-2xl border border-border bg-white p-2 shadow-sm">
-      {[
-        ["recompensas", "Recompensas"],
-        ["como-conseguir-pontos", "Como conseguir pontos"],
-        ["historico", "Histórico"],
-        ["ranking", "Ranking"],
-      ].map(([tab, label]) => <Link key={tab} href={tab === "recompensas" ? "/empreendedor/recompensas" : `/empreendedor/recompensas?tab=${tab}`} aria-current={activeTab === tab ? "page" : undefined} className={`inline-flex min-h-11 min-w-fit flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold ${activeTab === tab ? "bg-primary text-white" : "text-secondary hover:bg-primary-soft hover:text-primary"}`}>{label}</Link>)}
+      {[["recompensas", "Recompensas"],["como-conseguir-pontos", "Como conseguir pontos"],["historico", "Histórico"],["ranking", "Ranking"]].map(([tab, label]) => <Link key={tab} href={tab === "recompensas" ? "/empreendedor/recompensas" : `/empreendedor/recompensas?tab=${tab}`} aria-current={activeTab === tab ? "page" : undefined} className={`inline-flex min-h-11 min-w-fit flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold ${activeTab === tab ? "bg-primary text-white" : "text-secondary hover:bg-primary-soft hover:text-primary"}`}>{label}</Link>)}
     </nav>
 
     {activeTab === "recompensas" ? <>
       <section id="saldo" className="grid scroll-mt-24 gap-4 lg:grid-cols-[1.15fr_.85fr]">
-        <Card className="brand-accent-card after:!hidden">
+        <Card className="after:!hidden">
           <div className="flex items-start gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-primary-soft text-primary"><WalletCards size={24} /></span><div><p className="text-sm font-semibold text-muted">Pontos prontos para usar</p><p className="display-font mt-1 text-4xl text-secondary">{rewards.reward_balance}</p></div></div>
           <p className="mt-5 text-sm leading-6 text-muted">Este é o mesmo saldo gerado pelas suas ações de aprendizagem e engajamento, descontados apenas os pontos já usados em resgates.</p>
         </Card>
@@ -145,9 +104,9 @@ function RewardCard({ reward, balance }: { reward: JsonRecord; balance: number }
   const imageFileObjectId = text(reward.image_file_object_id);
 
   return <Card className={`flex flex-col overflow-hidden p-0 transition hover:-translate-y-1 hover:shadow-xl ${unlocked ? "ring-1 ring-primary/15" : ""}`}>
-    <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-primary-soft to-surface-muted">{imageFileObjectId ? <img src={`/api/rewards/${text(reward.id)}/image`} alt="" className="size-full object-cover" /> : <div className="grid size-full place-items-center text-primary/45"><ImageIcon size={48} aria-hidden="true" /></div>}<span className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-muted shadow-sm">{typeLabels[text(reward.reward_type)] ?? "Recompensa"}</span></div>
+    <div className="relative aspect-[16/9] overflow-hidden bg-surface-muted">{imageFileObjectId ? <img src={`/api/rewards/${text(reward.id)}/image`} alt="" className="size-full object-cover" /> : <div className="grid size-full place-items-center text-primary/45"><ImageIcon size={48} aria-hidden="true" /></div>}<span className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-muted shadow-sm">{typeLabels[text(reward.reward_type)] ?? "Recompensa"}</span></div>
     <div className="flex flex-1 flex-col p-5">
-      <div className="flex items-start justify-between gap-3"><span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${unlocked ? "bg-primary text-white shadow-lg" : "bg-surface-muted text-muted"}`}>{unlocked ? <Gift size={24} /> : <LockKeyhole size={22} />}</span></div>
+      <div className="flex items-start justify-between gap-3"><span className={`grid size-12 shrink-0 place-items-center rounded-2xl ${unlocked ? "bg-primary text-white" : "bg-surface-muted text-muted"}`}>{unlocked ? <Gift size={24} /> : <LockKeyhole size={22} />}</span></div>
       <h3 className="mt-4 text-xl font-black text-ink">{text(reward.name)}</h3>
       <p className="mt-2 flex-1 text-sm leading-6 text-muted">{text(reward.description)}</p>
       <div className="mt-5 flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-muted">Custo</p><p className="display-font text-3xl text-secondary">{cost}</p></div><span className={`text-xs font-bold ${unlocked ? "text-success" : "text-muted"}`}>{unlocked ? "Pronta para resgatar" : `Faltam ${missing}`}</span></div>
