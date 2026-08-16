@@ -44,7 +44,16 @@ function code(error: unknown): string {
 
 const privateParticipantDestination = /^\/empreendedor\/(?:jornada|trilha|atividade|validacao)\/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?:\/|$)/i;
 
-function validatedAnnouncementDestination(value: string | null): string | null {
+function applicationOrigins(request: NextRequest): Set<string> {
+  const origins = new Set<string>([request.nextUrl.origin]);
+  for (const configured of [process.env.NEXT_PUBLIC_APP_URL, process.env.ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN]) {
+    if (!configured) continue;
+    try { origins.add(new URL(configured).origin); } catch { /* invalid optional origin is ignored here */ }
+  }
+  return origins;
+}
+
+function validatedAnnouncementDestination(value: string | null, request: NextRequest): string | null {
   if (!value) return null;
   const normalized = value.trim();
   const internalPath = normalized.startsWith("/") && !normalized.startsWith("//");
@@ -54,11 +63,14 @@ function validatedAnnouncementDestination(value: string | null): string | null {
   } catch {
     throw new Error("ANNOUNCEMENT_DESTINATION_INVALID");
   }
-  if (!internalPath && parsed.protocol !== "https:") {
-    throw new Error("ANNOUNCEMENT_DESTINATION_INVALID");
-  }
   if (privateParticipantDestination.test(parsed.pathname)) {
     throw new Error("ANNOUNCEMENT_PRIVATE_DESTINATION_NOT_ALLOWED");
+  }
+  if (!internalPath && applicationOrigins(request).has(parsed.origin)) {
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
+  if (!internalPath && parsed.protocol !== "https:") {
+    throw new Error("ANNOUNCEMENT_DESTINATION_INVALID");
   }
   return normalized;
 }
@@ -99,7 +111,7 @@ export async function POST(request: NextRequest) {
     const title = String(formData.get("title") ?? "").trim();
     const body = String(formData.get("body") ?? "").trim();
     const imageAlt = nullable(formData.get("image_alt"));
-    const ctaUrl = validatedAnnouncementDestination(nullable(formData.get("cta_url")));
+    const ctaUrl = validatedAnnouncementDestination(nullable(formData.get("cta_url")), request);
     // The participant experience makes the entire artwork clickable. The RPC still
     // accepts the legacy label/url pair, so keep an internal accessible label without
     // exposing a redundant button-label field in Admin.

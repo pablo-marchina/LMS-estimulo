@@ -101,5 +101,6 @@ test("post-video product fixes are part of the same release boundary", () => {
   assert.match(migrationBoundary, /20260816050000_fix_diagnostic_presentation_and_journey_track_order\.sql/u);
   assert.match(migrationBoundary, /20260816120000_public_signup_legal_documents_anon_read\.sql/u);
   assert.match(migrationBoundary, /20260816170000_complete_review_remediation\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260816180000_reconcile_participant_navigation_registry\.sql'/u);
+  assert.match(migrationBoundary, /20260816180000_reconcile_participant_navigation_registry\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260816190000_normalize_internal_announcement_destinations\.sql'/u);
 });

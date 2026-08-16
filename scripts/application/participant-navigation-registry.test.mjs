@@ -53,8 +53,7 @@ test("navigation registry migration registers current configurable destinations 
   assert.doesNotMatch(migration, /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/iu);
 });
 
-test("navigation registry reconciliation is part of the active migration boundary", () => {
-  assert.match(boundary, /expectedLastMigration = '20260816180000_reconcile_participant_navigation_registry\.sql'/u);
+test("navigation registry reconciliation remains inside the active migration boundary", () => {
   assert.match(boundary, /'20260816170000_complete_review_remediation\.sql'/u);
   assert.match(boundary, /'20260816180000_reconcile_participant_navigation_registry\.sql'/u);
 });

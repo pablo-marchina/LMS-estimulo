@@ -18,7 +18,7 @@ const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAl
 test("global announcements reject participant-private runtime destinations", () => {
   assert.match(announcementRoute, /privateParticipantDestination/u);
   assert.match(announcementRoute, /ANNOUNCEMENT_PRIVATE_DESTINATION_NOT_ALLOWED/u);
-  assert.match(announcementRoute, /validatedAnnouncementDestination\(nullable\(formData\.get\("cta_url"\)\)\)/u);
+  assert.match(announcementRoute, /validatedAnnouncementDestination\(nullable\(formData\.get\("cta_url"\)\), request\)/u);
   assert.match(announcementRoute, /parsed\.protocol !== "https:"/u);
   assert.match(announcementRoute, /!normalized\.startsWith\("\/\/"\)/u);
   assert.match(engagementPage, /páginas compartilháveis/u);
