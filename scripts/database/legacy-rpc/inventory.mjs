@@ -10,6 +10,10 @@ const defaultManifestPath = resolve(
   repositoryRoot,
   "docs/implementation/opaque-helper-baseline-v1.json"
 );
+const semanticReplacementsPath = resolve(
+  repositoryRoot,
+  "docs/implementation/opaque-helper-semantic-replacements-v1.json"
+);
 
 function normalizeWhitespace(value) {
   return value.replace(/\s+/g, " ").trim();
@@ -146,7 +150,7 @@ function stableJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
-function describeInventoryDelta(expected, actual) {
+export function describeInventoryDelta(expected, actual) {
   const expectedByKey = new Map(expected.functions.map((entry) => [entry.key, entry]));
   const actualByKey = new Map(actual.functions.map((entry) => [entry.key, entry]));
   return {
@@ -159,6 +163,85 @@ function describeInventoryDelta(expected, actual) {
     changed: [...actualByKey.entries()]
       .filter(([key, entry]) => expectedByKey.has(key) && stableJson(expectedByKey.get(key)) !== stableJson(entry))
       .map(([key, entry]) => ({ expected: expectedByKey.get(key), actual: entry })),
+  };
+}
+
+export function validateApprovedSemanticReplacements(expected, actual, document) {
+  if (document?.schema_version !== "1.0" || document?.artifact !== "opaque_helper_semantic_replacements") {
+    throw new Error("semantic replacement ledger metadata is invalid");
+  }
+  if (!Array.isArray(document.replacements)) {
+    throw new Error("semantic replacement ledger must contain replacements");
+  }
+
+  for (const field of [
+    "schema_version",
+    "artifact",
+    "detection_rule",
+    "migration_source",
+    "legacy_function_count",
+    "legacy_private_helper_count",
+    "legacy_public_rpc_count",
+  ]) {
+    if (expected[field] !== actual[field]) {
+      throw new Error(`opaque helper inventory metadata changed: ${field}`);
+    }
+  }
+
+  const delta = describeInventoryDelta(expected, actual);
+  if (delta.added.length > 0 || delta.removed.length > 0) {
+    throw new Error("semantic replacement ledger cannot authorize added or removed legacy functions");
+  }
+
+  const approvals = new Map();
+  for (const replacement of document.replacements) {
+    if (!replacement || typeof replacement.key !== "string" || replacement.key.length === 0) {
+      throw new Error("semantic replacement key is required");
+    }
+    if (approvals.has(replacement.key)) {
+      throw new Error(`duplicate semantic replacement approval: ${replacement.key}`);
+    }
+    if (typeof replacement.reason !== "string" || replacement.reason.trim().length < 20) {
+      throw new Error(`semantic replacement reason is incomplete: ${replacement.key}`);
+    }
+    if (typeof replacement.from_definition_path !== "string" || typeof replacement.to_definition_path !== "string") {
+      throw new Error(`semantic replacement paths are required: ${replacement.key}`);
+    }
+    approvals.set(replacement.key, replacement);
+  }
+
+  const changedKeys = new Set();
+  for (const change of delta.changed) {
+    const approval = approvals.get(change.actual.key);
+    if (!approval) {
+      throw new Error(`unapproved opaque helper change: ${change.actual.key}`);
+    }
+    if (change.expected.definition_path !== approval.from_definition_path) {
+      throw new Error(`semantic replacement source mismatch: ${change.actual.key}`);
+    }
+    if (change.actual.definition_path !== approval.to_definition_path) {
+      throw new Error(`semantic replacement target mismatch: ${change.actual.key}`);
+    }
+
+    const allowedActual = {
+      ...change.expected,
+      definition_path: approval.to_definition_path,
+    };
+    if (stableJson(allowedActual) !== stableJson(change.actual)) {
+      throw new Error(`semantic replacement changed more than definition_path: ${change.actual.key}`);
+    }
+    changedKeys.add(change.actual.key);
+  }
+
+  for (const key of approvals.keys()) {
+    if (!changedKeys.has(key)) {
+      throw new Error(`stale semantic replacement approval: ${key}`);
+    }
+  }
+
+  return {
+    approved_replacements: changedKeys.size,
+    changed_keys: [...changedKeys].sort(),
   };
 }
 
@@ -186,10 +269,26 @@ function main() {
   const actualJson = stableJson(inventory);
   const expectedJson = stableJson(expected);
   if (actualJson !== expectedJson) {
-    console.error("Opaque E14 helper inventory changed.");
-    console.error(`Expected ${expected.legacy_function_count} legacy functions; found ${inventory.legacy_function_count}.`);
-    console.error(stableJson(describeInventoryDelta(expected, inventory)).trim());
-    console.error("Update the baseline only as part of an explicit semantic replacement or removal.");
+    const replacements = JSON.parse(readFileSync(semanticReplacementsPath, "utf8"));
+    try {
+      const approval = validateApprovedSemanticReplacements(expected, inventory, replacements);
+      console.log(
+        `Opaque helper containment passed with ${approval.approved_replacements} explicit semantic replacement(s): ${approval.changed_keys.join(", ")}.`
+      );
+      return;
+    } catch (error) {
+      console.error("Opaque E14 helper inventory changed.");
+      console.error(`Expected ${expected.legacy_function_count} legacy functions; found ${inventory.legacy_function_count}.`);
+      console.error(stableJson(describeInventoryDelta(expected, inventory)).trim());
+      console.error(error instanceof Error ? error.message : String(error));
+      console.error("Only exact, documented semantic replacements may differ from the frozen baseline.");
+      process.exit(1);
+    }
+  }
+
+  const replacements = JSON.parse(readFileSync(semanticReplacementsPath, "utf8"));
+  if (replacements.replacements.length > 0) {
+    console.error("Semantic replacement ledger contains stale approvals while the frozen baseline matches exactly.");
     process.exit(1);
   }
 
