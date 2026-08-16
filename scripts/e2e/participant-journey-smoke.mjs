@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+// Temporary audit script: this branch is never merged into main.
 for (const name of ["E2E_TARGET_URL", "E2E_PARTICIPANT_EMAIL", "E2E_PARTICIPANT_PASSWORD"]) {
   if (!process.env[name]) throw new Error(`Missing required environment variable: ${name}`);
 }
