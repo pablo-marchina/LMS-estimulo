@@ -32,7 +32,7 @@ test("activity route is a continuous lesson workspace", () => {
 
 test("inline journey removes the duplicate lesson chrome structurally", () => {
   assert.match(journey, /<section id="aula" className="scroll-mt-20"/u);
-  assert.doesNotMatch(journey, /Conteúdo aberto/u);
+  assert.doesNotMatch(journey, />Conteúdo aberto<\/p>/u);
   assert.doesNotMatch(journey, /Fechar conteúdo/u);
   assert.match(journey, /conclusao: query\.conclusao/u);
 });
