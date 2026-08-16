@@ -117,6 +117,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Matriz de acesso](docs/operations/ACCESS_MATRIX.md)
 - [Configuração de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
 - [Baseline de qualidade](docs/operations/PRODUCTION_QUALITY_BASELINE.md)
+- [Captura visual reproduzível](docs/VISUAL_CAPTURE.md) — evidência Playwright full-page para referência, páginas públicas e áreas autenticadas em desktop/mobile.
 - [Runbook do release final](docs/operations/FINAL_RELEASE_RUNBOOK.md)
 - [Rotação da service role do Supabase](docs/deployments/SUPABASE_SERVICE_ROLE_ROTATION_2026_07_27.md)
 - [Backlog dos advisors do banco](docs/operations/DATABASE_ADVISOR_BACKLOG.md)

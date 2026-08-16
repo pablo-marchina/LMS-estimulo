@@ -1,0 +1,100 @@
+name: Production visual capture
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: Optional target URL (falls back to E2E_PRODUCTION_URL secret)
+        required: false
+        type: string
+      reference_url:
+        description: Optional visual reference URL
+        required: false
+        default: https://estimulo-openai-boost.lovable.app/
+        type: string
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/production-visual-capture.yml
+      - scripts/e2e/production-visual-capture.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-visual-capture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture desktop and mobile visual evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      E2E_TARGET_URL: ${{ inputs.target_url || secrets.E2E_PRODUCTION_URL }}
+      E2E_REFERENCE_URL: ${{ inputs.reference_url || 'https://estimulo-openai-boost.lovable.app/' }}
+      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
+      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_VISUAL_MAX_PAGES: '80'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Playwright without modifying the lockfile
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify required E2E inputs are present
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in E2E_TARGET_URL E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required E2E input: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Capture visual evidence
+        run: node scripts/e2e/production-visual-capture.mjs
+
+      - name: Publish capture summary
+        if: always()
+        shell: bash
+        run: |
+          if [ -f artifacts/e2e-visual/visual-manifest.json ]; then
+            node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/e2e-visual/visual-manifest.json', 'utf8'));
+          console.log('## Visual capture');
+          console.log('');
+          console.log(`- Screenshots: ${report.summary.screenshots}`);
+          console.log(`- Failures: ${report.summary.failures}`);
+          console.log(`- Warnings: ${report.summary.warnings}`);
+          console.log(`- Reference captures: ${report.summary.byRole.reference}`);
+          console.log(`- Public captures: ${report.summary.byRole.public}`);
+          console.log(`- Participant captures: ${report.summary.byRole.participant}`);
+          console.log(`- Admin captures: ${report.summary.byRole.admin}`);
+          NODE
+          fi
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-visual-capture-${{ github.run_id }}
+          path: artifacts/e2e-visual
+          if-no-files-found: error
+          retention-days: 14
