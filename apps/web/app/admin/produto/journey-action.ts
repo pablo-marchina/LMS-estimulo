@@ -17,6 +17,7 @@ function nullable(formData: FormData, name: string) { return text(formData, name
 function checked(formData: FormData, name: string) { return formData.get(name) === "on" || formData.get(name) === "true"; }
 function positiveInteger(value: string, fallback = 9999) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
 function deriveCode(source: string, fallback: string) { const slug = source.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60); return /^[a-z][a-z0-9_-]{1,79}$/.test(slug) ? slug : fallback; }
+function isUniqueConflict(error: unknown) { const message = error instanceof Error ? error.message : String(error); return /23505|duplicate key|unique constraint|already exists/i.test(message); }
 function configuration(formData: FormData) {
   const raw = text(formData, "configuration_snapshot");
   if (!raw) return {} as Record<string, unknown>;
@@ -97,25 +98,44 @@ export async function saveJourneyAction(formData: FormData) {
       featured_background_alt: text(formData, "featured_background_alt") || `Imagem de destaque da jornada ${publicTitle}`,
     };
 
-    const result = await saveAdminJourney({
-      actorUserAccountId: auth.identity.user_account_id,
-      organizationId: organization.organization_id,
-      payload: {
-        definition_id: nullable(formData, "definition_id"),
-        journey_id: journeyId,
-        version_id: journeyId,
-        program_id: nullable(formData, "program_id"),
-        code,
-        slug: deriveCode(publicTitle, code).replaceAll("_", "-"),
-        name: publicTitle,
-        purpose: description,
-        title: publicTitle,
-        description,
-        configuration: { ...previousConfiguration, presentation },
-        eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
-      },
-      idempotencyKey: commandKey,
-    });
+    const baseSlug = deriveCode(publicTitle, code).replaceAll("_", "-");
+    const payload = {
+      definition_id: nullable(formData, "definition_id"),
+      journey_id: journeyId,
+      version_id: journeyId,
+      program_id: nullable(formData, "program_id"),
+      code,
+      slug: baseSlug,
+      name: publicTitle,
+      purpose: description,
+      title: publicTitle,
+      description,
+      configuration: { ...previousConfiguration, presentation },
+      eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
+    };
+
+    let result: Awaited<ReturnType<typeof saveAdminJourney>>;
+    try {
+      result = await saveAdminJourney({
+        actorUserAccountId: auth.identity.user_account_id,
+        organizationId: organization.organization_id,
+        payload,
+        idempotencyKey: commandKey,
+      });
+    } catch (error) {
+      if (journeyId || !isUniqueConflict(error)) throw error;
+      const suffix = randomUUID().slice(0, 8);
+      result = await saveAdminJourney({
+        actorUserAccountId: auth.identity.user_account_id,
+        organizationId: organization.organization_id,
+        payload: {
+          ...payload,
+          code: `${code.slice(0, 60)}_${suffix}`,
+          slug: `${baseSlug.slice(0, 60)}-${suffix}`,
+        },
+        idempotencyKey: `${commandKey}:unique-retry`,
+      });
+    }
 
     // Preserve the primary save result before secondary metadata work. If the
     // theme relationship fails, the newly-created journey must still reopen by
