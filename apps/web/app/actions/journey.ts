@@ -149,7 +149,7 @@ export async function rateActivityUtilityAction(formData: FormData) {
     rating,
     String(formData.get("idempotency_key") || randomUUID())
   );
-  redirect(inlineActivityHref(journey, step, "&utilidade=registrada", "conteudo"));
+  redirect(inlineActivityHref(journey, step, "&utilidade=registrada", "utilidade"));
 }
 
 export async function submitQuickCheckAction(formData: FormData) {
