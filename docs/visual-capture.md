@@ -9,6 +9,7 @@ The repository includes a Playwright-based visual capture workflow for reviewing
 - Authenticated participant routes under `/empreendedor`.
 - Authenticated administrator routes under `/admin`.
 - Internal participant/admin links discovered during the crawl, up to the configured page cap.
+- One representative instance of each known dynamic participant template (journey, module, trail, lesson, diagnostic, activity, competency, and validation) instead of redundant screenshots for every data instance.
 - Full-page PNG screenshots at 1440x1000 (desktop) and 390x844 (mobile).
 - A `visual-manifest.json` containing the requested/final URLs, status codes, titles, headings, rendered dimensions, horizontal-overflow warnings, failures, and screenshot paths.
 
