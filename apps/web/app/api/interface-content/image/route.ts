@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     });
     const response = NextResponse.redirect(signedUrl, 303);
     response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
+    response.headers.set("vary", "Cookie");
     return response;
   } catch {
     return new NextResponse("Imagem não disponível.", { status: 404, headers: { "cache-control": "no-store" } });
