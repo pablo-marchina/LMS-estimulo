@@ -1,5 +1,5 @@
 export const diagnosticResultBlocks = [
-  { code: "maturity_map", label: "Mapa de maturidade", description: "Pontuação geral, perfil e barras por dimensão." },
+  { code: "maturity_map", label: "Mapa de maturidade", description: "Perfil e barras por dimensão." },
   { code: "focus", label: "Foco claro", description: "Destaca a dimensão prioritária." },
   { code: "right_content", label: "Conteúdo certo", description: "Orienta o participante para conteúdos e jornadas relevantes." },
   { code: "real_application", label: "Aplicação real", description: "Reforça a transformação do aprendizado em ação." },
@@ -35,11 +35,13 @@ const validCodes = new Set<string>(diagnosticResultBlocks.map((block) => block.c
 export const defaultDiagnosticResultBlocks: AvailableDiagnosticResultBlockCode[] = diagnosticResultBlocks.map((block) => block.code);
 
 export function normalizeDiagnosticResultBlocks(value: unknown): DiagnosticResultBlockCode[] {
+  // Missing legacy configuration still receives the historical default set.
+  // An explicit array, including [], is authoritative: an administrator who
+  // unchecks a result block must not have it silently restored by normalization.
   if (!Array.isArray(value)) return [...defaultDiagnosticResultBlocks];
-  const normalized = value
+  return Array.from(new Set(value
     .map(String)
-    .filter((code): code is AvailableDiagnosticResultBlockCode => validCodes.has(code));
-  return normalized.length ? Array.from(new Set(normalized)) : [...defaultDiagnosticResultBlocks];
+    .filter((code): code is AvailableDiagnosticResultBlockCode => validCodes.has(code))));
 }
 
 function record(value: unknown): Record<string, unknown> {
