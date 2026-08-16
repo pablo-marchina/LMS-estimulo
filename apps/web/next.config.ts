@@ -46,6 +46,14 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: {
+    serverActions: {
+      // Journey administration accepts two independently validated 4 MiB cover
+      // images. Keep the transport ceiling bounded while leaving multipart and
+      // configuration overhead above the 8 MiB validated file payload.
+      bodySizeLimit: "9mb",
+    },
+  },
   async redirects() {
     return [
       {
