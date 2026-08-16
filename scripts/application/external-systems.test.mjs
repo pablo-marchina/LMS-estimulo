@@ -16,8 +16,9 @@ test("interview AI URL requires a bounded numeric external identifier", () => {
   assert.throws(() => buildInterviewAiUrl("1".repeat(21)), /INTERVIEW_AI_EXTERNAL_ID_INVALID/u);
 });
 
-test("the obsolete integrations page exposes no parallel external-system administration", async () => {
+test("the obsolete integrations alias renders overview without exposing parallel external-system administration", async () => {
   const page = await readFile("apps/web/app/admin/integracoes/page.tsx", "utf8");
-  assert.match(page, /redirect\("\/admin"\)/u);
+  assert.match(page, /AdminOverviewPage/u);
+  assert.doesNotMatch(page, /redirect\(/u);
   assert.doesNotMatch(page, /fetch\(|invokeServerRpc|createPrivilegedClient|HUBSPOT_PRIVATE_APP_TOKEN/u);
 });
