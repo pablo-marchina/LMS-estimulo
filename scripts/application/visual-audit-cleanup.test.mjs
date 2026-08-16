@@ -38,6 +38,12 @@ test("visual coverage keeps semantic query states but collapses repeated UUID in
   assert.match(visualCapture, /return `\$\{url\.pathname\}\$\{url\.search\}`;/u);
 });
 
+test("visual capture remains fail-closed when semantic or runtime failures exist", () => {
+  assert.match(visualCapture, /if \(manifest\.failures\.length\)/u);
+  assert.match(visualCapture, /process\.exitCode = 1/u);
+  assert.match(visualCapture, /Evidence was still uploaded/u);
+});
+
 test("operation evidence cannot force horizontal overflow with technical identifiers", () => {
   assert.match(operationPage, /className="grid min-w-0 gap-6"/u);
   assert.match(operationPage, /className="min-w-0 break-all text-sm text-muted"/u);
