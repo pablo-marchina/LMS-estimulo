@@ -10,6 +10,7 @@ export function NavItem({
   children,
   icon,
   variant = "light",
+  admin = false,
   exact = false,
   className,
   interfaceContentKey,
@@ -18,7 +19,8 @@ export function NavItem({
   href: string;
   children: ReactNode;
   icon?: ReactNode;
-  variant?: "light" | "dark" | "top" | "admin";
+  variant?: "light" | "dark" | "top";
+  admin?: boolean;
   exact?: boolean;
   className?: string;
   interfaceContentKey?: string;
@@ -35,10 +37,10 @@ export function NavItem({
       onClick={onNavigate}
       className={cn(
         "focus-ring flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold transition-[background-color,color,border-color,transform] duration-150",
-        variant === "dark"
-          ? cn("rounded-xl", isActive ? "bg-white !text-primary" : "!text-white/75 hover:bg-white/10 hover:!text-white")
-          : variant === "admin"
-            ? cn("rounded-lg", isActive ? "bg-primary-soft !text-primary" : "!text-muted hover:bg-slate-100 hover:!text-ink")
+        admin
+          ? cn("rounded-lg", isActive ? "bg-primary-soft !text-primary" : "!text-muted hover:bg-slate-100 hover:!text-ink")
+          : variant === "dark"
+            ? cn("rounded-xl", isActive ? "bg-white !text-primary" : "!text-white/75 hover:bg-white/10 hover:!text-white")
             : variant === "top"
               ? cn(
                   "rounded-md border-b-2",
