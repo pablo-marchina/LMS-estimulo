@@ -3,7 +3,7 @@
   min-width: 0;
   max-width: none;
   overflow-x: clip;
-  background: var(--color-background);
+  background: transparent;
 }
 
 .activityPage,
@@ -11,159 +11,44 @@
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
-  max-width: none !important;
-  margin-inline: 0 !important;
+  margin-inline: 0;
 }
 
-.activityLayout[data-active-section="conteudo"] :global(#avaliacao),
-.activityLayout[data-active-section="conteudo"] :global(#pratica),
-.activityLayout[data-active-section="conteudo"] :global(#comentarios),
-.activityLayout[data-active-section="avaliacao"] :global(#conteudo),
-.activityLayout[data-active-section="avaliacao"] :global(#pratica),
-.activityLayout[data-active-section="avaliacao"] :global(#comentarios),
-.activityLayout[data-active-section="pratica"] :global(#conteudo),
-.activityLayout[data-active-section="pratica"] :global(#avaliacao),
-.activityLayout[data-active-section="pratica"] :global(#comentarios),
-.activityLayout[data-active-section="comentarios"] :global(#conteudo),
-.activityLayout[data-active-section="comentarios"] :global(#avaliacao),
-.activityLayout[data-active-section="comentarios"] :global(#pratica) {
+/* A aula expandida é o próprio workspace. O container antigo "Conteúdo aberto"
+   duplicava cabeçalho, borda e sombra e criava a aparência de uma página dentro
+   de outra. Mantemos apenas a âncora #aula para navegação. */
+:global(#aula:has([data-activity-workspace])) {
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:global(#aula:has([data-activity-workspace])) > :first-child:not([data-activity-workspace]) {
   display: none !important;
 }
 
-.activityLayout :global(#conteudo) > div:first-child,
-.activityLayout :global(#pratica) > div:first-child,
-.activityLayout :global(#comentarios) > div:first-child,
-.activityLayout :global(#avaliacao) > div:first-child > div:first-child {
-  gap: 0.625rem !important;
-  padding: 0.75rem 1rem !important;
+/* O primeiro ativo é o player principal da aula. Na referência ele aparece
+   diretamente no canvas, sem um segundo cabeçalho/cartão envolvendo o vídeo. */
+.activityLayout :global(#conteudo > .brand-media-card:first-child) {
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: none !important;
 }
 
-.activityLayout :global(#conteudo) > div:first-child > span,
-.activityLayout :global(#pratica) > div:first-child > span,
-.activityLayout :global(#comentarios) > div:first-child > span,
-.activityLayout :global(#avaliacao) > div:first-child > div:first-child > span {
-  width: 2rem !important;
-  height: 2rem !important;
-  border-radius: 0.625rem !important;
+.activityLayout :global(#conteudo > .brand-media-card:first-child > :first-child) {
+  display: none !important;
 }
 
-.activityLayout :global(#conteudo) > div:first-child h2,
-.activityLayout :global(#pratica) > div:first-child h2,
-.activityLayout :global(#comentarios) > div:first-child h2,
-.activityLayout :global(#avaliacao) > div:first-child h2 {
-  font-size: 1rem !important;
-  line-height: 1.25rem !important;
+.activityLayout :global(#conteudo > .brand-media-card:first-child iframe),
+.activityLayout :global(#conteudo > .brand-media-card:first-child video) {
+  border-radius: 0.75rem;
 }
 
-.activityLayout :global(#conteudo) > div:first-child p:last-child,
-.activityLayout :global(#pratica) > div:first-child p:last-child,
-.activityLayout :global(#comentarios) > div:first-child p:last-child,
-.activityLayout :global(#avaliacao) > div:first-child p:last-child {
-  margin-top: 0.125rem !important;
-  font-size: 0.75rem !important;
-  line-height: 1.125rem !important;
-}
-
-@media (min-width: 1200px) {
-  .activityLayout {
-    min-height: calc(100dvh - 4rem);
-    overflow: visible;
-  }
-
+@media (max-width: 640px) {
   .activityPage > div {
-    display: grid !important;
-    min-height: 0 !important;
-    grid-template-rows: auto auto auto !important;
-    gap: 0.75rem !important;
-    overflow: visible;
-    padding: 0.75rem 1rem 1.25rem !important;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) {
-    display: grid !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    grid-template-columns: minmax(0, 1fr) 18rem !important;
-    gap: 0.75rem !important;
-    align-items: start !important;
-    overflow: visible;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) > main {
-    display: grid !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    align-content: start;
-    gap: 0 !important;
-    overflow: visible;
-    padding-right: 0;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) > aside {
-    position: sticky !important;
-    top: 5rem !important;
-    inset-inline: auto !important;
-    display: grid !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    max-height: calc(100dvh - 6rem);
-    grid-template-columns: minmax(0, 1fr) !important;
-    align-content: start !important;
-    gap: 0.75rem !important;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) > aside > :global(nav[aria-label="Índice da aula"]) {
-    display: none !important;
-  }
-
-  .activityPage > div > :last-child {
-    min-height: 2.75rem;
-    padding-top: 0.625rem !important;
-  }
-}
-
-@media (max-width: 1199px) {
-  .activityPage > div {
-    padding: 0.75rem !important;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) {
-    display: flex !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 0.75rem !important;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) > main,
-  .activityPage > div > :global(div:has(> main + aside)) > aside {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) > aside {
-    position: static !important;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.75rem !important;
-  }
-
-  .activityPage > div > :global(div:has(> main + aside)) > aside > :global(nav[aria-label="Índice da aula"]) {
-    display: none !important;
-  }
-}
-
-@media (max-width: 720px) {
-  .activityPage > div > :global(div:has(> main + aside)) > aside {
-    grid-template-columns: minmax(0, 1fr) !important;
+    padding-inline: 1rem !important;
   }
 }
