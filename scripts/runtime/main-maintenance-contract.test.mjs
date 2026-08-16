@@ -31,7 +31,8 @@ test("lesson consumes one continuous centered content area without a permanent s
   assert.doesNotMatch(layoutCss, /position: sticky/u);
   assert.doesNotMatch(layoutCss, /#aula:has/u);
   assert.match(journey, /<section id="aula" className="scroll-mt-20"/u);
-  assert.doesNotMatch(journey, /Conteúdo aberto/u);
+  assert.doesNotMatch(journey, />Conteúdo aberto<\/p>/u);
+  assert.doesNotMatch(journey, /Fechar conteúdo/u);
 });
 
 test("admin extension saves do not catch successful Next redirects", async () => {
