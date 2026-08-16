@@ -1,0 +1,111 @@
+name: Final production review 2026-08-16
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/final-production-review-20260816.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: final-production-review-20260816
+  cancel-in-progress: true
+
+jobs:
+  audit-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      E2E_PRODUCTION_URL: ${{ secrets.E2E_PRODUCTION_URL }}
+      E2E_TARGET_URL: ${{ secrets.E2E_PRODUCTION_URL }}
+      E2E_REFERENCE_URL: https://estimulo-openai-boost.lovable.app/
+      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
+      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_VISUAL_MAX_PAGES: '80'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+          cache: npm
+      - name: Verify E2E inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in E2E_PRODUCTION_URL E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required E2E input: $name" >&2
+              exit 1
+            fi
+          done
+      - name: Install Playwright without changing lockfile
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Confirm production is reachable
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' "$E2E_PRODUCTION_URL/entrar" || true)"
+            if [ "$status" = "200" ]; then
+              echo "Production login is reachable."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Production did not become reachable." >&2
+          exit 1
+      - name: Probe authenticated cookie persistence
+        run: node scripts/e2e/auth-cookie-probe.mjs
+      - name: Run authenticated functional audit
+        run: node scripts/e2e/production-authenticated-audit.mjs
+      - name: Summarize participant navigation performance
+        if: always()
+        shell: bash
+        run: |
+          if [ -f artifacts/e2e-production/audit-report.json ]; then
+            node <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/e2e-production/audit-report.json', 'utf8'));
+          const pages = report.roles?.participant?.pages ?? [];
+          const durations = pages.map((page) => Number(page.durationMs)).filter(Number.isFinite).sort((a,b) => a-b);
+          const percentile = (p) => durations.length ? durations[Math.min(durations.length - 1, Math.floor((durations.length - 1) * p))] : null;
+          const summary = {
+            pages: durations.length,
+            medianMs: percentile(0.5),
+            p90Ms: percentile(0.9),
+            maxMs: durations.at(-1) ?? null,
+            criticalFailures: report.summary?.criticalFailures ?? null,
+            warnings: report.summary?.warnings ?? null,
+          };
+          fs.writeFileSync('artifacts/e2e-production/performance-summary.json', JSON.stringify(summary, null, 2) + '\n');
+          console.log(JSON.stringify(summary));
+          NODE
+          fi
+      - name: Capture desktop and mobile visual evidence
+        if: always()
+        run: node scripts/e2e/production-visual-capture.mjs
+      - name: Upload authenticated audit evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: final-production-authenticated-audit-${{ github.run_id }}
+          path: artifacts/e2e-production
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: final-production-visual-capture-${{ github.run_id }}
+          path: artifacts/e2e-visual
+          if-no-files-found: error
+          retention-days: 14
