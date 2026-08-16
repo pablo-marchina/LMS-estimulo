@@ -23,6 +23,7 @@ const [
   badgeMigration,
   pointEligibilityMigration,
   pointDedupeMigration,
+  diagnosticJourneyMigration,
   migrationBoundary,
 ] = await Promise.all([
   readFile("apps/web/app/admin/diagnostico/diagnostic-builder.tsx", "utf8"),
@@ -45,6 +46,7 @@ const [
   readFile("supabase/migrations/20260815203254_rebind_orphaned_path_badges_to_current_tracks.sql", "utf8"),
   readFile("supabase/migrations/20260815203650_canonical_point_rule_eligibility.sql", "utf8"),
   readFile("supabase/migrations/20260815211500_deduplicate_complete_lesson_point_rule.sql", "utf8"),
+  readFile("supabase/migrations/20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql", "utf8"),
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
 ]);
 
@@ -138,5 +140,8 @@ test("migration release boundary includes the audited structural migrations", ()
   assert.match(migrationBoundary, /20260815203254_rebind_orphaned_path_badges_to_current_tracks\.sql/u);
   assert.match(migrationBoundary, /20260815203650_canonical_point_rule_eligibility\.sql/u);
   assert.match(migrationBoundary, /20260815211500_deduplicate_complete_lesson_point_rule\.sql/u);
-  assert.match(migrationBoundary, /expectedLastMigration = '20260815211500_deduplicate_complete_lesson_point_rule\.sql'/u);
+  assert.match(migrationBoundary, /20260816050000_fix_diagnostic_presentation_and_journey_track_order\.sql/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260816050000_fix_diagnostic_presentation_and_journey_track_order\.sql'/u);
+  assert.match(diagnosticJourneyMigration, /v_presentation_configuration/u);
+  assert.match(diagnosticJourneyMigration, /order by template\.position,template\.id/u);
 });

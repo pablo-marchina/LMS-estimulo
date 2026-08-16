@@ -1,4 +1,4 @@
-export const expectedLastMigration = '20260815211500_deduplicate_complete_lesson_point_rule.sql';
+export const expectedLastMigration = '20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -89,4 +89,5 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260815203650_canonical_point_rule_eligibility.sql',
   '20260815204402_index_vanessa_remediation_foreign_keys.sql',
   '20260815211500_deduplicate_complete_lesson_point_rule.sql',
+  '20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql',
 ]);

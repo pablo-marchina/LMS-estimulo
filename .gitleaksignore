@@ -25,3 +25,7 @@ fb6c40a65acde8b07faeeda250ce8f55c601a1fb:.github/workflows/reproducibility.yml:g
 77de99455eb6db6fead0fa1a575e8b47b8b4b95e:.github/workflows/experience-validation.yml:generic-api-key:32
 1c2b3008e1c63c6eeaec339d9950ea140adce658:.github/workflows/frontend-experience-validation.yml:generic-api-key:21
 1c2b3008e1c63c6eeaec339d9950ea140adce658:.github/workflows/frontend-experience-validation.yml:generic-api-key:22
+
+# Historical Supabase publishable key from the one-off video migration workflow.
+# Publishable keys are intentionally client-visible and are not service-role credentials.
+666863bb5be1dbd88362c1c1e823604c7b6ec257:.github/workflows/migrate-lesson-videos.yml:generic-api-key:20

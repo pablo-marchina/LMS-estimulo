@@ -36,10 +36,11 @@ export const defaultDiagnosticResultBlocks: AvailableDiagnosticResultBlockCode[]
 
 export function normalizeDiagnosticResultBlocks(value: unknown): DiagnosticResultBlockCode[] {
   if (!Array.isArray(value)) return [...defaultDiagnosticResultBlocks];
-  const normalized = value
-    .map(String)
-    .filter((code): code is AvailableDiagnosticResultBlockCode => validCodes.has(code));
-  return normalized.length ? Array.from(new Set(normalized)) : [...defaultDiagnosticResultBlocks];
+  return Array.from(new Set(
+    value
+      .map(String)
+      .filter((code): code is AvailableDiagnosticResultBlockCode => validCodes.has(code)),
+  ));
 }
 
 function record(value: unknown): Record<string, unknown> {

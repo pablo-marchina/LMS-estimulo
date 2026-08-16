@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Crown, Gift, History, ImageIcon, LockKeyhole, Medal, Sparkles, Trophy, WalletCards, Zap } from "lucide-react";
+import { CheckCircle2, Crown, Gift, History, ImageIcon, LockKeyhole, Medal, Sparkles, Trophy } from "lucide-react";
 import { performExtensionAction } from "@/app/empreendedor/extension-actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
@@ -99,23 +99,10 @@ export function RewardsExperience({ rewards, ranking, ownRank, pointHistory, poi
       ].map(([tab, label]) => <Link key={tab} href={tab === "recompensas" ? "/empreendedor/recompensas" : `/empreendedor/recompensas?tab=${tab}`} aria-current={activeTab === tab ? "page" : undefined} className={`inline-flex min-h-11 min-w-fit flex-1 items-center justify-center rounded-xl px-4 py-2 text-sm font-bold ${activeTab === tab ? "bg-primary text-white" : "text-secondary hover:bg-primary-soft hover:text-primary"}`}>{label}</Link>)}
     </nav>
 
-    {activeTab === "recompensas" ? <>
-      <section id="saldo" className="grid scroll-mt-24 gap-4 lg:grid-cols-[1.15fr_.85fr]">
-        <Card className="brand-accent-card after:!hidden">
-          <div className="flex items-start gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-primary-soft text-primary"><WalletCards size={24} /></span><div><p className="text-sm font-semibold text-muted">Pontos prontos para usar</p><p className="display-font mt-1 text-4xl text-secondary">{rewards.reward_balance}</p></div></div>
-          <p className="mt-5 text-sm leading-6 text-muted">Este é o mesmo saldo gerado pelas suas ações de aprendizagem e engajamento, descontados apenas os pontos já usados em resgates.</p>
-        </Card>
-        <Card>
-          <div className="flex items-start gap-3"><span className="grid size-11 place-items-center rounded-xl bg-success/15 text-success"><Zap size={21} /></span><div><h2 className="font-black text-secondary">Crédito automático</h2><p className="mt-1 text-sm leading-6 text-muted">Ao concluir uma ação que vale pontos, o saldo de recompensas é atualizado automaticamente. Cada concessão usa a mesma referência idempotente da pontuação para evitar crédito duplicado.</p></div></div>
-          <div className="mt-5 flex items-center gap-2 rounded-xl bg-success/10 px-3 py-2 text-sm font-semibold text-success"><CheckCircle2 size={17} /> Nenhuma conversão manual é necessária.</div>
-        </Card>
-      </section>
-
-      <section id="catalogo" className="grid scroll-mt-24 gap-4">
-        <div className="flex items-end justify-between gap-4"><div><p className="brand-kicker">Escolha sua próxima conquista</p><h2 className="display-font mt-1 text-3xl text-secondary">Recompensas disponíveis</h2></div><Trophy className="hidden text-warning sm:block" size={38} /></div>
-        {rewards.catalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{rewards.catalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}
-      </section>
-    </> : null}
+    {activeTab === "recompensas" ? <section id="catalogo" className="grid scroll-mt-24 gap-4">
+      <div className="flex items-end justify-between gap-4"><div><p className="brand-kicker">Escolha sua próxima conquista</p><h2 className="display-font mt-1 text-3xl text-secondary">Recompensas disponíveis</h2></div><Trophy className="hidden text-warning sm:block" size={38} /></div>
+      {rewards.catalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{rewards.catalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}
+    </section> : null}
 
     {activeTab === "como-conseguir-pontos" ? <PointsTable pointRules={pointRules} /> : null}
 
