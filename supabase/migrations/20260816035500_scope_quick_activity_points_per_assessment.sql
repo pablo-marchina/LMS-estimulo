@@ -17,7 +17,7 @@ begin
     from engagement.point_rule_definitions definition
    where definition.code='complete_quick_activity'
      and definition.status='active'
-   order by definition.created_at,definition.id
+   order by definition.id
    limit 1;
 
   if v_definition_id is null then
