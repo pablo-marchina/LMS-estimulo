@@ -37,14 +37,11 @@ const roleConfig = {
       "/empreendedor",
       "/empreendedor/b2b",
       "/empreendedor/biblioteca",
-      "/empreendedor/competencias",
       "/empreendedor/diagnostico",
-      "/empreendedor/mais",
+      "/empreendedor/jornadas",
       "/empreendedor/perfil",
-      "/empreendedor/pontuacao",
+      "/empreendedor/recompensas",
       "/empreendedor/resultado",
-      "/empreendedor/trilhas",
-      "/empreendedor/validacao",
     ],
   },
   admin: {
@@ -87,6 +84,8 @@ const dynamicRouteTemplates = {
   admin: [],
 };
 
+const uuidQueryValue = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const manifest = {
   schemaVersion: 2,
   startedAt: new Date().toISOString(),
@@ -121,10 +120,20 @@ function safeSegment(value) {
   return `${pathnameSegment}__q__${querySegment || "query"}`;
 }
 
+function normalizedCoverageSearch(search) {
+  if (!search) return "";
+  const params = new URLSearchParams(search);
+  for (const [key, value] of [...params.entries()]) {
+    if (uuidQueryValue.test(value)) params.set(key, "__uuid__");
+  }
+  const normalized = params.toString();
+  return normalized ? `?${normalized}` : "";
+}
+
 function routeCoverageKey(role, route) {
   const { pathname, search } = parsedRoute(route);
   const template = dynamicRouteTemplates[role]?.find(({ regex }) => regex.test(pathname));
-  return template ? `template:${template.key}` : `route:${pathname}${search}`;
+  return template ? `template:${template.key}` : `route:${pathname}${normalizedCoverageSearch(search)}`;
 }
 
 function normalizeScopedHref(href, scopePrefix) {
