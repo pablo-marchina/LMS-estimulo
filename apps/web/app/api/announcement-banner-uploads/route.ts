@@ -46,16 +46,21 @@ const privateParticipantDestination = /^\/empreendedor\/(?:jornada|trilha|ativid
 
 function validatedAnnouncementDestination(value: string | null): string | null {
   if (!value) return null;
+  const normalized = value.trim();
+  const internalPath = normalized.startsWith("/") && !normalized.startsWith("//");
   let parsed: URL;
   try {
-    parsed = new URL(value, "https://estimulo.invalid");
+    parsed = internalPath ? new URL(normalized, "https://estimulo.invalid") : new URL(normalized);
   } catch {
+    throw new Error("ANNOUNCEMENT_DESTINATION_INVALID");
+  }
+  if (!internalPath && parsed.protocol !== "https:") {
     throw new Error("ANNOUNCEMENT_DESTINATION_INVALID");
   }
   if (privateParticipantDestination.test(parsed.pathname)) {
     throw new Error("ANNOUNCEMENT_PRIVATE_DESTINATION_NOT_ALLOWED");
   }
-  return value;
+  return normalized;
 }
 
 function redirectToAdmin(request: NextRequest, params: Record<string, string>) {
