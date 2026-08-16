@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
-import { extensionsRuntime } from "@/lib/extensions/runtime";
 import { createPrivateDownloadUrl } from "@/lib/platform/object-storage";
+import { createPrivilegedClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+const SIGNED_URL_SECONDS = 900;
+const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
+type CertificateTemplateDescriptor = {
+  file_object_id: string;
+  bucket: string;
+  object_key: string;
+  content_type: string;
+  original_filename: string | null;
+};
 
 export async function GET(request: Request, { params }: { params: Promise<{ fileObjectId: string }> }) {
   const auth = await getAuthContext();
@@ -20,19 +29,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
   }
 
   try {
-    const descriptor = await extensionsRuntime.certificateTemplatePreviewDownload(
-      auth.identity.user_account_id,
-      organizationId.data,
-      fileId.data,
-    );
+    // The RPC is SECURITY DEFINER and validates engagement.manage for the actor.
+    // Calling it directly avoids an unnecessary second Edge Function hop for image rendering.
+    const { data, error } = await createPrivilegedClient().rpc("get_admin_certificate_template_preview_download", {
+      p_actor_user_account_id: auth.identity.user_account_id,
+      p_organization_id: organizationId.data,
+      p_file_object_id: fileId.data,
+    });
+    if (error || !data) {
+      throw new Error(`${error?.code ?? "CERTIFICATE_TEMPLATE_PREVIEW_DESCRIPTOR_MISSING"}:${error?.message ?? "missing_descriptor"}`);
+    }
+    const descriptor = data as CertificateTemplateDescriptor;
     const url = await createPrivateDownloadUrl({
       bucket: descriptor.bucket,
       objectKey: descriptor.object_key,
-      expiresInSeconds: 300,
+      expiresInSeconds: SIGNED_URL_SECONDS,
     });
     return NextResponse.redirect(url, {
       status: 302,
-      headers: { "cache-control": "private, no-store" },
+      headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL },
     });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
@@ -47,6 +62,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
         : status === 403
           ? "FORBIDDEN"
           : "CERTIFICATE_TEMPLATE_PREVIEW_UNAVAILABLE",
-    }, { status });
+    }, { status, headers: { "cache-control": "no-store" } });
   }
 }
