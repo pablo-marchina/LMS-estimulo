@@ -137,6 +137,12 @@ select pg_temp.e14_assert((select value->>'replayed'='false' from e14_test_resul
 
 insert into e14_test_results values('start_journey',public.e14_start_journey(
   :'e14_participant_id'::uuid,:'e14_journey_instance_id'::uuid,0,'e14-e2e-start-journey-v1'));
+select pg_temp.e14_assert((select count(*)=1 and coalesce(sum(ledger.amount),0)=10
+  from engagement.point_ledger ledger
+  join engagement.point_rule_versions version on version.id=ledger.point_rule_version_id
+  join engagement.point_rule_definitions definition on definition.id=version.point_rule_definition_id
+  where ledger.journey_instance_id=:'e14_journey_instance_id'::uuid
+    and definition.code='complete_welcome'),'welcome point award');
 select pg_temp.e14_expect_error(format(
   'select public.e14_start_journey(%L::uuid,%L::uuid,0,%L)',
   :'e14_participant_id',:'e14_journey_instance_id','e14-e2e-stale-journey-v1'),
@@ -168,14 +174,20 @@ insert into e14_test_results values('state_after_diagnostic',public.e14_get_part
 select pg_temp.e14_assert((select value#>>'{d,status}'='completed' from e14_test_results where name='state_after_diagnostic'),'diagnostic completion');
 select pg_temp.e14_assert((select value#>>'{d,path_code}'='standard' from e14_test_results where name='state_after_diagnostic'),'standard path assignment');
 select pg_temp.e14_assert((select (value#>>'{d,low_confidence}')::boolean=false from e14_test_results where name='state_after_diagnostic'),'unexpected low confidence');
+select pg_temp.e14_assert((select count(*)=1 and coalesce(sum(ledger.amount),0)=50
+  from engagement.point_ledger ledger
+  join engagement.point_rule_versions version on version.id=ledger.point_rule_version_id
+  join engagement.point_rule_definitions definition on definition.id=version.point_rule_definition_id
+  where ledger.journey_instance_id=:'e14_journey_instance_id'::uuid
+    and definition.code='complete_diagnostic'),'diagnostic point award');
 select
   value#>>'{s,step_instance_id}' step_instance_id,
   value#>>'{s,aggregate_version}' step_aggregate_version,
   coalesce(value#>>'{p,balance}','0') diagnostic_point_balance,
   coalesce(value#>>'{p,ledger_count}','0') diagnostic_point_count
 from e14_test_results where name='state_after_diagnostic' \gset e14_
-select pg_temp.e14_assert(:'e14_diagnostic_point_balance'::integer=50,'diagnostic point balance');
-select pg_temp.e14_assert(:'e14_diagnostic_point_count'::integer=1,'diagnostic point count');
+select pg_temp.e14_assert(:'e14_diagnostic_point_balance'::integer=60,'welcome plus diagnostic point balance');
+select pg_temp.e14_assert(:'e14_diagnostic_point_count'::integer=2,'welcome plus diagnostic point count');
 select pg_temp.e14_expect_error(format(
   'select public.e14_get_participant_state(%L::uuid,%L::uuid)',
   :'e14_operator_id',:'e14_journey_instance_id'),'FORBIDDEN');
