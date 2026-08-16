@@ -4,7 +4,8 @@ import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 export type ParticipantActivityCompletion = {
   step_instance_id: string;
   journey_instance_id: string;
-  status: "completed";
+  status: "completed" | "blocked";
+  code?: "REQUIRED_CONTENT_INCOMPLETE" | "ASSESSMENT_NOT_PASSED" | "PRACTICE_COMPLETION_MANAGED_BY_REVIEW";
   changed: boolean;
 };
 
