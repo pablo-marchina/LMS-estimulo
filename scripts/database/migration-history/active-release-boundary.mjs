@@ -1,4 +1,4 @@
-export const expectedLastMigration = '20260816012704_fix_completion_progress_current_step_reference.sql';
+export const expectedLastMigration = '20260816031000_restore_live_point_award_function.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -91,4 +91,5 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260816011759_complete_vanessa_video_remediation.sql',
   '20260816012301_participant_lesson_completion_cta.sql',
   '20260816012704_fix_completion_progress_current_step_reference.sql',
+  '20260816031000_restore_live_point_award_function.sql',
 ]);
