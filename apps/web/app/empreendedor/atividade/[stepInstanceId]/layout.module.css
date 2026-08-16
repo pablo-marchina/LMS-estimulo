@@ -14,21 +14,6 @@
   margin-inline: 0;
 }
 
-/* A aula expandida é o próprio workspace. O container antigo "Conteúdo aberto"
-   duplicava cabeçalho, borda e sombra e criava a aparência de uma página dentro
-   de outra. Mantemos apenas a âncora #aula para navegação. */
-:global(#aula:has([data-activity-workspace])) {
-  overflow: visible !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-:global(#aula:has([data-activity-workspace])) > :first-child:not([data-activity-workspace]) {
-  display: none !important;
-}
-
 /* O primeiro ativo é o player principal da aula. Na referência ele aparece
    diretamente no canvas, sem um segundo cabeçalho/cartão envolvendo o vídeo. */
 .activityLayout :global(#conteudo > .brand-media-card:first-child) {
