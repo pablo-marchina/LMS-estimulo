@@ -12,7 +12,8 @@ import {
   Star,
   UploadCloud,
 } from "lucide-react";
-import { createActivityCommentAction, rateActivityUtilityAction } from "@/app/actions/journey";
+import { rateActivityUtilityAction } from "@/app/actions/journey";
+import { ActivityCommentPanel } from "@/components/activity-comment-panel";
 import { ActivityContentProgress } from "@/components/activity-content-progress";
 import { ActivityPromptLibrary } from "@/components/activity-prompt-library";
 import { ContentAssetViewer } from "@/components/content-asset-viewer";
@@ -23,7 +24,6 @@ import { StatusPanel } from "@/components/status-panel";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Textarea } from "@/components/ui/input";
 import { StatusPill } from "@/components/ui/status-pill";
 import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
@@ -398,60 +398,11 @@ export default async function ActivityPage({
               description="Compartilhe uma aplicação, dúvida ou aprendizado. Não publique dados pessoais, financeiros ou sensíveis."
             />
 
-            <div className="grid gap-4 p-4 sm:p-5 lg:grid-cols-[320px_minmax(0,1fr)]">
-              <div className="grid content-start gap-3">
-                {query.comentario === "criado" ? (
-                  <StatusPanel title="Comentário publicado" tone="success">
-                    Sua participação já está visível.
-                  </StatusPanel>
-                ) : null}
-
-                <form action={createActivityCommentAction} className="grid gap-3 rounded-2xl bg-surface-muted p-4">
-                  <input type="hidden" name="journey_instance_id" value={journey} />
-                  <input type="hidden" name="step_instance_id" value={stepInstanceId} />
-                  <input type="hidden" name="idempotency_key" value={randomUUID()} />
-                  <label htmlFor="activity-comment" className="text-sm font-semibold text-ink">
-                    Novo comentário
-                  </label>
-                  <Textarea
-                    id="activity-comment"
-                    name="body"
-                    minLength={1}
-                    maxLength={2000}
-                    rows={4}
-                    required
-                    placeholder="Conte o que você testou ou quer entender."
-                  />
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[11px] text-muted">Até 2.000 caracteres</span>
-                    <Button type="submit" size="sm" icon={<MessageCircle size={14} />}>
-                      Publicar
-                    </Button>
-                  </div>
-                </form>
-              </div>
-
-              {commentResult.comments.length === 0 ? (
-                <EmptyState title="Nenhum comentário ainda" tone="info">
-                  Seja a primeira pessoa a participar.
-                </EmptyState>
-              ) : (
-                <div className="grid max-h-[520px] content-start gap-2 overflow-y-auto pr-1" aria-live="polite">
-                  {commentResult.comments.map((comment) => (
-                    <article key={comment.id} className="rounded-2xl border border-border bg-white p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <strong className="text-sm text-ink">{comment.author_name}</strong>
-                        {comment.is_own ? <StatusPill tone="info">Você</StatusPill> : null}
-                        <time dateTime={comment.created_at} className="ml-auto text-[11px] text-muted">
-                          {dateFormatter.format(new Date(comment.created_at))}
-                        </time>
-                      </div>
-                      <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink">{comment.body}</p>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ActivityCommentPanel
+              journeyInstanceId={journey}
+              stepInstanceId={stepInstanceId}
+              initialComments={commentResult.comments}
+            />
           </section>
         </main>
 
