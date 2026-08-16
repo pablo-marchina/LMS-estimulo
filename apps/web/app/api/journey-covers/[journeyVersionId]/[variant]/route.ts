@@ -28,6 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (error || !data?.signedUrl) throw new Error("JOURNEY_COVER_SIGNED_URL_FAILED");
     const response = NextResponse.redirect(data.signedUrl, 303);
     response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
+    response.headers.set("vary", "Cookie");
     return response;
   } catch {
     return new NextResponse("Imagem da jornada não encontrada.", { status: 404, headers: { "cache-control": "no-store" } });
