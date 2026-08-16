@@ -12,6 +12,7 @@ const [
   rewards,
   profileLayout,
   profileTabs,
+  lessonNav,
   signupProvisioning,
   diagnosticJourneyMigration,
   legalReadMigration,
@@ -26,6 +27,7 @@ const [
   readFile("apps/web/app/empreendedor/recompensas/rewards-experience.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/perfil/layout.tsx", "utf8"),
   readFile("apps/web/components/participant-profile-tabs.tsx", "utf8"),
+  readFile("apps/web/components/journey-progress-nav.tsx", "utf8"),
   readFile("apps/web/lib/auth/public-signup-provisioning.ts", "utf8"),
   readFile("supabase/migrations/20260816050000_fix_diagnostic_presentation_and_journey_track_order.sql", "utf8"),
   readFile("supabase/migrations/20260816120000_public_signup_legal_documents_anon_read.sql", "utf8"),
@@ -75,6 +77,15 @@ test("profile uses the same restrained canvas and flat tabs as the refined refer
   assert.match(profileTabs, /border-b-2/u);
   assert.doesNotMatch(profileTabs, /rounded-2xl border border-border bg-white p-2 shadow-sm/u);
   assert.doesNotMatch(profileTabs, /bg-primary text-white shadow-sm/u);
+});
+
+test("lesson navigation mirrors the refined compact lesson hierarchy", () => {
+  assert.match(lessonNav, /Voltar para a jornada/u);
+  assert.match(lessonNav, /text-\[22px\].*sm:text-\[28px\]/u);
+  assert.match(lessonNav, /border-b border-slate-200 pb-5/u);
+  assert.match(lessonNav, /Próxima aula/u);
+  assert.doesNotMatch(lessonNav, /brand-activity-context/u);
+  assert.doesNotMatch(lessonNav, /rounded-2xl border border-primary/u);
 });
 
 test("public legal document reads do not require service-role credentials", () => {
