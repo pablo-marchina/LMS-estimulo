@@ -53,7 +53,6 @@ begin
     raise exception 'JOURNEY_VERSION_NOT_FOUND' using errcode = 'P0002';
   end if;
 
-  -- Retired journey versions keep their historical rules untouched.
   if v_journey_status not in ('draft', 'published') then
     return null;
   end if;
@@ -62,8 +61,6 @@ begin
     'journey-completion-rule:' || p_journey_version_id::text
   );
 
-  -- Respect an already-published compatible rule, including a rule authored
-  -- before this managed policy existed.
   select rv.id
   into v_rule_version_id
   from orchestration.rule_versions rv
@@ -127,9 +124,6 @@ begin
     where id = v_rule_definition_id;
   end if;
 
-  -- Reuse the newest non-retired managed rule. When the journey is published,
-  -- promote the managed draft atomically so certificate publication can safely
-  -- reference it in the same transaction.
   select rv.id, rv.status
   into v_rule_version_id, v_rule_version_status
   from orchestration.rule_versions rv
@@ -233,8 +227,6 @@ after insert or update on catalog.journey_versions
 for each row
 execute function app_private.sync_journey_completion_rule();
 
--- Backfill existing draft/published journeys so the certificate editor stops
--- depending on a manually-created credential rule.
 do $block$
 declare
   v_journey_version_id uuid;
@@ -296,8 +288,6 @@ begin
     'journey.instance.completed:' || new.id::text || ':' || new.aggregate_version::text
   );
 
-  -- The deterministic id keeps the canonical completion event idempotent for
-  -- a specific journey aggregate version.
   if not exists (
     select 1
     from eventing.events ev
@@ -314,11 +304,12 @@ begin
       new.id,
       'journey_instance',
       new.id,
-      new.aggregate_version,
+      null,
       v_event_id,
       null,
       jsonb_build_object(
         'journey_version_id', v_journey_version_id,
+        'journey_aggregate_version', new.aggregate_version,
         'completed_at', v_completed_at,
         'completion_source', 'journey_state_transition'
       )
@@ -358,9 +349,6 @@ begin
     on e.id = en.entrepreneur_id
   where ji.id = new.journey_instance_id;
 
-  -- Imported/legacy entrepreneurs can exist without a user account. Their
-  -- learning completion remains valid, but there is no account actor that can
-  -- receive an issued learning credential yet.
   if v_actor_user_account_id is null then
     return new;
   end if;
@@ -390,6 +378,6 @@ execute function app_private.issue_credentials_from_journey_completed_event();
 comment on function app_private.ensure_journey_completion_rule(uuid) is
   'Ensures the canonical journey-scoped credential rule used by certificate issuance. Existing published compatible rules are preserved.';
 comment on function app_private.emit_journey_instance_completed_event() is
-  'Emits journey.instance.completed exactly when a journey instance transitions to completed.';
+  'Emits journey.instance.completed exactly when a journey instance transitions to completed without consuming the journey aggregate version slot already owned by the command flow.';
 comment on function app_private.issue_credentials_from_journey_completed_event() is
   'Consumes journey.instance.completed and delegates idempotent badge/certificate issuance to issue_learning_credentials.';
