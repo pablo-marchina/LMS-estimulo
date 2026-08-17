@@ -20,10 +20,31 @@ for (const warning of manifest.warnings ?? []) {
   }
 }
 
+function captureStayedOnTarget(item) {
+  try {
+    const requested = new URL(item.requestedUrl);
+    const final = new URL(item.finalUrl);
+    if (requested.origin === final.origin) return true;
+    const protectionHint = final.hostname === "vercel.com" || final.hostname.endsWith(".vercel.com")
+      ? "deployment protection redirected the browser"
+      : "browser escaped the target origin";
+    failures.push(`${item.role} ${item.viewport} ${item.requestedUrl}: ${protectionHint} to ${final.origin}${final.pathname}`);
+    return false;
+  } catch {
+    failures.push(`${item.role} ${item.viewport} ${item.requestedUrl}: invalid requested/final URL in visual evidence`);
+    return false;
+  }
+}
+
+const validTargetCaptures = (manifest.captures ?? []).filter((item) => {
+  if (!targetRoles.has(item.role)) return false;
+  return captureStayedOnTarget(item);
+});
+
 for (const role of targetRoles) {
   for (const viewport of requiredViewports) {
-    const captures = (manifest.captures ?? []).filter((item) => item.role === role && item.viewport === viewport);
-    if (!captures.length) failures.push(`${role} ${viewport}: no visual capture produced`);
+    const captures = validTargetCaptures.filter((item) => item.role === role && item.viewport === viewport);
+    if (!captures.length) failures.push(`${role} ${viewport}: no same-origin visual capture produced`);
   }
 }
 
@@ -42,7 +63,7 @@ const requiredRoutes = [
 
 for (const [role, route] of requiredRoutes) {
   for (const viewport of requiredViewports) {
-    const found = (manifest.captures ?? []).some((item) => {
+    const found = validTargetCaptures.some((item) => {
       if (item.role !== role || item.viewport !== viewport) return false;
       try {
         const url = new URL(item.requestedUrl);
@@ -51,15 +72,16 @@ for (const [role, route] of requiredRoutes) {
         return false;
       }
     });
-    if (!found) failures.push(`${role} ${viewport}: required route ${route} was not captured`);
+    if (!found) failures.push(`${role} ${viewport}: required same-origin route ${route} was not captured`);
   }
 }
 
 const report = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   manifestSchemaVersion: manifest.schemaVersion,
   checkedAt: new Date().toISOString(),
   captures: manifest.captures?.length ?? 0,
+  validTargetCaptures: validTargetCaptures.length,
   originalFailures: manifest.failures?.length ?? 0,
   originalWarnings: manifest.warnings?.length ?? 0,
   failures,
@@ -70,5 +92,5 @@ if (failures.length) {
   console.error(failures.join("\n"));
   process.exitCode = 1;
 } else {
-  console.log(`Strict visual gate passed across ${report.captures} captures with no target warnings.`);
+  console.log(`Strict visual gate passed across ${report.validTargetCaptures} same-origin target captures with no target warnings.`);
 }
