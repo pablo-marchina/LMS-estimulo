@@ -11,7 +11,7 @@ on:
       reference_url:
         description: Optional visual reference URL
         required: false
-        default: https://estimulo-openai-boost.lovable.app/
+        default: https://estimulo-polish-studio.lovable.app/
         type: string
   pull_request:
     branches:
@@ -25,6 +25,7 @@ on:
       - scripts/e2e/admin-critical-flow-visual.mjs
       - scripts/e2e/vercel-protection-bypass.mjs
       - scripts/application/lesson-canonical-flow-visual-contract.test.mjs
+      - scripts/application/final-review-remediation.test.mjs
 
 permissions:
   contents: read
@@ -72,10 +73,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      E2E_TARGET_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || inputs.target_url || secrets.E2E_PRODUCTION_URL }}
+      # Vercel protects immutable production deployment URLs in this project even
+      # though the canonical production alias is public. Audit the public alias for
+      # production events so the visual gate exercises the real user-facing origin.
+      # Preview events still use their immutable URL and can opt into the bypass secret.
+      E2E_TARGET_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment.environment == 'Production' && 'https://lms-estimulo-web.vercel.app' || github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || inputs.target_url || secrets.E2E_PRODUCTION_URL }}
+      E2E_SOURCE_DEPLOYMENT_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || '' }}
       E2E_TARGET_SHA: ${{ github.event_name == 'deployment_status' && github.event.deployment.sha || github.sha }}
       E2E_TARGET_ENVIRONMENT: ${{ github.event_name == 'deployment_status' && github.event.deployment.environment || 'manual' }}
-      E2E_REFERENCE_URL: ${{ inputs.reference_url || 'https://estimulo-openai-boost.lovable.app/' }}
+      E2E_REFERENCE_URL: ${{ inputs.reference_url || 'https://estimulo-polish-studio.lovable.app/' }}
       E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
       E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
       E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
@@ -124,6 +130,7 @@ jobs:
           const fs = require('node:fs');
           const data = {
             targetUrl: process.env.E2E_TARGET_URL,
+            sourceDeploymentUrl: process.env.E2E_SOURCE_DEPLOYMENT_URL || null,
             targetSha: process.env.E2E_TARGET_SHA || null,
             targetEnvironment: process.env.E2E_TARGET_ENVIRONMENT || null,
             automationBypassConfigured: Boolean((process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '').trim()),
@@ -156,6 +163,7 @@ jobs:
           console.log('## Deployment provenance');
           console.log('');
           console.log(`- Target: ${provenance.targetUrl}`);
+          console.log(`- Source deployment: ${provenance.sourceDeploymentUrl ?? 'manual/canonical'}`);
           console.log(`- Commit: ${provenance.targetSha ?? 'unknown'}`);
           console.log(`- Environment: ${provenance.targetEnvironment ?? 'unknown'}`);
           console.log(`- Vercel automation bypass: ${provenance.automationBypassConfigured ? 'configured' : 'not configured'}`);
