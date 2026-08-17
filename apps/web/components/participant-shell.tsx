@@ -98,6 +98,15 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
   const signOutLabel = interfaceText(content, "shared.sign_out", "Sair");
   const wideLesson = pathname.startsWith("/empreendedor/atividade/");
   const preview = searchParams.get("interface_preview") === "1";
+
+  useEffect(() => {
+    if (!wideLesson) return;
+    const resetScroll = () => window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    resetScroll();
+    const frame = window.requestAnimationFrame(resetScroll);
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname, wideLesson]);
+
   const links = linkDefinitions
     .filter((link) => link.contentKey === "participant.nav.home" || interfaceVisible(content, link.contentKey))
     .filter((link) => link.contentKey !== "participant.nav.b2b" || hasB2BAccess)
