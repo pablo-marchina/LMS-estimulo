@@ -13,7 +13,7 @@ const [lessonLayout, rewardsPage, contentViewer, serverInvoke, productManagement
   readFile("apps/web/next.config.ts", "utf8"),
   readFile("apps/web/lib/admin/media-upload.ts", "utf8"),
   readFile("supabase/migrations/20260813162500_save_admin_track_v2.sql", "utf8"),
-  readFile("supabase/migrations/20260817002000_link_path_badges_to_credential_issuance.sql", "utf8"),
+  readFile("supabase/migrations/20260817002944_link_path_badges_to_credential_issuance.sql", "utf8"),
 ]);
 
 test("lesson canvas keeps its centered max-width layout", () => {
