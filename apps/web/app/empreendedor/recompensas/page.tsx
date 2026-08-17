@@ -4,7 +4,7 @@ import { StatusPanel } from "@/components/status-panel";
 import { PageHeader } from "@/components/ui/page-header";
 import { requireParticipantContext } from "@/lib/auth/participant-context";
 import { engagementRuntime } from "@/lib/engagement/runtime";
-import { extensionsRuntime } from "@/lib/extensions/runtime";
+import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +20,31 @@ const emptyRewards = {
   ledger: [],
 };
 
+const rewardErrorMessages: Record<string, { title: string; message: string }> = {
+  REWARD_OUT_OF_STOCK: {
+    title: "Recompensa esgotada",
+    message: "Essa recompensa não está mais disponível em estoque. Escolha outra opção disponível.",
+  },
+  REWARD_BALANCE_INSUFFICIENT: {
+    title: "Pontos insuficientes",
+    message: "Seu saldo de pontos não é suficiente para resgatar esta recompensa.",
+  },
+  REWARD_USER_LIMIT_REACHED: {
+    title: "Limite de resgates atingido",
+    message: "Você já atingiu o limite de resgates permitido para esta recompensa.",
+  },
+  REWARD_NOT_AVAILABLE: {
+    title: "Recompensa indisponível",
+    message: "Essa recompensa não está disponível para resgate neste momento.",
+  },
+};
+
+function rewardHasStock(reward: JsonRecord) {
+  if (reward.stock_quantity === null || reward.stock_quantity === undefined) return true;
+  const stock = Number(reward.stock_quantity);
+  return Number.isFinite(stock) && stock > 0;
+}
+
 export default async function ParticipantRewardsPage({ searchParams }: { searchParams: Promise<{ erro?: string; sucesso?: string; tab?: string }> }) {
   const query = await searchParams;
   const auth = await requireParticipantContext();
@@ -31,7 +56,15 @@ export default async function ParticipantRewardsPage({ searchParams }: { searchP
   const workspace = workspaceResult.status === "fulfilled" ? workspaceResult.value : null;
   const engagement = engagementResult.status === "fulfilled" ? engagementResult.value : null;
   const pointRules = pointRulesResult.status === "fulfilled" ? pointRulesResult.value : null;
-  const rewardBalance = workspace?.rewards.reward_balance ?? 0;
+  const rewards = workspace?.rewards ?? emptyRewards;
+  const availableRewards = { ...rewards, catalog: rewards.catalog.filter(rewardHasStock) };
+  const rewardBalance = rewards.reward_balance;
+  const actionError = query.erro
+    ? rewardErrorMessages[query.erro] ?? {
+      title: "Não foi possível concluir",
+      message: "O resgate não pôde ser concluído. Atualize a página e tente novamente.",
+    }
+    : null;
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 pb-24 pt-8 sm:px-6 sm:pt-12">
@@ -52,12 +85,12 @@ export default async function ParticipantRewardsPage({ searchParams }: { searchP
       />
       <div className="grid gap-6">
         {query.sucesso ? <StatusPanel title="Conquista atualizada" tone="success">Seu saldo e histórico já foram atualizados.</StatusPanel> : null}
-        {query.erro ? <StatusPanel title="Não foi possível concluir" tone="warning">Confira seu saldo e tente novamente.</StatusPanel> : null}
+        {actionError ? <StatusPanel title={actionError.title} tone="warning">{actionError.message}</StatusPanel> : null}
         {workspaceResult.status === "rejected" ? <StatusPanel title="Recompensas temporariamente indisponíveis" tone="warning">Não foi possível carregar seu saldo, catálogo e resgates. Os valores zerados abaixo são apenas um estado de segurança e não significam perda de pontos.</StatusPanel> : null}
         {engagementResult.status === "rejected" ? <StatusPanel title="Ranking e histórico temporariamente indisponíveis" tone="warning">Não foi possível consultar seus dados de engajamento agora. Tente recarregar a página.</StatusPanel> : null}
         {pointRulesResult.status === "rejected" ? <StatusPanel title="Regras de pontuação temporariamente indisponíveis" tone="warning">A lista de formas de ganhar pontos não pôde ser carregada neste momento.</StatusPanel> : null}
         <RewardsExperience
-          rewards={workspace?.rewards ?? emptyRewards}
+          rewards={availableRewards}
           ranking={engagement?.ranking ?? []}
           ownRank={engagement?.own_rank ?? null}
           pointHistory={engagement?.point_history ?? []}
