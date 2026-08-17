@@ -48,8 +48,8 @@ function payloadFromForm(formData: FormData): JsonRecord {
   }
   if (resourceType === "reward") {
     const fields = [checkbox(formData, "request_address") ? { key: "address", label: "Endereço para entrega", required: true } : null, checkbox(formData, "request_email") ? { key: "email", label: "E-mail para recebimento", required: true } : null, checkbox(formData, "request_phone") ? { key: "phone", label: "Telefone para contato", required: true } : null].filter(Boolean);
-    payload.fulfillment_configuration = { instructions: text(formData, "delivery_instructions"), fields };
-    deleteKeys(payload, ["request_address", "request_email", "request_phone", "delivery_instructions"]);
+    payload.fulfillment_configuration = { instructions: text(formData, "delivery_instructions"), fields, display_order: Math.max(0, numeric(formData, "display_order", 100)) };
+    deleteKeys(payload, ["request_address", "request_email", "request_phone", "delivery_instructions", "display_order"]);
   }
   if (resourceType === "redemption_status") {
     payload.fulfillment_details = Object.fromEntries([["code", text(formData, "delivery_code")], ["link", text(formData, "delivery_link")], ["tracking", text(formData, "delivery_tracking")], ["instructions", text(formData, "delivery_notes")]].filter(([, value]) => value));

@@ -10,6 +10,8 @@ import type { JsonRecord } from "@/lib/extensions/runtime";
 
 function text(value: unknown) { return typeof value === "string" ? value : ""; }
 function number(value: unknown) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : 0; }
+function record(value: unknown): JsonRecord { return value && typeof value === "object" && !Array.isArray(value) ? value as JsonRecord : {}; }
+function rewardOrder(reward: JsonRecord) { const configured = Number(record(reward.fulfillment_configuration).display_order); return Number.isFinite(configured) && configured >= 0 ? configured : 100; }
 
 const statusLabels: Record<string, string> = {
   pending: "Pedido recebido", approved: "Aprovada", preparing: "Em preparação", sent: "Enviada",
@@ -33,6 +35,8 @@ export function RewardsExperience({ rewards, ranking, pointHistory, pointRules, 
   pointRules: ParticipantPointRule[];
   activeTab: "recompensas" | "como-conseguir-pontos" | "historico" | "ranking";
 }) {
+  const orderedCatalog = [...rewards.catalog].sort((left, right) => rewardOrder(left) - rewardOrder(right) || number(left.cost_points) - number(right.cost_points) || text(left.name).localeCompare(text(right.name), "pt-BR"));
+
   return <div className="grid gap-7">
     <nav aria-label="Abas da central de recompensas" className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-transparent">
       {[["recompensas", "Recompensas"],["como-conseguir-pontos", "Como conseguir pontos"],["historico", "Histórico"],["ranking", "Ranking"]].map(([tab, label]) => <Link key={tab} href={tab === "recompensas" ? "/empreendedor/recompensas" : `/empreendedor/recompensas?tab=${tab}`} aria-current={activeTab === tab ? "page" : undefined} className={`inline-flex min-h-11 min-w-fit items-center justify-center border-b-2 px-3 py-2.5 text-sm font-semibold ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-muted hover:text-primary"}`}>{label}</Link>)}
@@ -40,7 +44,7 @@ export function RewardsExperience({ rewards, ranking, pointHistory, pointRules, 
 
     {activeTab === "recompensas" ? <section id="catalogo" className="grid scroll-mt-24 gap-4">
       <div className="flex items-end justify-between gap-4"><div><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Escolha sua próxima conquista</p><h2 className="mt-1 text-2xl font-bold text-ink">Recompensas disponíveis</h2><p className="mt-1.5 text-sm text-muted">Saldo disponível: <strong className="text-secondary">{rewards.reward_balance} pontos</strong></p></div><Trophy className="hidden text-primary sm:block" size={30} /></div>
-      {rewards.catalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{rewards.catalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}
+      {orderedCatalog.length === 0 ? <Card><p className="text-sm text-muted">Novas recompensas aparecerão aqui em breve.</p></Card> : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{orderedCatalog.map((reward) => <RewardCard key={text(reward.id)} reward={reward} balance={rewards.reward_balance} />)}</div>}
     </section> : null}
 
     {activeTab === "como-conseguir-pontos" ? <PointsTable pointRules={pointRules} /> : null}
@@ -63,23 +67,39 @@ function PointsTable({ pointRules }: { pointRules: ParticipantPointRule[] }) {
   </section>;
 }
 
+function RewardDescription({ description }: { description: string }) {
+  if (!description) return null;
+  return (
+    <details className="group mt-2 text-sm leading-6 text-muted">
+      <summary className="cursor-pointer list-none marker:hidden [&::-webkit-details-marker]:hidden">
+        <span className="line-clamp-4 group-open:hidden">{description}</span>
+        <span className="mt-1 inline-block text-xs font-bold text-primary group-open:hidden">Ler mais…</span>
+        <span className="hidden text-xs font-bold text-primary group-open:inline">Ler menos</span>
+      </summary>
+      <p className="mt-2 whitespace-pre-wrap">{description}</p>
+    </details>
+  );
+}
+
 function RewardCard({ reward, balance }: { reward: JsonRecord; balance: number }) {
   const cost = number(reward.cost_points);
   const unlocked = balance >= cost;
   const missing = Math.max(0, cost - balance);
   const progress = cost > 0 ? Math.min(100, Math.round((balance / cost) * 100)) : 100;
   const imageFileObjectId = text(reward.image_file_object_id);
+  const stock = reward.stock_quantity === null || reward.stock_quantity === undefined ? null : number(reward.stock_quantity);
 
   return <Card className={`flex flex-col overflow-hidden p-0 ${unlocked ? "ring-1 ring-primary/10" : ""}`}>
-    {imageFileObjectId ? <div className="relative aspect-[16/7] overflow-hidden bg-slate-50"><img src={`/api/rewards/${text(reward.id)}/image`} alt="" loading="lazy" decoding="async" className="size-full object-cover" /></div> : <div className="h-1.5 bg-primary/80" aria-hidden="true" />}
-    <div className="flex flex-1 flex-col p-5">
-      <div className="flex items-start justify-between gap-3"><span className={`grid size-10 shrink-0 place-items-center rounded-md ${unlocked ? "bg-primary-soft text-primary" : "bg-slate-100 text-muted"}`}>{unlocked ? <Gift size={20} /> : <LockKeyhole size={19} />}</span><span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-muted">{typeLabels[text(reward.reward_type)] ?? "Recompensa"}</span></div>
-      <h3 className="mt-4 text-lg font-bold text-ink">{text(reward.name)}</h3>
-      <p className="mt-2 flex-1 text-sm leading-6 text-muted">{text(reward.description)}</p>
-      <div className="mt-5 flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-muted">Custo</p><p className="text-2xl font-bold text-secondary">{cost}</p></div><span className={`text-xs font-bold ${unlocked ? "text-success" : "text-muted"}`}>{unlocked ? "Pronta para resgatar" : `Faltam ${missing}`}</span></div>
+    {imageFileObjectId ? <div className="relative aspect-[16/6] overflow-hidden bg-slate-50"><img src={`/api/rewards/${text(reward.id)}/image`} alt="" loading="lazy" decoding="async" className="size-full object-cover" /></div> : <div className="h-1.5 bg-primary/80" aria-hidden="true" />}
+    <div className="flex flex-1 flex-col p-4">
+      <div className="flex items-start justify-between gap-3"><span className={`grid size-9 shrink-0 place-items-center rounded-md ${unlocked ? "bg-primary-soft text-primary" : "bg-slate-100 text-muted"}`}>{unlocked ? <Gift size={19} /> : <LockKeyhole size={18} />}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-muted">{typeLabels[text(reward.reward_type)] ?? "Recompensa"}</span></div>
+      <h3 className="mt-3 text-lg font-bold text-ink">{text(reward.name)}</h3>
+      <p className="mt-1 text-xs font-semibold text-muted">{stock === null ? "Disponibilidade contínua" : `${stock} ${stock === 1 ? "disponível" : "disponíveis"}`}</p>
+      <div className="flex-1"><RewardDescription description={text(reward.description)} /></div>
+      <div className="mt-4 flex items-end justify-between gap-3"><p className="text-xl font-bold text-secondary">{cost} pontos</p><span className={`text-xs font-bold ${unlocked ? "text-success" : "text-muted"}`}>{unlocked ? "Pronta para resgatar" : `Faltam ${missing}`}</span></div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} /></div>
-      <details className="mt-4 rounded-lg border border-slate-200"><summary className="cursor-pointer p-3 text-sm font-semibold text-secondary">Ver detalhes</summary><div className="border-t border-slate-200 p-3 text-sm whitespace-pre-wrap text-muted">{text(reward.regulation)}</div></details>
-      <form action={performExtensionAction} className="mt-4 grid gap-3"><input type="hidden" name="action_type" value="reward_redeem" /><input type="hidden" name="return_to" value="/empreendedor/recompensas" /><input type="hidden" name="reward_id" value={text(reward.id)} /><input type="hidden" name="json_fields" value="fulfillment_details" /><input type="hidden" name="fulfillment_details" value="{}" /><PendingSubmitButton pendingLabel="Solicitando…" disabled={!unlocked}>{unlocked ? "Resgatar recompensa" : `Junte mais ${missing} pontos`}</PendingSubmitButton></form>
+      <details className="mt-3 rounded-lg border border-slate-200"><summary className="cursor-pointer p-3 text-sm font-semibold text-secondary">Ver regras de resgate</summary><div className="border-t border-slate-200 p-3 text-sm whitespace-pre-wrap text-muted">{text(reward.regulation)}</div></details>
+      <form action={performExtensionAction} className="mt-3 grid gap-3"><input type="hidden" name="action_type" value="reward_redeem" /><input type="hidden" name="return_to" value="/empreendedor/recompensas" /><input type="hidden" name="reward_id" value={text(reward.id)} /><input type="hidden" name="json_fields" value="fulfillment_details" /><input type="hidden" name="fulfillment_details" value="{}" /><PendingSubmitButton pendingLabel="Solicitando…" disabled={!unlocked}>{unlocked ? "Resgatar recompensa" : `Junte mais ${missing} pontos`}</PendingSubmitButton></form>
     </div>
   </Card>;
 }

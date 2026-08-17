@@ -71,6 +71,18 @@ export default async function ResultPage({
       {engagementResult.status === "rejected" || diagnosticSummaryResult.status === "rejected" ? <StatusPanel title="Parte do diagnóstico está temporariamente indisponível" tone="warning"><p>Seu progresso da jornada foi carregado, mas o resumo do perfil não pôde ser consultado neste momento.</p></StatusPanel> : null}
 
       {archetype ? <DiagnosticResultDashboard archetype={archetype} dimensions={diagnosticSummary?.dimensions ?? []} resultBlocks={diagnosticSummary?.result_blocks ?? []} resultContent={diagnosticSummary?.result_content} primaryHref={participantNextHref(state)} primaryLabel={state.journey_status === "completed" ? "Explorar outras jornadas" : "Acessar minha trilha"} /> : null}
+      {archetype ? (
+        <div className="no-print flex justify-end">
+          <ShareAction
+            title={`Meu diagnóstico — ${journeyTitle}`}
+            text="Concluí meu diagnóstico na Plataforma Estímulo e identifiquei meus próximos focos de desenvolvimento."
+            url={`/empreendedor/resultado?journey=${encodeURIComponent(journey)}`}
+            entityType="diagnostic_result"
+            entityId={journey}
+            label="Compartilhar diagnóstico"
+          />
+        </div>
+      ) : null}
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3" aria-label="Resumo do resultado da jornada">
         <MetricTile index={0} label="Status" value={statusLabel(state.journey_status)} />
