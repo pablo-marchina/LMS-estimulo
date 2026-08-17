@@ -5,6 +5,8 @@ import test from "node:test";
 const [
   privacyPage,
   termsPage,
+  governedDocumentPage,
+  nextConfig,
   profilePage,
   announcementCarousel,
   engagementAdmin,
@@ -14,6 +16,8 @@ const [
 ] = await Promise.all([
   readFile("apps/web/app/privacidade/page.tsx", "utf8"),
   readFile("apps/web/app/termos/page.tsx", "utf8"),
+  readFile("apps/web/components/governed-document-page.tsx", "utf8"),
+  readFile("apps/web/next.config.ts", "utf8"),
   readFile("apps/web/app/empreendedor/perfil/page.tsx", "utf8"),
   readFile("apps/web/components/announcement-carousel.tsx", "utf8"),
   readFile("apps/web/app/admin/engajamento/page.tsx", "utf8"),
@@ -22,12 +26,13 @@ const [
   readFile("apps/web/components/participant-library-page.tsx", "utf8"),
 ]);
 
-test("terms and privacy render the published legal versions used by signup", () => {
-  assert.match(termsPage, /getPublicSignupLegalDocument\("terms_of_use", version\)/u);
-  assert.match(privacyPage, /getPublicSignupLegalDocument\("privacy_policy", version\)/u);
-  assert.match(privacyPage, /export const dynamic = "force-dynamic"/u);
-  assert.match(privacyPage, /if \(!legalDocument\) notFound\(\)/u);
-  assert.match(privacyPage, /Versão \$\{legalDocument\.version_number\}, publicada em \$\{publishedAt\}/u);
+test("terms and privacy share the governed renderer backed by the signup legal snapshot", () => {
+  assert.match(termsPage, /GovernedDocumentPage documentType="terms_of_use"/u);
+  assert.match(privacyPage, /GovernedDocumentPage documentType="privacy_policy"/u);
+  assert.match(governedDocumentPage, /getPublicSignupLegalDocument\(documentType, version\)/u);
+  assert.match(governedDocumentPage, /if \(!legalDocument\) notFound\(\)/u);
+  assert.match(governedDocumentPage, /Versão \$\{legalDocument\.version_number\}, publicada em \$\{publishedAt\}/u);
+  assert.doesNotMatch(nextConfig, /source: "\/privacidade"/u);
   assert.doesNotMatch(privacyPage, /Versão operacional de 29 de julho de 2026/u);
 });
 
