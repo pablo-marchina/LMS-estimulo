@@ -38,7 +38,7 @@ function rewardPayload(formData: FormData, imageFileObjectId: string): JsonRecor
     id: text(formData, "id"), code: text(formData, "code"), name: text(formData, "name"), description: text(formData, "description"), regulation: text(formData, "regulation"), reward_type: text(formData, "reward_type"),
     cost_points: Math.max(1, Number(text(formData, "cost_points")) || 1), stock_quantity: nullableNumber(text(formData, "stock_quantity")), max_per_user: nullableNumber(text(formData, "max_per_user")), starts_at: nullableDate(text(formData, "starts_at")), ends_at: nullableDate(text(formData, "ends_at")), status: text(formData, "status") || "draft",
     image_file_object_id: imageFileObjectId || null,
-    fulfillment_configuration: { instructions: text(formData, "delivery_instructions"), fields },
+    fulfillment_configuration: { instructions: text(formData, "delivery_instructions"), fields, display_order: Math.max(0, Number(text(formData, "display_order")) || 0) },
   };
 }
 
