@@ -9,7 +9,7 @@ const [
   rewardActions,
   journeyAction,
   journeyErrorPage,
-  lessonWorkspace,
+  lessonPage,
   completionAction,
   resultPage,
   shareAction,
@@ -21,7 +21,7 @@ const [
   readFile("apps/web/app/admin/recompensas/reward-actions.ts", "utf8"),
   readFile("apps/web/app/admin/produto/journey-action.ts", "utf8"),
   readFile("apps/web/app/admin/produto/erro/page.tsx", "utf8"),
-  readFile("apps/web/components/participant-activity-workspace.tsx", "utf8"),
+  readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/completion-action.ts", "utf8"),
   readFile("apps/web/app/empreendedor/resultado/page.tsx", "utf8"),
   readFile("apps/web/components/share-action.tsx", "utf8"),
@@ -55,15 +55,15 @@ test("journey admin keeps concrete upload failures and turns them into actionabl
   assert.match(journeyErrorPage, /Voltar e corrigir/u);
 });
 
-test("lesson completion stays actionable and blocked outcomes focus the missing requirement inside the inline journey route", () => {
-  assert.match(lessonWorkspace, /disabled=\{completed\}/u);
-  assert.match(lessonWorkspace, /id="conteudo"/u);
-  assert.match(lessonWorkspace, /id="avaliacao"/u);
-  assert.match(lessonWorkspace, /id="pratica"/u);
+test("lesson completion stays actionable and blocked outcomes focus the missing requirement inside the canonical lesson route", () => {
+  assert.match(lessonPage, /disabled=\{completed\}/u);
+  assert.match(lessonPage, /id="conteudo"/u);
+  assert.match(lessonPage, /id="avaliacao"/u);
+  assert.match(lessonPage, /id="pratica"/u);
   assert.match(completionAction, /conteudo_pendente: "conteudo"/u);
   assert.match(completionAction, /avaliacao_pendente: "avaliacao"/u);
   assert.match(completionAction, /pratica_pendente: "pratica"/u);
-  assert.match(completionAction, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?conteudo=\$\{step\}&conclusao=\$\{outcome\}#\$\{completionAnchor\[outcome\]\}`\)/u);
+  assert.match(completionAction, /redirect\(`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}&conclusao=\$\{outcome\}#\$\{completionAnchor\[outcome\]\}`\)/u);
 });
 
 test("certificate and diagnostic sharing use the gamified social-share event path", () => {

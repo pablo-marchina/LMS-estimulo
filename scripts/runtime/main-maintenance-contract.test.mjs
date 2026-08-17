@@ -15,29 +15,25 @@ test("platform loading uses one global progress bar and no page skeletons", asyn
   assert.doesNotMatch(shell, /ParticipantNavigationProgress/);
 });
 
-test("lesson consumes one continuous centered content area inside the journey without a permanent side column", async () => {
-  const [shell, layoutCss, lessonWorkspace, legacyRoute, journey] = await Promise.all([
+test("lesson consumes one continuous centered content area without a permanent side column", async () => {
+  const [shell, layoutCss, lesson, journey] = await Promise.all([
     read("apps/web/components/participant-shell.tsx"),
     read("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css"),
-    read("apps/web/components/participant-activity-workspace.tsx"),
     read("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx"),
     read("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx"),
   ]);
+  assert.match(shell, /pathname\.startsWith\("\/empreendedor\/atividade\/"\)/);
   assert.match(shell, /wideLesson \? "w-full min-w-0"/);
   assert.doesNotMatch(shell, /\[&>div\]:max-w-none/);
-  assert.match(lessonWorkspace, /max-w-\[1100px\]/u);
-  assert.match(lessonWorkspace, /data-unified-shell/u);
-  assert.match(lessonWorkspace, /headingLevel=\{embedded \? "h2" : "h1"\}/u);
-  assert.doesNotMatch(lessonWorkspace, /ActivityContentProgress/u);
-  assert.doesNotMatch(lessonWorkspace, /300px/u);
+  assert.match(lesson, /max-w-\[1100px\]/u);
+  assert.doesNotMatch(lesson, /ActivityContentProgress/u);
+  assert.doesNotMatch(lesson, /300px/u);
   assert.doesNotMatch(layoutCss, /18rem/u);
   assert.doesNotMatch(layoutCss, /position: sticky/u);
   assert.doesNotMatch(layoutCss, /#aula:has/u);
-  assert.match(journey, /<section id="aula"/u);
-  assert.match(journey, /ParticipantActivityWorkspace/u);
-  assert.match(journey, /ActivityWorkspaceFrame/u);
-  assert.doesNotMatch(journey, /redirect\(`\/empreendedor\/atividade/u);
-  assert.match(legacyRoute, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}/u);
+  assert.match(journey, /redirect\(`\/empreendedor\/atividade\/\$\{selectedActivity\.step_instance_id\}/u);
+  assert.doesNotMatch(journey, /<section id="aula"/u);
+  assert.doesNotMatch(journey, /ActivityWorkspaceFrame/u);
 });
 
 test("admin extension saves do not catch successful Next redirects", async () => {
