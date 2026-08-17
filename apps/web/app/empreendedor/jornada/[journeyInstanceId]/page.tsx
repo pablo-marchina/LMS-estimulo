@@ -81,7 +81,7 @@ function Hero({ outline }: { outline: ParticipantJourneyOutline }) {
   const overallPercent = Math.round(outline.progress * 100);
 
   return (
-    <header className={`relative overflow-hidden rounded-[2rem] p-6 text-white shadow-lg sm:p-9 ${heroToneClasses[tone] ?? heroToneClasses.blue}`}>
+    <header data-journey-hero className={`relative overflow-hidden rounded-[2rem] p-6 text-white shadow-lg sm:p-9 ${heroToneClasses[tone] ?? heroToneClasses.blue}`}>
       {cover ? (
         <>
           <img src={cover} alt={typeof presentation.featured_background_alt === "string" ? presentation.featured_background_alt : ""} className="absolute inset-0 size-full object-cover" />
@@ -142,12 +142,12 @@ export default async function JourneyOutlinePage({
     : null;
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div data-journey-outline-page className="mx-auto grid min-w-0 max-w-6xl grid-cols-1 gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {interfaceVisible(interfaceContent, "participant.journey.back") ? <ButtonLink href="/empreendedor/jornadas" variant="ghost" size="sm" className="w-fit">{interfaceText(interfaceContent, "participant.journey.back", "Voltar às jornadas")}</ButtonLink> : null}
       <Hero outline={outline} />
 
       {outline.modules.length ? (
-        <section className="grid gap-5" aria-labelledby="trilhas-titulo">
+        <section data-journey-learning-path className="grid min-w-0 gap-5" aria-labelledby="trilhas-titulo">
           <div className="grid gap-1 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
               <p className="brand-kicker">Seu caminho de aprendizagem</p>
@@ -217,7 +217,7 @@ export default async function JourneyOutlinePage({
       )}
 
       {selectedActivity ? (
-        <section id="aula" className="scroll-mt-20" aria-label={`Conteúdo aberto: ${selectedActivity.activity_title}`}>
+        <section id="aula" data-journey-lesson className="min-w-0 scroll-mt-20" aria-label={`Conteúdo aberto: ${selectedActivity.activity_title}`}>
           <ActivityWorkspaceFrame>
             <ActivityPage
               params={Promise.resolve({ stepInstanceId: selectedActivity.step_instance_id })}
