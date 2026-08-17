@@ -26,6 +26,29 @@ function objectSnapshot(formData: FormData, name: string): Record<string, unknow
   return parsed as Record<string, unknown>;
 }
 
+function lessonSaveErrorCode(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (message.includes("FORBIDDEN")) return "sem_permissao";
+  if (message.includes("LIBRARY_CONTENT_NOT_FOUND")) return "conteudo_biblioteca_indisponivel";
+  if (message.includes("LIBRARY_CONTENT_REQUIRED")) return "conteudo_biblioteca_obrigatorio";
+  if (message.includes("LESSON_NOT_FOUND")) return "aula_nao_encontrada";
+  if (message.includes("TRACK_NOT_FOUND")) return "trilha_nao_encontrada";
+  const invalidLessonErrors = [
+    "LESSON_PATCH_INVALID",
+    "LESSON_STEP_REQUIRED",
+    "LESSON_PAYLOAD_INVALID",
+    "LESSON_TITLE_REQUIRED",
+    "TRACK_REQUIRED",
+    "ADMIN_CODE_INVALID",
+    "STEP_CODE_INVALID",
+    "LIBRARY_CONTENT_FIELDS_REQUIRED",
+    "LIBRARY_CONTENT_FILE_REQUIRED",
+    "LIBRARY_CONTENT_URL_INVALID",
+  ];
+  if (invalidLessonErrors.some((code) => message.includes(code))) return "dados_aula_invalidos";
+  return "falha_aula";
+}
+
 const questionTypes = new Set(["single_choice", "multiple_choice", "true_false", "open_text"]);
 function quizQuestionsFromForm(formData: FormData) {
   const count = Math.max(0, Number.parseInt(text(formData, "quiz_question_count"), 10) || 0);
@@ -218,8 +241,12 @@ export async function saveAulaAction(formData: FormData) {
       : await saveAdminLesson({ actorUserAccountId: actor, organizationId, payload, idempotencyKey: randomUUID() });
     liveUpdate = result.live_update;
   } catch (error) {
-    const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
-    redirect(`${back}&erro=${reason}`);
+    const reason = lessonSaveErrorCode(error);
+    console.error("[admin/produto] saveAulaAction failed", {
+      reason,
+      message: error instanceof Error ? error.message : "UNKNOWN_ERROR",
+    });
+    redirect(`/admin/produto/erro?codigo=${encodeURIComponent(reason)}&versao=${encodeURIComponent(journeyVersionId)}&etapa=conteudo`);
   }
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
