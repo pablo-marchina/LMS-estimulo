@@ -25,5 +25,5 @@ export async function openJourneyActivityAction(formData: FormData) {
   }
   await journeyRuntime.focusActivity(auth.identity.user_account_id, journeyInstanceId, stepInstanceId, `${key}:focus`);
 
-  redirect(`/empreendedor/atividade/${stepInstanceId}?journey=${journeyInstanceId}`);
+  redirect(`/empreendedor/jornada/${journeyInstanceId}?conteudo=${stepInstanceId}#aula`);
 }
