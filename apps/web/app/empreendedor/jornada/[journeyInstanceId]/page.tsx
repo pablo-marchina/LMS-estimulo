@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { BookOpen, CheckCircle2, ChevronDown, Clock3, FileText, Headphones, PlayCircle, Route, Sparkles, Wrench } from "lucide-react";
+import { ActivityWorkspaceFrame } from "@/components/activity-workspace-frame";
+import { ParticipantActivityWorkspace, type ParticipantActivityQuery } from "@/components/participant-activity-workspace";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,14 +19,8 @@ import { openJourneyActivityAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-type JourneyQuery = {
+type JourneyQuery = ParticipantActivityQuery & {
   conteudo?: string;
-  comentario?: string;
-  pratica?: string;
-  codigo?: string;
-  avaliacao?: string;
-  utilidade?: string;
-  conclusao?: string;
 };
 
 const heroToneClasses: Record<string, string> = {
@@ -137,28 +133,19 @@ export default async function JourneyOutlinePage({
     ? outline.modules.flatMap((module) => module.activities).find((activity) => activity.step_instance_id === query.conteudo && (activity.step_status === "completed" || activity.can_open || activity.can_start)) ?? null
     : null;
 
-  if (query.conteudo && selectedActivity) {
-    const activityQuery = new URLSearchParams({ journey: journeyInstanceId });
-    for (const key of ["comentario", "pratica", "codigo", "avaliacao", "utilidade", "conclusao"] as const) {
-      const value = query[key];
-      if (value) activityQuery.set(key, value);
-    }
-    redirect(`/empreendedor/atividade/${selectedActivity.step_instance_id}?${activityQuery.toString()}`);
-  }
-
   const interfaceContent = await getPublishedInterfaceContent().catch(() => ({}));
   const firstIncompleteModuleIndex = outline.modules.findIndex((module) => module.completed_count < module.activity_count);
   const initiallyOpenModuleIndex = firstIncompleteModuleIndex >= 0 ? firstIncompleteModuleIndex : 0;
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+    <div className="mx-auto grid min-w-0 max-w-6xl gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       {interfaceVisible(interfaceContent, "participant.journey.back") ? <ButtonLink href="/empreendedor/jornadas" variant="ghost" size="sm" className="w-fit">{interfaceText(interfaceContent, "participant.journey.back", "Voltar às jornadas")}</ButtonLink> : null}
       <Hero outline={outline} />
 
       {outline.modules.length ? (
-        <section className="grid gap-5" aria-labelledby="trilhas-titulo">
-          <div className="grid gap-1 sm:grid-cols-[1fr_auto] sm:items-end">
-            <div>
+        <section className="grid min-w-0 gap-5" aria-labelledby="trilhas-titulo">
+          <div className="grid min-w-0 gap-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+            <div className="min-w-0">
               <p className="brand-kicker">Seu caminho de aprendizagem</p>
               <h2 id="trilhas-titulo" className="display-font mt-1 text-2xl text-secondary sm:text-3xl">{interfaceText(interfaceContent, "participant.journey.contents_title", participantContentCopy.journeyTitle)}</h2>
               {interfaceVisible(interfaceContent, "participant.journey.tracks_help") ? <p className="mt-1 text-sm text-muted">{interfaceText(interfaceContent, "participant.journey.contents_help", participantContentCopy.journeyHelp)}</p> : null}
@@ -166,23 +153,23 @@ export default async function JourneyOutlinePage({
             <p className="text-sm font-semibold text-secondary">{outline.modules.length} {outline.modules.length === 1 ? "etapa" : "etapas"}</p>
           </div>
 
-          <div className="grid gap-4">
+          <div className="grid min-w-0 gap-4">
             {outline.modules.map((module, moduleIndex) => {
               const required = module.metadata.is_required !== false;
               const moduleComplete = module.activity_count > 0 && module.completed_count === module.activity_count;
               return (
-                <details className="group overflow-hidden rounded-2xl border border-border bg-surface shadow-sm" key={module.module_key} open={moduleIndex === initiallyOpenModuleIndex}>
-                  <summary className="grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-4 p-5 marker:content-none hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+                <details className="group min-w-0 overflow-hidden rounded-2xl border border-border bg-surface shadow-sm" key={module.module_key} open={moduleIndex === initiallyOpenModuleIndex}>
+                  <summary className="grid min-w-0 cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 p-5 marker:content-none hover:bg-surface-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
                     <span className={`grid size-11 place-items-center rounded-xl ${moduleComplete ? "bg-success-soft text-success" : "bg-primary-soft text-primary"}`}>{moduleComplete ? <CheckCircle2 size={21} aria-hidden="true" /> : <Route size={21} aria-hidden="true" />}</span>
-                    <span className="grid gap-1">
-                      <span className="flex flex-wrap items-center gap-2"><strong className="text-lg text-secondary">{module.module_title}</strong>{moduleComplete ? <StatusPill tone="success">{participantContentCopy.completed}</StatusPill> : null}{!required && interfaceVisible(interfaceContent, "participant.journey.optional") ? <StatusPill tone="neutral">{interfaceText(interfaceContent, "participant.journey.optional", "Opcional")}</StatusPill> : null}</span>
+                    <span className="grid min-w-0 gap-1">
+                      <span className="flex min-w-0 flex-wrap items-center gap-2"><strong className="min-w-0 break-words text-lg text-secondary">{module.module_title}</strong>{moduleComplete ? <StatusPill tone="success">{participantContentCopy.completed}</StatusPill> : null}{!required && interfaceVisible(interfaceContent, "participant.journey.optional") ? <StatusPill tone="neutral">{interfaceText(interfaceContent, "participant.journey.optional", "Opcional")}</StatusPill> : null}</span>
                       {module.module_description ? <span className="line-clamp-2 text-sm text-muted">{module.module_description}</span> : null}
                       <small className="text-sm font-medium text-muted">{interfaceTemplate(interfaceContent, "participant.journey.contents_progress_summary", participantContentCopy.progressSummary, { completed: module.completed_count, total: module.activity_count })}</small>
                     </span>
                     <span className="flex items-center gap-2 text-sm font-semibold text-primary"><span className="hidden sm:inline">{interfaceText(interfaceContent, "participant.journey.view_contents", participantContentCopy.viewContents)}</span><ChevronDown size={20} className="transition-transform duration-150 group-open:rotate-180" aria-hidden="true" /></span>
                   </summary>
 
-                  <ol className="divide-y divide-border border-t border-border">
+                  <ol className="min-w-0 divide-y divide-border border-t border-border">
                     {module.activities.map((activity, activityIndex) => {
                       const completed = activity.step_status === "completed";
                       const canOpen = completed || activity.can_open || activity.can_start;
@@ -194,22 +181,22 @@ export default async function JourneyOutlinePage({
                             ? interfaceText(interfaceContent, "participant.journey.action_continue_content", participantContentCopy.continue)
                             : interfaceText(interfaceContent, "participant.journey.action_locked", participantContentCopy.locked);
                       return (
-                        <li key={activity.step_instance_id} className="grid gap-4 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center">
+                        <li key={activity.step_instance_id} className="grid min-w-0 gap-4 p-5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
                           <span className={`grid size-9 place-items-center rounded-full text-sm font-black ${completed ? "bg-success-soft text-success" : "bg-surface-muted text-secondary"}`}>{completed ? <CheckCircle2 size={18} aria-hidden="true" /> : activityIndex + 1}</span>
-                          <div className="min-w-0"><h3 className="font-semibold text-secondary">{activity.activity_title}</h3>{activity.activity_description ? <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">{activity.activity_description}</p> : null}<ActivityMetadata activity={activity} /></div>
-                          <form action={openJourneyActivityAction} className={typeof activity.metadata.continue_thumbnail_file_object_id === "string" ? "w-full sm:w-56" : undefined}>
+                          <div className="min-w-0"><h3 className="break-words font-semibold text-secondary">{activity.activity_title}</h3>{activity.activity_description ? <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">{activity.activity_description}</p> : null}<ActivityMetadata activity={activity} /></div>
+                          <form action={openJourneyActivityAction} className={typeof activity.metadata.continue_thumbnail_file_object_id === "string" ? "min-w-0 w-full sm:w-56" : "min-w-0"}>
                             <input type="hidden" name="journey_instance_id" value={outline.journey_instance_id} />
                             <input type="hidden" name="step_instance_id" value={activity.step_instance_id} />
                             <input type="hidden" name="step_aggregate_version" value={activity.step_aggregate_version} />
                             <input type="hidden" name="step_status" value={activity.step_status} />
                             <input type="hidden" name="idempotency_key" value={randomUUID()} />
                             {typeof activity.metadata.continue_thumbnail_file_object_id === "string" ? (
-                              <button type="submit" disabled={!canOpen} className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface-muted text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50">
+                              <button type="submit" disabled={!canOpen} className="group relative block aspect-video w-full max-w-full overflow-hidden rounded-xl border border-border bg-surface-muted text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50">
                                 <img src={`/api/activity-thumbnails/${activity.step_instance_id}`} alt={typeof activity.metadata.continue_thumbnail_alt === "string" ? activity.metadata.continue_thumbnail_alt : activity.activity_title} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
                                 <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">{actionLabel}</span>
                               </button>
                             ) : (
-                              <PendingSubmitButton pendingLabel="Abrindo…" variant={completed ? "secondary" : "primary"} size="sm" type="submit" disabled={!canOpen} className="w-full sm:w-auto">{actionLabel}</PendingSubmitButton>
+                              <PendingSubmitButton pendingLabel="Abrindo…" variant={completed ? "secondary" : "primary"} size="sm" type="submit" disabled={!canOpen} className="w-full max-w-full sm:w-auto">{actionLabel}</PendingSubmitButton>
                             )}
                           </form>
                         </li>
@@ -224,6 +211,27 @@ export default async function JourneyOutlinePage({
       ) : (
         <EmptyState icon={<Route size={24} />} title={interfaceText(interfaceContent, "participant.journey.empty_title", "Conteúdos em preparação")} tone="info">{interfaceText(interfaceContent, "participant.journey.empty_body", "A equipe ainda está organizando os conteúdos desta jornada.")}</EmptyState>
       )}
+
+      {selectedActivity ? (
+        <section id="aula" className="min-w-0 scroll-mt-24" aria-label={`Aula aberta: ${selectedActivity.activity_title}`} data-inline-lesson>
+          <ActivityWorkspaceFrame>
+            <ParticipantActivityWorkspace
+              actorUserAccountId={auth.identity.user_account_id}
+              journeyInstanceId={journeyInstanceId}
+              stepInstanceId={selectedActivity.step_instance_id}
+              query={{
+                comentario: query.comentario,
+                pratica: query.pratica,
+                codigo: query.codigo,
+                avaliacao: query.avaliacao,
+                utilidade: query.utilidade,
+                conclusao: query.conclusao,
+              }}
+              embedded
+            />
+          </ActivityWorkspaceFrame>
+        </section>
+      ) : null}
     </div>
   );
 }
