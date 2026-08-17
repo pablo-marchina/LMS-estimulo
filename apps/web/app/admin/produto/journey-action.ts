@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { saveAdminJourney } from "@/lib/admin/product-management";
+import { getAdminProductWorkspace, saveAdminJourney } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
@@ -35,6 +35,8 @@ function journeySaveErrorCode(error: unknown) {
   if (message.includes("ANNOUNCEMENT_FILE_EXTENSION_NOT_ALLOWED")) return "imagem_extensao_invalida";
   if (message.includes("ANNOUNCEMENT_STORAGE_UPLOAD_FAILED") || message.includes("ANNOUNCEMENT_BUCKET_CREATE_FAILED")) return "imagem_upload_falhou";
   if (message.includes("INVALID_CONFIGURATION_SNAPSHOT")) return "configuracao_invalida";
+  if (message.includes("COMPLETION_CERTIFICATE_REQUIRED")) return "certificado_conclusao_obrigatorio";
+  if (message.includes("COMPLETION_CERTIFICATE_NOT_AVAILABLE_FOR_JOURNEY")) return "certificado_conclusao_incompativel";
   if (message.includes("FORBIDDEN")) return "sem_permissao";
   return "falha";
 }
@@ -73,6 +75,8 @@ export async function saveJourneyAction(formData: FormData) {
   const code = existingCode || deriveCode(publicTitle, `jornada_${randomUUID().slice(0, 8)}`);
   const journeyId = nullable(formData, "journey_id") ?? nullable(formData, "version_id");
   const themeIds = [...new Set(formData.getAll("theme_ids").map(String).filter(Boolean))];
+  const completionCertificateEnabled = checked(formData, "completion_certificate_enabled");
+  const completionCertificateVersionId = nullable(formData, "completion_certificate_version_id");
   let savedJourneyId = journeyId ?? "";
   let liveUpdate = false;
   let themeSaveFailed = false;
@@ -82,6 +86,25 @@ export async function saveJourneyAction(formData: FormData) {
   } catch {
     redirect(`/admin/produto/erro?codigo=configuracao_invalida&versao=${encodeURIComponent(journeyId ?? "")}`);
   }
+
+  if (completionCertificateEnabled) {
+    if (!journeyId || !completionCertificateVersionId) {
+      redirect(`/admin/produto?etapa=geral&versao=${encodeURIComponent(journeyId ?? "")}&erro=certificado_conclusao_obrigatorio`);
+    }
+    const productWorkspace = await getAdminProductWorkspace(auth.identity.user_account_id, organization.organization_id).catch(() => null);
+    const compatibleCertificate = productWorkspace?.certificates
+      .filter((definition) => definition.status !== "retired")
+      .flatMap((definition) => definition.versions)
+      .some((version) =>
+        String(version.id) === completionCertificateVersionId &&
+        version.status === "published" &&
+        String(version.journey_version_id ?? "") === journeyId,
+      );
+    if (!compatibleCertificate) {
+      redirect(`/admin/produto?etapa=geral&versao=${encodeURIComponent(journeyId)}&erro=certificado_conclusao_incompativel`);
+    }
+  }
+
   const previousPresentation = previousConfiguration.presentation && typeof previousConfiguration.presentation === "object" && !Array.isArray(previousConfiguration.presentation) ? previousConfiguration.presentation as Record<string, unknown> : {};
   const commandKey = randomUUID();
 
@@ -119,6 +142,12 @@ export async function saveJourneyAction(formData: FormData) {
       card_background_alt: text(formData, "card_background_alt") || `Capa da jornada ${publicTitle}`,
       featured_background_alt: text(formData, "featured_background_alt") || `Imagem de destaque da jornada ${publicTitle}`,
     };
+    const completionCertificate = {
+      enabled: completionCertificateEnabled,
+      certificate_version_id: completionCertificateEnabled ? completionCertificateVersionId : null,
+      trigger_event: "journey.instance.completed",
+      data_fields: ["participant_name", "journey_title", "issued_at", "verification_code"],
+    };
 
     const baseSlug = deriveCode(publicTitle, code).replaceAll("_", "-");
     const payload = {
@@ -132,7 +161,7 @@ export async function saveJourneyAction(formData: FormData) {
       purpose: description,
       title: publicTitle,
       description,
-      configuration: { ...previousConfiguration, presentation },
+      configuration: { ...previousConfiguration, presentation, completion_certificate: completionCertificate },
       eligible_archetype_codes: formData.getAll("eligible_archetype_codes").map(String),
     };
 
