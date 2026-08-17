@@ -68,6 +68,11 @@ revoke all on function app_private.validate_journey_completion_certificate_polic
 -- Existing journeys receive an explicit policy. Exactly one compatible published
 -- certificate is safe to activate automatically. Zero or multiple candidates are
 -- left disabled so the administrator must make the choice explicitly.
+-- Published journey rows use the same transaction-local live-edit switch as the
+-- canonical save_admin_journey command, preserving the immutability guard outside
+-- this controlled migration transaction.
+select set_config('app.admin_live_edit', 'on', true);
+
 with certificate_candidates as (
   select
     jv.id as journey_version_id,
@@ -106,6 +111,8 @@ set configuration = jsonb_set(
 from certificate_candidates candidates
 where candidates.journey_version_id = jv.id
   and not (coalesce(jv.configuration, '{}'::jsonb) ? 'completion_certificate');
+
+select set_config('app.admin_live_edit', 'off', true);
 
 drop trigger if exists trg_validate_journey_completion_certificate_policy
   on catalog.journey_versions;
