@@ -20,6 +20,7 @@ type Props = {
   passed: boolean;
   requiredAssets: Array<{ id: string; completed: boolean }>;
   sectionsComplete: boolean;
+  embedded?: boolean;
 };
 
 function isOpenQuestion(type: string) {
@@ -45,6 +46,7 @@ export function QuickCheckPanel({
   passed,
   requiredAssets,
   sectionsComplete,
+  embedded = true,
 }: Props) {
   const [assetState, setAssetState] = useState(() => new Map(requiredAssets.map((asset) => [asset.id, asset.completed])));
   useEffect(() => {
@@ -71,16 +73,27 @@ export function QuickCheckPanel({
   }
 
   const hasOnlyOpenQuestions = questions.every((question) => isOpenQuestion(question.question_type));
+  const metadata = <>{questions.length} {questions.length === 1 ? "pergunta" : "perguntas"}{!hasOnlyOpenQuestions && passingScore !== null ? ` · aprovação a partir de ${passingScore}%` : ""}{maxAttempts !== null ? ` · tentativa ${Math.min(attemptsUsed + 1, maxAttempts)} de ${maxAttempts}` : ""}.</>;
+  const lockedNotice = !contentReady ? <div className={`${embedded ? "mt-3 bg-surface-muted" : "mt-4 bg-white/80"} flex items-start gap-2 rounded-xl p-3 text-sm text-muted`}><LockKeyhole className="mt-0.5 shrink-0 text-primary" size={17} /><span>Conclua os conteúdos obrigatórios acima para enviar. As perguntas já ficam visíveis para orientar sua atenção.</span></div> : null;
 
   return (
     <form action={submitQuickCheckAction} className="grid gap-4" id="verificacao">
       <input type="hidden" name="journey_instance_id" value={journeyInstanceId} />
       <input type="hidden" name="step_instance_id" value={stepInstanceId} />
       <input type="hidden" name="idempotency_key" value={idempotencyKey} />
-      <Card className="brand-quick-check overflow-hidden border-primary/20 bg-primary-soft/45 after:!hidden">
-        <div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-white"><Brain size={21} /></span><div><p className="brand-kicker">Verificação rápida</p><h2 className="mt-1 text-xl font-black text-secondary">Registre o que ficou desta aula</h2><p className="mt-2 text-sm leading-6 text-muted">{questions.length} {questions.length === 1 ? "pergunta" : "perguntas"}{!hasOnlyOpenQuestions && passingScore !== null ? ` · aprovação a partir de ${passingScore}%` : ""}{maxAttempts !== null ? ` · tentativa ${Math.min(attemptsUsed + 1, maxAttempts)} de ${maxAttempts}` : ""}.</p>{hasOnlyOpenQuestions ? <p className="mt-1 text-xs text-muted">Respostas abertas registram a participação, sem correção automática do texto.</p> : null}</div></div>
-        {!contentReady ? <div className="mt-4 flex items-start gap-2 rounded-xl bg-white/80 p-3 text-sm text-muted"><LockKeyhole className="mt-0.5 shrink-0 text-primary" size={17} /><span>Conclua os conteúdos obrigatórios acima para enviar. As perguntas já ficam visíveis para orientar sua atenção.</span></div> : null}
-      </Card>
+
+      {embedded ? (
+        <div className="min-w-0">
+          <p className="text-sm leading-6 text-muted">{metadata}</p>
+          {hasOnlyOpenQuestions ? <p className="mt-1 text-xs text-muted">Respostas abertas registram a participação, sem correção automática do texto.</p> : null}
+          {lockedNotice}
+        </div>
+      ) : (
+        <Card className="brand-quick-check overflow-hidden border-primary/20 bg-primary-soft/45 after:!hidden">
+          <div className="flex items-start gap-3"><span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary text-white"><Brain size={21} /></span><div><p className="brand-kicker">Verificação rápida</p><h2 className="mt-1 text-xl font-black text-secondary">Registre o que ficou desta aula</h2><p className="mt-2 text-sm leading-6 text-muted">{metadata}</p>{hasOnlyOpenQuestions ? <p className="mt-1 text-xs text-muted">Respostas abertas registram a participação, sem correção automática do texto.</p> : null}</div></div>
+          {lockedNotice}
+        </Card>
+      )}
 
       {questions.map((question, index) => {
         const name = `answer_${question.id}`;

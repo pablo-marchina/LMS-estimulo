@@ -20,7 +20,7 @@ export function ActivityPromptLibrary({ prompts }: { prompts: ActivityPrompt[] }
 
   return (
     <section id="prompts" aria-labelledby="prompts-titulo" className="scroll-mt-24 overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
-      <div className="flex items-start gap-3 border-b border-border px-4 py-4 sm:px-5">
+      <div className="flex items-start gap-3 border-b border-border px-4 py-4 sm:px-6 sm:py-5">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary"><Sparkles size={19} /></span>
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[.14em] text-primary">Material da aula</p>
@@ -28,7 +28,7 @@ export function ActivityPromptLibrary({ prompts }: { prompts: ActivityPrompt[] }
           <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">Use estes prompts como ponto de partida e adapte os campos entre colchetes ao seu negócio. Eles vêm da mesma versão da aula, por isso permanecem sincronizados com o conteúdo publicado.</p>
         </div>
       </div>
-      <div className="grid gap-3 p-4 sm:p-5 lg:grid-cols-2">
+      <div className="grid gap-3 p-4 sm:p-6 lg:grid-cols-2">
         {prompts.map((prompt, index) => (
           <article key={`${prompt.title}:${index}`} className="grid content-start gap-3 rounded-2xl border border-border bg-surface p-4">
             <div className="flex items-start justify-between gap-3">
