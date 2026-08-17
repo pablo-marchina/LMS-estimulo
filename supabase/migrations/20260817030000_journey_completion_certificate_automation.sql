@@ -259,20 +259,32 @@ as $function$
 declare
   v_entrepreneur_id uuid;
   v_actor_user_account_id uuid;
+  v_journey_version_id uuid;
+  v_organization_id uuid;
+  v_completed_at timestamptz;
   v_actor_type text;
   v_actor_id uuid;
   v_event_id uuid;
 begin
-  select en.entrepreneur_id, e.user_account_id
-  into v_entrepreneur_id, v_actor_user_account_id
+  select en.entrepreneur_id, e.user_account_id, en.journey_version_id
+  into v_entrepreneur_id, v_actor_user_account_id, v_journey_version_id
   from orchestration.enrollments en
   join core.entrepreneurs e
     on e.id = en.entrepreneur_id
   where en.id = new.enrollment_id;
 
-  if v_entrepreneur_id is null then
-    raise exception 'JOURNEY_COMPLETION_PARTICIPANT_NOT_FOUND' using errcode = 'P0002';
+  if v_entrepreneur_id is null or v_journey_version_id is null then
+    raise exception 'JOURNEY_COMPLETION_CONTEXT_NOT_FOUND' using errcode = 'P0002';
   end if;
+
+  v_organization_id := app_private.journey_owner_organization_id(new.id);
+  v_completed_at := coalesce(
+    new.fully_completed_at,
+    new.base_completed_at,
+    new.ended_at,
+    new.updated_at,
+    clock_timestamp()
+  );
 
   v_actor_type := case
     when v_actor_user_account_id is not null then 'user_account'
@@ -298,7 +310,7 @@ begin
       new.id,
       v_actor_type,
       v_actor_id,
-      new.organization_id,
+      v_organization_id,
       new.id,
       'journey_instance',
       new.id,
@@ -306,8 +318,8 @@ begin
       v_event_id,
       null,
       jsonb_build_object(
-        'journey_version_id', new.journey_version_id,
-        'completed_at', new.completed_at,
+        'journey_version_id', v_journey_version_id,
+        'completed_at', v_completed_at,
         'completion_source', 'journey_state_transition'
       )
     );
