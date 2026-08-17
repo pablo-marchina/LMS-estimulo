@@ -18,6 +18,8 @@ on:
     paths:
       - .github/workflows/production-visual-capture.yml
       - scripts/e2e/production-visual-capture.mjs
+      - scripts/e2e/participant-critical-flow-visual.mjs
+      - scripts/application/lesson-canonical-flow-visual-contract.test.mjs
 
 permissions:
   contents: read
@@ -43,10 +45,14 @@ jobs:
           cache: npm
 
       - name: Validate visual auditor syntax
-        run: node --check scripts/e2e/production-visual-capture.mjs
+        run: |
+          node --check scripts/e2e/production-visual-capture.mjs
+          node --check scripts/e2e/participant-critical-flow-visual.mjs
 
       - name: Validate visual remediation contract
-        run: node --test scripts/application/final-review-remediation.test.mjs
+        run: |
+          node --test scripts/application/final-review-remediation.test.mjs
+          node --test scripts/application/lesson-canonical-flow-visual-contract.test.mjs
 
   capture:
     name: Capture desktop and mobile visual evidence
@@ -92,6 +98,10 @@ jobs:
       - name: Capture visual evidence
         run: node scripts/e2e/production-visual-capture.mjs
 
+      - name: Validate canonical participant flow and composition
+        if: always()
+        run: node scripts/e2e/participant-critical-flow-visual.mjs
+
       - name: Publish capture summary
         if: always()
         shell: bash
@@ -111,12 +121,28 @@ jobs:
           console.log(`- Admin captures: ${report.summary.byRole.admin}`);
           NODE
           fi
+          if [ -f artifacts/e2e-critical-flow/critical-flow-report.json ]; then
+            node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/e2e-critical-flow/critical-flow-report.json', 'utf8'));
+          console.log('');
+          console.log('## Critical participant flow');
+          console.log('');
+          console.log(`- Viewports captured: ${report.summary.captures}`);
+          console.log(`- Failures: ${report.summary.failures}`);
+          for (const capture of report.captures) {
+            console.log(`- ${capture.viewport.key}: ${capture.finalRoute} — canvas delta ${capture.metrics.canvasCenterDelta ?? 'n/a'}px`);
+          }
+          NODE
+          fi
 
       - name: Upload visual evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: production-visual-capture-${{ github.run_id }}
-          path: artifacts/e2e-visual
+          path: |
+            artifacts/e2e-visual
+            artifacts/e2e-critical-flow
           if-no-files-found: error
           retention-days: 14
