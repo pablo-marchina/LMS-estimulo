@@ -53,10 +53,14 @@ test("critical visual gate executes the real form flow at user-like wide desktop
   assert.match(criticalVisual, /horizontal overflow/u);
 });
 
-test("broad visual crawl covers the viewport class that exposed the composition regression", () => {
+test("broad visual crawl covers wide desktop and rejects badly displaced primary content", () => {
   assert.match(productionVisual, /key: "wide", width: 1695, height: 895/u);
   assert.match(productionVisual, /key: "desktop", width: 1440, height: 1000/u);
   assert.match(productionVisual, /key: "mobile", width: 390, height: 844/u);
+  assert.match(productionVisual, /document\.querySelector\("h1"\)/u);
+  assert.match(productionVisual, /primary heading starts below 65% of the first viewport/u);
+  assert.match(productionVisual, /primary heading is clipped horizontally/u);
+  assert.match(productionVisual, /schemaVersion:\s*3/u);
 });
 
 test("production visual workflow always runs and preserves critical-flow evidence", () => {
