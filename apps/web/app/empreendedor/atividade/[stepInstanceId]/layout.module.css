@@ -40,6 +40,12 @@
   box-shadow: none !important;
 }
 
+.activityLayout :global(#avaliacao .brand-quick-check::before),
+.activityLayout :global(#avaliacao .brand-quick-check::after) {
+  content: none !important;
+  display: none !important;
+}
+
 .activityLayout :global(#avaliacao .brand-quick-check > div:first-child > span),
 .activityLayout :global(#avaliacao .brand-quick-check .brand-kicker),
 .activityLayout :global(#avaliacao .brand-quick-check h2) {
