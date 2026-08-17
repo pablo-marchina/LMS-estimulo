@@ -23,6 +23,7 @@ on:
       - scripts/e2e/visual-manifest-strict-gate.mjs
       - scripts/e2e/participant-critical-flow-visual.mjs
       - scripts/e2e/admin-critical-flow-visual.mjs
+      - scripts/e2e/vercel-protection-bypass.mjs
       - scripts/application/lesson-canonical-flow-visual-contract.test.mjs
 
 permissions:
@@ -54,6 +55,7 @@ jobs:
           node --check scripts/e2e/visual-manifest-strict-gate.mjs
           node --check scripts/e2e/participant-critical-flow-visual.mjs
           node --check scripts/e2e/admin-critical-flow-visual.mjs
+          node --check scripts/e2e/vercel-protection-bypass.mjs
 
       - name: Validate visual remediation contract
         run: |
@@ -78,6 +80,7 @@ jobs:
       E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
       E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
       E2E_VISUAL_MAX_PAGES: '80'
 
     steps:
@@ -110,7 +113,7 @@ jobs:
           done
 
       - name: Capture broad visual evidence
-        run: node scripts/e2e/production-visual-capture.mjs
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/production-visual-capture.mjs
 
       - name: Record deployment provenance
         if: always()
@@ -123,6 +126,7 @@ jobs:
             targetUrl: process.env.E2E_TARGET_URL,
             targetSha: process.env.E2E_TARGET_SHA || null,
             targetEnvironment: process.env.E2E_TARGET_ENVIRONMENT || null,
+            automationBypassConfigured: Boolean((process.env.VERCEL_AUTOMATION_BYPASS_SECRET || '').trim()),
             workflowRun: process.env.GITHUB_RUN_ID,
             auditedAt: new Date().toISOString(),
           };
@@ -135,11 +139,11 @@ jobs:
 
       - name: Validate canonical participant flow and composition
         if: always()
-        run: node scripts/e2e/participant-critical-flow-visual.mjs
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/participant-critical-flow-visual.mjs
 
       - name: Validate critical admin certificate states
         if: always()
-        run: node scripts/e2e/admin-critical-flow-visual.mjs
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/admin-critical-flow-visual.mjs
 
       - name: Publish capture summary
         if: always()
@@ -154,6 +158,7 @@ jobs:
           console.log(`- Target: ${provenance.targetUrl}`);
           console.log(`- Commit: ${provenance.targetSha ?? 'unknown'}`);
           console.log(`- Environment: ${provenance.targetEnvironment ?? 'unknown'}`);
+          console.log(`- Vercel automation bypass: ${provenance.automationBypassConfigured ? 'configured' : 'not configured'}`);
           NODE
           fi
           if [ -f artifacts/e2e-visual/visual-manifest.json ]; then
