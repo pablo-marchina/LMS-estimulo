@@ -18,7 +18,9 @@ on:
     paths:
       - .github/workflows/production-visual-capture.yml
       - scripts/e2e/production-visual-capture.mjs
+      - scripts/e2e/visual-manifest-strict-gate.mjs
       - scripts/e2e/participant-critical-flow-visual.mjs
+      - scripts/e2e/admin-critical-flow-visual.mjs
       - scripts/application/lesson-canonical-flow-visual-contract.test.mjs
 
 permissions:
@@ -47,7 +49,9 @@ jobs:
       - name: Validate visual auditor syntax
         run: |
           node --check scripts/e2e/production-visual-capture.mjs
+          node --check scripts/e2e/visual-manifest-strict-gate.mjs
           node --check scripts/e2e/participant-critical-flow-visual.mjs
+          node --check scripts/e2e/admin-critical-flow-visual.mjs
 
       - name: Validate visual remediation contract
         run: |
@@ -95,12 +99,20 @@ jobs:
             fi
           done
 
-      - name: Capture visual evidence
+      - name: Capture broad visual evidence
         run: node scripts/e2e/production-visual-capture.mjs
+
+      - name: Enforce strict broad visual coverage
+        if: always()
+        run: node scripts/e2e/visual-manifest-strict-gate.mjs
 
       - name: Validate canonical participant flow and composition
         if: always()
         run: node scripts/e2e/participant-critical-flow-visual.mjs
+
+      - name: Validate critical admin certificate states
+        if: always()
+        run: node scripts/e2e/admin-critical-flow-visual.mjs
 
       - name: Publish capture summary
         if: always()
@@ -135,6 +147,17 @@ jobs:
           }
           NODE
           fi
+          if [ -f artifacts/e2e-admin-critical/admin-critical-report.json ]; then
+            node <<'NODE' >> "$GITHUB_STEP_SUMMARY"
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync('artifacts/e2e-admin-critical/admin-critical-report.json', 'utf8'));
+          console.log('');
+          console.log('## Critical admin states');
+          console.log('');
+          console.log(`- Captures: ${report.summary.captures}`);
+          console.log(`- Failures: ${report.summary.failures}`);
+          NODE
+          fi
 
       - name: Upload visual evidence
         if: always()
@@ -144,5 +167,6 @@ jobs:
           path: |
             artifacts/e2e-visual
             artifacts/e2e-critical-flow
+            artifacts/e2e-admin-critical
           if-no-files-found: error
           retention-days: 14
