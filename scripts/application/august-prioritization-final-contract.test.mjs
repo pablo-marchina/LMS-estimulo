@@ -55,7 +55,7 @@ test("journey admin keeps concrete upload failures and turns them into actionabl
   assert.match(journeyErrorPage, /Voltar e corrigir/u);
 });
 
-test("lesson completion stays actionable and blocked outcomes move focus to the missing requirement", () => {
+test("lesson completion stays actionable and blocked outcomes focus the missing requirement inside the canonical lesson route", () => {
   assert.match(lessonPage, /disabled=\{completed\}/u);
   assert.match(lessonPage, /id="conteudo"/u);
   assert.match(lessonPage, /id="avaliacao"/u);
@@ -63,7 +63,7 @@ test("lesson completion stays actionable and blocked outcomes move focus to the 
   assert.match(completionAction, /conteudo_pendente: "conteudo"/u);
   assert.match(completionAction, /avaliacao_pendente: "avaliacao"/u);
   assert.match(completionAction, /pratica_pendente: "pratica"/u);
-  assert.match(completionAction, /#\$\{completionAnchor\[outcome\]\}/u);
+  assert.match(completionAction, /redirect\(`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}&conclusao=\$\{outcome\}#\$\{completionAnchor\[outcome\]\}`\)/u);
 });
 
 test("certificate and diagnostic sharing use the gamified social-share event path", () => {
