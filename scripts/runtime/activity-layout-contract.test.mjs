@@ -6,6 +6,7 @@ const layout = await readFile("apps/web/app/empreendedor/atividade/[stepInstance
 const stylesheet = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css", "utf8");
 const frame = await readFile("apps/web/components/activity-workspace-frame.tsx", "utf8");
 const lesson = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
+const participantShell = await readFile("apps/web/components/participant-shell.tsx", "utf8");
 const journey = await readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8");
 const actions = await readFile("apps/web/app/actions/journey.ts", "utf8");
 
@@ -43,6 +44,13 @@ test("lesson sections read as one aligned visual surface", () => {
   assert.match(lesson, /completionTarget === "pratica_pendente"/u);
   assert.match(stylesheet, /main > #prompts/u);
   assert.match(stylesheet, /min-width: 0/u);
+});
+
+test("entering a dedicated lesson resets inherited journey scroll", () => {
+  assert.match(participantShell, /pathname\.startsWith\("\/empreendedor\/atividade\/"\)/u);
+  assert.match(participantShell, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/u);
+  assert.match(participantShell, /requestAnimationFrame\(resetScroll\)/u);
+  assert.match(participantShell, /\[pathname, wideLesson\]/u);
 });
 
 test("journey never embeds the lesson workspace below its own hero", () => {
