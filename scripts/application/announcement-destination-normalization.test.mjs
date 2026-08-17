@@ -40,8 +40,8 @@ test("relative CTAs stay in the current environment at render time", () => {
 });
 
 test("announcement normalization remains inside the active migration boundary", () => {
+  assert.match(boundary, /requiredFinalReleaseMigrations/u);
   assert.match(boundary, /'20260816180000_reconcile_participant_navigation_registry\.sql'/u);
   assert.match(boundary, /'20260816190000_normalize_internal_announcement_destinations\.sql'/u);
   assert.match(boundary, /'20260816220438_participant_shell_context\.sql'/u);
-  assert.match(boundary, /expectedLastMigration = '20260816235000_restore_admin_track_save_rpc\.sql'/u);
 });
