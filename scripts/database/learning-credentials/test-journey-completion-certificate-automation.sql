@@ -2,6 +2,8 @@
 
 -- This suite runs immediately after test-learning-credentials.sql in the same
 -- psql session, so credential_context is the already-proven completed fixture.
+-- Reuse that canonical fixture instead of synthesizing an organization through
+-- presentation-only fields that are not part of the database contract.
 create temporary table journey_completion_automation_context as
 select
   c.*,
@@ -9,6 +11,30 @@ select
   app_private.e14_deterministic_uuid('test:auto-certificate-definition') as certificate_definition_id,
   app_private.e14_deterministic_uuid('test:auto-certificate-version') as certificate_version_id
 from credential_context c;
+
+-- Guard the fixture boundary explicitly: the organization used by this suite must
+-- be the owner of the selected journey according to the canonical catalog model.
+do $$
+declare
+  c journey_completion_automation_context%rowtype;
+begin
+  select * into c from journey_completion_automation_context;
+
+  if c.journey_version_id is null or c.organization_id is null then
+    raise exception 'canonical credential fixture is incomplete';
+  end if;
+
+  if not exists (
+    select 1
+    from catalog.journey_versions jv
+    join catalog.journey_definitions jd
+      on jd.id = jv.journey_definition_id
+    where jv.id = c.journey_version_id
+      and jd.owner_organization_id = c.organization_id
+  ) then
+    raise exception 'canonical credential fixture organization does not own the selected journey';
+  end if;
+end $$;
 
 -- Every published journey must now expose at least one published, active,
 -- journey-scoped credential rule that the certificate editor can select.
