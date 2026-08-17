@@ -18,7 +18,7 @@ const viewports = [
 ];
 
 const report = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   startedAt: new Date().toISOString(),
   targetUrl,
   captures: [],
@@ -91,33 +91,34 @@ async function openActivityThroughRealForm(page) {
   const form = forms.nth(chosen);
   const button = form.locator('button[type="submit"]');
   if (!(await button.count()) || await button.isDisabled()) throw new Error("selected activity CTA is unavailable");
-  const expectedStep = await form.locator('input[name="step_instance_id"]').inputValue();
   await button.click();
-  await page.waitForURL((url) => /^\/empreendedor\/jornada\/[^/]+$/.test(url.pathname) && url.searchParams.get("conteudo") === expectedStep, { timeout: 30_000 });
+  await page.waitForURL((url) => /^\/empreendedor\/atividade\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
   await settle(page);
-  await page.locator("[data-inline-lesson]").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(150);
 }
 
 async function inspectLesson(page, viewport) {
   const result = await page.evaluate(({ width, height }) => {
-    const inlineLesson = document.querySelector("[data-inline-lesson]");
-    const shell = inlineLesson?.querySelector("[data-unified-shell]") ?? null;
-    const sections = Array.from(shell?.children ?? []).filter((node) => node instanceof HTMLElement);
-    const contentHeader = shell?.querySelector("#conteudo > div:first-child") ?? null;
-    const promptsHeader = shell?.querySelector("#prompts > div:first-child") ?? null;
-    const evaluation = shell?.querySelector("#avaliacao") ?? null;
+    const activityPage = document.querySelector("[data-activity-page]");
+    const canvas = document.querySelector("[data-activity-page] > div");
+    const lessonSurface = canvas?.querySelector("main") ?? null;
+    const sections = Array.from(lessonSurface?.children ?? []).filter((node) => node instanceof HTMLElement);
+    const contentHeader = lessonSurface?.querySelector("#conteudo > div:first-child") ?? null;
+    const promptsHeader = lessonSurface?.querySelector("#prompts > div:first-child") ?? null;
+    const evaluation = lessonSurface?.querySelector("#avaliacao") ?? null;
     const repeatedQuickCheckTitle = Array.from(evaluation?.querySelectorAll("h2") ?? []).some((node) => node.textContent?.includes("Registre o que ficou desta aula"));
     const quickCheckCard = evaluation?.querySelector(".brand-quick-check") ?? null;
-    const lessonHeading = inlineLesson?.querySelector("aside h2") ?? null;
+    const h1 = document.querySelector("h1");
     const journeyProgress = document.querySelector('[aria-label="Seu progresso nesta jornada"]');
-    const h1Count = document.querySelectorAll("h1").length;
+    const nextControl = [...document.querySelectorAll("button, a")].find((element) => element.textContent?.includes("Próxima aula"));
+    const h1Rect = h1?.getBoundingClientRect() ?? null;
+    const activityPageRect = activityPage?.getBoundingClientRect() ?? null;
+    const canvasRect = canvas?.getBoundingClientRect() ?? null;
+    const nextRect = nextControl?.getBoundingClientRect() ?? null;
     const effectivePadding = (node) => node ? Number.parseFloat(getComputedStyle(node).paddingLeft || "0") : null;
     const documentWidth = document.documentElement.scrollWidth;
     const viewportWidth = document.documentElement.clientWidth;
     const viewportHeight = document.documentElement.clientHeight;
-    const shellRect = shell?.getBoundingClientRect() ?? null;
-    const lessonHeadingRect = lessonHeading?.getBoundingClientRect() ?? null;
+    const expectedCanvasLeft = canvasRect ? (viewportWidth - canvasRect.width) / 2 : null;
     const sectionRects = sections.map((section) => {
       const rect = section.getBoundingClientRect();
       return {
@@ -134,11 +135,12 @@ async function inspectLesson(page, viewport) {
       actualViewport: { width: viewportWidth, height: viewportHeight },
       documentWidth,
       horizontalOverflow: documentWidth > viewportWidth + 2,
-      inlineLessonPresent: Boolean(inlineLesson),
+      activityPage: activityPageRect ? { left: activityPageRect.left, right: activityPageRect.right, width: activityPageRect.width } : null,
+      h1: h1Rect ? { top: h1Rect.top, left: h1Rect.left, width: h1Rect.width, height: h1Rect.height } : null,
+      canvas: canvasRect ? { top: canvasRect.top, left: canvasRect.left, width: canvasRect.width, right: canvasRect.right } : null,
+      canvasCenterDelta: canvasRect && expectedCanvasLeft !== null ? Math.abs(canvasRect.left - expectedCanvasLeft) : null,
       journeyHeroPresent: Boolean(journeyProgress),
-      h1Count,
-      shell: shellRect ? { left: shellRect.left, right: shellRect.right, width: shellRect.width } : null,
-      lessonHeading: lessonHeadingRect ? { top: lessonHeadingRect.top, left: lessonHeadingRect.left, right: lessonHeadingRect.right } : null,
+      nextControl: nextRect ? { top: nextRect.top, left: nextRect.left, right: nextRect.right, bottom: nextRect.bottom } : null,
       sectionRects,
       contentPadding: effectivePadding(contentHeader),
       promptsPadding: effectivePadding(promptsHeader),
@@ -149,12 +151,18 @@ async function inspectLesson(page, viewport) {
 
   const violations = [];
   if (result.horizontalOverflow) violations.push(`horizontal overflow: ${result.documentWidth}/${result.actualViewport.width}`);
-  if (!result.inlineLessonPresent) violations.push("inline lesson workspace missing");
-  if (!result.journeyHeroPresent) violations.push("journey context disappeared while lesson is open");
-  if (result.h1Count !== 1) violations.push(`expected exactly one page h1, found ${result.h1Count}`);
-  if (!result.shell || result.shell.width <= 0) violations.push("unified lesson shell missing");
-  if (!result.lessonHeading) violations.push("inline lesson heading missing");
-  if (result.shell && (result.shell.left < -2 || result.shell.right > result.actualViewport.width + 2)) violations.push("lesson shell is clipped horizontally");
+  if (!result.activityPage) violations.push("dedicated activity page missing");
+  if (!result.h1) violations.push("lesson H1 missing");
+  else if (result.h1.top < 0 || result.h1.top > result.actualViewport.height * 0.5) violations.push(`lesson H1 outside first half of viewport: top=${result.h1.top.toFixed(1)}`);
+  if (!result.canvas) violations.push("activity canvas missing");
+  if (viewport.width >= 1024 && result.canvas) {
+    if (result.canvas.width > 1160) violations.push(`activity canvas too wide: ${result.canvas.width.toFixed(1)}px`);
+    if ((result.canvasCenterDelta ?? Infinity) > 48) violations.push(`activity canvas not centered: delta=${result.canvasCenterDelta?.toFixed(1)}px`);
+  }
+  if (result.journeyHeroPresent) violations.push("journey hero is still rendered on lesson screen");
+  if (result.nextControl && (result.nextControl.left < -2 || result.nextControl.right > result.actualViewport.width + 2)) {
+    violations.push("next lesson control is clipped horizontally");
+  }
 
   const gapTolerance = 1.5;
   for (let index = 1; index < result.sectionRects.length; index += 1) {
@@ -186,15 +194,15 @@ try {
       await openActivityThroughRealForm(page);
 
       const finalUrl = new URL(page.url());
-      if (!/^\/empreendedor\/jornada\/[^/]+$/.test(finalUrl.pathname) || !finalUrl.searchParams.get("conteudo")) {
-        throw new Error(`activity CTA ended outside the inline journey route: ${finalUrl.pathname}${finalUrl.search}`);
+      if (!/^\/empreendedor\/atividade\/[^/]+$/.test(finalUrl.pathname) || !finalUrl.searchParams.get("journey")) {
+        throw new Error(`activity CTA ended on non-canonical route: ${finalUrl.pathname}${finalUrl.search}`);
       }
 
       const { result, violations } = await inspectLesson(page, viewport);
       if (pageErrors.length) violations.push(`${pageErrors.length} uncaught page error(s): ${pageErrors.join(" | ")}`);
 
-      const firstFold = path.join(outputDir, `${viewport.key}-inline-lesson-first-fold.png`);
-      const fullPage = path.join(outputDir, `${viewport.key}-inline-lesson-full.png`);
+      const firstFold = path.join(outputDir, `${viewport.key}-lesson-first-fold.png`);
+      const fullPage = path.join(outputDir, `${viewport.key}-lesson-full.png`);
       await page.screenshot({ path: firstFold, fullPage: false, animations: "disabled", caret: "hide" });
       await page.screenshot({ path: fullPage, fullPage: true, animations: "disabled", caret: "hide" });
 

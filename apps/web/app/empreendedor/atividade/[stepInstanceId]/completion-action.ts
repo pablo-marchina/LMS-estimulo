@@ -46,5 +46,5 @@ export async function completeParticipantActivityAction(formData: FormData) {
     outcome = "falha";
   }
 
-  redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=${outcome}#${completionAnchor[outcome]}`);
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&conclusao=${outcome}#${completionAnchor[outcome]}`);
 }

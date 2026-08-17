@@ -48,11 +48,12 @@ test("desktop announcements cannot exceed forty percent of the viewport and admi
   assert.match(engagementAdmin, /O histórico administrativo foi preservado/u);
 });
 
-test("critical participant visual validation can enter through a real eligible journey when needed", () => {
+test("critical participant visual validation can enter through a real eligible journey and validates the restored dedicated lesson", () => {
   assert.match(participantCriticalVisual, /form:has\(input\[name="journey_version_id"\]\)/u);
   assert.match(participantCriticalVisual, /eligible journey CTA is unavailable/u);
   assert.match(participantCriticalVisual, /no enrolled or eligible journey CTA found/u);
-  assert.match(participantCriticalVisual, /\[data-inline-lesson\]/u);
+  assert.match(participantCriticalVisual, /dedicated activity page missing/u);
+  assert.match(participantCriticalVisual, /activity CTA ended on non-canonical route/u);
   assert.match(participantCriticalVisual, /horizontal overflow/u);
   assert.match(participantCriticalVisual, /gap between/u);
   assert.match(participantCriticalVisual, /prompt\/content horizontal inset mismatch/u);
