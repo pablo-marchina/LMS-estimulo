@@ -44,8 +44,8 @@ export async function saveTrackAction(formData: FormData) {
         presentation: {
           tone: text(formData, "tone") || "cyan",
           icon: text(formData, "icon") || "sparkles",
-          completion_badge_version_id: completionBadgeVersionId,
         },
+        completion_badge_version_id: completionBadgeVersionId,
       },
       idempotencyKey: randomUUID(),
     });
