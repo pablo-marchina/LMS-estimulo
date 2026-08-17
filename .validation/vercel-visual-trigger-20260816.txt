@@ -1,0 +1,2 @@
+Temporary validation-only trigger for the merged August prioritization visual verification.
+Not intended for main.
