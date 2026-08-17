@@ -36,3 +36,5 @@ cd7b0f4883f76e66993e471380d3d88169dcf851:.github/workflows/participant-lesson-re
 cd7b0f4883f76e66993e471380d3d88169dcf851:.github/workflows/participant-lesson-render-proof.yml:generic-api-key:25
 04c32a6a43ec9ccddd4d149fc7fb6d739bd12a71:.github/workflows/participant-lesson-final-proof.yml:generic-api-key:24
 04c32a6a43ec9ccddd4d149fc7fb6d739bd12a71:.github/workflows/participant-lesson-final-proof.yml:generic-api-key:25
+82364d6bdb128253e42f3ca6167cf89b06498b6e:.github/workflows/participant-lesson-head-proof.yml:generic-api-key:24
+82364d6bdb128253e42f3ca6167cf89b06498b6e:.github/workflows/participant-lesson-head-proof.yml:generic-api-key:25
