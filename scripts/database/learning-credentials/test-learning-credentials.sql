@@ -164,6 +164,29 @@ select
 from credential_context
 on conflict (certificate_definition_id,version_number) do nothing;
 
+-- Certificate eligibility is now selected by the journey, not inferred merely
+-- from all compatible published certificates. Make this fixture explicit before
+-- invoking the issuer. The fixture journey can already be published, so preserve
+-- the normal immutable-row guard and use the same transaction-local live-edit flag
+-- as the production journey editor.
+begin;
+select set_config('app.admin_live_edit','on',true);
+update catalog.journey_versions jv
+set configuration=jsonb_set(
+  coalesce(jv.configuration,'{}'::jsonb),
+  '{completion_certificate}',
+  jsonb_build_object(
+    'enabled',true,
+    'certificate_version_id',app_private.e14_deterministic_uuid('test:certificate-version'),
+    'trigger_event','journey.instance.completed',
+    'data_fields',jsonb_build_array('participant_name','journey_title','issued_at','verification_code')
+  ),
+  true
+)
+from credential_context c
+where jv.id=c.journey_version_id;
+commit;
+
 create temporary table credential_issue_result as
 select public.issue_learning_credentials(
   actor_user_account_id,journey_instance_id,step_instance_id,'credential-e2e-issue-0001'
