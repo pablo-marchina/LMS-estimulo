@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [openActivityAction, journeyPage, participantShell, activityPage, criticalVisual, visualWorkflow] = await Promise.all([
+const [openActivityAction, journeyPage, participantShell, activityPage, criticalVisual, productionVisual, visualWorkflow] = await Promise.all([
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts", "utf8"),
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/components/participant-shell.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
   readFile("scripts/e2e/participant-critical-flow-visual.mjs", "utf8"),
+  readFile("scripts/e2e/production-visual-capture.mjs", "utf8"),
   readFile(".github/workflows/production-visual-capture.yml", "utf8"),
 ]);
 
@@ -40,6 +41,12 @@ test("critical visual gate executes the real form flow at user-like wide desktop
   assert.match(criticalVisual, /activity canvas not centered/u);
   assert.match(criticalVisual, /journey hero is still rendered on lesson screen/u);
   assert.match(criticalVisual, /horizontal overflow/u);
+});
+
+test("broad visual crawl covers the viewport class that exposed the composition regression", () => {
+  assert.match(productionVisual, /key: "wide", width: 1695, height: 895/u);
+  assert.match(productionVisual, /key: "desktop", width: 1440, height: 1000/u);
+  assert.match(productionVisual, /key: "mobile", width: 390, height: 844/u);
 });
 
 test("production visual workflow always runs and preserves critical-flow evidence", () => {
