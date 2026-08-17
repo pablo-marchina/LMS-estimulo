@@ -144,7 +144,7 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
       <InterfaceSlot area="participant" placement="before_content" />
       <main
         id="conteudo-principal"
-        className={`${wideLesson ? "w-full min-w-0 max-w-none [&>div]:max-w-none" : "mx-auto w-full max-w-[1200px]"}`}
+        className={`${wideLesson ? "w-full min-w-0" : "mx-auto w-full max-w-[1200px]"}`}
         tabIndex={-1}
       >
         {children}
