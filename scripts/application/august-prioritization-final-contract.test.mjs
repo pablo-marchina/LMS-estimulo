@@ -7,6 +7,8 @@ const [
   adminRewards,
   adminExtensionActions,
   rewardActions,
+  journeyAction,
+  journeyErrorPage,
   lessonPage,
   completionAction,
   resultPage,
@@ -17,6 +19,8 @@ const [
   readFile("apps/web/app/admin/recompensas/page.tsx", "utf8"),
   readFile("apps/web/app/admin/extension-actions.ts", "utf8"),
   readFile("apps/web/app/admin/recompensas/reward-actions.ts", "utf8"),
+  readFile("apps/web/app/admin/produto/journey-action.ts", "utf8"),
+  readFile("apps/web/app/admin/produto/erro/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/completion-action.ts", "utf8"),
   readFile("apps/web/app/empreendedor/resultado/page.tsx", "utf8"),
@@ -39,6 +43,16 @@ test("reward ordering is configurable, persisted through the image-aware save fl
   assert.match(adminExtensionActions, /display_order: Math\.max\(0, numeric\(formData, "display_order", 100\)\)/u);
   assert.match(rewardActions, /fulfillment_configuration: \{ instructions: text\(formData, "delivery_instructions"\), fields, display_order:/u);
   assert.match(rewardsExperience, /rewardOrder\(left\) - rewardOrder\(right\)/u);
+});
+
+test("journey admin keeps concrete upload failures and turns them into actionable correction guidance", () => {
+  assert.match(journeyAction, /ANNOUNCEMENT_FILE_SIZE_INVALID/u);
+  assert.match(journeyAction, /imagem_tamanho_invalido/u);
+  assert.match(journeyAction, /\/admin\/produto\/erro\?codigo=/u);
+  assert.match(journeyErrorPage, /A imagem ultrapassa o limite permitido/u);
+  assert.match(journeyErrorPage, /Tamanho máximo/u);
+  assert.match(journeyErrorPage, /PNG, JPG\/JPEG ou WebP/u);
+  assert.match(journeyErrorPage, /Voltar e corrigir/u);
 });
 
 test("lesson completion stays actionable and blocked outcomes move focus to the missing requirement", () => {
