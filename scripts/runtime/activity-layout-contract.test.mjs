@@ -7,6 +7,7 @@ const stylesheet = await readFile("apps/web/app/empreendedor/atividade/[stepInst
 const frame = await readFile("apps/web/components/activity-workspace-frame.tsx", "utf8");
 const lesson = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
 const promptLibrary = await readFile("apps/web/components/activity-prompt-library.tsx", "utf8");
+const quickCheck = await readFile("apps/web/components/quick-check-panel.tsx", "utf8");
 const journey = await readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8");
 const actions = await readFile("apps/web/app/actions/journey.ts", "utf8");
 
@@ -43,10 +44,11 @@ test("lesson sections read as one aligned visual surface", () => {
   assert.match(lesson, /completionTarget === "avaliacao_pendente"/u);
   assert.match(lesson, /completionTarget === "pratica_pendente"/u);
   assert.match(stylesheet, /main > #prompts/u);
-  assert.match(stylesheet, /#avaliacao \.brand-quick-check/u);
   assert.match(stylesheet, /min-width: 0/u);
   assert.match(promptLibrary, /px-4 py-4 sm:px-6 sm:py-5/u);
   assert.match(promptLibrary, /p-4 sm:p-6 lg:grid-cols-2/u);
+  assert.match(quickCheck, /embedded = true/u);
+  assert.match(quickCheck, /\{embedded \? \(/u);
 });
 
 test("journey never embeds the lesson workspace below its own hero", () => {
