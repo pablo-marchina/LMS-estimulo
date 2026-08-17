@@ -84,6 +84,7 @@ export async function performExtensionAction(formData: FormData) {
       payload,
       idempotencyKey: text(formData, "idempotency_key") || randomUUID(),
     });
+    revalidatePath(returnTo.split("?", 1)[0] || "/empreendedor");
     revalidatePath("/empreendedor", "layout");
     revalidatePath("/admin", "layout");
     destination = `${returnTo}?sucesso=${encodeURIComponent(action)}`;
