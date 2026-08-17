@@ -18,6 +18,8 @@ on:
     paths:
       - .github/workflows/production-visual-capture.yml
       - scripts/e2e/production-visual-capture.mjs
+      - scripts/e2e/production-visual-composition-audit.mjs
+      - apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx
 
 permissions:
   contents: read
@@ -43,10 +45,14 @@ jobs:
           cache: npm
 
       - name: Validate visual auditor syntax
-        run: node --check scripts/e2e/production-visual-capture.mjs
+        run: |
+          node --check scripts/e2e/production-visual-capture.mjs
+          node --check scripts/e2e/production-visual-composition-audit.mjs
 
       - name: Validate visual remediation contract
-        run: node --test scripts/application/final-review-remediation.test.mjs
+        run: |
+          node --test scripts/application/final-review-remediation.test.mjs
+          node --test scripts/application/participant-lesson-visual-contract.test.mjs
 
   capture:
     name: Capture desktop and mobile visual evidence
@@ -92,6 +98,10 @@ jobs:
       - name: Capture visual evidence
         run: node scripts/e2e/production-visual-capture.mjs
 
+      - name: Audit dynamic states and visual composition
+        if: always()
+        run: node scripts/e2e/production-visual-composition-audit.mjs
+
       - name: Publish capture summary
         if: always()
         shell: bash
@@ -109,6 +119,11 @@ jobs:
           console.log(`- Public captures: ${report.summary.byRole.public}`);
           console.log(`- Participant captures: ${report.summary.byRole.participant}`);
           console.log(`- Admin captures: ${report.summary.byRole.admin}`);
+          if (fs.existsSync('artifacts/e2e-visual/visual-composition-report.json')) {
+            const composition = JSON.parse(fs.readFileSync('artifacts/e2e-visual/visual-composition-report.json', 'utf8'));
+            console.log(`- Composition checks: ${composition.summary.checks}`);
+            console.log(`- Composition failures: ${composition.summary.failures}`);
+          }
           NODE
           fi
 
