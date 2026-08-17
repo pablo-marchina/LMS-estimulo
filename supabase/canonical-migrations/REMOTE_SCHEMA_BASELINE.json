@@ -12,8 +12,8 @@
       "indexes": { "count": 688, "sha256": "beb794f862b72bf988e91c7ce1a9a83aecab13f554b2652e407ba6e6a397a1fe" },
       "schemas": { "count": 14, "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344" },
       "policies": { "count": 622, "sha256": "063a0f31004017b207b3ffaddce320e9efe0f1f5723604092c66b1fb82215248" },
-      "routines": { "count": 275, "sha256": "117c8772d9e1a296dc500b03ab9a7aae267f285ea1fb8a1e0bb2a3abfd7a7f81" },
-      "triggers": { "count": 103, "sha256": "9daf95d233e914d32ac7b167a13250ccb1e0caf7732797666f3fe031adc6e9a2" },
+      "routines": { "count": 276, "sha256": "95d77ac88d76e2c7b57f8035d4c99e0e5eda5e6b412c95d1c1ef8e36eb89a999" },
+      "triggers": { "count": 104, "sha256": "37c0d997b420b3f9785b5939408632430fded16ded65250a42e110fe19a9e855" },
       "relations": { "count": 211, "sha256": "7e5c9d61e0e83091477feb161f5bb72e16e86a90469cdf91aff50ab5c9e5cb9e" },
       "constraints": { "count": 1104, "sha256": "51ac1061b59e0c00c8658b3ea87ef013aca96d301379400d1d005374a32b01f3" }
     }
