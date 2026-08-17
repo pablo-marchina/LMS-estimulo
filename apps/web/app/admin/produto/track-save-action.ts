@@ -41,10 +41,10 @@ export async function saveTrackAction(formData: FormData) {
         position: positiveInteger(text(formData, "position")),
         is_default: checked(formData, "is_default"),
         is_required: checked(formData, "is_required"),
+        completion_badge_version_id: completionBadgeVersionId,
         presentation: {
           tone: text(formData, "tone") || "cyan",
           icon: text(formData, "icon") || "sparkles",
-          completion_badge_version_id: completionBadgeVersionId,
         },
       },
       idempotencyKey: randomUUID(),
