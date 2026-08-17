@@ -15,6 +15,7 @@ type Props = {
   current: JourneyStage;
   activityTitle?: string;
   estimatedMinutes?: number;
+  headingLevel?: "h1" | "h2";
 };
 
 const statusCopy: Record<string, string> = {
@@ -65,9 +66,10 @@ function ActivityNavigationForm({
   );
 }
 
-export async function JourneyProgressNav({ state, current, activityTitle, estimatedMinutes }: Props) {
+export async function JourneyProgressNav({ state, current, activityTitle, estimatedMinutes, headingLevel = "h1" }: Props) {
   const stepStatus = state.s?.status ?? "available";
   const title = current === "activity" ? activityTitle ?? "Conteúdo da jornada" : current === "result" ? "Resultado da jornada" : "Conheça seu perfil";
+  const Heading = headingLevel;
 
   const auth = await getAuthContext();
   const outline = auth.status === "authenticated"
@@ -93,14 +95,14 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
   }
 
   return (
-    <aside className="no-print border-b border-slate-200 pb-5" aria-label={`Contexto de ${title}`}>
+    <aside className="no-print min-w-0 border-b border-slate-200 pb-5" aria-label={`Contexto de ${title}`}>
       <Link href={`/empreendedor/jornada/${state.journey_instance_id}`} className="inline-flex items-center gap-2 text-sm font-medium text-muted transition-colors hover:text-primary">
         <ArrowLeft size={15} aria-hidden="true" /> Voltar para a jornada
       </Link>
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+      <div className="mt-3 flex min-w-0 flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 max-w-3xl">
           <p className="text-[11px] font-bold uppercase tracking-[.14em] text-primary">{journeyLabel}</p>
-          <h1 className="mt-1.5 text-[22px] font-bold leading-tight text-ink sm:text-[28px]">{title}</h1>
+          <Heading className="mt-1.5 break-words text-[22px] font-bold leading-tight text-ink sm:text-[28px]">{title}</Heading>
           {current === "activity" ? (
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
               {estimatedMinutes ? <span className="inline-flex items-center gap-1"><Clock3 size={13} /> {estimatedMinutes} min</span> : null}
@@ -115,7 +117,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
         </div>
       </div>
       {current === "activity" && (previousActivity || nextActivity) ? (
-        <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="mt-4 flex min-w-0 items-start justify-between gap-3">
           {previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}
           {nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-primary hover:underline">Ver resultado <ArrowRight size={15} /></Link>}
         </div>

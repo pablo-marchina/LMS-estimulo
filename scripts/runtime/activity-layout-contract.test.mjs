@@ -5,14 +5,16 @@ import test from "node:test";
 const layout = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.tsx", "utf8");
 const stylesheet = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css", "utf8");
 const frame = await readFile("apps/web/components/activity-workspace-frame.tsx", "utf8");
-const lesson = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
+const legacyLessonRoute = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
+const lesson = await readFile("apps/web/components/participant-activity-workspace.tsx", "utf8");
 const participantShell = await readFile("apps/web/components/participant-shell.tsx", "utf8");
 const promptLibrary = await readFile("apps/web/components/activity-prompt-library.tsx", "utf8");
 const quickCheck = await readFile("apps/web/components/quick-check-panel.tsx", "utf8");
 const journey = await readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8");
+const journeyOpenAction = await readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts", "utf8");
 const actions = await readFile("apps/web/app/actions/journey.ts", "utf8");
 
-test("activity route is a continuous lesson workspace", () => {
+test("shared participant lesson is a continuous embeddable workspace", () => {
   assert.match(layout, /data-activity-workspace/u);
   assert.match(layout, /data-activity-page/u);
   assert.doesNotMatch(layout, /ActivityCompactWorkspace/u);
@@ -20,6 +22,8 @@ test("activity route is a continuous lesson workspace", () => {
   assert.doesNotMatch(frame, /ActivityCompactWorkspace/u);
 
   assert.match(lesson, /max-w-\[1100px\]/u);
+  assert.match(lesson, /data-participant-activity-workspace/u);
+  assert.match(lesson, /data-embedded/u);
   assert.match(lesson, /Marcar como concluída/u);
   assert.match(lesson, /O que achou desta aula/u);
   assert.match(lesson, /Converse sobre esta aula/u);
@@ -52,27 +56,31 @@ test("lesson sections read as one aligned visual surface", () => {
   assert.match(quickCheck, /\{embedded \? \(/u);
 });
 
-test("entering a dedicated lesson resets inherited journey scroll", () => {
+test("legacy dedicated lesson route is compatibility-only", () => {
   assert.match(participantShell, /pathname\.startsWith\("\/empreendedor\/atividade\/"\)/u);
-  assert.match(participantShell, /window\.scrollTo\(\{ top: 0, left: 0, behavior: "auto" \}\)/u);
-  assert.match(participantShell, /requestAnimationFrame\(resetScroll\)/u);
-  assert.match(participantShell, /\[pathname, wideLesson\]/u);
+  assert.match(legacyLessonRoute, /URLSearchParams\(\{ conteudo: stepInstanceId \}\)/u);
+  assert.match(legacyLessonRoute, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?\$\{target\.toString\(\)\}#aula`\)/u);
+  assert.doesNotMatch(legacyLessonRoute, /ContentAssetViewer/u);
+  assert.doesNotMatch(legacyLessonRoute, /ActivityPromptLibrary/u);
 });
 
-test("journey never embeds the lesson workspace below its own hero", () => {
-  assert.match(journey, /if \(query\.conteudo && selectedActivity\)/u);
-  assert.match(journey, /redirect\(`\/empreendedor\/atividade\/\$\{selectedActivity\.step_instance_id\}/u);
-  assert.doesNotMatch(journey, /<section id="aula"/u);
-  assert.doesNotMatch(journey, /ActivityWorkspaceFrame/u);
+test("journey embeds the selected lesson below the track outline without importing another route page", () => {
+  assert.match(journey, /selectedActivity \? \(/u);
+  assert.match(journey, /<section id="aula"/u);
+  assert.match(journey, /data-inline-lesson/u);
+  assert.match(journey, /ActivityWorkspaceFrame/u);
+  assert.match(journey, /ParticipantActivityWorkspace/u);
   assert.doesNotMatch(journey, /import ActivityPage/u);
+  assert.doesNotMatch(journey, /redirect\(`\/empreendedor\/atividade/u);
 });
 
-test("lesson actions remain on the dedicated activity route and preserve interaction anchors", () => {
-  assert.match(actions, /function activityHref/u);
-  assert.match(actions, /`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}/u);
+test("lesson navigation and interaction anchors remain on the inline journey route", () => {
+  assert.match(journeyOpenAction, /redirect\(`\/empreendedor\/jornada\/\$\{journeyInstanceId\}\?conteudo=\$\{stepInstanceId\}#aula`\)/u);
+  assert.match(actions, /function inlineActivityHref/u);
+  assert.match(actions, /`\/empreendedor\/jornada\/\$\{journey\}\?conteudo=\$\{step\}\$\{query\}/u);
   assert.match(actions, /utilidade=registrada/u);
   assert.match(actions, /"utilidade"/u);
   assert.match(actions, /avaliacao=reprovada/u);
   assert.doesNotMatch(actions, /comentario=criado/u);
-  assert.doesNotMatch(actions, /\?conteudo=\$\{step\}/u);
+  assert.doesNotMatch(journeyOpenAction, /\/empreendedor\/atividade\//u);
 });
