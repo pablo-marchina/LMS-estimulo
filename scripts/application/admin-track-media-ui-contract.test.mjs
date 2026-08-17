@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [lessonLayout, rewardsPage, contentViewer, serverInvoke, productManagement, trackAction, trackEditor, nextConfig, mediaUpload, trackMigration] = await Promise.all([
+const [lessonLayout, rewardsPage, contentViewer, serverInvoke, productManagement, trackAction, trackEditor, nextConfig, mediaUpload, trackMigration, pathBadgeMigration] = await Promise.all([
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css", "utf8"),
   readFile("apps/web/app/empreendedor/recompensas/page.tsx", "utf8"),
   readFile("apps/web/components/content-asset-viewer.tsx", "utf8"),
@@ -13,6 +13,7 @@ const [lessonLayout, rewardsPage, contentViewer, serverInvoke, productManagement
   readFile("apps/web/next.config.ts", "utf8"),
   readFile("apps/web/lib/admin/media-upload.ts", "utf8"),
   readFile("supabase/migrations/20260813162500_save_admin_track_v2.sql", "utf8"),
+  readFile("supabase/migrations/20260817002000_link_path_badges_to_credential_issuance.sql", "utf8"),
 ]);
 
 test("lesson canvas keeps its centered max-width layout", () => {
@@ -48,6 +49,15 @@ test("track editor selects an explicit published completion badge", () => {
   assert.match(trackEditor, /completion_badge_version_id/u);
   assert.doesNotMatch(trackEditor, /name="badge_title"/u);
   assert.doesNotMatch(trackEditor, /name="badge_description"/u);
+});
+
+test("explicit path badge links are private and participate in credential issuance", () => {
+  assert.match(pathBadgeMigration, /alter table engagement\.path_badge_links enable row level security/u);
+  assert.match(pathBadgeMigration, /revoke all on table engagement\.path_badge_links from public, anon, authenticated, app_worker/u);
+  assert.match(pathBadgeMigration, /from engagement\.path_badge_links link/u);
+  assert.match(pathBadgeMigration, /if \(p_context->>'path_completed'\)::boolean is true/u);
+  assert.match(pathBadgeMigration, /select distinct on \(id\)/u);
+  assert.match(pathBadgeMigration, /app_private\.credential_rule_matches\([\s\S]*?'path'/u);
 });
 
 test("administrative image transport allows the validated image payload", () => {
