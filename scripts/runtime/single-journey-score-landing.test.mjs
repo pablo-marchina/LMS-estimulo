@@ -82,7 +82,7 @@ test('behavior score is editable, continuous, indexed and ETL ready', async () =
 
 test('landing preserves approved institutional copy, separates the OpenAI preview and keeps the secured edge projection', async () => {
   const [landing, publicJourneyMigration, filterMigration, securityMigration, edgeFunction] = await Promise.all([
-    read('apps/web/app/page.tsx'),
+    read('apps/web/app/_landing-pages/boost-2026-08-16.tsx'),
     read('supabase/migrations/20260731221500_public_landing_journey.sql'),
     read('supabase/migrations/20260731221600_filter_public_landing_journey.sql'),
     read('supabase/migrations/20260731221800_secure_public_landing_rpc.sql'),
@@ -106,4 +106,24 @@ test('landing preserves approved institutional copy, separates the OpenAI previe
   assert.match(securityMigration, /revoke all .* from public,anon,authenticated/);
   assert.match(edgeFunction, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(edgeFunction, /METHOD_NOT_ALLOWED/);
+});
+
+test('landing router defaults to classic and keeps the Boost version publishable by admin selection', async () => {
+  const [router, catalog, adminSettings, action, publicSettings] = await Promise.all([
+    read('apps/web/app/page.tsx'),
+    read('apps/web/lib/landing-pages/catalog.ts'),
+    read('apps/web/app/admin/configuracoes/page.tsx'),
+    read('apps/web/app/admin/configuracoes/platform-settings-actions.ts'),
+    read('apps/web/lib/platform-settings/runtime.ts'),
+  ]);
+
+  assert.match(router, /BoostLandingPage/);
+  assert.match(router, /ClassicLandingPage/);
+  assert.match(router, /settings\.landing_page_version === "boost_2026_08_16"/);
+  assert.match(catalog, /DEFAULT_LANDING_PAGE_VERSION[^=]*= "classic_2026_08_15"/);
+  assert.match(catalog, /boost_2026_08_16/);
+  assert.match(adminSettings, /name="landing_page_version"/);
+  assert.match(action, /landing_page_version: normalizeLandingPageVersion/);
+  assert.match(action, /revalidatePath\("\/"\)/);
+  assert.match(publicSettings, /normalizeLandingPageVersion\(value\.landing_page_version\)/);
 });
