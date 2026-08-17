@@ -6,6 +6,7 @@ const [
   rewardsExperience,
   adminRewards,
   adminExtensionActions,
+  rewardActions,
   lessonPage,
   completionAction,
   resultPage,
@@ -15,6 +16,7 @@ const [
   readFile("apps/web/app/empreendedor/recompensas/rewards-experience.tsx", "utf8"),
   readFile("apps/web/app/admin/recompensas/page.tsx", "utf8"),
   readFile("apps/web/app/admin/extension-actions.ts", "utf8"),
+  readFile("apps/web/app/admin/recompensas/reward-actions.ts", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/completion-action.ts", "utf8"),
   readFile("apps/web/app/empreendedor/resultado/page.tsx", "utf8"),
@@ -31,10 +33,11 @@ test("reward catalog exposes remaining availability, compact descriptions and po
   assert.doesNotMatch(rewardsExperience, />Custo</u);
 });
 
-test("reward ordering is configurable by admins and honored in the participant catalog", () => {
+test("reward ordering is configurable, persisted through the image-aware save flow and honored in the participant catalog", () => {
   assert.match(adminRewards, /name="display_order"/u);
   assert.match(adminRewards, /Ordem de exibição/u);
   assert.match(adminExtensionActions, /display_order: Math\.max\(0, numeric\(formData, "display_order", 100\)\)/u);
+  assert.match(rewardActions, /fulfillment_configuration: \{ instructions: text\(formData, "delivery_instructions"\), fields, display_order:/u);
   assert.match(rewardsExperience, /rewardOrder\(left\) - rewardOrder\(right\)/u);
 });
 
