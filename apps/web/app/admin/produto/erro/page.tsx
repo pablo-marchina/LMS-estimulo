@@ -40,6 +40,36 @@ const guidance: Record<string, { title: string; description: string; checklist: 
     description: "A conta atual pode visualizar a administração, mas não possui a permissão necessária para salvar esta jornada.",
     checklist: ["Confirme que está usando a conta administrativa correta.", "Solicite a permissão de gestão de jornadas se precisar editar."],
   },
+  conteudo_biblioteca_indisponivel: {
+    title: "O conteúdo selecionado não está disponível na Biblioteca",
+    description: "A aula não foi salva porque o conteúdo escolhido para vinculação não está mais disponível como versão publicada e ativa.",
+    checklist: ["Reabra a aula e confirme o conteúdo selecionado.", "Se você não pretendia trocar o material, mantenha o vínculo atual: edições comuns da aula preservam esse vínculo.", "Se quiser substituir o material, selecione uma versão publicada e ativa da Biblioteca."],
+  },
+  conteudo_biblioteca_obrigatorio: {
+    title: "Selecione um conteúdo da Biblioteca",
+    description: "A opção de usar a Biblioteca está ativa, mas nenhum conteúdo foi selecionado.",
+    checklist: ["Escolha um conteúdo publicado na Biblioteca.", "Ou altere a origem do conteúdo antes de salvar a aula."],
+  },
+  aula_nao_encontrada: {
+    title: "A aula não está mais disponível para edição",
+    description: "A aula pode ter sido removida, movida ou alterada em outra sessão antes do salvamento.",
+    checklist: ["Volte para Trilhas e aulas e recarregue a estrutura.", "Abra novamente a aula que deseja editar antes de repetir a alteração."],
+  },
+  trilha_nao_encontrada: {
+    title: "A trilha não está mais disponível",
+    description: "A aula não pôde ser salva porque a trilha associada foi removida, arquivada ou alterada.",
+    checklist: ["Recarregue a jornada.", "Confirme em qual trilha a aula deve ficar e abra a aula novamente."],
+  },
+  dados_aula_invalidos: {
+    title: "Há dados inválidos na aula",
+    description: "O sistema bloqueou o salvamento para não persistir uma aula incompleta ou inconsistente.",
+    checklist: ["Reabra a aula e revise os campos obrigatórios.", "Confirme posição, duração, tipo de atividade e origem do conteúdo antes de salvar."],
+  },
+  falha_aula: {
+    title: "A aula não pôde ser salva",
+    description: "Nenhuma alteração parcial deve ser considerada concluída. O restante da jornada foi preservado.",
+    checklist: ["Reabra a aula e tente salvar novamente.", "Se o erro persistir, anote o horário e a aula alterada para localizar a falha nos logs."],
+  },
   falha: {
     title: "A jornada não pôde ser salva",
     description: "Nenhuma alteração parcial deve ser considerada concluída. Reabra o formulário, revise os campos e tente novamente.",
@@ -47,12 +77,13 @@ const guidance: Record<string, { title: string; description: string; checklist: 
   },
 };
 
-export default async function JourneySaveErrorPage({ searchParams }: { searchParams: Promise<{ codigo?: string; versao?: string }> }) {
+export default async function JourneySaveErrorPage({ searchParams }: { searchParams: Promise<{ codigo?: string; versao?: string; etapa?: string }> }) {
   const query = await searchParams;
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
   const item = guidance[query.codigo ?? ""] ?? guidance.falha;
-  const returnHref = query.versao ? `/admin/produto?etapa=geral&versao=${encodeURIComponent(query.versao)}` : "/admin/produto?etapa=geral";
+  const etapa = query.etapa === "conteudo" || query.etapa === "publicacao" ? query.etapa : "geral";
+  const returnHref = query.versao ? `/admin/produto?etapa=${etapa}&versao=${encodeURIComponent(query.versao)}` : `/admin/produto?etapa=${etapa}`;
 
   return (
     <AppShell area="admin" email={auth.email}>
