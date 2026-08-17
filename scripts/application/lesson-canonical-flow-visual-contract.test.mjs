@@ -67,10 +67,18 @@ test("broad visual crawl covers wide desktop and rejects badly displaced primary
 
 test("broad target warnings and incomplete viewport coverage are release-blocking", () => {
   assert.match(strictGate, /target visual warning is release-blocking/u);
-  assert.match(strictGate, /no visual capture produced/u);
-  assert.match(strictGate, /required route .* was not captured/u);
+  assert.match(strictGate, /no same-origin visual capture produced/u);
+  assert.match(strictGate, /required same-origin route .* was not captured/u);
   assert.match(strictGate, /\/admin\/certificados/u);
   assert.match(strictGate, /\/admin\/gamificacao/u);
+});
+
+test("visual evidence cannot count Vercel protection or any external redirect as an app capture", () => {
+  assert.match(strictGate, /requested\.origin === final\.origin/u);
+  assert.match(strictGate, /deployment protection redirected the browser/u);
+  assert.match(strictGate, /browser escaped the target origin/u);
+  assert.match(strictGate, /validTargetCaptures/u);
+  assert.match(strictGate, /schemaVersion: 2/u);
 });
 
 test("certificate states receive dedicated wide, desktop and mobile geometry checks", () => {
