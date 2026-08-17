@@ -2,14 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [openActivityAction, journeyActions, journeyPage, participantShell, activityPage, criticalVisual, productionVisual, visualWorkflow] = await Promise.all([
+const [openActivityAction, journeyActions, journeyPage, participantShell, activityPage, criticalVisual, adminCriticalVisual, productionVisual, strictGate, visualWorkflow] = await Promise.all([
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts", "utf8"),
   readFile("apps/web/app/actions/journey.ts", "utf8"),
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/components/participant-shell.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
   readFile("scripts/e2e/participant-critical-flow-visual.mjs", "utf8"),
+  readFile("scripts/e2e/admin-critical-flow-visual.mjs", "utf8"),
   readFile("scripts/e2e/production-visual-capture.mjs", "utf8"),
+  readFile("scripts/e2e/visual-manifest-strict-gate.mjs", "utf8"),
   readFile(".github/workflows/production-visual-capture.yml", "utf8"),
 ]);
 
@@ -63,10 +65,32 @@ test("broad visual crawl covers wide desktop and rejects badly displaced primary
   assert.match(productionVisual, /schemaVersion:\s*3/u);
 });
 
-test("production visual workflow always runs and preserves critical-flow evidence", () => {
+test("broad target warnings and incomplete viewport coverage are release-blocking", () => {
+  assert.match(strictGate, /target visual warning is release-blocking/u);
+  assert.match(strictGate, /no visual capture produced/u);
+  assert.match(strictGate, /required route .* was not captured/u);
+  assert.match(strictGate, /\/admin\/certificados/u);
+  assert.match(strictGate, /\/admin\/gamificacao/u);
+});
+
+test("certificate states receive dedicated wide, desktop and mobile geometry checks", () => {
+  assert.match(adminCriticalVisual, /key: "wide", width: 1695, height: 895/u);
+  assert.match(adminCriticalVisual, /key: "desktop", width: 1440, height: 1000/u);
+  assert.match(adminCriticalVisual, /key: "mobile", width: 390, height: 844/u);
+  assert.match(adminCriticalVisual, /\/admin\/certificados/u);
+  assert.match(adminCriticalVisual, /\/admin\/gamificacao\?tipo=certificados/u);
+  assert.match(adminCriticalVisual, /horizontal overflow/u);
+  assert.match(adminCriticalVisual, /primary heading starts too low/u);
+});
+
+test("production visual workflow always runs every strict and critical visual gate", () => {
+  assert.match(visualWorkflow, /node --check scripts\/e2e\/visual-manifest-strict-gate\.mjs/u);
   assert.match(visualWorkflow, /node --check scripts\/e2e\/participant-critical-flow-visual\.mjs/u);
+  assert.match(visualWorkflow, /node --check scripts\/e2e\/admin-critical-flow-visual\.mjs/u);
+  assert.match(visualWorkflow, /Enforce strict broad visual coverage/u);
   assert.match(visualWorkflow, /Validate canonical participant flow and composition/u);
+  assert.match(visualWorkflow, /Validate critical admin certificate states/u);
   assert.match(visualWorkflow, /if: always\(\)/u);
-  assert.match(visualWorkflow, /node scripts\/e2e\/participant-critical-flow-visual\.mjs/u);
   assert.match(visualWorkflow, /artifacts\/e2e-critical-flow/u);
+  assert.match(visualWorkflow, /artifacts\/e2e-admin-critical/u);
 });
