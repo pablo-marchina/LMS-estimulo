@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill } from "@/components/ui/status-pill";
 import { requireAdminExtensionsWorkspace } from "@/lib/extensions/admin-context";
 import type { JsonRecord } from "@/lib/extensions/runtime";
+import { LANDING_PAGE_VERSIONS, normalizeLandingPageVersion } from "@/lib/landing-pages/catalog";
 import { savePlatformSettingsAction } from "./platform-settings-actions";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +19,7 @@ function stringValue(value: unknown) { return typeof value === "string" ? value 
 function numberValue(value: unknown) { return typeof value === "number" ? value : Number(value ?? 0) || 0; }
 function booleanValue(value: unknown) { return value === true; }
 function objectValue(value: JsonRecord | null) { return value ?? {}; }
+function recordValue(value: unknown): JsonRecord { return value && typeof value === "object" && !Array.isArray(value) ? value as JsonRecord : {}; }
 function pretty(value: unknown, fallback: unknown) { return JSON.stringify(value ?? fallback, null, 2); }
 function communityUrl(value: unknown) {
   if (!Array.isArray(value)) return "";
@@ -35,26 +37,28 @@ export default async function AdminSettingsPage({ searchParams }: { searchParams
   const query = await searchParams;
   const { auth, workspace } = await requireAdminExtensionsWorkspace();
   const settings = objectValue(workspace.settings);
+  const settingsMetadata = recordValue(settings.metadata);
   const terms = workspace.legal_documents.filter((item) => item.document_type === "terms_of_use");
   const privacy = workspace.legal_documents.filter((item) => item.document_type === "privacy_policy");
 
   return <AppShell area="admin" email={auth.email}><div className="grid gap-5">
-    <PageHeader eyebrow="Ajustes gerais" title="Mais configurações" description="Atualize contatos, comunidade, documentos legais e temas da plataforma." />
+    <PageHeader eyebrow="Ajustes gerais" title="Mais configurações" description="Atualize contatos, landing page, comunidade, documentos legais e temas da plataforma." />
     {query.sucesso ? <StatusPanel title="Alteração salva" tone="success">As configurações foram atualizadas.</StatusPanel> : null}
     {query.erro ? <StatusPanel title="Não foi possível salvar" tone="warning">Tente novamente. Referência: {query.erro}</StatusPanel> : null}
 
     <Card className="grid gap-4">
-      <div className="flex items-start gap-3"><Settings2 className="mt-0.5 text-primary" /><div><h2 className="text-lg font-black text-secondary">Contato e identificação</h2><p className="text-sm text-muted">Esses canais aparecem na área de Ajuda do participante.</p></div></div>
+      <div className="flex items-start gap-3"><Settings2 className="mt-0.5 text-primary" /><div><h2 className="text-lg font-black text-secondary">Contato, identificação e landing page</h2><p className="text-sm text-muted">Defina a landing publicada e os canais que aparecem na área de Ajuda do participante.</p></div></div>
       <form action={savePlatformSettingsAction} className="grid gap-3 sm:grid-cols-2">
         <Label>Nome da plataforma<Input name="platform_name" defaultValue={stringValue(settings.platform_name) || "Plataforma Estímulo"} required /></Label>
         <Label>E-mail de suporte<Input name="support_email" type="email" defaultValue={stringValue(settings.support_email)} /></Label>
+        <Label className="sm:col-span-2">Landing page publicada<Select name="landing_page_version" defaultValue={normalizeLandingPageVersion(settingsMetadata.landing_page_version)}>{LANDING_PAGE_VERSIONS.map((version) => <option key={version.value} value={version.value}>{version.label}</option>)}</Select><span className="text-[11px] font-normal text-muted">A versão anterior é o padrão atual. A versão Boost permanece preservada e pode ser republicada a qualquer momento.</span></Label>
         <Label>Telefone<Input name="support_phone" defaultValue={stringValue(settings.support_phone)} placeholder="(11) 0000-0000" /></Label>
         <Label>WhatsApp de suporte<Input name="support_whatsapp" defaultValue={stringValue(settings.support_whatsapp)} placeholder="+55 11 90000-0000 ou https://wa.me/..." /></Label>
         <Label>Comunidade no WhatsApp<Input name="community_whatsapp_url" type="url" defaultValue={communityUrl(settings.institutional_links)} placeholder="https://chat.whatsapp.com/..." /><span className="text-[11px] font-normal text-muted">Quando preenchido, aparece como botão separado na Ajuda.</span></Label>
         <Label>Horário de atendimento<Input name="support_hours" defaultValue={stringValue(settings.support_hours)} placeholder="Segunda a sexta, das 9h às 18h" /></Label>
         <details className="sm:col-span-2 rounded-xl border border-border"><summary className="cursor-pointer p-3 text-sm font-bold text-secondary">Rodapé e outros links institucionais</summary><div className="grid gap-3 border-t border-border p-3"><Label>Texto do rodapé<Textarea name="footer_text" rows={2} defaultValue={stringValue(settings.footer_text)} /></Label><Label>Links institucionais em JSON<Textarea name="institutional_links" rows={4} defaultValue={pretty(settings.institutional_links, [])} placeholder={'[{"label":"Site","url":"https://..."}]'} /><span className="text-[11px] font-normal text-muted">O link da comunidade acima é mantido automaticamente mesmo ao editar esta lista.</span></Label></div></details>
-        <input type="hidden" name="metadata" value={pretty(settings.metadata, {})} />
-        <PendingSubmitButton pendingLabel="Salvando…" className="w-fit sm:col-span-2">Salvar contatos</PendingSubmitButton>
+        <input type="hidden" name="metadata" value={pretty(settingsMetadata, {})} />
+        <PendingSubmitButton pendingLabel="Salvando…" className="w-fit sm:col-span-2">Salvar configurações</PendingSubmitButton>
       </form>
     </Card>
 
