@@ -46,7 +46,7 @@ export function QuickCheckPanel({
   passed,
   requiredAssets,
   sectionsComplete,
-  embedded = false,
+  embedded = true,
 }: Props) {
   const [assetState, setAssetState] = useState(() => new Map(requiredAssets.map((asset) => [asset.id, asset.completed])));
   useEffect(() => {
