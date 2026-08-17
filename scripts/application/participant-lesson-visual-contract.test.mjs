@@ -25,7 +25,7 @@ test("certificate template grids shrink instead of creating implicit mobile min-
 
 test("visual audit discovers the current dynamic lesson state and fails broken composition", () => {
   assert.match(compositionAudit, /form:has\(input\[name="journey_instance_id"\]\)/u);
-  assert.match(compositionAudit, /step_status\]\[value="completed"\]/u);
+  assert.match(compositionAudit, /name="step_status"\]\[value="completed"\]/u);
   assert.match(compositionAudit, /\?conteudo=\$\{encodeURIComponent\(stepInstanceId\)\}#aula/u);
   assert.match(compositionAudit, /selected lesson state did not render #aula/u);
   assert.match(compositionAudit, /laterally displaced/u);
