@@ -31,6 +31,25 @@
   box-shadow: none !important;
 }
 
+/* A seção já apresenta o contexto da verificação. Dentro dela, o painel rápido
+   vira uma faixa de metadados em vez de repetir um segundo cabeçalho-card. */
+.activityLayout :global(#avaliacao .brand-quick-check) {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child > span),
+.activityLayout :global(#avaliacao .brand-quick-check .brand-kicker),
+.activityLayout :global(#avaliacao .brand-quick-check h2) {
+  display: none !important;
+}
+
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div > p:not(.brand-kicker)) {
+  margin-top: 0 !important;
+}
+
 /* O primeiro ativo é o player principal da aula. Ele aparece diretamente
    dentro da superfície da aula, sem um segundo cabeçalho/cartão envolvendo a mídia. */
 .activityLayout :global(#conteudo > div:last-child > .brand-media-card:first-child) {
