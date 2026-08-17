@@ -83,6 +83,7 @@ on conflict (certificate_definition_id, version_number) do nothing;
 -- certificate that actually belongs to this journey. The fixture can be a
 -- published journey, so use the same transaction-local live-edit switch as the
 -- production journey-save command.
+begin;
 select set_config('app.admin_live_edit', 'on', true);
 
 update catalog.journey_versions jv
@@ -105,7 +106,7 @@ set configuration = jsonb_set(
 from journey_completion_automation_context c
 where jv.id = c.journey_version_id;
 
-select set_config('app.admin_live_edit', 'off', true);
+commit;
 
 do $$
 declare
