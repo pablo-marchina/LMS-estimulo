@@ -25,6 +25,7 @@ const outputDir = path.resolve("artifacts/e2e-visual");
 await mkdir(outputDir, { recursive: true });
 
 const viewports = [
+  { key: "wide", width: 1695, height: 895 },
   { key: "desktop", width: 1440, height: 1000 },
   { key: "mobile", width: 390, height: 844 },
 ];
