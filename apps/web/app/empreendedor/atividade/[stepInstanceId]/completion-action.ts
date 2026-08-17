@@ -15,6 +15,14 @@ const completionCode = {
   PRACTICE_COMPLETION_MANAGED_BY_REVIEW: "pratica_pendente",
 } as const;
 
+const completionAnchor = {
+  ok: "concluir-aula",
+  conteudo_pendente: "conteudo",
+  avaliacao_pendente: "avaliacao",
+  pratica_pendente: "pratica",
+  falha: "concluir-aula",
+} as const;
+
 export async function completeParticipantActivityAction(formData: FormData) {
   await assertParticipantMutationAllowed();
   const auth = await getAuthContext();
@@ -23,7 +31,7 @@ export async function completeParticipantActivityAction(formData: FormData) {
   const journey = uuid.parse(formData.get("journey_instance_id"));
   const step = uuid.parse(formData.get("step_instance_id"));
   const key = String(formData.get("idempotency_key") || randomUUID());
-  let outcome: "ok" | "conteudo_pendente" | "avaliacao_pendente" | "pratica_pendente" | "falha" = "ok";
+  let outcome: keyof typeof completionAnchor = "ok";
 
   try {
     const result = await completeParticipantActivity({
@@ -38,5 +46,5 @@ export async function completeParticipantActivityAction(formData: FormData) {
     outcome = "falha";
   }
 
-  redirect(`/empreendedor/jornada/${journey}?conteudo=${step}&conclusao=${outcome}#concluir-aula`);
+  redirect(`/empreendedor/atividade/${step}?journey=${journey}&conclusao=${outcome}#${completionAnchor[outcome]}`);
 }

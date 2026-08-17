@@ -28,6 +28,16 @@ function configuration(formData: FormData) {
 function selectedFile(formData: FormData, name: string) { const entry = formData.get(name); return entry instanceof File && entry.size > 0 ? entry : null; }
 function recordText(value: unknown, field: string) { return value && typeof value === "object" && !Array.isArray(value) && typeof (value as Record<string, unknown>)[field] === "string" ? String((value as Record<string, unknown>)[field]) : ""; }
 function presentationTags(value: unknown) { return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").slice(0, 8) : []; }
+function journeySaveErrorCode(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("ANNOUNCEMENT_FILE_SIZE_INVALID")) return "imagem_tamanho_invalido";
+  if (message.includes("ANNOUNCEMENT_CONTENT_TYPE_NOT_ALLOWED")) return "imagem_formato_invalido";
+  if (message.includes("ANNOUNCEMENT_FILE_EXTENSION_NOT_ALLOWED")) return "imagem_extensao_invalida";
+  if (message.includes("ANNOUNCEMENT_STORAGE_UPLOAD_FAILED") || message.includes("ANNOUNCEMENT_BUCKET_CREATE_FAILED")) return "imagem_upload_falhou";
+  if (message.includes("INVALID_CONFIGURATION_SNAPSHOT")) return "configuracao_invalida";
+  if (message.includes("FORBIDDEN")) return "sem_permissao";
+  return "falha";
+}
 
 async function uploadJourneyCover(input: { actor: string; organizationId: string; file: File; role: "card" | "featured" }) {
   validateAnnouncementBanner(input.file);
@@ -70,7 +80,7 @@ export async function saveJourneyAction(formData: FormData) {
   try {
     previousConfiguration = configuration(formData);
   } catch {
-    redirect(`/admin/produto?etapa=geral&versao=${journeyId ?? ""}&erro=configuracao_invalida`);
+    redirect(`/admin/produto/erro?codigo=configuracao_invalida&versao=${encodeURIComponent(journeyId ?? "")}`);
   }
   const previousPresentation = previousConfiguration.presentation && typeof previousConfiguration.presentation === "object" && !Array.isArray(previousConfiguration.presentation) ? previousConfiguration.presentation as Record<string, unknown> : {};
   const commandKey = randomUUID();
@@ -174,8 +184,8 @@ export async function saveJourneyAction(formData: FormData) {
       message: error instanceof Error ? error.message : String(error),
       editing_existing_journey: Boolean(journeyId),
     }));
-    const reason = error instanceof Error && error.message.includes("FORBIDDEN") ? "sem_permissao" : "falha";
-    redirect(`/admin/produto?etapa=geral&versao=${journeyId ?? ""}&erro=${reason}`);
+    const reason = journeySaveErrorCode(error);
+    redirect(`/admin/produto/erro?codigo=${encodeURIComponent(reason)}&versao=${encodeURIComponent(journeyId ?? "")}`);
   }
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");

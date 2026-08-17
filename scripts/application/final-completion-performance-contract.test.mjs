@@ -21,7 +21,12 @@ test("normal completion blockers are structured results, not RPC failures", () =
   assert.match(completionAction, /outcome = result\.code/u);
   const tryBlock = completionAction.match(/try \{([\s\S]*?)\} catch/u)?.[1] ?? "";
   assert.doesNotMatch(tryBlock, /redirect\(/u);
-  assert.match(completionAction, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?conteudo=\$\{step\}&conclusao=\$\{outcome\}#concluir-aula`\)/u);
+  assert.match(completionAction, /ok: "concluir-aula"/u);
+  assert.match(completionAction, /conteudo_pendente: "conteudo"/u);
+  assert.match(completionAction, /avaliacao_pendente: "avaliacao"/u);
+  assert.match(completionAction, /pratica_pendente: "pratica"/u);
+  assert.match(completionAction, /falha: "concluir-aula"/u);
+  assert.match(completionAction, /redirect\(`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}&conclusao=\$\{outcome\}#\$\{completionAnchor\[outcome\]\}`\)/u);
 });
 
 test("journey outline is a single cached read and path reconciliation happens on journey entry", () => {
