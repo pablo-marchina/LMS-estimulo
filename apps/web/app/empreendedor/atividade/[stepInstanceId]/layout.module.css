@@ -21,8 +21,6 @@
   max-width: 100%;
 }
 
-/* A biblioteca de prompts participa da mesma superfície contínua da aula.
-   O componente mantém sua hierarquia interna, mas não cria um segundo cartão. */
 .activityLayout :global(main > #prompts) {
   border-right: 0 !important;
   border-bottom: 0 !important;
@@ -31,8 +29,6 @@
   box-shadow: none !important;
 }
 
-/* A seção já apresenta o contexto da verificação. Dentro dela, o painel rápido
-   vira uma faixa de metadados em vez de repetir um segundo cabeçalho-card. */
 .activityLayout :global(#avaliacao .brand-quick-check) {
   border: 0 !important;
   background: transparent !important;
@@ -42,6 +38,10 @@
 
 .activityLayout :global(#avaliacao .brand-quick-check::before),
 .activityLayout :global(#avaliacao .brand-quick-check::after),
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child::before),
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child::after),
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div::before),
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div::after),
 .activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div > p:not(.brand-kicker)::before),
 .activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div > p:not(.brand-kicker)::after) {
   content: none !important;
@@ -62,8 +62,6 @@
   box-shadow: none !important;
 }
 
-/* O primeiro ativo é o player principal da aula. Ele aparece diretamente
-   dentro da superfície da aula, sem um segundo cabeçalho/cartão envolvendo a mídia. */
 .activityLayout :global(#conteudo > div:last-child > .brand-media-card:first-child) {
   overflow: hidden;
   border: 0 !important;
