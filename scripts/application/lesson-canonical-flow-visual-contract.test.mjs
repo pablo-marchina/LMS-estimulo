@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [openActivityAction, journeyActions, journeyPage, participantShell, activityPage, criticalVisual, adminCriticalVisual, productionVisual, strictGate, visualWorkflow] = await Promise.all([
+const [openActivityAction, journeyActions, journeyPage, participantShell, activityPage, criticalVisual, adminCriticalVisual, productionVisual, strictGate, protectionBypass, visualWorkflow] = await Promise.all([
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts", "utf8"),
   readFile("apps/web/app/actions/journey.ts", "utf8"),
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8"),
@@ -12,6 +12,7 @@ const [openActivityAction, journeyActions, journeyPage, participantShell, activi
   readFile("scripts/e2e/admin-critical-flow-visual.mjs", "utf8"),
   readFile("scripts/e2e/production-visual-capture.mjs", "utf8"),
   readFile("scripts/e2e/visual-manifest-strict-gate.mjs", "utf8"),
+  readFile("scripts/e2e/vercel-protection-bypass.mjs", "utf8"),
   readFile(".github/workflows/production-visual-capture.yml", "utf8"),
 ]);
 
@@ -81,6 +82,18 @@ test("visual evidence cannot count Vercel protection or any external redirect as
   assert.match(strictGate, /schemaVersion: 2/u);
 });
 
+test("Vercel automation bypass is applied only to requests for the audited target origin", () => {
+  assert.match(protectionBypass, /VERCEL_AUTOMATION_BYPASS_SECRET/u);
+  assert.match(protectionBypass, /new URL\(request\.url\(\)\)\.origin === targetOrigin/u);
+  assert.match(protectionBypass, /"x-vercel-protection-bypass": bypassSecret/u);
+  assert.match(protectionBypass, /"x-vercel-set-bypass-cookie": "true"/u);
+  assert.match(visualWorkflow, /VERCEL_AUTOMATION_BYPASS_SECRET: \$\{\{ secrets\.VERCEL_AUTOMATION_BYPASS_SECRET \}\}/u);
+  assert.match(visualWorkflow, /node --import \.\/scripts\/e2e\/vercel-protection-bypass\.mjs scripts\/e2e\/production-visual-capture\.mjs/u);
+  assert.match(visualWorkflow, /node --import \.\/scripts\/e2e\/vercel-protection-bypass\.mjs scripts\/e2e\/participant-critical-flow-visual\.mjs/u);
+  assert.match(visualWorkflow, /node --import \.\/scripts\/e2e\/vercel-protection-bypass\.mjs scripts\/e2e\/admin-critical-flow-visual\.mjs/u);
+  assert.match(visualWorkflow, /automationBypassConfigured/u);
+});
+
 test("certificate states receive dedicated wide, desktop and mobile geometry checks", () => {
   assert.match(adminCriticalVisual, /key: "wide", width: 1695, height: 895/u);
   assert.match(adminCriticalVisual, /key: "desktop", width: 1440, height: 1000/u);
@@ -95,6 +108,7 @@ test("production visual workflow always runs every strict and critical visual ga
   assert.match(visualWorkflow, /node --check scripts\/e2e\/visual-manifest-strict-gate\.mjs/u);
   assert.match(visualWorkflow, /node --check scripts\/e2e\/participant-critical-flow-visual\.mjs/u);
   assert.match(visualWorkflow, /node --check scripts\/e2e\/admin-critical-flow-visual\.mjs/u);
+  assert.match(visualWorkflow, /node --check scripts\/e2e\/vercel-protection-bypass\.mjs/u);
   assert.match(visualWorkflow, /Enforce strict broad visual coverage/u);
   assert.match(visualWorkflow, /Validate canonical participant flow and composition/u);
   assert.match(visualWorkflow, /Validate critical admin certificate states/u);
