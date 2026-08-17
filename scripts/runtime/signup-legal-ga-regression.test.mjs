@@ -71,11 +71,16 @@ test('provisioning persists the staged legal snapshot without widening generic l
   assert.match(participantExtension, /when 'legal_accept' then[\s\S]*d\.status='published'/u);
 });
 
-test('public terms page renders the governed legal document body', async () => {
-  const termsPage = await read('apps/web/app/termos/page.tsx');
-  assert.match(termsPage, /getPublicSignupLegalDocument\("terms_of_use"/u);
-  assert.match(termsPage, /legalDocument\.body/u);
+test('public terms page renders the governed legal document body through the shared renderer', async () => {
+  const [termsPage, governedDocumentPage] = await Promise.all([
+    read('apps/web/app/termos/page.tsx'),
+    read('apps/web/components/governed-document-page.tsx'),
+  ]);
+  assert.match(termsPage, /GovernedDocumentPage documentType="terms_of_use"/u);
+  assert.match(governedDocumentPage, /getPublicSignupLegalDocument\(documentType, version\)/u);
+  assert.match(governedDocumentPage, /legalDocument\.body/u);
   assert.doesNotMatch(termsPage, /Versão operacional de 29 de julho de 2026/u);
+  assert.doesNotMatch(governedDocumentPage, /Versão operacional de 29 de julho de 2026/u);
 });
 
 test('production CSP admits the GA4 script and collection endpoints without Ads domains', async () => {
