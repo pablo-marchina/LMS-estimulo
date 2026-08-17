@@ -1,6 +1,6 @@
 // Historical Vanessa-video boundary before the diagnostic/journey follow-up:
 // expectedLastMigration = '20260816035500_scope_quick_activity_points_per_assessment.sql'
-export const expectedLastMigration = '20260817031500_journey_completion_certificate_selection.sql';
+export const expectedLastMigration = '20260817033000_preserve_linked_library_lesson_edit.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -108,4 +108,5 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260817014725_reconcile_library_usage_and_archive_event_versioning.sql',
   '20260817030000_journey_completion_certificate_automation.sql',
   '20260817031500_journey_completion_certificate_selection.sql',
+  '20260817033000_preserve_linked_library_lesson_edit.sql',
 ]);
