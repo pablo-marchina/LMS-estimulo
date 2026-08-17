@@ -45,7 +45,7 @@ async function uploadJourneyCover(input: { actor: string; organizationId: string
     const confirmed = await libraryRuntime.confirmUpload({ actorUserAccountId: input.actor, organizationId: input.organizationId, uploadIntentId: intentId, actualContentType: input.file.type, actualSizeBytes: input.file.size, sha256: uploaded.sha256, providerObjectVersion: uploaded.providerObjectVersion, etag: uploaded.etag, metadata: { source: "journey_cover", role: input.role, originalFilename: input.file.name }, idempotencyKey: `${key}:confirm` });
     return confirmed.data.file_object_id;
   } catch (error) {
-    if (intentId) await libraryRuntime.abortUpload(input.actor, input.organizationId, intentId, "JOURNEY_COVER_UPLOAD_FAILED", `${key}:abort`).catch(() => undefined);
+    if (intentId) await libraryRuntime.abortUpload(input.actor, input.organization_id, intentId, "JOURNEY_COVER_UPLOAD_FAILED", `${key}:abort`).catch(() => undefined);
     if (objectCreated && objectKey) await removeLibraryContent(bucket, objectKey).catch(() => undefined);
     throw error;
   }
@@ -98,7 +98,7 @@ export async function saveJourneyAction(formData: FormData) {
       ...previousPresentation,
       featured: checked(formData, "presentation_featured"),
       featured_rank: positiveInteger(text(formData, "presentation_featured_rank")),
-      eyebrow: text(formData, "presentation_eyebrow") || "Jornada Estímulo",
+      eyebrow: text(formData, "presentation_eyebrow"),
       badge: text(formData, "presentation_badge") || "Capacitação Estímulo",
       tone: text(formData, "presentation_tone") || "blue",
       icon: text(formData, "presentation_icon") || "sparkles",
