@@ -30,7 +30,9 @@ fb6c40a65acde8b07faeeda250ce8f55c601a1fb:.github/workflows/reproducibility.yml:g
 # Publishable keys are intentionally client-visible and are not service-role credentials.
 666863bb5be1dbd88362c1c1e823604c7b6ec257:.github/workflows/migrate-lesson-videos.yml:generic-api-key:20
 
-# Historical participant lesson render proof used explicit Supabase example endpoints
+# Historical participant lesson visual proofs used explicit Supabase example endpoints
 # plus documented CI placeholder keys. These are synthetic fixtures, not deployable credentials.
 cd7b0f4883f76e66993e471380d3d88169dcf851:.github/workflows/participant-lesson-render-proof.yml:generic-api-key:24
 cd7b0f4883f76e66993e471380d3d88169dcf851:.github/workflows/participant-lesson-render-proof.yml:generic-api-key:25
+04c32a6a43ec9ccddd4d149fc7fb6d739bd12a71:.github/workflows/participant-lesson-final-proof.yml:generic-api-key:24
+04c32a6a43ec9ccddd4d149fc7fb6d739bd12a71:.github/workflows/participant-lesson-final-proof.yml:generic-api-key:25
