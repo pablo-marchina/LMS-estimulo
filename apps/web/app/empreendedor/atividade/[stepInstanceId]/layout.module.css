@@ -13,21 +13,39 @@
   min-width: 0;
 }
 
-/* O primeiro ativo é o player principal da aula. Na referência ele aparece
-   diretamente no canvas, sem um segundo cabeçalho/cartão envolvendo o vídeo. */
-.activityLayout :global(#conteudo > .brand-media-card:first-child) {
+.activityLayout :global(main),
+.activityLayout :global(main > *),
+.activityLayout :global(main form),
+.activityLayout :global(main article) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A biblioteca de prompts participa da mesma superfície contínua da aula.
+   O componente mantém sua hierarquia interna, mas não cria um segundo cartão. */
+.activityLayout :global(main > #prompts) {
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* O primeiro ativo é o player principal da aula. Ele aparece diretamente
+   dentro da superfície da aula, sem um segundo cabeçalho/cartão envolvendo a mídia. */
+.activityLayout :global(#conteudo > div:last-child > .brand-media-card:first-child) {
   overflow: hidden;
   border: 0 !important;
   border-radius: 0.75rem !important;
   box-shadow: none !important;
 }
 
-.activityLayout :global(#conteudo > .brand-media-card:first-child > :first-child) {
+.activityLayout :global(#conteudo > div:last-child > .brand-media-card:first-child > :first-child) {
   display: none !important;
 }
 
-.activityLayout :global(#conteudo > .brand-media-card:first-child iframe),
-.activityLayout :global(#conteudo > .brand-media-card:first-child video) {
+.activityLayout :global(#conteudo > div:last-child > .brand-media-card:first-child iframe),
+.activityLayout :global(#conteudo > div:last-child > .brand-media-card:first-child video) {
   border-radius: 0.75rem;
 }
 
