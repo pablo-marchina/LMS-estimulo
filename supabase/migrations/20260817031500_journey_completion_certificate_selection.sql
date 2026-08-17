@@ -71,8 +71,8 @@ revoke all on function app_private.validate_journey_completion_certificate_polic
 with certificate_candidates as (
   select
     jv.id as journey_version_id,
-    count(cv.id) as candidate_count,
-    min(cv.id) as single_certificate_version_id
+    count(cd.id) as candidate_count,
+    min(cv.id) filter (where cd.id is not null) as single_certificate_version_id
   from catalog.journey_versions jv
   left join engagement.certificate_versions cv
     on cv.journey_version_id = jv.id
