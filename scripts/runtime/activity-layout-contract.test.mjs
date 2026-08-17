@@ -30,6 +30,21 @@ test("activity route is a continuous lesson workspace", () => {
   assert.doesNotMatch(stylesheet, /#aula:has/u);
 });
 
+test("lesson sections read as one aligned visual surface", () => {
+  assert.match(lesson, /overflow-hidden rounded-\[1\.75rem\] border border-border bg-white shadow-sm/u);
+  assert.match(lesson, /eyebrow="Conteúdo"/u);
+  assert.match(lesson, /eyebrow="Verificação"/u);
+  assert.match(lesson, /eyebrow="Prática"/u);
+  assert.match(lesson, /eyebrow="Finalização"/u);
+  assert.match(lesson, /eyebrow="Discussão"/u);
+  assert.match(lesson, /bg-surface-muted\/45/u);
+  assert.match(lesson, /completionTarget === "conteudo_pendente"/u);
+  assert.match(lesson, /completionTarget === "avaliacao_pendente"/u);
+  assert.match(lesson, /completionTarget === "pratica_pendente"/u);
+  assert.match(stylesheet, /main > #prompts/u);
+  assert.match(stylesheet, /min-width: 0/u);
+});
+
 test("journey never embeds the lesson workspace below its own hero", () => {
   assert.match(journey, /if \(query\.conteudo && selectedActivity\)/u);
   assert.match(journey, /redirect\(`\/empreendedor\/atividade\/\$\{selectedActivity\.step_instance_id\}/u);
