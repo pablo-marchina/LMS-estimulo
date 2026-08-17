@@ -17,8 +17,8 @@ const moderationStatus = z.enum(["visible", "hidden"]);
 const practiceReviewStatus = z.enum(["accepted", "rejected"]);
 const utilityRatingValue = z.coerce.number().int().min(1).max(5);
 
-function inlineActivityHref(journey: string, step: string, query = "", hash = "aula") {
-  return `/empreendedor/jornada/${journey}?conteudo=${step}${query}${hash ? `#${hash}` : ""}`;
+function activityHref(journey: string, step: string, query = "", hash = "") {
+  return `/empreendedor/atividade/${step}?journey=${journey}${query}${hash ? `#${hash}` : ""}`;
 }
 
 async function actorId() {
@@ -69,7 +69,7 @@ export async function submitDiagnosisAction(formData: FormData) {
   await journeyRuntime.completeDiagnostic(actor, sessionId, aggregate, `${baseKey}:complete`);
   const updated = await journeyRuntime.getParticipantExperience(actor, journey);
   const step = updated.state.s?.step_instance_id;
-  redirect(step ? inlineActivityHref(journey, step) : `/empreendedor/resultado?journey=${journey}`);
+  redirect(step ? activityHref(journey, step) : `/empreendedor/resultado?journey=${journey}`);
 }
 
 export async function acknowledgeActivityAction(formData: FormData) {
@@ -95,7 +95,7 @@ export async function acknowledgeActivityAction(formData: FormData) {
       await journeyRuntime.acknowledgeSection(actor, sessionId, section.code, `${baseKey}:section:${section.code}`);
     }
   }
-  redirect(inlineActivityHref(journey, step));
+  redirect(activityHref(journey, step));
 }
 
 export async function createActivityCommentAction(formData: FormData) {
@@ -149,7 +149,7 @@ export async function rateActivityUtilityAction(formData: FormData) {
     rating,
     String(formData.get("idempotency_key") || randomUUID())
   );
-  redirect(inlineActivityHref(journey, step, "&utilidade=registrada", "utilidade"));
+  redirect(activityHref(journey, step, "&utilidade=registrada", "utilidade"));
 }
 
 export async function submitQuickCheckAction(formData: FormData) {
@@ -197,7 +197,7 @@ export async function submitQuickCheckAction(formData: FormData) {
     await credentialRuntime.issue(actor, journey, step, `${baseKey}:credentials`);
     redirect(`/empreendedor/resultado?journey=${journey}&avaliacao=aprovada`);
   }
-  redirect(inlineActivityHref(journey, step, "&avaliacao=reprovada", "avaliacao"));
+  redirect(activityHref(journey, step, "&avaliacao=reprovada", "avaliacao"));
 }
 
 export async function issueLearningCredentialsAction(formData: FormData) {
