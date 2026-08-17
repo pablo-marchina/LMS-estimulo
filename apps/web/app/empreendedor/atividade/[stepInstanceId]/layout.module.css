@@ -41,7 +41,9 @@
 }
 
 .activityLayout :global(#avaliacao .brand-quick-check::before),
-.activityLayout :global(#avaliacao .brand-quick-check::after) {
+.activityLayout :global(#avaliacao .brand-quick-check::after),
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div > p:not(.brand-kicker)::before),
+.activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div > p:not(.brand-kicker)::after) {
   content: none !important;
   display: none !important;
 }
@@ -54,6 +56,10 @@
 
 .activityLayout :global(#avaliacao .brand-quick-check > div:first-child > div > p:not(.brand-kicker)) {
   margin-top: 0 !important;
+  border: 0 !important;
+  padding-left: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* O primeiro ativo é o player principal da aula. Ele aparece diretamente
