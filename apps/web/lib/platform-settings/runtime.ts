@@ -3,6 +3,11 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { publicSupabaseEnv } from "@/lib/env";
+import {
+  DEFAULT_LANDING_PAGE_VERSION,
+  normalizeLandingPageVersion,
+  type LandingPageVersion,
+} from "@/lib/landing-pages/catalog";
 import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
 
 export type PublicPlatformSettings = {
@@ -14,6 +19,7 @@ export type PublicPlatformSettings = {
   institutional_links: Array<{ label?: string; url?: string }>;
   footer_text: string | null;
   community_whatsapp_url: string | null;
+  landing_page_version: LandingPageVersion;
 };
 
 const fallback: PublicPlatformSettings = {
@@ -25,6 +31,7 @@ const fallback: PublicPlatformSettings = {
   institutional_links: [],
   footer_text: null,
   community_whatsapp_url: null,
+  landing_page_version: DEFAULT_LANDING_PAGE_VERSION,
 };
 
 const loadSupabaseSettings = unstable_cache(async (): Promise<PublicPlatformSettings> => {
@@ -43,8 +50,9 @@ const loadSupabaseSettings = unstable_cache(async (): Promise<PublicPlatformSett
     institutional_links: links,
     footer_text: typeof value.footer_text === "string" ? value.footer_text : null,
     community_whatsapp_url: typeof value.community_whatsapp_url === "string" ? value.community_whatsapp_url : null,
+    landing_page_version: normalizeLandingPageVersion(value.landing_page_version),
   };
-}, ["public-platform-settings-v1"], { revalidate: 120, tags: ["public-platform-settings"] });
+}, ["public-platform-settings-v2"], { revalidate: 120, tags: ["public-platform-settings"] });
 
 export async function getPublicPlatformSettings(): Promise<PublicPlatformSettings> {
   if (platformRuntimeProvider() === "aws") return fallback;

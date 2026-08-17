@@ -7,6 +7,7 @@ import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
+import { normalizeLandingPageVersion } from "@/lib/landing-pages/catalog";
 
 function text(formData: FormData, name: string) { return String(formData.get(name) ?? "").trim(); }
 function parseObject(raw: string): JsonRecord {
@@ -49,7 +50,13 @@ export async function savePlatformSettingsAction(formData: FormData) {
   try {
     links = parseLinks(text(formData, "institutional_links"))
       .filter((link) => !link.label.toLocaleLowerCase("pt-BR").includes("comunidade"));
-    metadata = parseObject(text(formData, "metadata"));
+    const parsedMetadata = parseObject(text(formData, "metadata"));
+    metadata = {
+      ...parsedMetadata,
+      landing_page_version: normalizeLandingPageVersion(
+        text(formData, "landing_page_version") || parsedMetadata.landing_page_version,
+      ),
+    };
   } catch (error) {
     redirect(`/admin/configuracoes?erro=${encodeURIComponent(errorCode(error))}`);
   }
@@ -77,6 +84,7 @@ export async function savePlatformSettingsAction(formData: FormData) {
   }
 
   revalidateTag("public-platform-settings", "max");
+  revalidatePath("/");
   revalidatePath("/ajuda");
   revalidatePath("/empreendedor", "layout");
   redirect("/admin/configuracoes?sucesso=platform_settings");
