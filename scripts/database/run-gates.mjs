@@ -75,7 +75,10 @@ const suites = [
   ["identity experience", ["scripts/database/identity-experience/test-identity-experience.sql"]],
   ["authentication hardening", ["scripts/database/auth-hardening/test-permanent-auth-hardening.sql"]],
   ["scanner removal", ["scripts/database/scanner-removal/test-scanner-removal.sql"]],
-  ["admin product management", ["scripts/database/admin-product-management/test-admin-product-management.sql"]],
+  ["admin product management", [
+    "scripts/database/admin-product-management/test-admin-product-management.sql",
+    "scripts/database/admin-product-management/test-linked-library-lesson-patch.sql",
+  ]],
 ];
 
 const suiteFailures = [];
