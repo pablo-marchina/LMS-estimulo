@@ -57,7 +57,10 @@ const suites = [
   ["activity comments", ["scripts/database/activity-comments/test-activity-comments.sql"]],
   ["participant contact details", ["scripts/database/participant-contact-details/test-participant-contact-details.sql"]],
   ["practice uploads", ["scripts/database/practice-uploads/test-practice-uploads.sql"]],
-  ["learning credentials", ["scripts/database/learning-credentials/test-learning-credentials.sql"]],
+  ["learning credentials", [
+    "scripts/database/learning-credentials/test-learning-credentials.sql",
+    "scripts/database/learning-credentials/test-journey-completion-certificate-automation.sql",
+  ]],
   ["content library", ["scripts/database/content-library/test-content-library.sql"]],
   ["RBAC role management", [
     "scripts/database/rbac-role-management/test-rbac-bootstrap.sql",
