@@ -30,7 +30,8 @@ test("lesson consumes one continuous centered content area without a permanent s
   assert.doesNotMatch(layoutCss, /18rem/u);
   assert.doesNotMatch(layoutCss, /position: sticky/u);
   assert.doesNotMatch(layoutCss, /#aula:has/u);
-  assert.match(journey, /<section id="aula" className="scroll-mt-20"/u);
+  assert.match(journey, /<section id="aula" data-journey-lesson className="min-w-0 scroll-mt-20"/u);
+  assert.match(journey, /data-journey-outline-page[\s\S]*?grid-cols-1/u);
   assert.doesNotMatch(journey, />Conteúdo aberto<\/p>/u);
   assert.doesNotMatch(journey, /Fechar conteúdo/u);
 });
