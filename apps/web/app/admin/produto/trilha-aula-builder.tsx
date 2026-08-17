@@ -83,6 +83,8 @@ function AulaForm({ journeyVersionId, organizationId, pathTemplateId, libraryIte
 }
 
 export function TrilhaAulaBuilder({ journeyVersionId, organizationId, trilha, libraryItems }: TrilhaAulaBuilderProps) {
+  if (trilha.status === "retired") return null;
+
   const aulas = trilha.aulas.slice().sort((a, b) => a.position - b.position);
   return <article className="grid gap-4 rounded-2xl border border-border bg-surface p-4"><header><h4 className="font-black text-secondary">Aulas de {trilha.name}</h4><p className="text-sm text-muted">Abra somente a aula que deseja alterar.</p></header><section className="grid gap-3">{aulas.map((aula) => <details key={aula.step_id} className="rounded-2xl border border-border bg-white"><summary className="cursor-pointer list-none px-4 py-3 [&::-webkit-details-marker]:hidden"><div className="flex flex-wrap items-start justify-between gap-2"><div><strong className="text-sm text-ink">{aula.position}. {aula.title}</strong><p className="text-xs text-muted">{aulaSummary(aula)}</p></div><span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-bold text-primary">Editar</span></div></summary><AulaForm journeyVersionId={journeyVersionId} organizationId={organizationId} pathTemplateId={trilha.id} libraryItems={libraryItems} aula={aula} position={aula.position} /></details>)}</section><details className="rounded-2xl border border-primary/20 bg-white" open={aulas.length === 0}><summary className="cursor-pointer px-4 py-3 text-sm font-black text-primary">Adicionar aula</summary><AulaForm journeyVersionId={journeyVersionId} organizationId={organizationId} pathTemplateId={trilha.id} libraryItems={libraryItems} position={aulas.length + 1} /></details></article>;
 }
