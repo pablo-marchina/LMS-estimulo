@@ -87,30 +87,44 @@ with certificate_candidates as (
    and cd.status = 'active'
   where jv.status in ('draft', 'published')
   group by jv.id
+), completion_policies as (
+  select
+    jv.id as journey_version_id,
+    jsonb_set(
+      coalesce(jv.configuration, '{}'::jsonb),
+      '{completion_certificate}',
+      jsonb_build_object(
+        'enabled', candidates.candidate_count = 1,
+        'certificate_version_id', case
+          when candidates.candidate_count = 1 then candidates.single_certificate_version_id
+          else null
+        end,
+        'trigger_event', 'journey.instance.completed',
+        'data_fields', jsonb_build_array(
+          'participant_name',
+          'journey_title',
+          'issued_at',
+          'verification_code'
+        )
+      ),
+      true
+    ) as next_configuration
+  from catalog.journey_versions jv
+  join certificate_candidates candidates
+    on candidates.journey_version_id = jv.id
+  where not (coalesce(jv.configuration, '{}'::jsonb) ? 'completion_certificate')
 )
 update catalog.journey_versions jv
-set configuration = jsonb_set(
-  coalesce(jv.configuration, '{}'::jsonb),
-  '{completion_certificate}',
-  jsonb_build_object(
-    'enabled', candidates.candidate_count = 1,
-    'certificate_version_id', case
-      when candidates.candidate_count = 1 then candidates.single_certificate_version_id
-      else null
-    end,
-    'trigger_event', 'journey.instance.completed',
-    'data_fields', jsonb_build_array(
-      'participant_name',
-      'journey_title',
-      'issued_at',
-      'verification_code'
-    )
-  ),
-  true
-)
-from certificate_candidates candidates
-where candidates.journey_version_id = jv.id
-  and not (coalesce(jv.configuration, '{}'::jsonb) ? 'completion_certificate');
+set
+  configuration = policies.next_configuration,
+  content_hash = app_private.e14_request_hash(jsonb_build_object(
+    'title', jv.title,
+    'description', jv.description,
+    'configuration', policies.next_configuration,
+    'eligible_archetype_codes', to_jsonb(coalesce(jv.eligible_archetype_codes, array[]::text[]))
+  ))
+from completion_policies policies
+where policies.journey_version_id = jv.id;
 
 select set_config('app.admin_live_edit', 'off', true);
 
