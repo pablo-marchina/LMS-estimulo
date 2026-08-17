@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { getAuthContext } from "@/lib/auth/context";
+import { JourneyBannerLabelField } from "./journey-banner-label-field";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +18,5 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (!administrativeOrganization(auth.identity)) {
     redirect("/entrar/administracao?erro=permissao_necessaria");
   }
-  return children;
+  return <><JourneyBannerLabelField />{children}</>;
 }

@@ -51,9 +51,10 @@ const activityLabels: Record<string, string> = {
 };
 
 function participantEyebrow(value: unknown) {
-  if (typeof value !== "string" || !value.trim()) return "Sua jornada";
+  if (typeof value !== "string" || !value.trim()) return null;
+  const normalized = value.trim();
   const forbidden = ["jornada", "em", "destaque"].join(" ");
-  return value.trim().toLocaleLowerCase("pt-BR") === forbidden ? "Sua jornada" : value.trim();
+  return normalized.toLocaleLowerCase("pt-BR") === forbidden ? "Sua jornada" : normalized;
 }
 
 function activityIcon(activityType: string) {
@@ -78,27 +79,26 @@ function Hero({ outline }: { outline: ParticipantJourneyOutline }) {
   const tags = Array.isArray(presentation.tags) ? presentation.tags.filter((tag): tag is string => typeof tag === "string" && Boolean(tag.trim())) : [];
   const tone = typeof presentation.tone === "string" ? presentation.tone : "blue";
   const cover = coverHref(outline);
+  const eyebrow = participantEyebrow(presentation.eyebrow);
   const overallPercent = Math.round(outline.progress * 100);
 
   return (
-    <header className={`relative overflow-hidden rounded-[2rem] p-6 text-white shadow-lg sm:p-9 ${heroToneClasses[tone] ?? heroToneClasses.blue}`}>
+    <header className={`relative min-h-[21rem] overflow-hidden rounded-[2rem] p-6 text-white shadow-lg sm:p-9 ${heroToneClasses[tone] ?? heroToneClasses.blue}`}>
       {cover ? (
         <>
-          <img src={cover} alt={typeof presentation.featured_background_alt === "string" ? presentation.featured_background_alt : ""} className="absolute inset-0 size-full object-cover" />
-          <div className="absolute inset-0 bg-primary/80" aria-hidden="true" />
+          <img src={cover} alt={typeof presentation.featured_background_alt === "string" ? presentation.featured_background_alt : ""} loading="eager" fetchPriority="high" decoding="async" className="absolute inset-0 size-full object-cover object-center" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-black/10 max-sm:bg-black/45" aria-hidden="true" />
         </>
       ) : <div className="brand-dots-bg absolute inset-0 opacity-70" aria-hidden="true" />}
-      <div className="relative z-10 grid gap-8 lg:grid-cols-[1fr_18rem] lg:items-end">
+      <div className="relative z-10 grid min-h-[17rem] gap-8 lg:grid-cols-[1fr_18rem] lg:items-end">
         <div className="max-w-3xl">
-          <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white">
-            <Sparkles size={14} aria-hidden="true" /> {participantEyebrow(presentation.eyebrow)}
-          </p>
-          <h1 className="display-font mt-5 text-3xl text-white sm:text-5xl">{outline.journey_title}</h1>
-          {outline.journey_description ? <p className="mt-4 max-w-2xl text-sm leading-7 text-white/90 sm:text-base">{outline.journey_description}</p> : null}
-          {tags.length ? <div className="mt-6 flex flex-wrap gap-2">{tags.map((tag) => <span key={tag} className="rounded-full border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">{tag}</span>)}</div> : null}
+          {eyebrow ? <p className="inline-flex items-center gap-2 rounded-full bg-black/25 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={14} aria-hidden="true" /> {eyebrow}</p> : null}
+          <h1 className={`display-font text-3xl text-white sm:text-5xl ${eyebrow ? "mt-5" : ""}`}>{outline.journey_title}</h1>
+          {outline.journey_description ? <p className="mt-4 max-w-2xl text-sm leading-7 text-white/95 sm:text-base">{outline.journey_description}</p> : null}
+          {tags.length ? <div className="mt-6 flex flex-wrap gap-2">{tags.map((tag) => <span key={tag} className="rounded-full border border-white/30 bg-black/20 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">{tag}</span>)}</div> : null}
         </div>
-        <section className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur-sm" aria-label="Seu progresso nesta jornada">
-          <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.12em] text-white/75">Seu progresso</p><p className="mt-1 text-sm text-white/90">{outline.completed_required_steps} de {outline.total_required_steps} conteúdos</p></div><strong className="text-3xl text-white">{overallPercent}%</strong></div>
+        <section className="rounded-2xl border border-white/25 bg-black/25 p-5 backdrop-blur-sm" aria-label="Seu progresso nesta jornada">
+          <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.12em] text-white/80">Seu progresso</p><p className="mt-1 text-sm text-white/95">{outline.completed_required_steps} de {outline.total_required_steps} conteúdos</p></div><strong className="text-3xl text-white">{overallPercent}%</strong></div>
           <Progress value={overallPercent} tone="success" className="mt-4 bg-white/25" />
         </section>
       </div>

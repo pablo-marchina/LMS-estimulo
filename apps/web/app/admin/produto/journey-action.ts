@@ -98,7 +98,7 @@ export async function saveJourneyAction(formData: FormData) {
       ...previousPresentation,
       featured: checked(formData, "presentation_featured"),
       featured_rank: positiveInteger(text(formData, "presentation_featured_rank")),
-      eyebrow: text(formData, "presentation_eyebrow") || "Jornada Estímulo",
+      eyebrow: text(formData, "presentation_eyebrow"),
       badge: text(formData, "presentation_badge") || "Capacitação Estímulo",
       tone: text(formData, "presentation_tone") || "blue",
       icon: text(formData, "presentation_icon") || "sparkles",
