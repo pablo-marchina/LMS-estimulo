@@ -1,8 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { BookOpen, CheckCircle2, ChevronDown, Clock3, FileText, Headphones, PlayCircle, Route, Sparkles, Wrench } from "lucide-react";
-import ActivityPage from "@/app/empreendedor/atividade/[stepInstanceId]/page";
-import { ActivityWorkspaceFrame } from "@/components/activity-workspace-frame";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -134,12 +132,23 @@ export default async function JourneyOutlinePage({
   } catch {
     notFound();
   }
-  const interfaceContent = await getPublishedInterfaceContent().catch(() => ({}));
-  const firstIncompleteModuleIndex = outline.modules.findIndex((module) => module.completed_count < module.activity_count);
-  const initiallyOpenModuleIndex = firstIncompleteModuleIndex >= 0 ? firstIncompleteModuleIndex : 0;
+
   const selectedActivity = query.conteudo
     ? outline.modules.flatMap((module) => module.activities).find((activity) => activity.step_instance_id === query.conteudo && (activity.step_status === "completed" || activity.can_open || activity.can_start)) ?? null
     : null;
+
+  if (query.conteudo && selectedActivity) {
+    const activityQuery = new URLSearchParams({ journey: journeyInstanceId });
+    for (const key of ["comentario", "pratica", "codigo", "avaliacao", "utilidade", "conclusao"] as const) {
+      const value = query[key];
+      if (value) activityQuery.set(key, value);
+    }
+    redirect(`/empreendedor/atividade/${selectedActivity.step_instance_id}?${activityQuery.toString()}`);
+  }
+
+  const interfaceContent = await getPublishedInterfaceContent().catch(() => ({}));
+  const firstIncompleteModuleIndex = outline.modules.findIndex((module) => module.completed_count < module.activity_count);
+  const initiallyOpenModuleIndex = firstIncompleteModuleIndex >= 0 ? firstIncompleteModuleIndex : 0;
 
   return (
     <div className="mx-auto grid max-w-6xl gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
@@ -215,25 +224,6 @@ export default async function JourneyOutlinePage({
       ) : (
         <EmptyState icon={<Route size={24} />} title={interfaceText(interfaceContent, "participant.journey.empty_title", "Conteúdos em preparação")} tone="info">{interfaceText(interfaceContent, "participant.journey.empty_body", "A equipe ainda está organizando os conteúdos desta jornada.")}</EmptyState>
       )}
-
-      {selectedActivity ? (
-        <section id="aula" className="scroll-mt-20" aria-label={`Conteúdo aberto: ${selectedActivity.activity_title}`}>
-          <ActivityWorkspaceFrame>
-            <ActivityPage
-              params={Promise.resolve({ stepInstanceId: selectedActivity.step_instance_id })}
-              searchParams={Promise.resolve({
-                journey: journeyInstanceId,
-                comentario: query.comentario,
-                pratica: query.pratica,
-                codigo: query.codigo,
-                avaliacao: query.avaliacao,
-                utilidade: query.utilidade,
-                conclusao: query.conclusao,
-              })}
-            />
-          </ActivityWorkspaceFrame>
-        </section>
-      ) : null}
     </div>
   );
 }

@@ -63,16 +63,17 @@ test("signup legal restoration is governed, replay-safe and fail-closed", () => 
   assert.match(legalMigration, /false/u);
 });
 
-test("all lessons are open by database invariant and journey renders selected lesson inline", () => {
+test("all lessons are open by database invariant and participant CTAs use the dedicated lesson route", () => {
   assert.match(openLessonsMigration, /before insert or update of status on orchestration\.step_instances/u);
   assert.match(openLessonsMigration, /if new\.status = 'locked'/u);
   assert.match(openLessonsMigration, /new\.status := 'available'/u);
   assert.match(completeRemediationMigration, /open_all_paths/u);
   assert.match(completeRemediationMigration, /ensure_participant_open_paths/u);
-  assert.match(journeyActions, /redirect\(`\/empreendedor\/jornada\/\$\{journeyInstanceId\}\?conteudo=\$\{stepInstanceId\}#aula`\)/u);
-  assert.match(journeyPage, /<ActivityWorkspaceFrame>/u);
-  assert.match(journeyPage, /<ActivityPage/u);
-  assert.match(journeyPage, /id="aula"/u);
+  assert.match(journeyActions, /redirect\(`\/empreendedor\/atividade\/\$\{stepInstanceId\}\?journey=\$\{journeyInstanceId\}`\)/u);
+  assert.match(journeyPage, /redirect\(`\/empreendedor\/atividade\/\$\{selectedActivity\.step_instance_id\}/u);
+  assert.doesNotMatch(journeyPage, /<ActivityWorkspaceFrame>/u);
+  assert.doesNotMatch(journeyPage, /<ActivityPage/u);
+  assert.doesNotMatch(journeyPage, /id="aula"/u);
 });
 
 test("external certificate form stays behind the explicit participant CTA", () => {

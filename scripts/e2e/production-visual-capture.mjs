@@ -25,6 +25,7 @@ const outputDir = path.resolve("artifacts/e2e-visual");
 await mkdir(outputDir, { recursive: true });
 
 const viewports = [
+  { key: "wide", width: 1695, height: 895 },
   { key: "desktop", width: 1440, height: 1000 },
   { key: "mobile", width: 390, height: 844 },
 ];
@@ -87,7 +88,7 @@ const dynamicRouteTemplates = {
 const uuidQueryValue = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const manifest = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   startedAt: new Date().toISOString(),
   targetUrl,
   referenceUrl: referenceUrl || null,
@@ -216,13 +217,20 @@ async function capturePage({ page, role, viewport, requestedUrl, filePath }) {
   const title = await page.title().catch(() => "");
   const headings = await page.locator("h1, h2").allInnerTexts().catch(() => []);
   const layout = await page
-    .evaluate(() => ({
-      documentWidth: document.documentElement.scrollWidth,
-      documentHeight: document.documentElement.scrollHeight,
-      viewportWidth: document.documentElement.clientWidth,
-      viewportHeight: document.documentElement.clientHeight,
-      horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
-    }))
+    .evaluate(() => {
+      const primaryHeading = document.querySelector("h1");
+      const headingRect = primaryHeading?.getBoundingClientRect() ?? null;
+      return {
+        documentWidth: document.documentElement.scrollWidth,
+        documentHeight: document.documentElement.scrollHeight,
+        viewportWidth: document.documentElement.clientWidth,
+        viewportHeight: document.documentElement.clientHeight,
+        horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
+        primaryHeading: headingRect
+          ? { top: headingRect.top, left: headingRect.left, right: headingRect.right, width: headingRect.width, height: headingRect.height }
+          : null,
+      };
+    })
     .catch(() => null);
 
   await mkdir(path.dirname(filePath), { recursive: true });
@@ -267,6 +275,14 @@ async function capturePage({ page, role, viewport, requestedUrl, filePath }) {
   }
   if (authenticatedRole && /Conteúdo não encontrado/i.test(bodyText)) {
     manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: rendered semantic not-found state`);
+  }
+  if (authenticatedRole && layout?.primaryHeading) {
+    if (layout.primaryHeading.top > layout.viewportHeight * 0.65) {
+      manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: primary heading starts below 65% of the first viewport`);
+    }
+    if (layout.primaryHeading.left < -2 || layout.primaryHeading.right > layout.viewportWidth + 2) {
+      manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: primary heading is clipped horizontally`);
+    }
   }
   if (screenshotError) manifest.failures.push(`${role} ${viewport.key} ${requestedUrl}: screenshot failed: ${screenshotError}`);
   if (layout?.horizontalOverflow) manifest.warnings.push(`${role} ${viewport.key} ${requestedUrl}: horizontal overflow detected`);

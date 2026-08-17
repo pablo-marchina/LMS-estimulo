@@ -23,16 +23,17 @@ test("lesson consumes one continuous centered content area without a permanent s
     read("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx"),
   ]);
   assert.match(shell, /pathname\.startsWith\("\/empreendedor\/atividade\/"\)/);
-  assert.match(shell, /max-w-none \[&>div\]:max-w-none/);
+  assert.match(shell, /wideLesson \? "w-full min-w-0"/);
+  assert.doesNotMatch(shell, /\[&>div\]:max-w-none/);
   assert.match(lesson, /max-w-\[1100px\]/u);
   assert.doesNotMatch(lesson, /ActivityContentProgress/u);
   assert.doesNotMatch(lesson, /300px/u);
   assert.doesNotMatch(layoutCss, /18rem/u);
   assert.doesNotMatch(layoutCss, /position: sticky/u);
   assert.doesNotMatch(layoutCss, /#aula:has/u);
-  assert.match(journey, /<section id="aula" className="scroll-mt-20"/u);
-  assert.doesNotMatch(journey, />Conteúdo aberto<\/p>/u);
-  assert.doesNotMatch(journey, /Fechar conteúdo/u);
+  assert.match(journey, /redirect\(`\/empreendedor\/atividade\/\$\{selectedActivity\.step_instance_id\}/u);
+  assert.doesNotMatch(journey, /<section id="aula"/u);
+  assert.doesNotMatch(journey, /ActivityWorkspaceFrame/u);
 });
 
 test("admin extension saves do not catch successful Next redirects", async () => {
