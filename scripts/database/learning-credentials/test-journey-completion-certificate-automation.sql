@@ -78,9 +78,48 @@ select
 from journey_completion_automation_context
 on conflict (certificate_definition_id, version_number) do nothing;
 
+-- The journey is the explicit source of the completion-certificate choice. The
+-- validation trigger guarantees that an enabled policy references a published
+-- certificate that actually belongs to this journey.
+update catalog.journey_versions jv
+set configuration = jsonb_set(
+  coalesce(jv.configuration, '{}'::jsonb),
+  '{completion_certificate}',
+  jsonb_build_object(
+    'enabled', true,
+    'certificate_version_id', c.certificate_version_id,
+    'trigger_event', 'journey.instance.completed',
+    'data_fields', jsonb_build_array(
+      'participant_name',
+      'journey_title',
+      'issued_at',
+      'verification_code'
+    )
+  ),
+  true
+)
+from journey_completion_automation_context c
+where jv.id = c.journey_version_id;
+
+do $$
+declare
+  c journey_completion_automation_context%rowtype;
+begin
+  select * into c from journey_completion_automation_context;
+  if not exists (
+    select 1
+    from catalog.journey_versions jv
+    where jv.id = c.journey_version_id
+      and (jv.configuration->'completion_certificate'->>'enabled')::boolean is true
+      and jv.configuration->'completion_certificate'->>'certificate_version_id' = c.certificate_version_id::text
+  ) then
+    raise exception 'journey completion certificate selection was not persisted';
+  end if;
+end $$;
+
 -- Re-open the already-proven fixture only inside this disposable replay database,
 -- then complete it again with a new aggregate version. The state transition must
--- emit journey.instance.completed and the event consumer must issue the new
+-- emit journey.instance.completed and the event consumer must issue the selected
 -- certificate without an explicit application call to issue_learning_credentials.
 update orchestration.journey_instances ji
 set
@@ -136,7 +175,7 @@ begin
     where ci.journey_instance_id = r.journey_instance_id
       and ci.certificate_version_id = r.certificate_version_id
   ) <> 1 then
-    raise exception 'journey completion did not issue exactly one automatic certificate';
+    raise exception 'journey completion did not issue exactly one selected automatic certificate';
   end if;
 end $$;
 
