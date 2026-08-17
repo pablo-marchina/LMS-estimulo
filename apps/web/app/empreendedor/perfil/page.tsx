@@ -29,7 +29,7 @@ export default async function ParticipantProfilePage() {
 
     <section className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
       <Card className="brand-accent-card after:!hidden"><div className="flex items-center gap-4"><div className="grid size-14 place-items-center rounded-full bg-brand-green text-secondary shadow-md"><UserRound size={26} /></div><div><h2 className="font-bold text-ink">{preferredName}</h2><p className="text-sm text-muted">Empreendedor(a)</p></div></div><dl className="mt-6 grid gap-4 text-sm"><div className="flex gap-3"><Mail size={17} className="mt-0.5 shrink-0 text-primary" /><div><dt className="font-medium text-muted">E-mail</dt><dd className="text-ink">{auth.email}</dd></div></div></dl></Card>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3"><Metric icon={<Star size={20} />} value={points} label="Pontos" tone="cyan" /><Metric icon={<Compass size={20} />} value={completedJourneyCount} label={completedJourneyCount === 1 ? "Jornada concluída" : "Jornadas concluídas"} tone="green" /><Metric icon={<Trophy size={20} />} value={credentialCount} label={credentialCount === 1 ? "Conquista" : "Conquistas"} href="/empreendedor/conquistas" tone="magenta" /></div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3"><Metric icon={<Star size={20} />} value={points} label="Pontos acumulados" tone="cyan" /><Metric icon={<Compass size={20} />} value={completedJourneyCount} label={completedJourneyCount === 1 ? "Jornada concluída" : "Jornadas concluídas"} tone="green" /><Metric icon={<Trophy size={20} />} value={credentialCount} label={credentialCount === 1 ? "Conquista" : "Conquistas"} href="/empreendedor/conquistas" tone="magenta" /></div>
     </section>
   </div>;
 }
