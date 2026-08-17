@@ -112,7 +112,7 @@ test("administrative destructive actions are dependency-safe", async () => {
 });
 
 test("gateway, actionable help, legal and admin recovery contracts are versioned", async () => {
-  const [gateway, layout, usersAction, usersPage, accessPolicy, help, environment, terms, legalDocuments, pointEditor] = await Promise.all([
+  const [gateway, layout, usersAction, usersPage, accessPolicy, help, environment, terms, legalDocuments, governedDocument, pointEditor] = await Promise.all([
     source("supabase/functions/authenticated-rpc/index.ts"),
     source("apps/web/app/layout.tsx"),
     source("apps/web/app/admin/usuarios/actions.ts"),
@@ -122,6 +122,7 @@ test("gateway, actionable help, legal and admin recovery contracts are versioned
     source(".env.example"),
     source("apps/web/app/termos/page.tsx"),
     source("apps/web/app/documentos/[tipo]/page.tsx"),
+    source("apps/web/components/governed-document-page.tsx"),
     source("apps/web/app/admin/gamificacao/point-rule-editor.tsx"),
   ]);
 
@@ -149,8 +150,9 @@ test("gateway, actionable help, legal and admin recovery contracts are versioned
   assert.doesNotMatch(usersAction, /@estimulo\.org/u);
   assert.match(usersPage, /E-mail, papel, status ou ID/u);
   assert.match(accessPolicy, /usesCorporateGoogleIdentity/u);
-  assert.match(terms, /getPublicSignupLegalDocument\("terms_of_use"/u);
-  assert.match(terms, /legalDocument\.body/u);
+  assert.match(terms, /GovernedDocumentPage documentType="terms_of_use"/u);
+  assert.match(governedDocument, /getPublicSignupLegalDocument\(documentType, version\)/u);
+  assert.match(governedDocument, /legalDocument\.body/u);
   assert.match(legalDocuments, /privacy_policy/u);
   assert.match(legalDocuments, /GovernedDocumentPage/u);
   assert.match(pointEditor, /diagnostic\.session\.completed/u);

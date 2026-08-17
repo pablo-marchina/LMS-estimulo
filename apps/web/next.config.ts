@@ -54,15 +54,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "9mb",
     },
   },
-  async redirects() {
-    return [
-      {
-        source: "/privacidade",
-        destination: "/documentos/privacidade",
-        permanent: true,
-      },
-    ];
-  },
   async headers() {
     return [
       {

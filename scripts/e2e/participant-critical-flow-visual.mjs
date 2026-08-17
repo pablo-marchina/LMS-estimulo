@@ -54,10 +54,24 @@ async function openEnrolledJourney(page) {
   }
 
   const link = page.locator('a[href^="/empreendedor/jornada/"]').first();
-  if (!(await link.count())) throw new Error("no enrolled journey CTA found");
-  await link.click();
-  await page.waitForURL((url) => /^\/empreendedor\/jornada\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
-  await settle(page);
+  if (await link.count()) {
+    await link.click();
+    await page.waitForURL((url) => /^\/empreendedor\/jornada\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
+    await settle(page);
+    return;
+  }
+
+  const eligibleForms = page.locator('form:has(input[name="journey_version_id"])');
+  if (await eligibleForms.count()) {
+    const eligibleButton = eligibleForms.first().locator('button[type="submit"]');
+    if (!(await eligibleButton.count()) || await eligibleButton.isDisabled()) throw new Error("eligible journey CTA is unavailable");
+    await eligibleButton.click();
+    await page.waitForURL((url) => /^\/empreendedor\/jornada\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
+    await settle(page);
+    return;
+  }
+
+  throw new Error("no enrolled or eligible journey CTA found");
 }
 
 async function openActivityThroughRealForm(page) {
