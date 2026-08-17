@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [openActivityAction, journeyPage, participantShell, activityPage, criticalVisual, productionVisual, visualWorkflow] = await Promise.all([
+const [openActivityAction, journeyActions, journeyPage, participantShell, activityPage, criticalVisual, productionVisual, visualWorkflow] = await Promise.all([
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts", "utf8"),
+  readFile("apps/web/app/actions/journey.ts", "utf8"),
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/components/participant-shell.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
@@ -15,6 +16,15 @@ const [openActivityAction, journeyPage, participantShell, activityPage, critical
 test("real journey CTAs open the dedicated lesson route", () => {
   assert.match(openActivityAction, /redirect\(`\/empreendedor\/atividade\/\$\{stepInstanceId\}\?journey=\$\{journeyInstanceId\}`\)/u);
   assert.doesNotMatch(openActivityAction, /\?conteudo=\$\{stepInstanceId\}/u);
+});
+
+test("all lesson interaction redirects stay on the dedicated activity route", () => {
+  assert.match(journeyActions, /function activityHref/u);
+  assert.match(journeyActions, /`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}\$\{query\}/u);
+  assert.match(journeyActions, /utilidade=registrada/u);
+  assert.match(journeyActions, /avaliacao=reprovada/u);
+  assert.doesNotMatch(journeyActions, /inlineActivityHref/u);
+  assert.doesNotMatch(journeyActions, /\/empreendedor\/jornada\/\$\{journey\}\?conteudo=/u);
 });
 
 test("legacy inline lesson URLs redirect instead of composing journey and lesson screens", () => {
