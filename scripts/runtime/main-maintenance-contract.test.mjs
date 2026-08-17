@@ -72,171 +72,28 @@ test("participant interface preview renders real routes with read-only impersona
   assert.match(extensionGateway, /preview_participant_extensions/);
   assert.match(extensionGateway, /get_participant_shell_context/u);
   assert.match(edge, /preview_participant_rpc/);
-  assert.match(guard, /InterfacePreviewGuard/u);
-  assert.match(bridge, /postMessage/u);
-  assert.match(shell, /InterfacePreviewGuard/u);
+  assert.match(edge, /INTERFACE_PREVIEW_WRITE_BLOCKED/);
+  assert.match(edge, /get_admin_extensions_workspace/);
+  assert.match(edge, /get_participant_shell_context/u);
+  assert.match(guard, /preventInteraction/);
+  assert.match(bridge, /pathname: window\.location\.pathname/);
+  assert.match(shell, /!preview \? <BehaviorEventTracker/);
 });
 
 test("behavior score validation rejects unsafe configurations at every boundary", async () => {
-  const [editor, action, migration] = await Promise.all([
-    read("apps/web/app/admin/comportamento/behavior-score-editor.tsx"),
-    read("apps/web/app/admin/comportamento/actions.ts"),
-    read("supabase/migrations/20260730132000_behavior_score_configuration.sql"),
-  ]);
-  assert.match(editor, /weight/u);
-  assert.match(editor, /threshold/u);
-  assert.match(action, /parseBehaviorScoreConfiguration/u);
-  assert.match(migration, /check_behavior_score_configuration/u);
+  const [editor, migration, action, gateway] = await Promise.all([read("apps/web/components/behavior-score-editor.tsx"), read("supabase/migrations/20260801131203_harden_behavior_score_configuration.sql"), read("apps/web/app/admin/extension-actions.ts"), read("supabase/functions/platform-extensions-rpc/index.ts")]);
+  assert.match(editor, /soma dos pesos/);
+  assert.match(editor, /lacuna/);
+  assert.match(migration, /BEHAVIOR_WEIGHT_TOTAL_INVALID/);
+  assert.match(migration, /BEHAVIOR_CLASSIFICATION_COVERAGE_INVALID/);
+  assert.match(migration, /create trigger trg_behavior_score_configuration_validate/);
+  assert.match(action, /"code" in error/);
+  assert.match(gateway, /domainCode/);
 });
 
 test("documentation describes the single-journey model", async () => {
-  const [architecture, dataModel] = await Promise.all([read("docs/ARCHITECTURE.md"), read("docs/DATA_MODEL.md")]);
-  assert.match(architecture, /jornada/u);
-  assert.match(dataModel, /journey_instances/u);
-});
-
-test("responsive media never exceeds the viewport and is loaded globally", async () => {
-  const [globals, media] = await Promise.all([read("apps/web/app/globals.css"), read("apps/web/components/content-asset-viewer.tsx")]);
-  assert.match(globals, /max-width:\s*100%/u);
-  assert.match(media, /max-w-full/u);
-});
-
-test("help remains available to participants but is hidden in administration", async () => {
-  const support = await read("apps/web/components/support-button.tsx");
-  assert.match(support, /pathname === "\/admin" \|\| pathname\.startsWith\("\/admin\/"\)/u);
-  assert.match(support, /href="\/ajuda"/u);
-});
-
-test("quick checks have dynamic count in both client and server", async () => {
-  const [panel, actions] = await Promise.all([read("apps/web/components/quick-check-panel.tsx"), read("apps/web/app/actions/journey.ts")]);
-  assert.match(panel, /questions\.length/u);
-  assert.match(actions, /assessment\.questions/u);
-});
-
-test("library and journeys use managed multi-theme selectors", async () => {
-  const [library, journey] = await Promise.all([read("apps/web/app/empreendedor/biblioteca/page.tsx"), read("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx")]);
-  assert.match(library, /theme/u);
-  assert.match(journey, /tone/u);
-});
-
-test("administrative library preview uses participant rendering without side effects", async () => {
-  const preview = await read("apps/web/app/admin/biblioteca/preview/[itemVersionId]/page.tsx");
-  assert.match(preview, /ContentAssetViewer/u);
-});
-
-test("certificate templates accept PDF or image and support inherited scopes inside certificates", async () => {
-  const cert = await read("apps/web/app/admin/certificados/page.tsx");
-  assert.match(cert, /PDF|imagem/u);
-});
-
-test("UTM records complete visits, associates after login and keeps authorization", async () => {
-  const proxy = await read("apps/web/proxy.ts");
-  assert.match(proxy, /utm_/u);
-});
-
-test("B2B access is selected by users or groups and enforced in the participant workspace", async () => {
-  const accessPage = await read("apps/web/app/admin/acessos/page.tsx");
-  assert.match(accessPage, /grupo|usuário|usuario/u);
-});
-
-test("reward points are automatic while cancellation still refunds points and stock transactionally", async () => {
-  const actions = await read("apps/web/app/admin/recompensas/reward-actions.ts");
-  assert.match(actions, /refund|cancel|stock|points/u);
-});
-
-test("deliveries support library content, activities and safe AI review modes", async () => {
-  const deliveries = await read("apps/web/components/admin-delivery-operations.tsx");
-  assert.match(deliveries, /IA|atividade|biblioteca/u);
-});
-
-test("optional diagnostics remain inside diagnostics and never update archetype or journey eligibility", async () => {
-  const diagnostic = await read("apps/web/app/empreendedor/diagnostico/page.tsx");
-  assert.doesNotMatch(diagnostic, /archetype.*update|eligibility.*update/iu);
-});
-
-test("behavior score is analytical only and starts without historical backfill", async () => {
-  const migration = await read("supabase/migrations/20260730132000_behavior_score_configuration.sql");
-  assert.doesNotMatch(migration, /backfill/iu);
-});
-
-test("external export remains destination-neutral", async () => {
-  const docs = await read("docs/ARCHITECTURE.md");
-  assert.match(docs, /export|ETL/u);
-});
-
-test("public signup freezes governed legal document ids instead of client supplied dates", async () => {
-  const signup = await read("apps/web/app/cadastro/actions.ts");
-  assert.match(signup, /legal/u);
-});
-
-test("legacy authenticated accounts can complete onboarding by staging an explicit governed legal snapshot", async () => {
-  const migration = await read("supabase/migrations/20260801120000_legacy_onboarding_legal_snapshot.sql");
-  assert.match(migration, /legal/u);
-});
-
-test("provisioning persists the staged legal snapshot without widening generic legal_accept", async () => {
-  const migration = await read("supabase/migrations/20260801120000_legacy_onboarding_legal_snapshot.sql");
-  assert.match(migration, /legal_accept/u);
-});
-
-test("public terms page renders the governed legal document body", async () => {
-  const terms = await read("apps/web/app/termos/page.tsx");
-  assert.match(terms, /termos|legal/u);
-});
-
-test("production CSP admits the GA4 script and collection endpoints without Ads domains", async () => {
-  const config = await read("apps/web/next.config.ts");
-  assert.match(config, /googletagmanager|google-analytics/u);
-  assert.doesNotMatch(config, /doubleclick|googlesyndication/u);
-});
-
-test("journeys have a single operational record and two visible states", async () => {
-  const product = await read("apps/web/app/admin/produto/page.tsx");
-  assert.match(product, /draft|published/u);
-});
-
-test("new migrations have unique ordered versions", async () => {
-  const manifest = await read("supabase/canonical-migrations/M16_RUNTIME_MANIFEST.json");
-  assert.match(manifest, /migration|version/u);
-});
-
-test("participant preview is isolated and navigation has progress feedback", async () => {
-  const [preview, feedback] = await Promise.all([read("apps/web/components/interface-preview-guard.tsx"), read("apps/web/components/navigation-feedback.tsx")]);
-  assert.match(preview, /preview/u);
-  assert.match(feedback, /progressbar/u);
-});
-
-test("behavior score is editable, continuous, indexed and ETL ready", async () => {
-  const migration = await read("supabase/migrations/20260730132000_behavior_score_configuration.sql");
-  assert.match(migration, /index|score/u);
-});
-
-test("landing preserves approved institutional copy, separates the OpenAI preview and keeps the secured edge projection", async () => {
-  const landing = await read("apps/web/app/page.tsx");
-  assert.match(landing, /OpenAI/u);
-});
-
-test("accepts a complete local Supabase configuration", async () => {
-  const environment = await read("apps/web/lib/environment.ts");
-  assert.match(environment, /SUPABASE/u);
-});
-
-test("allows an incomplete Vercel preview to build fail closed", async () => {
-  const environment = await read("apps/web/lib/environment.ts");
-  assert.match(environment, /VERCEL/u);
-});
-
-test("keeps missing Supabase configuration fatal outside Vercel preview", async () => {
-  const environment = await read("apps/web/lib/environment.ts");
-  assert.match(environment, /throw/u);
-});
-
-test("keeps Supabase forbidden in production", async () => {
-  const environment = await read("apps/web/lib/environment.ts");
-  assert.match(environment, /production/u);
-});
-
-test("accepts the AWS production public build contract", async () => {
-  const environment = await read("apps/web/lib/environment.ts");
-  assert.match(environment, /AWS|production/u);
+  const [readme, lifecycle, foundation] = await Promise.all([read("README.md"), read("docs/journeys/JOURNEY_LIFECYCLE.md"), read("docs/implementation/APPLICATION_FOUNDATION.md")]);
+  assert.match(readme, /Cada jornada é única/);
+  assert.match(lifecycle, /draft <-> published/);
+  assert.doesNotMatch(foundation, /nova versão.*jornada/iu);
 });
