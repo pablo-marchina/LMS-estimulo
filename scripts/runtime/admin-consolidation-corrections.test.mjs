@@ -12,12 +12,12 @@ const files = await Promise.all([
   readFile("apps/web/app/admin/produto/delete-journey-action.ts", "utf8"),
   readFile("apps/web/app/admin/produto/unpublish-action.ts", "utf8"),
   readFile("apps/web/app/admin/comportamento/page.tsx", "utf8"),
-  readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
+  readFile("apps/web/components/participant-activity-workspace.tsx", "utf8"),
   readFile("apps/web/components/activity-prompt-library.tsx", "utf8"),
   readFile("supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql", "utf8"),
 ]);
 
-const [adminShell, libraryDeliveries, operationPage, deliveryOperations, interfaceSelector, productPage, deleteAction, unpublishAction, behaviorPage, lessonPage, promptLibrary, migration] = files;
+const [adminShell, libraryDeliveries, operationPage, deliveryOperations, interfaceSelector, productPage, deleteAction, unpublishAction, behaviorPage, lessonWorkspace, promptLibrary, migration] = files;
 void behaviorPage;
 
 test("standalone admin deliveries screen is removed and responsibilities are consolidated", async () => {
@@ -57,19 +57,20 @@ test("published journeys can return to draft and only drafts can be deleted", ()
   assert.match(migration, /delete_admin_journey_draft/u);
 });
 
-test("published lesson keeps versioned prompts inside the continuous lesson flow", () => {
-  assert.doesNotMatch(lessonPage, /activity\.sections/u);
-  assert.match(lessonPage, /ActivityPromptLibrary/u);
-  assert.match(lessonPage, /activity\.prompts\.length/u);
+test("published lesson keeps versioned prompts inside the continuous inline lesson flow", () => {
+  assert.doesNotMatch(lessonWorkspace, /activity\.sections/u);
+  assert.match(lessonWorkspace, /ActivityPromptLibrary/u);
+  assert.match(lessonWorkspace, /activity\.prompts\.length/u);
   assert.match(promptLibrary, /id="prompts"/u);
   assert.match(promptLibrary, /Biblioteca de prompts desta aula/u);
   assert.match(promptLibrary, /navigator\.clipboard\.writeText/u);
-  assert.doesNotMatch(lessonPage, /Prompts para adaptar/u);
+  assert.doesNotMatch(lessonWorkspace, /Prompts para adaptar/u);
   assert.doesNotMatch(migration, /-'content_sections'-'prompts'/u);
-  assert.match(lessonPage, /max-w-\[1100px\]/u);
-  assert.match(lessonPage, /Marcar como concluída/u);
-  assert.match(lessonPage, /Verifique o que aprendeu/u);
-  assert.match(lessonPage, /Converse sobre esta aula/u);
-  assert.doesNotMatch(lessonPage, /Índice da aula/u);
-  assert.doesNotMatch(lessonPage, /300px/u);
+  assert.match(lessonWorkspace, /max-w-\[1100px\]/u);
+  assert.match(lessonWorkspace, /Marcar como concluída/u);
+  assert.match(lessonWorkspace, /Verifique o que aprendeu/u);
+  assert.match(lessonWorkspace, /Converse sobre esta aula/u);
+  assert.match(lessonWorkspace, /data-unified-shell/u);
+  assert.doesNotMatch(lessonWorkspace, /Índice da aula/u);
+  assert.doesNotMatch(lessonWorkspace, /300px/u);
 });

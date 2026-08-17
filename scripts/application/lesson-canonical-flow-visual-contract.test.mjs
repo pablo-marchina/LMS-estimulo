@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [openActivityAction, journeyActions, journeyPage, participantShell, activityPage, criticalVisual, adminCriticalVisual, productionVisual, strictGate, protectionBypass, visualWorkflow] = await Promise.all([
+const [openActivityAction, journeyActions, journeyPage, participantShell, activityPage, lessonWorkspace, criticalVisual, adminCriticalVisual, productionVisual, strictGate, protectionBypass, visualWorkflow] = await Promise.all([
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/actions.ts", "utf8"),
   readFile("apps/web/app/actions/journey.ts", "utf8"),
   readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/components/participant-shell.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
+  readFile("apps/web/components/participant-activity-workspace.tsx", "utf8"),
   readFile("scripts/e2e/participant-critical-flow-visual.mjs", "utf8"),
   readFile("scripts/e2e/admin-critical-flow-visual.mjs", "utf8"),
   readFile("scripts/e2e/production-visual-capture.mjs", "utf8"),
@@ -16,44 +17,56 @@ const [openActivityAction, journeyActions, journeyPage, participantShell, activi
   readFile(".github/workflows/production-visual-capture.yml", "utf8"),
 ]);
 
-test("real journey CTAs open the dedicated lesson route", () => {
-  assert.match(openActivityAction, /redirect\(`\/empreendedor\/atividade\/\$\{stepInstanceId\}\?journey=\$\{journeyInstanceId\}`\)/u);
-  assert.doesNotMatch(openActivityAction, /\?conteudo=\$\{stepInstanceId\}/u);
+test("real journey CTAs keep the participant on the journey while opening the selected lesson", () => {
+  assert.match(openActivityAction, /redirect\(`\/empreendedor\/jornada\/\$\{journeyInstanceId\}\?conteudo=\$\{stepInstanceId\}#aula`\)/u);
+  assert.doesNotMatch(openActivityAction, /redirect\(`\/empreendedor\/atividade\//u);
 });
 
-test("all lesson interaction redirects stay on the dedicated activity route", () => {
-  assert.match(journeyActions, /function activityHref/u);
-  assert.match(journeyActions, /`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}\$\{query\}/u);
+test("lesson interaction redirects preserve the inline journey route", () => {
+  assert.match(journeyActions, /function inlineActivityHref/u);
+  assert.match(journeyActions, /`\/empreendedor\/jornada\/\$\{journey\}\?conteudo=\$\{step\}\$\{query\}/u);
   assert.match(journeyActions, /utilidade=registrada/u);
   assert.match(journeyActions, /avaliacao=reprovada/u);
-  assert.doesNotMatch(journeyActions, /inlineActivityHref/u);
-  assert.doesNotMatch(journeyActions, /\/empreendedor\/jornada\/\$\{journey\}\?conteudo=/u);
+  assert.doesNotMatch(journeyActions, /function activityHref/u);
 });
 
-test("legacy inline lesson URLs redirect instead of composing journey and lesson screens", () => {
-  assert.match(journeyPage, /import \{ notFound, redirect \} from "next\/navigation"/u);
-  assert.match(journeyPage, /if \(query\.conteudo && selectedActivity\)/u);
-  assert.match(journeyPage, /redirect\(`\/empreendedor\/atividade\/\$\{selectedActivity\.step_instance_id\}\?\$\{activityQuery\.toString\(\)\}`\)/u);
+test("journey page composes the shared lesson workspace without nesting a Next route page", () => {
+  assert.match(journeyPage, /ParticipantActivityWorkspace/u);
+  assert.match(journeyPage, /ActivityWorkspaceFrame/u);
+  assert.match(journeyPage, /<section id="aula"/u);
+  assert.match(journeyPage, /data-inline-lesson/u);
   assert.doesNotMatch(journeyPage, /import ActivityPage/u);
-  assert.doesNotMatch(journeyPage, /ActivityWorkspaceFrame/u);
-  assert.doesNotMatch(journeyPage, /<section id="aula"/u);
+  assert.doesNotMatch(journeyPage, /redirect\(`\/empreendedor\/atividade/u);
 });
 
-test("dedicated lesson owns its centered content width", () => {
-  assert.match(activityPage, /mx-auto w-full max-w-\[1100px\]/u);
+test("legacy dedicated lesson URLs are compatibility redirects into the inline journey workspace", () => {
+  assert.match(activityPage, /URLSearchParams\(\{ conteudo: stepInstanceId \}\)/u);
+  assert.match(activityPage, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?\$\{target\.toString\(\)\}#aula`\)/u);
+  assert.doesNotMatch(activityPage, /ContentAssetViewer/u);
+});
+
+test("shared lesson owns one continuous constrained surface and is safe to embed", () => {
+  assert.match(lessonWorkspace, /max-w-\[1100px\]/u);
+  assert.match(lessonWorkspace, /data-unified-shell/u);
+  assert.match(lessonWorkspace, /data-embedded/u);
+  assert.match(lessonWorkspace, /headingLevel=\{embedded \? "h2" : "h1"\}/u);
   assert.match(participantShell, /wideLesson \? "w-full min-w-0"/u);
   assert.doesNotMatch(participantShell, /\[&>div\]:max-w-none/u);
 });
 
-test("critical visual gate executes the real form flow at user-like wide desktop size", () => {
+test("critical visual gate executes the real form flow and enforces the inline lesson acceptance criteria", () => {
   assert.match(criticalVisual, /key: "wide", width: 1695, height: 895/u);
   assert.match(criticalVisual, /form:has\(input\[name="journey_instance_id"\]\)/u);
   assert.match(criticalVisual, /form:has\(input\[name="step_instance_id"\]\):has\(input\[name="step_status"\]\)/u);
-  assert.match(criticalVisual, /waitForURL\(\(url\) => \/\^\\\/empreendedor\\\/atividade/u);
-  assert.match(criticalVisual, /lesson H1 outside first half of viewport/u);
-  assert.match(criticalVisual, /activity canvas not centered/u);
-  assert.match(criticalVisual, /journey hero is still rendered on lesson screen/u);
+  assert.match(criticalVisual, /url\.searchParams\.get\("conteudo"\) === expectedStep/u);
+  assert.match(criticalVisual, /\[data-inline-lesson\]/u);
+  assert.match(criticalVisual, /\[data-unified-shell\]/u);
   assert.match(criticalVisual, /horizontal overflow/u);
+  assert.match(criticalVisual, /gap between/u);
+  assert.match(criticalVisual, /prompt\/content horizontal inset mismatch/u);
+  assert.match(criticalVisual, /repeated verification heading is still visible/u);
+  assert.match(criticalVisual, /embedded verification still renders a nested quick-check card/u);
+  assert.match(criticalVisual, /uncaught page error/u);
 });
 
 test("broad visual crawl covers wide desktop and rejects badly displaced primary content", () => {
