@@ -142,6 +142,8 @@ export async function saveJourneyAction(formData: FormData) {
       card_background_alt: text(formData, "card_background_alt") || `Capa da jornada ${publicTitle}`,
       featured_background_alt: text(formData, "featured_background_alt") || `Imagem de destaque da jornada ${publicTitle}`,
     };
+    // The journey configuration is the single source of truth for whether a
+    // completion certificate is emitted and which published version is eligible.
     const completionCertificate = {
       enabled: completionCertificateEnabled,
       certificate_version_id: completionCertificateEnabled ? completionCertificateVersionId : null,
