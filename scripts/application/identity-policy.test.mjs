@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { isValidCpf, normalizeCpf, protectCpfWithKeys } from "../../apps/web/lib/identity/cpf-core.mjs";
 
-const [adminEmailPolicy, adminLayout, participantSignIn, adminStart, adminCallback, completionPage, completionAction, migration] = await Promise.all([
-  readFile("apps/web/lib/auth/administrative-email.ts", "utf8"),
+const [adminAccessPolicy, adminLayout, participantSignIn, adminStart, adminCallback, completionPage, completionAction, migration] = await Promise.all([
+  readFile("apps/web/lib/auth/administrative-access.ts", "utf8"),
   readFile("apps/web/app/admin/layout.tsx", "utf8"),
   readFile("apps/web/app/entrar/actions.ts", "utf8"),
   readFile("apps/web/app/auth/admin/start/route.ts", "utf8"),
@@ -14,15 +14,16 @@ const [adminEmailPolicy, adminLayout, participantSignIn, adminStart, adminCallba
   readFile("supabase/migrations/20260720190000_protected_cpf_signup.sql", "utf8"),
 ]);
 
-test("administrative entry requires Google, verified claims, the exact Estímulo domain and active RBAC", () => {
-  assert.match(adminEmailPolicy, /ESTIMULO_ADMIN_DOMAIN = "estimulo\.org"/u);
-  assert.match(adminEmailPolicy, /email\.slice\(separator \+ 1\) === ESTIMULO_ADMIN_DOMAIN/u);
+test("administrative entry requires Google, verified claims and active Estimulo membership", () => {
+  assert.match(adminAccessPolicy, /ESTIMULO_ORGANIZATION_SLUG = "estimulo"/u);
+  assert.match(adminAccessPolicy, /organization\.slug/u);
   assert.match(adminStart, /provider:\s*"google"/u);
-  assert.match(adminStart, /hd:\s*"estimulo\.org"/u);
+  assert.doesNotMatch(adminStart, /hd:\s*"estimulo\.org"/u);
   assert.match(adminCallback, /auth\.getClaims\(\)/u);
   assert.match(adminCallback, /isGoogleAuthProvider/u);
-  assert.match(adminCallback, /isEstimuloAdministrativeEmail/u);
+  assert.doesNotMatch(adminCallback, /isEstimuloAdministrativeEmail/u);
   assert.match(adminCallback, /administrativeOrganization/u);
+  assert.match(adminCallback, /vinculo_estimulo_necessario/u);
   assert.match(adminCallback, /client\.auth\.signOut/u);
   assert.match(adminLayout, /administrativeOrganization/u);
   assert.match(participantSignIn, /auth\.signInWithPassword/u);
