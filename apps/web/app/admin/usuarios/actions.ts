@@ -4,7 +4,12 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { roleManagementRuntime } from "@/lib/admin/role-management";
-import { usesCorporateGoogleIdentity } from "@/lib/auth/administrative-access";
+import {
+  administrativeOrganization,
+  hasAdministrativePermission,
+  ROLE_MANAGEMENT_PERMISSION,
+  usesCorporateGoogleIdentity,
+} from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { publicApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
@@ -15,10 +20,20 @@ const confirmation = (word: string) => z.string().trim().refine((value) => value
 
 async function roleManagerContext(organizationId: string) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated") redirect("/entrar");
-  const organization = auth.identity.organizations.find((candidate) => candidate.organization_id === organizationId);
-  if (!organization?.permissions.includes("iam.memberships.manage")) throw new Error("ROLE_MANAGEMENT_FORBIDDEN");
-  return { actorUserAccountId: auth.identity.user_account_id };
+  if (auth.status !== "authenticated") redirect("/entrar/administracao");
+
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization || organization.organization_id !== organizationId) {
+    throw new Error("ESTIMULO_MEMBERSHIP_REQUIRED");
+  }
+  if (!hasAdministrativePermission(auth.identity, ROLE_MANAGEMENT_PERMISSION, organizationId)) {
+    throw new Error("ROLE_MANAGEMENT_FORBIDDEN");
+  }
+
+  return {
+    actorUserAccountId: auth.identity.user_account_id,
+    organizationId: organization.organization_id,
+  };
 }
 
 export async function grantOrganizationRoleAction(formData: FormData) {
@@ -28,7 +43,7 @@ export async function grantOrganizationRoleAction(formData: FormData) {
   const context = await roleManagerContext(organizationId);
   await roleManagementRuntime.grant({
     actorUserAccountId: context.actorUserAccountId,
-    organizationId,
+    organizationId: context.organizationId,
     targetMembershipId: uuid.parse(formData.get("membership_id")),
     roleId: uuid.parse(formData.get("role_id")),
     validUntil: null,
@@ -44,10 +59,10 @@ export async function revokeOrganizationRoleAction(formData: FormData) {
   const context = await roleManagerContext(organizationId);
   await roleManagementRuntime.revoke({
     actorUserAccountId: context.actorUserAccountId,
-    organizationId,
+    organizationId: context.organizationId,
     targetMembershipId: uuid.parse(formData.get("membership_id")),
     roleId: uuid.parse(formData.get("role_id")),
-    reason: "Administrador geral removido pela gestão de acessos.",
+    reason: "Papel administrativo removido pela gestão de acessos.",
     idempotencyKey: String(formData.get("idempotency_key") || randomUUID()),
   });
   redirect("/admin/usuarios?status=removido");
