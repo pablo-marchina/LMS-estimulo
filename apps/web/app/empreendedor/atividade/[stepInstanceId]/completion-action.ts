@@ -16,7 +16,6 @@ const completionCode = {
 } as const;
 
 const completionAnchor = {
-  ok: "concluir-aula",
   conteudo_pendente: "conteudo",
   avaliacao_pendente: "avaliacao",
   pratica_pendente: "pratica",
@@ -31,7 +30,7 @@ export async function completeParticipantActivityAction(formData: FormData) {
   const journey = uuid.parse(formData.get("journey_instance_id"));
   const step = uuid.parse(formData.get("step_instance_id"));
   const key = String(formData.get("idempotency_key") || randomUUID());
-  let outcome: keyof typeof completionAnchor = "ok";
+  let outcome: keyof typeof completionAnchor | "completed" = "completed";
 
   try {
     const result = await completeParticipantActivity({
@@ -44,6 +43,10 @@ export async function completeParticipantActivityAction(formData: FormData) {
     }
   } catch {
     outcome = "falha";
+  }
+
+  if (outcome === "completed") {
+    redirect(`/empreendedor/jornada/${journey}?conclusao=ok`);
   }
 
   redirect(`/empreendedor/atividade/${step}?journey=${journey}&conclusao=${outcome}#${completionAnchor[outcome]}`);
