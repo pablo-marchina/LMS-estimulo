@@ -136,8 +136,8 @@ export function DiagnosticStepper({
           ) : null}
         </div>
         {isLast ? (
-          <PendingSubmitButton pendingLabel="Salvando diagnóstico…" disabled={items.some((item) => item.is_required && !answers[item.id])}>
-            Concluir diagnóstico
+          <PendingSubmitButton pendingLabel="Salvando diagnóstico…" disabled={isSaving || items.some((item) => item.is_required && !answers[item.id])}>
+            {isSaving ? "Salvando resposta…" : "Concluir diagnóstico"}
           </PendingSubmitButton>
         ) : (
           <Button type="button" onClick={advance}>Continuar</Button>
