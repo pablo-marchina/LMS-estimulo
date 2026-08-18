@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { CurrentIdentityError, resolveCurrentIdentity } from "@/lib/auth/current-identity";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { isGoogleAuthProvider } from "@/lib/auth/provider";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -35,17 +34,13 @@ export async function GET(request: NextRequest) {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=conta_google_necessaria");
   }
-  if (!isEstimuloAdministrativeEmail(user.email)) {
-    await client.auth.signOut();
-    return redirectTo(request, "/entrar/administracao?erro=dominio_invalido");
-  }
 
   try {
     const identity = await resolveCurrentIdentity(client);
     const organization = administrativeOrganization(identity);
     if (!organization) {
       await client.auth.signOut();
-      return redirectTo(request, "/entrar/administracao?erro=permissao_necessaria");
+      return redirectTo(request, "/entrar/administracao?erro=vinculo_estimulo_necessario");
     }
     return redirectTo(request, `/admin?organization=${encodeURIComponent(organization.organization_id)}`);
   } catch (error) {

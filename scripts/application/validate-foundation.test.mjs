@@ -85,12 +85,13 @@ test("multi-journey discovery does not use a hardcoded runtime UUID", async () =
 });
 
 test("participant and administrative authentication remain separate", async () => {
-  const [login, signup, adminLogin, adminStart, adminCallback] = await Promise.all([
+  const [login, signup, adminLogin, adminStart, adminCallback, adminAccess] = await Promise.all([
     read("apps/web/app/entrar/page.tsx"),
     read("apps/web/app/cadastro/page.tsx"),
     read("apps/web/app/entrar/administracao/page.tsx"),
     read("apps/web/app/auth/admin/start/route.ts"),
     read("apps/web/app/auth/admin/callback/route.ts"),
+    read("apps/web/lib/auth/administrative-access.ts"),
   ]);
   assert.match(login, /href="\/cadastro"/u);
   assert.match(login, /href="\/entrar\/administracao"/u);
@@ -98,9 +99,11 @@ test("participant and administrative authentication remain separate", async () =
   assert.match(adminLogin, /ButtonLink href="\/auth\/admin\/start"/u);
   assert.doesNotMatch(adminLogin, /<form action="\/auth\/admin\/start"|type="password"/u);
   assert.match(adminStart, /provider:\s*"google"/u);
-  assert.match(adminStart, /hd:\s*"estimulo\.org"/u);
+  assert.doesNotMatch(adminStart, /hd:\s*"estimulo\.org"/u);
   assert.match(adminCallback, /isGoogleAuthProvider/u);
   assert.match(adminCallback, /administrativeOrganization/u);
+  assert.match(adminCallback, /vinculo_estimulo_necessario/u);
+  assert.match(adminAccess, /ESTIMULO_ORGANIZATION_SLUG = "estimulo"/u);
 });
 
 test("AWS production boundaries remain fail-closed while architecture is pending", async () => {

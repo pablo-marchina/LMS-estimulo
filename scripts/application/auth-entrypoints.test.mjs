@@ -51,13 +51,14 @@ test("participant signup uses the public Auth flow and defers protected profile 
   assert.match(completionAction, /getAuthContext/u);
 });
 
-test("administration has a separate Google-only GET entrypoint and validates claims, domain and RBAC", async () => {
-  const [participantPage, adminPage, startRoute, callback, adminLayout] = await Promise.all([
+test("administration has a separate Google-only GET entrypoint and validates Estimulo membership", async () => {
+  const [participantPage, adminPage, startRoute, callback, adminLayout, accessPolicy] = await Promise.all([
     read("apps/web/app/entrar/page.tsx"),
     read("apps/web/app/entrar/administracao/page.tsx"),
     read("apps/web/app/auth/admin/start/route.ts"),
     read("apps/web/app/auth/admin/callback/route.ts"),
     read("apps/web/app/admin/layout.tsx"),
+    read("apps/web/lib/auth/administrative-access.ts"),
   ]);
 
   assert.match(participantPage, /href="\/entrar\/administracao"/u);
@@ -65,15 +66,17 @@ test("administration has a separate Google-only GET entrypoint and validates cla
   assert.match(adminPage, /Continuar com Google/u);
   assert.doesNotMatch(adminPage, /<form action="\/auth\/admin\/start"|type="password"|signInWithPassword/u);
   assert.match(startRoute, /provider:\s*"google"/u);
-  assert.match(startRoute, /hd:\s*"estimulo\.org"/u);
+  assert.doesNotMatch(startRoute, /hd:\s*"estimulo\.org"/u);
   assert.match(startRoute, /skipBrowserRedirect:\s*true/u);
   assert.match(callback, /exchangeCodeForSession/u);
   assert.match(callback, /auth\.getClaims\(\)/u);
   assert.match(callback, /isGoogleAuthProvider/u);
-  assert.match(callback, /isEstimuloAdministrativeEmail/u);
+  assert.doesNotMatch(callback, /isEstimuloAdministrativeEmail/u);
   assert.match(callback, /administrativeOrganization/u);
+  assert.match(callback, /vinculo_estimulo_necessario/u);
   assert.match(callback, /client\.auth\.signOut/u);
   assert.match(adminLayout, /administrativeOrganization/u);
+  assert.match(accessPolicy, /ESTIMULO_ORGANIZATION_SLUG = "estimulo"/u);
 });
 
 test("runtime identity and RPC calls use the authenticated gateway without a local service-role key", async () => {

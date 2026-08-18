@@ -16,8 +16,11 @@ test("role management remains server-only and uses audited RPCs", () => {
   assert.doesNotMatch(runtime, /bootstrap_organization_role_manager/u);
 });
 
-test("role actions require explicit permission, UUID validation and typed confirmations", () => {
-  assert.match(actions, /iam\.memberships\.manage/u);
+test("role actions require explicit permission, Estimulo scope, UUID validation and typed confirmations", () => {
+  assert.match(accessPolicy, /ROLE_MANAGEMENT_PERMISSION = "iam\.memberships\.manage"/u);
+  assert.match(actions, /hasAdministrativePermission\(auth\.identity, ROLE_MANAGEMENT_PERMISSION, organizationId\)/u);
+  assert.match(actions, /administrativeOrganization\(auth\.identity\)/u);
+  assert.match(actions, /organization\.organization_id !== organizationId/u);
   assert.match(actions, /z\.string\(\)\.uuid\(\)/u);
   assert.match(actions, /confirmation\("CONCEDER"\)/u);
   assert.match(actions, /confirmation\("REMOVER"\)/u);
