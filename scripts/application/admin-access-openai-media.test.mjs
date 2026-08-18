@@ -10,18 +10,22 @@ const mediaViewer = await readFile("apps/web/components/content-asset-viewer.tsx
 const nextConfig = await readFile("apps/web/next.config.ts", "utf8");
 const migration = await readFile("supabase/migrations/20260730150000_openai_official_drive_videos.sql", "utf8");
 
-test("administrative Google login starts in one click and validates domain plus RBAC after OAuth", () => {
+test("administrative Google login starts in one click and validates Estimulo membership after OAuth", () => {
   assert.match(adminStart, /signInWithOAuth/u);
-  assert.match(adminStart, /hd:\s*"estimulo\.org"/u);
+  assert.match(adminStart, /provider:\s*"google"/u);
   assert.match(adminStart, /prompt:\s*"select_account"/u);
+  assert.doesNotMatch(adminStart, /hd:\s*"estimulo\.org"/u);
   assert.doesNotMatch(adminStart, /client\.auth\.signOut/u);
   assert.doesNotMatch(adminStart, /requestedEmail/u);
   assert.doesNotMatch(adminStart, /login_hint/u);
-  assert.match(adminCallback, /isEstimuloAdministrativeEmail\(user\.email\)/u);
+  assert.match(adminCallback, /isGoogleAuthProvider/u);
   assert.match(adminCallback, /administrativeOrganization\(identity\)/u);
+  assert.doesNotMatch(adminCallback, /isEstimuloAdministrativeEmail/u);
   assert.match(adminPage, /href="\/auth\/admin\/start"/u);
   assert.match(adminPage, /ButtonLink/u);
   assert.match(adminPage, /Continuar com Google/u);
+  assert.match(adminPage, /vínculo ativo com a Estímulo/u);
+  assert.match(adminPage, /permissões concedidas por um administrador/u);
   assert.doesNotMatch(adminPage, /<form[^>]+action="\/auth\/admin\/start"/u);
   assert.doesNotMatch(adminPage, /PendingSubmitButton/u);
   assert.doesNotMatch(adminPage, /name="email"/u);
