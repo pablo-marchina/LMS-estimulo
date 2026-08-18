@@ -3,9 +3,8 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { administrativeOrganization } from "@/lib/auth/administrative-access";
+import { administrativeOrganization, hasAnyAdministrativePermission } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
 
 const reserved = new Set(["resource_type", "return_to", "json_fields", "array_fields", "boolean_fields", "idempotency_key"]);
@@ -69,9 +68,10 @@ function errorCode(error: unknown) {
 }
 async function authorize() {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar/administracao?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar/administracao?erro=oauth_invalido");
   const organization = administrativeOrganization(auth.identity);
-  if (!organization) redirect("/admin?erro=organizacao_indisponivel");
+  if (!organization) redirect("/entrar/administracao?erro=vinculo_estimulo_necessario");
+  if (!hasAnyAdministrativePermission(auth.identity)) redirect("/admin?erro=permissao_necessaria");
   return { actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id };
 }
 export async function saveExtensionAction(formData: FormData) {
