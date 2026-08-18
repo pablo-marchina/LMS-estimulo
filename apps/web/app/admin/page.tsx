@@ -5,9 +5,9 @@ import { StatusPanel } from "@/components/status-panel";
 import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { administrativeOrganization } from "@/lib/auth/administrative-access";
-import { getAuthContext } from "@/lib/auth/context";
 import { getAdminProductWorkspace, getAdminReportingDashboard } from "@/lib/admin/product-management";
+import { administrativeOrganization, hasAnyAdministrativePermission } from "@/lib/auth/administrative-access";
+import { getAuthContext } from "@/lib/auth/context";
 import { practiceRuntime } from "@/lib/practice/runtime";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +24,19 @@ export default async function AdminOverviewPage({ searchParams }: { searchParams
   if (auth.status !== "authenticated") return null;
   const organization = administrativeOrganization(auth.identity);
   if (!organization) return <AppShell area="admin" email={auth.email}><StatusPanel title="Área indisponível" tone="warning">Seu usuário não está vinculado à Estímulo.</StatusPanel></AppShell>;
+
+  if (!hasAnyAdministrativePermission(auth.identity)) {
+    return (
+      <AppShell area="admin" email={auth.email}>
+        <div className="grid gap-6">
+          <PageHeader eyebrow="Estímulo" title="Acesso administrativo" description="Seu vínculo com a Estímulo foi reconhecido." />
+          <StatusPanel title="Permissões pendentes" tone="info">
+            Você pode entrar na área administrativa, mas ainda não recebeu permissão para consultar ou alterar recursos. Um administrador com gestão de acessos precisa atribuir um papel ao seu vínculo.
+          </StatusPanel>
+        </div>
+      </AppShell>
+    );
+  }
 
   const actor = auth.identity.user_account_id;
   const [product, reporting, practiceLoad] = await Promise.all([
