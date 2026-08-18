@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       redirectTo,
       skipBrowserRedirect: true,
       queryParams: {
-        hd: "estimulo.org",
         prompt: "select_account",
       },
     },
