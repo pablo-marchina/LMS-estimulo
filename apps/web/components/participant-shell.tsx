@@ -88,7 +88,17 @@ function UserMenu({ email, signOutLabel }: { email: string; signOutLabel: string
   );
 }
 
-export function ParticipantShell({ email, children, hasB2BAccess = false }: { email: string; children: React.ReactNode; hasB2BAccess?: boolean }) {
+export function ParticipantShell({
+  email,
+  children,
+  hasB2BAccess = false,
+  hasLibraryContent = false,
+}: {
+  email: string;
+  children: React.ReactNode;
+  hasB2BAccess?: boolean;
+  hasLibraryContent?: boolean;
+}) {
   warmVideoProviders();
 
   const pathname = usePathname();
@@ -109,6 +119,7 @@ export function ParticipantShell({ email, children, hasB2BAccess = false }: { em
 
   const links = linkDefinitions
     .filter((link) => link.contentKey === "participant.nav.home" || interfaceVisible(content, link.contentKey))
+    .filter((link) => link.contentKey !== "participant.nav.library" || hasLibraryContent)
     .filter((link) => link.contentKey !== "participant.nav.b2b" || hasB2BAccess)
     .sort((a, b) => interfaceOrder(content, a.contentKey, a.order) - interfaceOrder(content, b.contentKey, b.order))
     .map((link) => ({ ...link, href: interfaceHref(content, link.contentKey, link.href), label: interfaceText(content, link.contentKey, link.label) }));
