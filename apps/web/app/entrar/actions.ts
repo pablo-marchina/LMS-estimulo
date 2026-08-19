@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { resolveCurrentIdentity } from "@/lib/auth/current-identity";
 import { extensionsRuntime } from "@/lib/extensions/runtime";
-import { createSessionClient } from "@/lib/supabase/server";
+import { clearSupabaseSessionCookies, createSessionClient } from "@/lib/supabase/server";
 
 function safeDestination(value: unknown) {
   return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/admin") ? value : null;
@@ -16,6 +16,10 @@ export async function signInAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   if (!email || !password) redirect("/entrar?erro=campos_obrigatorios");
 
+  // A stale/rotated refresh token can otherwise race the explicit password
+  // sign-in and momentarily surface an auth error even when the credentials
+  // are valid. A new login must always start from a clean local auth session.
+  await clearSupabaseSessionCookies();
   const client = await createSessionClient();
   const { error } = await client.auth.signInWithPassword({ email, password });
   if (error?.code === "email_not_confirmed") redirect("/entrar?erro=confirmacao_necessaria");
@@ -63,5 +67,6 @@ export async function signInAction(formData: FormData) {
 export async function signOutAction() {
   const client = await createSessionClient();
   await client.auth.signOut();
+  await clearSupabaseSessionCookies();
   redirect("/entrar");
 }

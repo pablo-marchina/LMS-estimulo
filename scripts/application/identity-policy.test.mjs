@@ -27,7 +27,8 @@ test("administrative entry requires Google, verified claims and active Estimulo 
   assert.match(adminCallback, /client\.auth\.signOut/u);
   assert.match(adminLayout, /administrativeOrganization/u);
   assert.match(participantSignIn, /auth\.signInWithPassword/u);
-  assert.match(participantSignIn, /auth\.identity\.entrepreneur_id/u);
+  assert.match(participantSignIn, /resolveCurrentIdentity\(client\)/u);
+  assert.match(participantSignIn, /identity\.entrepreneur_id/u);
   assert.doesNotMatch(participantSignIn, /isEstimuloAdministrativeEmail|grant|membership_roles|organization_memberships/u);
 });
 

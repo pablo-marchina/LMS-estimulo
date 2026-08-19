@@ -14,12 +14,13 @@ test("participant shell observes issued badges without blocking the rest of the 
 });
 
 test("badge acquisition popup distinguishes historical awards from newly issued badges", () => {
-  assert.match(popup, /estimulo:seen-badge-awards:v1/u);
+  assert.match(popup, /estimulo:seen-badge-awards:v2/u);
   assert.match(popup, /if \(seen === null\)/u);
-  assert.match(popup, /persistSeenAwards\(currentIds\)/u);
+  assert.match(popup, /const latest = orderedBadges\.at\(-1\)/u);
+  assert.match(popup, /orderedBadges\.slice\(0, -1\)/u);
   assert.match(popup, /orderedBadges\.filter\(\(badge\) => !seen\.has\(badge\.award_id\)\)/u);
-  assert.match(popup, /Você conquistou um novo selo!/u);
-  assert.match(popup, /Ver conquistas/u);
+  assert.match(popup, /Parabéns! Você conquistou o selo/u);
+  assert.match(popup, /Ver minha conquista/u);
   assert.match(popup, /role="dialog"/u);
   assert.match(popup, /aria-modal="true"/u);
 });

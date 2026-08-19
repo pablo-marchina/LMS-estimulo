@@ -9,3 +9,7 @@ additional_redirect_urls = [
   "https://lms-estimulo-web.vercel.app/**",
   "https://*-pablo-marchinas-projects.vercel.app/**"
 ]
+
+[auth.email.template.confirmation]
+subject = "Confirme seu e-mail para acessar a Estímulo"
+content_path = "./supabase/templates/confirmation.html"
