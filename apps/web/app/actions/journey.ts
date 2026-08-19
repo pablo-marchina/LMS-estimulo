@@ -194,8 +194,16 @@ export async function submitQuickCheckAction(formData: FormData) {
   await journeyRuntime.submitQuickCheck(actor, current.attempt_id, current.aggregate_version, `${baseKey}:submit`);
   const updated = await journeyRuntime.getParticipantExperience(actor, journey);
   if (updated.state.q?.passed) {
-    await credentialRuntime.issue(actor, journey, step, `${baseKey}:credentials`);
-    redirect(`/empreendedor/resultado?journey=${journey}&avaliacao=aprovada`);
+    try {
+      await credentialRuntime.issue(actor, journey, step, `${baseKey}:credentials`);
+    } catch (error) {
+      console.error("QUICK_CHECK_CREDENTIAL_ISSUANCE_FAILED", {
+        journey_instance_id: journey,
+        step_instance_id: step,
+        error_name: error instanceof Error ? error.name : "unknown",
+      });
+    }
+    redirect(activityHref(journey, step, "&avaliacao=aprovada", "avaliacao"));
   }
   redirect(activityHref(journey, step, "&avaliacao=reprovada", "avaliacao"));
 }
