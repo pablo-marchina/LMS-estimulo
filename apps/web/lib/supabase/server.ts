@@ -4,6 +4,17 @@ import { cookies } from "next/headers";
 import { publicSupabaseEnv } from "@/lib/env";
 import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
 
+function isSupabaseSessionCookie(name: string) {
+  return name.startsWith("sb-") || name.includes("auth-token");
+}
+
+export async function clearSupabaseSessionCookies() {
+  const cookieStore = await cookies();
+  for (const cookie of cookieStore.getAll()) {
+    if (isSupabaseSessionCookie(cookie.name)) cookieStore.delete(cookie.name);
+  }
+}
+
 export async function createSessionClient() {
   if (platformRuntimeProvider() !== "supabase") {
     throw new Error("SUPABASE_SESSION_ADAPTER_FORBIDDEN_IN_AWS_RUNTIME");
