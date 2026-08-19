@@ -15,6 +15,10 @@ const diagnosticAnswerSchema = z.object({
   idempotencyKey: z.string().trim().min(1).max(300),
 });
 
+function resultDestination(journey: string) {
+  return `/empreendedor/resultado?journey=${journey}&diagnostico=concluido`;
+}
+
 export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof diagnosticAnswerSchema>) {
   await assertParticipantMutationAllowed();
   const parsed = diagnosticAnswerSchema.parse(input);
@@ -22,6 +26,7 @@ export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof dia
   const actor = auth.identity.user_account_id;
 
   let experience = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
+  if (experience.state.d?.status === "completed") return { ok: true as const };
   if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
   let diagnostic = experience.diagnostic;
 
@@ -71,6 +76,7 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
   const baseKey = String(formData.get("idempotency_key") || randomUUID());
 
   let experience = await journeyRuntime.getParticipantExperience(actor, journey);
+  if (experience.state.d?.status === "completed") redirect(resultDestination(journey));
   if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
   let diagnostic = experience.diagnostic;
 
@@ -85,8 +91,11 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
   if (!sessionId) throw new Error("DIAGNOSTIC_SESSION_NOT_AVAILABLE");
 
   for (const item of diagnostic.items) {
-    const option = String(formData.get(`answer_${item.id}`) ?? "");
+    const option = String(formData.get(`answer_${item.id}`) ?? "").trim();
     if (item.is_required && !option) throw new Error("DIAGNOSTIC_REQUIRED_ANSWER_MISSING");
+    if (option && !item.options.some((candidate) => candidate.code === option)) {
+      throw new Error("DIAGNOSTIC_OPTION_NOT_AVAILABLE");
+    }
     if (option && item.response?.option_code !== option) {
       const revision = (item.response?.revision ?? 0) + 1;
       await journeyRuntime.recordDiagnosticResponse(
@@ -95,7 +104,7 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
         item.id,
         option,
         revision,
-        `${baseKey}:item:${item.id}:revision:${revision}`,
+        `${baseKey}:item:${item.id}:revision:${revision}:option:${option}`,
       );
     }
   }
@@ -104,14 +113,24 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
   const aggregate = experience.state.d?.aggregate_version;
   if (aggregate === undefined) throw new Error("DIAGNOSTIC_VERSION_NOT_AVAILABLE");
 
-  await invokeServerRpc("complete_participant_diagnostic_with_points", {
-    p_actor_user_account_id: actor,
-    p_session_id: sessionId,
-    p_expected_aggregate_version: aggregate,
-    p_journey_instance_id: journey,
-    p_completion_idempotency_key: `${baseKey}:complete`,
-    p_points_idempotency_key: `${baseKey}:points`,
-  });
+  let completionError: unknown = null;
+  try {
+    await invokeServerRpc("complete_participant_diagnostic_with_points", {
+      p_actor_user_account_id: actor,
+      p_session_id: sessionId,
+      p_expected_aggregate_version: aggregate,
+      p_journey_instance_id: journey,
+      p_completion_idempotency_key: `${baseKey}:complete`,
+      p_points_idempotency_key: `${baseKey}:points`,
+    });
+  } catch (error) {
+    completionError = error;
+  }
 
-  redirect(`/empreendedor/resultado?journey=${journey}&diagnostico=concluido`);
+  if (completionError) {
+    const latest = await journeyRuntime.getParticipantExperience(actor, journey);
+    if (latest.state.d?.status !== "completed") throw completionError;
+  }
+
+  redirect(resultDestination(journey));
 }

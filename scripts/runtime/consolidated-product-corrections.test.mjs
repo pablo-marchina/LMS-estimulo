@@ -20,7 +20,8 @@ test("participant authentication exposes password recovery and accessible visibi
   assert.match(login, /Sou da equipe Estímulo/u);
   assert.match(signup, /terms_document_version_id/u);
   assert.match(signup, /\/privacidade\?version=/u);
-  assert.match(field, /useState\(true\)/u);
+  assert.match(field, /useState\(false\)/u);
+  assert.match(field, /type=\{visible \? "text" : "password"\}/u);
   assert.match(field, /aria-label=\{visible \? "Ocultar senha" : "Mostrar senha"\}/u);
   assert.match(requestAction, /resetPasswordForEmail/u);
   assert.match(callback, /exchangeCodeForSession/u);
@@ -94,21 +95,21 @@ test("certificate wallet and consolidated templates remain discoverable after up
   assert.doesNotMatch(certificateAlias, /redirect\(/u);
 });
 
-test("administrative destructive actions are dependency-safe", async () => {
-  const [libraryAction, libraryMigration, trackAction, trackMigration, trackEditor] = await Promise.all([
+test("administrative destructive actions preserve dependency safety without exposing track archive", async () => {
+  const [libraryAction, libraryMigration, trackMigration, trackEditor] = await Promise.all([
     source("apps/web/app/actions/library.ts"),
     source("supabase/migrations/20260730021926_safe_library_content_archiving.sql"),
-    source("apps/web/app/admin/produto/track-actions.ts"),
     source("supabase/migrations/20260730022413_safe_admin_track_archiving.sql"),
     source("apps/web/app/admin/produto/trilha-editor.tsx"),
   ]);
 
   assert.match(libraryAction, /archive_library_content/u);
   assert.match(libraryMigration, /LIBRARY_CONTENT_IN_USE/u);
-  assert.match(trackAction, /archive_admin_track/u);
   assert.match(trackMigration, /DEFAULT_TRACK_CANNOT_BE_ARCHIVED/u);
   assert.match(trackMigration, /TRACK_HAS_ACTIVE_ASSIGNMENTS/u);
   assert.match(trackEditor, /if \(trilha\.status === "retired"\) return null/u);
+  assert.doesNotMatch(trackEditor, /archive_admin_track/u);
+  assert.doesNotMatch(trackEditor, /Arquivar trilha/iu);
 });
 
 test("gateway, actionable help, legal and admin recovery contracts are versioned", async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   saveProfileDiagnosisAnswerAction,
   submitProfileDiagnosisAction,
@@ -23,6 +23,24 @@ type DiagnosticItem = {
   options: DiagnosticOption[];
 };
 
+type DiagnosticDraft = {
+  answers?: Record<string, string>;
+  currentIndex?: number;
+};
+
+function firstPendingIndex(items: DiagnosticItem[], answers: Record<string, string>) {
+  const index = items.findIndex((item) => item.is_required && !answers[item.id]);
+  return index >= 0 ? index : 0;
+}
+
+function serverAnswers(items: DiagnosticItem[]) {
+  return Object.fromEntries(
+    items
+      .map((item) => [item.id, item.response?.option_code ?? ""] as const)
+      .filter(([, value]) => Boolean(value)),
+  );
+}
+
 export function DiagnosticStepper({
   journeyInstanceId,
   idempotencyKey,
@@ -32,17 +50,51 @@ export function DiagnosticStepper({
   idempotencyKey: string;
   items: DiagnosticItem[];
 }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      items
-        .map((item) => [item.id, item.response?.option_code ?? ""] as const)
-        .filter(([, value]) => Boolean(value)),
-    ),
-  );
+  const initialAnswers = useMemo(() => serverAnswers(items), [items]);
+  const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
+  const [currentIndex, setCurrentIndex] = useState(() => firstPendingIndex(items, initialAnswers));
+  const [draftReady, setDraftReady] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSaving, startSaving] = useTransition();
+  const draftKey = `estimulo:diagnostic:${journeyInstanceId}`;
+
+  useEffect(() => {
+    let merged = initialAnswers;
+    let draftIndex: number | null = null;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      const draft = raw ? JSON.parse(raw) as DiagnosticDraft : null;
+      if (draft?.answers && typeof draft.answers === "object") {
+        const validDraftAnswers = Object.fromEntries(
+          items.flatMap((item) => {
+            const optionCode = draft.answers?.[item.id];
+            return typeof optionCode === "string" && item.options.some((option) => option.code === optionCode)
+              ? [[item.id, optionCode] as const]
+              : [];
+          }),
+        );
+        merged = { ...initialAnswers, ...validDraftAnswers };
+      }
+      if (Number.isInteger(draft?.currentIndex) && Number(draft?.currentIndex) >= 0 && Number(draft?.currentIndex) < items.length) {
+        draftIndex = Number(draft?.currentIndex);
+      }
+    } catch {
+      window.localStorage.removeItem(draftKey);
+    }
+    setAnswers(merged);
+    setCurrentIndex(draftIndex ?? firstPendingIndex(items, merged));
+    setDraftReady(true);
+  }, [draftKey, initialAnswers, items]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    try {
+      window.localStorage.setItem(draftKey, JSON.stringify({ answers, currentIndex } satisfies DiagnosticDraft));
+    } catch {
+      // The server-side per-answer save remains the source of truth when local storage is unavailable.
+    }
+  }, [answers, currentIndex, draftKey, draftReady]);
 
   const current = items[currentIndex];
   const completed = useMemo(() => items.filter((item) => Boolean(answers[item.id])).length, [answers, items]);
@@ -64,7 +116,7 @@ export function DiagnosticStepper({
           idempotencyKey,
         });
       } catch {
-        setSaveMessage("Não foi possível salvar esta resposta agora. Ela continuará nesta tela e será tentada novamente ao concluir o diagnóstico.");
+        setSaveMessage("Não foi possível sincronizar esta resposta agora. Ela ficou salva neste dispositivo e será tentada novamente ao concluir o diagnóstico.");
       }
     });
   }

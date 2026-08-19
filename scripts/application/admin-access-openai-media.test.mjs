@@ -43,10 +43,13 @@ test("participant login keeps signup visible and team access discreet in the foo
   assert.doesNotMatch(participantLogin, /bg-primary-soft\/55/u);
 });
 
-test("official OpenAI Drive videos are embedded safely and remain completable", () => {
+test("official OpenAI Drive videos are embedded safely and complete through timed progress", () => {
   assert.match(mediaViewer, /function googleDriveEmbed/u);
   assert.match(mediaViewer, /drive\.google\.com\/file\/d\/\$\{encodeURIComponent\(id\)\}\/preview/u);
-  assert.match(mediaViewer, /requiresManualCompletion/u);
+  assert.match(mediaViewer, /requiresTimedEmbedProgress/u);
+  assert.match(mediaViewer, /document\.visibilityState !== "visible"/u);
+  assert.match(mediaViewer, /watched \/ timedEmbedDuration >= 0\.9/u);
+  assert.doesNotMatch(mediaViewer, /Concluí este conteúdo/u);
   assert.match(nextConfig, /frame-src[^\n]*https:\/\/drive\.google\.com/u);
   assert.match(nextConfig, /script-src[^\n]*https:\/\/www\.youtube\.com/u);
 });

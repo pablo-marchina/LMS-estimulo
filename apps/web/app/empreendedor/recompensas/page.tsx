@@ -84,7 +84,13 @@ export default async function ParticipantRewardsPage({ searchParams }: { searchP
         )}
       />
       <div className="grid gap-6">
-        {query.sucesso ? <StatusPanel title="Conquista atualizada" tone="success">Seu saldo e histórico já foram atualizados.</StatusPanel> : null}
+        {query.sucesso === "reward_redeem" ? (
+          <StatusPanel title="Recompensa resgatada com sucesso!" tone="success">
+            Seu pedido foi registrado. Seu saldo e o histórico de resgates já foram atualizados.
+          </StatusPanel>
+        ) : query.sucesso ? (
+          <StatusPanel title="Conquista atualizada" tone="success">Seu saldo e histórico já foram atualizados.</StatusPanel>
+        ) : null}
         {actionError ? <StatusPanel title={actionError.title} tone="warning">{actionError.message}</StatusPanel> : null}
         {workspaceResult.status === "rejected" ? <StatusPanel title="Recompensas temporariamente indisponíveis" tone="warning">Não foi possível carregar seu saldo, catálogo e resgates. Os valores zerados abaixo são apenas um estado de segurança e não significam perda de pontos.</StatusPanel> : null}
         {engagementResult.status === "rejected" ? <StatusPanel title="Ranking e histórico temporariamente indisponíveis" tone="warning">Não foi possível consultar seus dados de engajamento agora. Tente recarregar a página.</StatusPanel> : null}

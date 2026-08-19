@@ -3,6 +3,7 @@ import { CheckCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { AuthLayout, FormMessage } from "@/components/auth-layout";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { PhoneField } from "@/components/phone-field";
 import { Input, Label } from "@/components/ui/input";
 import { getAuthContext } from "@/lib/auth/context";
 import { getCurrentSignupLegalSnapshot, type SignupLegalSnapshot } from "@/lib/auth/public-signup-provisioning";
@@ -82,7 +83,7 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
         ) : (
           <div className="grid gap-1.5"><Label>CPF<Input name="cpf" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" minLength={11} maxLength={14} pattern="[0-9.\-]{11,14}" required /></Label><p className="text-xs leading-5 text-muted">CPF é obrigatório. {participantCopy.cpf.inputDescription}</p></div>
         )}
-        <Label>Telefone<Input name="telefone" type="tel" inputMode="tel" autoComplete="tel" placeholder="(11) 91234-5678" defaultValue={phone} required /></Label>
+        <PhoneField defaultValue={phone} />
         <Label>Nome do negócio <span className="font-normal text-muted">(opcional)</span><Input name="business_name" defaultValue={businessName} maxLength={160} autoComplete="organization" /></Label>
         <div className="grid gap-1.5"><Label>CNPJ <span className="font-normal text-muted">(opcional)</span><Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} defaultValue={cnpj} /></Label><p className="text-xs leading-5 text-muted">Informe somente se deseja vincular este negócio à sua conta. O CNPJ será validado e não ficará exposto na plataforma.</p></div>
 

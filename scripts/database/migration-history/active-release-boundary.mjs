@@ -4,7 +4,9 @@
 // expectedLastMigration = '20260817125313_admin_landing_page_selection.sql'
 // Historical boundary before the 2026-08-19 audit-remediation batch:
 // expectedLastMigration = '20260817192700_fix_archive_active_track_assignments.sql'
-export const expectedLastMigration = '20260819010200_drop_duplicate_certificate_template_assignment_index.sql';
+// Historical boundary before the 2026-08-19 audit-remediation batch's own follow-up merge with main:
+// expectedLastMigration = '20260819010200_drop_duplicate_certificate_template_assignment_index.sql'
+export const expectedLastMigration = '20260819124500_harden_media_progress_completion.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190031_generic_journey_version_editor.sql',
@@ -120,4 +122,5 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260819010000_implement_activity_asset_download.sql',
   '20260819010100_cover_remaining_foreign_key_indexes.sql',
   '20260819010200_drop_duplicate_certificate_template_assignment_index.sql',
+  '20260819124500_harden_media_progress_completion.sql',
 ]);
