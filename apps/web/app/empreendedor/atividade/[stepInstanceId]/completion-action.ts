@@ -20,6 +20,7 @@ const completionAnchor = {
   avaliacao_pendente: "avaliacao",
   pratica_pendente: "pratica",
   falha: "concluir-aula",
+  ok: "concluir-aula",
 } as const;
 
 export async function completeParticipantActivityAction(formData: FormData) {
@@ -30,7 +31,7 @@ export async function completeParticipantActivityAction(formData: FormData) {
   const journey = uuid.parse(formData.get("journey_instance_id"));
   const step = uuid.parse(formData.get("step_instance_id"));
   const key = String(formData.get("idempotency_key") || randomUUID());
-  let outcome: keyof typeof completionAnchor | "completed" = "completed";
+  let outcome: keyof typeof completionAnchor = "ok";
 
   try {
     const result = await completeParticipantActivity({
@@ -45,9 +46,8 @@ export async function completeParticipantActivityAction(formData: FormData) {
     outcome = "falha";
   }
 
-  if (outcome === "completed") {
-    redirect(`/empreendedor/jornada/${journey}?conclusao=ok`);
-  }
-
+  // Always return to an address that is known to resolve for the current activity.
+  // The success panel is rendered in-place and the global badge popup can celebrate
+  // newly issued seals without sending the participant through a stale content URL.
   redirect(`/empreendedor/atividade/${step}?journey=${journey}&conclusao=${outcome}#${completionAnchor[outcome]}`);
 }
