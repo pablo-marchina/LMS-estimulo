@@ -1,5 +1,7 @@
 # Revisão completa do projeto — 2026-08-19
 
+> **Atualização 2026-08-19 (mesmo dia):** a maior parte dos achados abaixo foi corrigida no mesmo lote. Ver seção "Remediação aplicada" ao final do documento para o que foi corrigido, o que foi deliberadamente deixado de fora e duas correções ao próprio texto da auditoria descobertas durante a implementação.
+
 Revisão de arquitetura, organização, limpeza e funcionalidade de todo o repositório, solicitada por Pablo Marchina. Metodologia: (1) execução dos gates automatizados do próprio repositório que rodam sem infraestrutura viva; (2) checagem ao vivo de segurança/performance do banco via Supabase Advisors; (3) cinco agentes de revisão independentes, cada um cobrindo um domínio (frontend, banco/migrations, scripts/tooling, docs-vs-código, segurança/RBAC), com achados verificados por citação de `arquivo:linha` — nada reportado aqui é presunção não checada no código real. Achados já catalogados em `DELIVERY_BLOCKERS.md`, `RISK_REGISTER.md`, `PRODUCTION_QUALITY_BASELINE.md` e `PERMISSION_MODEL.md` foram deliberadamente excluídos: este documento cobre apenas o que é novo ou tem drift em relação ao que já está documentado.
 
 ## O que foi verificado vs. o que não foi
@@ -130,3 +132,33 @@ Se for atacar só três coisas primeiro:
 3. **Funcionalidade #3 / Limpeza #3** (sweep de FK indexes) — mesma causa raiz, alto número de tabelas afetadas (54 FKs), e resolve de uma vez um padrão que já gerou 9 migrations de remendo.
 
 Os achados de Organização/Limpeza restantes são de baixo risco individual, mas coletivamente indicam um padrão real: partes deste código evoluem por remendo incidente-a-incidente (testes nomeados por sprint, migrations de índice avulsas, refactors que deixam componentes órfãos) em vez de consolidação. Vale considerar uma passada de consolidação depois de resolver os itens de alto impacto acima.
+
+---
+
+## Remediação aplicada (2026-08-19)
+
+Corrigido no mesmo lote, com gates re-executados e verdes (`typecheck:web`, `test:application` 189/189, `test:repository-tooling` 100/100, `lint:source`, `validate:repository`, `validate:application-foundation`, `validate:platform-contract`, `validate:migration-history`, `scan:secrets`):
+
+- **Funcionalidade #1** — `completion-action.ts` agora unifica todo desfecho (sucesso incluso) no redirect para a página de atividade com âncora, revivendo o painel `completionTarget === "ok"` que já existia e estava morto.
+- **Funcionalidade #2** — manifesto de `active-release-boundary.mjs` atualizado.
+- **Funcionalidade #3 / Limpeza #3** — nova migration `20260819010100_cover_remaining_foreign_key_indexes.sql` reaplica o sweep genérico do `m08p` cobrindo também `experience`/`behavior`/`app_private`/`public`. **Escrita, não aplicada ao banco vivo** — precisa ser rodada separadamente.
+- **Funcionalidade #6** — `get_activity_asset_download` nunca existiu (não foi removida, foi um gap de lançamento do commit `0b5e9c90`); implementada em `20260819010000_implement_activity_asset_download.sql` seguindo o padrão de `get_practice_download_descriptor`. **Escrita, não aplicada ao banco vivo.**
+- **Funcionalidade #8 / Limpeza** — índice duplicado: `20260819010200_drop_duplicate_certificate_template_assignment_index.sql` remove o mais antigo dos dois. **Escrita, não aplicada ao banco vivo.**
+- **Funcionalidade #4** — página de atividade agora degrada graciosamente em `listActivityComments` e `utilityRatingRuntime.get`, igual já acontecia com `practiceRuntime.listParticipant`.
+- **Limpeza #1** — os 4 componentes órfãos removidos; testes que ainda liam esses arquivos (`activity-layout-contract.test.mjs`, `lesson-reference-contract.test.mjs`, `consolidated-audit-remediation.test.mjs`) repontados para os arquivos reais ou tiveram a asserção obsoleta removida.
+- **Limpeza #2** — os dois links de `/documentos/privacidade` (cadastro e conclusão de cadastro legado) corrigidos para `/privacidade`; teste de contrato que travava o padrão antigo (`consolidated-product-corrections.test.mjs`) atualizado.
+- **Limpeza #5** — `validate-hygiene.mjs` agora usa `git ls-files` em vez de `readdir`, então não confunde presença em disco com rastreamento no git. Isso revelou que o próprio relatório desta auditoria violava a convenção de nome canônico de documento — renomeado para `PROJECT_REVIEW_20260819.md` e indexado no `PROJECT_INDEX.md`.
+- **Limpeza #6** — `lint-source.mjs` agora cobre `supabase/migrations/**` para CRLF/NUL/merge-conflict.
+- **Organização #1** — `journey-banner-label-field.tsx` (hack de DOM-scraping) removido; campo "Texto no banner" agora é um input comum em `admin/produto/page.tsx`.
+- **Security #1 (rollout RBAC)** — completado. **Correção ao achado original:** a lista de "10 arquivos" estava incompleta — na verdade eram **17 arquivos de admin actions + 1 helper compartilhado** (`lib/extensions/admin-context.ts`) ainda com a checagem de domínio redundante; a lista de "já migrados" do achado original também estava errada para vários desses arquivos. Todos os 18 foram corrigidos de forma consistente; os 2 usos legítimos e não relacionados em `interface-preview` foram deixados intocados.
+- **Security #2** — `config/supabase-test/.env.example` agora usa placeholder.
+- Doc drift — `JOURNEY_LIFECYCLE.md`/`APPLICATION_FOUNDATION.md` atualizados para descrever o estado `retired`; `RLS_IMPLEMENTATION.md` documenta o padrão intencional "RLS habilitado, zero políticas, só via SECURITY DEFINER".
+- Organização #7 — adicionados `verify:e2e-auth-audit` e `verify:e2e-visual-capture` em `package.json`, espelhando exatamente os comandos hoje só documentados dentro do YAML de CI.
+
+**Deliberadamente não alterado, com o porquê:**
+
+- **RLS hardening de `iam.user_cpf_identifiers` (aprovado pelo usuário, mas não implementado)** — verificação ao vivo (`pg_roles`) mostrou que toda função `SECURITY DEFINER` deste banco roda como `postgres`, e tanto `postgres` quanto `service_role` têm `rolbypassrls = true`. `FORCE ROW LEVEL SECURITY` não tem nenhum efeito sobre roles com `BYPASSRLS`, com ou sem política — a migration proposta seria cosmética, não uma proteção real. O fix real (mover a posse dessas funções para um role sem `BYPASSRLS`) é uma mudança arquitetural bem maior, que afeta todas as funções `SECURITY DEFINER` do banco, e merece sua própria revisão dedicada em vez de entrar de carona aqui.
+- **Consolidação da constante `estimulo.org` duplicada** — tentada e revertida. `administrative-access.ts` e `administrative-email.ts` são arquivos irmãos em `lib/auth/`, mas um teste importa `administrative-access.ts` como módulo real via `node --test` (não só como texto). Um import relativo entre os dois não satisfaz ao mesmo tempo o typecheck do Next.js (`moduleResolution: bundler`, rejeita extensão `.ts`) e a resolução nativa do `node --test` (exige a extensão exata do arquivo em disco). Resolver isso exigiria mudar a resolução de módulos do `tsconfig.json` para o projeto inteiro — desproporcional para um achado de severidade baixa. Deixei um comentário no código explicando a decisão.
+- **Refactors maiores mencionados na auditoria mas fora deste lote** (reescrever `admin-program-manager.tsx` para Server Actions, promover `apps/web/components/` para subpastas, consolidar os testes nomeados por incidente, renomear `validate:release-candidate`/`test:repository-tooling`) — são mudanças de escopo maior e mais arriscadas (a última mexe em nomes referenciados por CI). Ficam como follow-up explícito, não corrigidas silenciosamente.
+- **`auth_leaked_password_protection` desabilitado** — configuração do painel do Supabase Auth, não corrigível por código/migration.
+- **Nome "vanessa" em migrations já aplicadas** — não pode ser corrigido sem violar a regra de que migrations aplicadas nunca são editadas.

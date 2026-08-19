@@ -21,7 +21,7 @@ O gateway valida sessão, identidade interna, allowlist, tamanho, timeout e sani
 
 ## Jornadas
 
-Cada jornada possui um único registro operacional e dois estados visíveis, `draft` e `published`.
+Cada jornada possui um único registro operacional e dois estados operacionais de edição/publicação, `draft` e `published`, além de um terceiro estado terminal `retired` ("arquivada") — ver `docs/journeys/JOURNEY_LIFECYCLE.md`.
 
 - publicação não clona conteúdo;
 - jornada publicada pode ser editada diretamente;

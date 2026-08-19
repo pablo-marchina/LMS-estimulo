@@ -9,7 +9,6 @@ import { publishAdminDiagnosticTransition } from "@/lib/admin/product-lifecycle"
 import { saveAdminProductResource } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { normalizeDiagnosticResultBlocks } from "@/lib/diagnostics/result-blocks";
 
 const uuid = z.string().uuid();
@@ -22,7 +21,7 @@ function deriveCode(source: string) { const slug = source.normalize("NFD").repla
 
 async function diagnosticAdminContext() {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("diagnostic.configuration.manage")) redirect("/admin/diagnostico?erro=sem_permissao");
   return { auth, organization };

@@ -3,6 +3,11 @@ import type { IdentityContext, OrganizationAccess } from "@/lib/journey-runtime/
 export const ESTIMULO_ORGANIZATION_SLUG = "estimulo";
 export const ROLE_MANAGEMENT_PERMISSION = "iam.memberships.manage";
 
+// Kept independent from administrative-email.ts's ESTIMULO_ADMIN_DOMAIN: a
+// relative import between these two lib/auth files can't satisfy both the
+// Next.js bundler typecheck (rejects a ".ts" extension) and the plain
+// `node --test` runner (requires one) at once without changing tsconfig
+// module resolution repo-wide. Keep both constants in sync if the domain ever changes.
 const corporateGoogleDomain = "estimulo.org";
 
 function normalizeOrganizationSlug(slug: string | undefined) {

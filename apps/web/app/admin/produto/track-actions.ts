@@ -6,14 +6,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { invokeServerRpc, ServerRpcError } from "@/lib/rpc/server-invoke";
 
 const uuid = z.string().uuid();
 
 export async function archiveTrackAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
+  if (auth.status !== "authenticated") {
     redirect("/entrar?erro=acesso_nao_autorizado");
   }
 

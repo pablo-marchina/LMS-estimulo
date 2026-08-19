@@ -21,7 +21,8 @@ test("published journeys expose archive separately from disruptive unpublish", (
 });
 
 test("journey archive action is authenticated, confirmed and routed through lifecycle RPC", () => {
-  assert.match(archiveAction, /isEstimuloAdministrativeEmail/u);
+  assert.doesNotMatch(archiveAction, /isEstimuloAdministrativeEmail/u);
+  assert.match(archiveAction, /administrativeOrganization/u);
   assert.match(archiveAction, /journey\.definition\.manage/u);
   assert.match(archiveAction, /confirmation !== "ARQUIVAR"/u);
   assert.match(archiveAction, /retireAdminJourney/u);

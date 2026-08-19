@@ -5,7 +5,6 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
 import { normalizeLandingPageVersion } from "@/lib/landing-pages/catalog";
 
@@ -40,7 +39,7 @@ function errorCode(error: unknown) {
 
 export async function savePlatformSettingsAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar/administracao?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar/administracao?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/configuracoes?erro=sem_permissao");
 

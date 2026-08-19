@@ -34,6 +34,8 @@
     "verify:supabase": "node scripts/verification/verify-supabase.mjs",
     "verify:deployment": "node scripts/verification/verify-deployment.mjs",
     "verify:http-hardening": "node scripts/security/verify-http-hardening.mjs",
+    "verify:e2e-auth-audit": "node scripts/e2e/auth-cookie-probe.mjs && node scripts/e2e/production-authenticated-audit.mjs",
+    "verify:e2e-visual-capture": "node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/production-visual-capture.mjs && node scripts/e2e/visual-manifest-strict-gate.mjs && node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/participant-critical-flow-visual.mjs && node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/admin-critical-flow-visual.mjs",
     "build:release-manifest": "node scripts/repository/generate-release-manifest.mjs",
     "scan:secrets": "node scripts/security/run-gitleaks.mjs",
     "test:secret-scanning": "node scripts/security/test-gitleaks.mjs",

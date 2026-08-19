@@ -4,11 +4,10 @@ import test from "node:test";
 
 const layout = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.tsx", "utf8");
 const stylesheet = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.module.css", "utf8");
-const frame = await readFile("apps/web/components/activity-workspace-frame.tsx", "utf8");
 const lesson = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
 const participantShell = await readFile("apps/web/components/participant-shell.tsx", "utf8");
 const promptLibrary = await readFile("apps/web/components/activity-prompt-library.tsx", "utf8");
-const quickCheck = await readFile("apps/web/components/quick-check-panel.tsx", "utf8");
+const quickCheck = await readFile("apps/web/components/quick-check-form.tsx", "utf8");
 const journey = await readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8");
 const actions = await readFile("apps/web/app/actions/journey.ts", "utf8");
 
@@ -17,7 +16,6 @@ test("activity route is a continuous lesson workspace", () => {
   assert.match(layout, /data-activity-page/u);
   assert.doesNotMatch(layout, /ActivityCompactWorkspace/u);
   assert.doesNotMatch(layout, /data-active-section/u);
-  assert.doesNotMatch(frame, /ActivityCompactWorkspace/u);
 
   assert.match(lesson, /max-w-\[1100px\]/u);
   assert.match(lesson, /Marcar como concluída/u);

@@ -7,7 +7,6 @@ import { getAdminProductWorkspace, saveAdminProductResource } from "@/lib/admin/
 import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extendedCredentialRuntime } from "@/lib/credentials/extended-runtime";
 import { engagementRuntime } from "@/lib/engagement/runtime";
 
@@ -39,7 +38,7 @@ function validityPolicy(formData: FormData): Record<string, unknown> { return te
 
 export async function saveGamificationResourceAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/gamificacao?erro=sem_permissao");
   const organizationId = organization.organization_id;
@@ -135,7 +134,7 @@ export async function saveGamificationResourceAction(formData: FormData) {
 
 export async function saveHomeBadgeHighlightsAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/gamificacao?tipo=selos&erro=sem_permissao");
 
@@ -162,7 +161,7 @@ export async function saveHomeBadgeHighlightsAction(formData: FormData) {
 
 export async function saveCertificateIssuerAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/gamificacao?tipo=certificados&erro=sem_permissao");
   const actor = auth.identity.user_account_id;

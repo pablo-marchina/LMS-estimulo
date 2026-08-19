@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { JourneyBannerLabelField } from "./journey-banner-label-field";
 
 export const dynamic = "force-dynamic";
 
@@ -18,5 +17,5 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     redirect("/entrar/administracao?erro=vinculo_estimulo_necessario");
   }
 
-  return <><JourneyBannerLabelField />{children}</>;
+  return <>{children}</>;
 }

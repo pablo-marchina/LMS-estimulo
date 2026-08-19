@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { engagementRuntime } from "@/lib/engagement/runtime";
 
 const schema = z.object({
@@ -40,7 +39,7 @@ function isoDate(value: FormDataEntryValue | null): string | null {
 
 async function adminContext(organizationId: string) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
+  if (auth.status !== "authenticated") {
     redirect("/entrar?erro=acesso_nao_autorizado");
   }
   const organization = auth.identity.organizations.find((item) => item.organization_id === organizationId);

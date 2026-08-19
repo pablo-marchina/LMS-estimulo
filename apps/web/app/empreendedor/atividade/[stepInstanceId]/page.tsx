@@ -20,6 +20,7 @@ import { getAuthContext } from "@/lib/auth/context";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
 import { utilityRatingRuntime } from "@/lib/utility-rating/runtime";
+import type { ActivityComment } from "@/lib/journey-runtime/contracts";
 
 const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
@@ -123,11 +124,13 @@ export default async function ActivityPage({
 
   const [experience, commentResult, practiceLoad, utilityRating] = await Promise.all([
     journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey),
-    journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId),
+    journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId)
+      .catch(() => ({ step_instance_id: stepInstanceId, comments: [] as ActivityComment[] })),
     practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId)
       .then((value) => ({ value, unavailable: false as const }))
       .catch(() => ({ value: null, unavailable: true as const })),
-    utilityRatingRuntime.get(auth.identity.user_account_id, stepInstanceId),
+    utilityRatingRuntime.get(auth.identity.user_account_id, stepInstanceId)
+      .catch(() => ({ step_instance_id: stepInstanceId, rating: null, revision: 0, updated_at: null })),
   ]);
 
   if (experience.state.s?.step_instance_id !== stepInstanceId || !experience.activity) notFound();

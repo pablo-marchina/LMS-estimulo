@@ -5,7 +5,6 @@ import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { uploadAdministrativeImage } from "@/lib/admin/media-upload";
 import {
   INTERFACE_CONTENT_CACHE_TAG,
@@ -30,7 +29,7 @@ function canManageInterface(permissions: string[]) {
 
 async function authorize() {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization || !canManageInterface(organization.permissions)) redirect("/admin/experiencia?erro=sem_permissao");
   return { auth, organization };

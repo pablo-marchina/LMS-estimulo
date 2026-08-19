@@ -1,13 +1,13 @@
 # Ciclo de vida das jornadas
 
-**Revisado em:** 2026-08-01  
+**Revisado em:** 2026-08-19  
 **Status:** implementação vigente
 
 ## Modelo
 
 Uma jornada é uma entidade única. Não existe histórico editorial navegável nem migração entre versões de jornada.
 
-Estados visíveis:
+Estados operacionais (edição/publicação):
 
 ```text
 draft <-> published
@@ -15,6 +15,8 @@ draft <-> published
 
 - `draft`: não disponível aos participantes, editável e passível de exclusão;
 - `published`: disponível aos participantes e editável diretamente.
+
+Além desses dois, existe um terceiro estado terminal, `retired` ("arquivada"), alcançado a partir de `draft` ou `published` via a ação administrativa "Arquivar jornada" (`retire_admin_journey`, mesma permissão `journey.definition.manage` usada para editar). Uma jornada arquivada some do painel administrativo padrão e não é reapresentada aos participantes; não há função de reversão (`unretire`) documentada nas migrations atuais — trate como estado terminal até que uma seja adicionada.
 
 A coluna e alguns parâmetros internos ainda podem usar nomes históricos como `journey_version_id`. Eles são detalhes de compatibilidade do esquema e ficam fixados em uma relação operacional 1:1; não representam versões selecionáveis do produto.
 

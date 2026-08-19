@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { getAdminProductWorkspace, saveAdminJourney } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extensionsRuntime } from "@/lib/extensions/runtime";
 import { libraryRuntime } from "@/lib/library/runtime";
 import { validateAnnouncementBanner } from "@/lib/storage/announcement-banners";
@@ -65,7 +64,7 @@ async function uploadJourneyCover(input: { actor: string; organizationId: string
 
 export async function saveJourneyAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("journey.definition.manage")) redirect("/admin/produto?erro=sem_permissao");
 
