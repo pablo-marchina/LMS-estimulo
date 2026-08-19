@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Award, X } from "lucide-react";
+import { Award, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { BadgeAward } from "@/lib/credentials/contracts";
 
-const STORAGE_KEY = "estimulo:seen-badge-awards:v1";
+const STORAGE_KEY = "estimulo:seen-badge-awards:v2";
 
 type BadgeAcquisitionPopupProps = {
   badges: BadgeAward[];
@@ -27,26 +27,32 @@ function persistSeenAwards(seen: Set<string>) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...seen]));
   } catch {
-    // The notification is best-effort when browser storage is unavailable.
+    // The celebration remains usable even when browser storage is unavailable.
   }
 }
 
 export function BadgeAcquisitionPopup({ badges }: BadgeAcquisitionPopupProps) {
   const orderedBadges = useMemo(
-    () => badges.slice().sort((left, right) => Date.parse(left.awarded_at) - Date.parse(right.awarded_at)),
+    () => badges
+      .filter((badge) => badge.status === "active")
+      .slice()
+      .sort((left, right) => Date.parse(left.awarded_at) - Date.parse(right.awarded_at)),
     [badges],
   );
   const [queue, setQueue] = useState<BadgeAward[]>([]);
 
   useEffect(() => {
-    const seen = readSeenAwards();
-    const currentIds = new Set(orderedBadges.map((badge) => badge.award_id));
+    if (!orderedBadges.length) return;
 
-    // The first visit establishes a baseline so historical badges are not presented
-    // as if they had just been earned. Subsequent participant navigations reveal only
-    // awards that appeared after that baseline.
+    const seen = readSeenAwards();
     if (seen === null) {
-      persistSeenAwards(currentIds);
+      // Do not flood an established participant with every historical award on the
+      // first browser visit. Celebrate the most recent active award and establish
+      // the remaining history as the baseline.
+      const latest = orderedBadges.at(-1);
+      const historical = new Set(orderedBadges.slice(0, -1).map((badge) => badge.award_id));
+      persistSeenAwards(historical);
+      if (latest) setQueue([latest]);
       return;
     }
 
@@ -65,43 +71,45 @@ export function BadgeAcquisitionPopup({ badges }: BadgeAcquisitionPopupProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[90] grid place-items-center bg-black/30 p-4 backdrop-blur-[2px]" role="presentation">
+    <div className="fixed inset-0 z-[90] grid place-items-center bg-black/35 p-4 backdrop-blur-[3px]" role="presentation">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="badge-acquisition-title"
         aria-describedby="badge-acquisition-description"
-        className="relative w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl sm:p-7"
+        className="relative w-full max-w-md overflow-hidden rounded-3xl border border-primary/20 bg-white p-6 shadow-2xl sm:p-8"
       >
+        <div className="pointer-events-none absolute -right-7 -top-8 text-primary/10" aria-hidden="true">
+          <Sparkles size={120} strokeWidth={1.4} />
+        </div>
         <button
           type="button"
           onClick={dismissCurrent}
-          className="absolute right-4 top-4 grid size-9 place-items-center rounded-full text-muted transition hover:bg-slate-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          aria-label="Fechar aviso de conquista"
+          className="absolute right-4 top-4 z-10 grid size-9 place-items-center rounded-full text-muted transition hover:bg-slate-100 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="Fechar celebração da conquista"
         >
           <X size={18} aria-hidden="true" />
         </button>
 
-        <div className="grid size-14 place-items-center rounded-2xl bg-primary-soft text-primary" aria-hidden="true">
-          <Award size={30} strokeWidth={2.2} />
+        <div className="relative grid size-20 place-items-center rounded-3xl bg-primary-soft text-primary shadow-sm" aria-hidden="true">
+          <Award size={42} strokeWidth={2.1} />
         </div>
-        <p className="mt-5 text-xs font-black uppercase tracking-[0.14em] text-primary">Nova conquista</p>
-        <h2 id="badge-acquisition-title" className="mt-1 pr-8 text-2xl font-black text-secondary">
-          Você conquistou um novo selo!
+        <p className="mt-6 text-xs font-black uppercase tracking-[0.16em] text-primary">Nova conquista</p>
+        <h2 id="badge-acquisition-title" className="mt-1 pr-8 text-2xl font-black leading-tight text-secondary">
+          Parabéns! Você conquistou o selo {current.title}!
         </h2>
-        <div id="badge-acquisition-description" className="mt-3 grid gap-1.5">
-          <strong className="text-base text-ink">{current.title}</strong>
+        <div id="badge-acquisition-description" className="mt-4 grid gap-2">
           {current.description ? <p className="text-sm leading-6 text-muted">{current.description}</p> : null}
-          {current.journey_title ? <p className="text-xs font-semibold text-muted">Jornada: {current.journey_title}</p> : null}
+          {current.journey_title ? <p className="text-xs font-semibold text-muted">Conquistado em: {current.journey_title}</p> : null}
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-7 flex flex-wrap gap-3">
           <Link
-            href="/empreendedor/perfil/conquistas"
+            href="/empreendedor/conquistas"
             onClick={dismissCurrent}
             className="inline-flex min-h-10 items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            Ver conquistas
+            Ver minha conquista
           </Link>
           <button
             type="button"
