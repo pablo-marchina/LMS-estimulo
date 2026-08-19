@@ -78,6 +78,7 @@ const suites = [
   ["admin product management", [
     "scripts/database/admin-product-management/test-admin-product-management.sql",
     "scripts/database/admin-product-management/test-linked-library-lesson-patch.sql",
+    "scripts/database/admin-product-management/test-assessment-passing-score-patch.sql",
   ]],
 ];
 
