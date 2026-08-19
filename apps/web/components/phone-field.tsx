@@ -22,8 +22,8 @@ function formatBrazilianPhone(value: string) {
   return `(${ddd}) ${subscriber.slice(0, split)}-${subscriber.slice(split)}`;
 }
 
-export function PhoneField({ defaultValue = "" }: { defaultValue?: string }) {
-  const initialValue = useMemo(() => formatBrazilianPhone(defaultValue), [defaultValue]);
+export function PhoneField({ defaultValue = "", prefill = false }: { defaultValue?: string; prefill?: boolean }) {
+  const initialValue = useMemo(() => prefill ? formatBrazilianPhone(defaultValue) : "", [defaultValue, prefill]);
   const [value, setValue] = useState(initialValue);
 
   return (
@@ -34,7 +34,7 @@ export function PhoneField({ defaultValue = "" }: { defaultValue?: string }) {
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        placeholder="Ex.: (11) 91234-5678"
+        placeholder="(00) 00000-0000"
         value={value}
         onChange={(event) => setValue(formatBrazilianPhone(event.currentTarget.value))}
         maxLength={15}
