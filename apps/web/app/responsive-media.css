@@ -43,11 +43,11 @@
 .participant-stage [data-floating-player],
 .participant-stage [class*="fixed"]:has(> video),
 .participant-stage [class*="fixed"]:has(> iframe) {
-  width: min(420px, calc(100vw - 1rem)) !important;
+  width: min(420px, calc(100vw - 2rem)) !important;
   height: auto !important;
-  max-width: calc(100vw - 1rem) !important;
+  max-width: calc(100vw - 2rem) !important;
   max-height: calc(100dvh - 1rem) !important;
-  inset-inline: auto 0.5rem !important;
+  inset-inline: auto 1rem !important;
   bottom: 0.5rem !important;
   overflow: hidden !important;
   border-radius: 1rem !important;
@@ -155,6 +155,6 @@
   .participant-stage [data-floating-player],
   .participant-stage [class*="fixed"]:has(> video),
   .participant-stage [class*="fixed"]:has(> iframe) {
-    width: min(320px, calc(100vw - 1rem)) !important;
+    width: min(320px, calc(100vw - 2rem)) !important;
   }
 }
