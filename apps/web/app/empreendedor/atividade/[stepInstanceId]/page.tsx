@@ -50,7 +50,7 @@ const completionMessages: Record<string, { tone: "success" | "warning" | "danger
   ok: {
     tone: "success",
     title: "Aula concluída",
-    text: "Seu progresso e os pontos correspondentes já estão sendo atualizados.",
+    text: "Seu progresso foi registrado. Pontos e eventuais selos liberados por esta conclusão são atualizados automaticamente.",
   },
   conteudo_pendente: {
     tone: "warning",
@@ -188,8 +188,8 @@ export default async function ActivityPage({
                 />
               ))
             ) : (
-              <StatusPanel title="Nenhum material anexado" tone="info">
-                Continue pelas etapas disponíveis nesta aula.
+              <StatusPanel title="Nenhum material adicional necessário" tone="info">
+                Esta aula pode ser concluída pelas etapas disponíveis abaixo. Progresso, pontos e selos são registrados automaticamente quando os requisitos forem atendidos.
               </StatusPanel>
             )}
           </div>

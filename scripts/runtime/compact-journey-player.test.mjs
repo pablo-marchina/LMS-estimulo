@@ -12,16 +12,20 @@ const [builder, contentFields, actions, navigation, mediaCss, pageHeader] = awai
   read("apps/web/components/ui/page-header.tsx"),
 ]);
 
-test("journey lessons no longer expose supplemental text or prompt editors", () => {
+test("journey lessons remove supplemental text while preserving the restored prompt library", () => {
   assert.doesNotMatch(builder, /Texto complementar/u);
-  assert.doesNotMatch(builder, /Prompts prontos/u);
   assert.doesNotMatch(builder, /section_heading_/u);
-  assert.doesNotMatch(builder, /prompt_title_/u);
+  assert.match(builder, /Prompts prontos/u);
+  assert.match(builder, /Biblioteca de prompts desta aula/u);
+  assert.match(builder, /prompt_title_/u);
+  assert.match(builder, /prompt_text_/u);
   assert.doesNotMatch(contentFields, /ConfigurationPreview/u);
   assert.match(actions, /content_sections: _oldSections/u);
   assert.match(actions, /prompts: _oldPrompts/u);
   assert.doesNotMatch(actions, /section_heading_/u);
-  assert.doesNotMatch(actions, /prompt_title_/u);
+  assert.match(actions, /prompt_title_/u);
+  assert.match(actions, /prompt_text_/u);
+  assert.match(actions, /\.\.\.\(prompts\.length \? \{ prompts \} : \{\}\)/u);
 });
 
 test("activity navigation follows the ordered journey outline", () => {

@@ -107,6 +107,14 @@ export function DiagnosticStepper({
     setAnswers((existing) => ({ ...existing, [itemId]: optionCode }));
     setValidationMessage(null);
     setSaveMessage(null);
+
+    // Keep the interaction lightweight: choosing an alternative immediately reveals
+    // the next question while persistence continues in the background. The answer is
+    // already mirrored in localStorage and is re-sent on final submission if needed.
+    if (itemId === current.id && !isLast) {
+      setCurrentIndex((index) => Math.min(items.length - 1, index + 1));
+    }
+
     startSaving(async () => {
       try {
         await saveProfileDiagnosisAnswerAction({
