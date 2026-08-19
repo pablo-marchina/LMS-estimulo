@@ -1,11 +1,9 @@
-import { randomUUID } from "node:crypto";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { Input, Select, Textarea } from "@/components/ui/input";
 import { getAdminGamificationWorkspace } from "@/lib/admin/gamification-management";
 import type { Trilha } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { archiveTrackAction } from "./track-actions";
 import { saveTrackAction } from "./track-save-action";
 
 export type EditableTrilha = Omit<Trilha, "aulas"> & {
@@ -54,18 +52,6 @@ export async function TrilhaEditor({ journeyVersionId, trilha }: { journeyVersio
           <details className="rounded-xl border border-border"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-secondary">Opções da trilha</summary><div className="grid gap-4 border-t border-border p-4 sm:grid-cols-2"><label className="grid gap-1 text-sm font-medium text-ink">Ordem<Input name="position" type="number" min="1" required defaultValue={String(trilha.position)} /><span className="text-[11px] font-normal text-muted">1 aparece antes de 2.</span></label><label className="grid gap-1 text-sm font-medium text-ink">Cor<Select name="tone" defaultValue={tone}><option value="cyan">Ciano</option><option value="magenta">Magenta</option><option value="green">Verde</option><option value="yellow">Amarelo</option><option value="orange">Laranja</option><option value="violet">Violeta</option></Select></label><label className="grid gap-1 text-sm font-medium text-ink">Ícone<Select name="icon" defaultValue={icon}><option value="sparkles">Brilhos</option><option value="rocket">Foguete</option><option value="book-open">Livro</option><option value="lightbulb">Ideia</option></Select></label><div className="grid gap-2"><label className="flex items-start gap-3 rounded-xl bg-surface-muted p-3 text-sm text-ink"><input type="checkbox" name="is_required" defaultChecked={trilha.is_required !== false} className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Conta para conclusão</strong><small className="text-muted">Desmarque para tornar opcional.</small></span></label><label className="flex items-start gap-3 rounded-xl bg-surface-muted p-3 text-sm text-ink"><input type="checkbox" name="is_default" defaultChecked={trilha.is_default === true} className="mt-0.5 size-4 accent-primary" /><span><strong className="block">Trilha padrão</strong><small className="text-muted">Usada como caminho inicial.</small></span></label></div><label className="grid gap-1 text-sm font-medium text-ink sm:col-span-2">Selo ao concluir<Select name="completion_badge_version_id" defaultValue={completionBadgeVersionId}><option value="">Sem selo</option>{badgeOptions.map((badge) => <option key={badge.id} value={badge.id}>{badge.title}</option>)}</Select><span className="text-[11px] font-normal text-muted">Cadastre e publique o selo em Pontuação → Selos. A trilha apenas define qual selo será concedido ao concluir.</span></label></div></details>
           <Button type="submit" size="sm" className="w-fit">Salvar trilha</Button>
         </form>
-
-        <details className="rounded-xl border border-danger/25 bg-danger-soft/25">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-danger">Arquivar trilha</summary>
-          <form action={archiveTrackAction} className="grid gap-3 border-t border-danger/20 p-4">
-            <input type="hidden" name="journey_version_id" value={journeyVersionId} />
-            <input type="hidden" name="path_template_id" value={trilha.id} />
-            <input type="hidden" name="idempotency_key" value={randomUUID()} />
-            <p className="text-xs leading-5 text-muted">A trilha padrão e trilhas com participantes ativos não podem ser arquivadas. Nenhum progresso ou histórico é apagado.</p>
-            <Label className="text-xs">Digite ARQUIVAR<Input name="confirmation" autoComplete="off" required /></Label>
-            <Button type="submit" variant="secondary" size="sm" className="w-fit">Confirmar arquivamento</Button>
-          </form>
-        </details>
       </div>
     </details>
   );
