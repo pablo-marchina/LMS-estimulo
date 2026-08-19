@@ -8,7 +8,7 @@ const outlineRuntime = await readFile("apps/web/lib/journey-runtime/outline-runt
 const openJourney = await readFile("apps/web/app/actions/open-journey.ts", "utf8");
 const migration = await readFile("supabase/migrations/20260816230537_structured_participant_activity_completion.sql", "utf8");
 
-test("normal completion blockers are structured results, not RPC failures", () => {
+test("normal completion blockers are structured results and every outcome remains on the canonical lesson route", () => {
   assert.match(migration, /'status','blocked'/u);
   assert.match(migration, /'code','REQUIRED_CONTENT_INCOMPLETE'/u);
   assert.match(migration, /'code','ASSESSMENT_NOT_PASSED'/u);
@@ -21,12 +21,13 @@ test("normal completion blockers are structured results, not RPC failures", () =
   assert.match(completionAction, /outcome = result\.code/u);
   const tryBlock = completionAction.match(/try \{([\s\S]*?)\} catch/u)?.[1] ?? "";
   assert.doesNotMatch(tryBlock, /redirect\(/u);
-  assert.match(completionAction, /if \(outcome === "completed"\)/u);
-  assert.match(completionAction, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?conclusao=ok`\)/u);
+  assert.match(completionAction, /let outcome: keyof typeof completionAnchor = "ok"/u);
   assert.match(completionAction, /conteudo_pendente: "conteudo"/u);
   assert.match(completionAction, /avaliacao_pendente: "avaliacao"/u);
   assert.match(completionAction, /pratica_pendente: "pratica"/u);
   assert.match(completionAction, /falha: "concluir-aula"/u);
+  assert.match(completionAction, /ok: "concluir-aula"/u);
+  assert.doesNotMatch(completionAction, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?conclusao=ok`\)/u);
   assert.match(completionAction, /redirect\(`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}&conclusao=\$\{outcome\}#\$\{completionAnchor\[outcome\]\}`\)/u);
 });
 
