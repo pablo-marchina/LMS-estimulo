@@ -61,14 +61,17 @@ test("participant journey covers preserve their original colors with a neutral r
   assert.match(participantJourneys, /max-sm:opacity-25/u);
 });
 
-test("lesson editor keeps the main content visible without supplemental text or prompt editors", () => {
+test("lesson editor keeps main content visible and exposes the restored prompt library as an optional resource", () => {
   assert.match(activityFields, /Conteúdo atual/u);
   assert.match(activityFields, /selectedLibraryItem\.body/u);
   assert.match(activityFields, /Abrir conteúdo atual/u);
   assert.doesNotMatch(activityFields, /Texto e recursos salvos na atividade/u);
   assert.doesNotMatch(activityFields, /ConfigurationPreview/u);
   assert.doesNotMatch(lessonBuilder, /Texto complementar/u);
-  assert.doesNotMatch(lessonBuilder, /Prompts prontos/u);
+  assert.match(lessonBuilder, /Prompts prontos/u);
+  assert.match(lessonBuilder, /Biblioteca de prompts desta aula/u);
+  assert.match(lessonBuilder, /prompt_title_/u);
+  assert.match(lessonBuilder, /prompt_text_/u);
 });
 
 test("diagnostics support dynamic profiles and dimensions with mandatory publication mapping", () => {
