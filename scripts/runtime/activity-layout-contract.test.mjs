@@ -8,7 +8,7 @@ const frame = await readFile("apps/web/components/activity-workspace-frame.tsx",
 const lesson = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
 const participantShell = await readFile("apps/web/components/participant-shell.tsx", "utf8");
 const promptLibrary = await readFile("apps/web/components/activity-prompt-library.tsx", "utf8");
-const quickCheck = await readFile("apps/web/components/quick-check-panel.tsx", "utf8");
+const quickCheck = await readFile("apps/web/components/quick-check-form.tsx", "utf8");
 const journey = await readFile("apps/web/app/empreendedor/jornada/[journeyInstanceId]/page.tsx", "utf8");
 const actions = await readFile("apps/web/app/actions/journey.ts", "utf8");
 
