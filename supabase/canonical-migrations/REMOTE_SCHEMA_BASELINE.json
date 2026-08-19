@@ -9,7 +9,7 @@
     "categories": {
       "types": { "count": 0, "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945" },
       "columns": { "count": 2174, "sha256": "3020b10d153fabb83eddbb68cbd072f4cfe87d455b774e48ca3d4f06473025cc" },
-      "indexes": { "count": 688, "sha256": "beb794f862b72bf988e91c7ce1a9a83aecab13f554b2652e407ba6e6a397a1fe" },
+      "indexes": { "count": 719, "sha256": "0bd3ec0fe728c37cc06115cfc2e775165813f30fae1cda80795bc05115e6b827" },
       "schemas": { "count": 14, "sha256": "a61db926ed4323d4f12f11837195dd1ce334cf6a28255607ba4617227210e344" },
       "policies": { "count": 622, "sha256": "063a0f31004017b207b3ffaddce320e9efe0f1f5723604092c66b1fb82215248" },
       "routines": { "count": 276, "sha256": "95d77ac88d76e2c7b57f8035d4c99e0e5eda5e6b412c95d1c1ef8e36eb89a999" },
