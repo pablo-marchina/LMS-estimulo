@@ -154,8 +154,11 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const { data, error } = await client.auth.getUser();
-  if (error || !data.user) {
+  // The proxy only needs to verify that a signed-in identity exists. getClaims()
+  // validates the access token and can use cached signing keys, avoiding an
+  // additional /auth/v1/user network request on every protected navigation.
+  const { data, error } = await client.auth.getClaims();
+  if (error || !data?.claims?.sub) {
     const destination = administrativePath ? "/entrar/administracao" : "/entrar";
     const redirect = NextResponse.redirect(new URL(destination, request.url));
     redirect.headers.set("cache-control", "no-store");
