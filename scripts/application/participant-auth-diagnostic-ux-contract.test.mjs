@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [diagnostic, signupCompletion, confirmationPage, confirmationSubmit, confirmationTemplate] = await Promise.all([
+const [diagnostic, signupCompletion, confirmationPage, confirmationSubmit, confirmationTemplate, commentPanel] = await Promise.all([
   readFile("apps/web/components/diagnostic-stepper.tsx", "utf8"),
   readFile("apps/web/app/cadastro/concluir/page.tsx", "utf8"),
   readFile("apps/web/app/auth/confirm/page.tsx", "utf8"),
   readFile("apps/web/components/email-confirmation-submit.tsx", "utf8"),
   readFile("supabase/templates/confirmation.html", "utf8"),
+  readFile("apps/web/components/activity-comment-panel.tsx", "utf8"),
 ]);
 
 test("diagnostic advances immediately after an answer while preserving back navigation", () => {
@@ -30,4 +31,11 @@ test("email confirmation uses an app-owned token-hash flow and auto-submits on a
   assert.match(confirmationPage, /EmailConfirmationSubmit/u);
   assert.match(confirmationSubmit, /requestSubmit\(\)/u);
   assert.match(confirmationSubmit, /Confirmando seu e-mail/u);
+});
+
+test("mobile lessons expose a persistent shortcut to the discussion", () => {
+  assert.match(commentPanel, /href="#comentarios"/u);
+  assert.match(commentPanel, /Comentar esta aula/u);
+  assert.match(commentPanel, /md:hidden/u);
+  assert.match(commentPanel, /fixed bottom-20 right-4/u);
 });
