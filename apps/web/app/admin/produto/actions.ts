@@ -168,6 +168,9 @@ export async function saveAulaAction(formData: FormData) {
   const rawEstimatedMinutes = text(formData, "estimated_minutes");
   const position = positiveInteger(rawPosition);
   const isClosing = checked(formData, "is_closing");
+  const prompts = [0, 1, 2, 3, 4, 5]
+    .map((index) => ({ title: text(formData, `prompt_title_${index}`), text: text(formData, `prompt_text_${index}`) }))
+    .filter((prompt) => prompt.title && prompt.text);
   const checklist = text(formData, "practice_checklist").split("\n").map((line) => line.trim()).filter(Boolean);
   const questions = quizQuestionsFromForm(formData);
   const assessmentWasSubmitted = formData.has("quiz_question_count");
@@ -185,7 +188,11 @@ export async function saveAulaAction(formData: FormData) {
   const currentThumbnailFileObjectId = nullable(formData, "current_continue_thumbnail_file_object_id");
   const thumbnailAlt = text(formData, "continue_thumbnail_alt");
   const { content_sections: _oldSections, prompts: _oldPrompts, practice_checklist: _oldChecklist, ...preservedConfiguration } = previousConfiguration;
-  const configuration = { ...preservedConfiguration, ...(checklist.length ? { practice_checklist: checklist } : {}) };
+  const configuration = {
+    ...preservedConfiguration,
+    ...(prompts.length ? { prompts } : {}),
+    ...(checklist.length ? { practice_checklist: checklist } : {}),
+  };
 
   if (!pathTemplateId || (!isEdit && !title) || (!isEdit && isClosing && !checklist.length)) redirect(`${back}&erro=campos_incompletos`);
 

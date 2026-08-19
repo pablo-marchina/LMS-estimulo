@@ -85,7 +85,7 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
         )}
         <PhoneField defaultValue={phone} />
         <Label>Nome do negócio <span className="font-normal text-muted">(opcional)</span><Input name="business_name" defaultValue={businessName} maxLength={160} autoComplete="organization" /></Label>
-        <div className="grid gap-1.5"><Label>CNPJ <span className="font-normal text-muted">(opcional)</span><Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} defaultValue={cnpj} /></Label><p className="text-xs leading-5 text-muted">Informe somente se deseja vincular este negócio à sua conta. O CNPJ será validado e não ficará exposto na plataforma.</p></div>
+        <div className="grid gap-1.5"><Label>CNPJ <span className="font-normal text-muted">(opcional)</span><Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} defaultValue={cnpj} /></Label><p className="text-xs leading-5 text-muted">Se informar um CNPJ, usaremos esse número para associar este negócio ao seu cadastro na Estímulo. Você pode deixar o campo em branco se não tiver ou não quiser informar agora. O CNPJ será validado e não ficará exposto na plataforma.</p></div>
 
         {legalSnapshot ? (
           <section className="grid gap-3 rounded-xl border border-primary/20 bg-primary-soft/45 p-4">

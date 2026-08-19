@@ -121,13 +121,11 @@ export function DiagnosticStepper({
     });
   }
 
-  function advance() {
-    if (current.is_required && !answers[current.id]) {
-      setValidationMessage("Escolha uma resposta para continuar.");
-      return;
+  function selectAnswer(itemId: string, optionCode: string) {
+    persistAnswer(itemId, optionCode);
+    if (!isLast) {
+      setCurrentIndex((index) => Math.min(items.length - 1, index + 1));
     }
-    setValidationMessage(null);
-    setCurrentIndex((index) => Math.min(items.length - 1, index + 1));
   }
 
   return (
@@ -164,7 +162,7 @@ export function DiagnosticStepper({
                     name={`visible_answer_${current.id}`}
                     value={option.code}
                     checked={selected}
-                    onChange={() => persistAnswer(current.id, option.code)}
+                    onChange={() => selectAnswer(current.id, option.code)}
                     className="mt-0.5 size-4 accent-primary"
                   />
                   <span>{option.label}</span>
@@ -176,6 +174,7 @@ export function DiagnosticStepper({
         {validationMessage ? <p className="text-sm font-semibold text-danger" role="alert">{validationMessage}</p> : null}
         {saveMessage ? <p className="text-sm font-semibold text-warning" role="status">{saveMessage}</p> : null}
         {isSaving ? <p className="text-sm text-muted" role="status">Salvando resposta…</p> : null}
+        {!isLast ? <p className="text-xs text-muted">Ao escolher uma resposta, você avança automaticamente para a próxima pergunta.</p> : null}
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-5">
@@ -191,9 +190,7 @@ export function DiagnosticStepper({
           <PendingSubmitButton pendingLabel="Salvando diagnóstico…" disabled={isSaving || items.some((item) => item.is_required && !answers[item.id])}>
             {isSaving ? "Salvando resposta…" : "Concluir diagnóstico"}
           </PendingSubmitButton>
-        ) : (
-          <Button type="button" onClick={advance}>Continuar</Button>
-        )}
+        ) : null}
       </div>
     </form>
   );

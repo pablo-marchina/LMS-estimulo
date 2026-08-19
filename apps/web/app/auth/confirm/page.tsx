@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { AuthFooter, AuthLayout, FormMessage } from "@/components/auth-layout";
+import { EmailConfirmationSubmit } from "@/components/email-confirmation-submit";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { confirmEmailAction, resendConfirmationAction } from "./actions";
+import { resendConfirmationAction } from "./actions";
 
 type ConfirmationSearchParams = {
   token_hash?: string;
@@ -35,10 +36,10 @@ export default async function EmailConfirmationPage({
   return (
     <AuthLayout
       eyebrow="Confirmação de cadastro"
-      title={hasConfirmationData ? "Conclua a confirmação" : "Verifique sua conta"}
+      title={hasConfirmationData ? "Confirmando seu e-mail" : "Verifique sua conta"}
       description={
         hasConfirmationData
-          ? "Pressione o botão para concluir a sessão. Se o e-mail já tiver sido confirmado em outro navegador, você será encaminhado para entrar com sua senha."
+          ? "Estamos validando seu cadastro automaticamente. Se a confirmação não iniciar, use o botão abaixo."
           : "O link já foi processado ou não pode mais ser utilizado."
       }
     >
@@ -51,14 +52,7 @@ export default async function EmailConfirmationPage({
       {params.erro && resendErrors[params.erro] ? <FormMessage tone="error">{resendErrors[params.erro]}</FormMessage> : null}
 
       {hasConfirmationData ? (
-        <form action={confirmEmailAction}>
-          <input type="hidden" name="token_hash" value={tokenHash} />
-          <input type="hidden" name="type" value={type} />
-          <input type="hidden" name="code" value={code} />
-          <Button size="lg" type="submit" className="w-full">
-            Concluir confirmação
-          </Button>
-        </form>
+        <EmailConfirmationSubmit tokenHash={tokenHash} type={type} code={code} />
       ) : (
         <div className="grid gap-4">
           <FormMessage tone="info">
