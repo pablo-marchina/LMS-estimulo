@@ -38,6 +38,14 @@ begin
     raise exception 'SAVE_ADMIN_LESSON_SCORE_PATCH_CONTRACT_MISSING';
   end if;
 
+  if position('assessment.responses r join assessment.questions rq' in lower(v_save_definition)) = 0
+     or position(
+       'not app_private.e14_assessment_questions_match_payload(v_activity_version_id,p_payload#>''{assessment,questions}'')'
+       in lower(v_save_definition)
+     ) = 0 then
+    raise exception 'ANSWERED_ASSESSMENT_QUESTION_EDITS_MUST_USE_COPY_ON_WRITE';
+  end if;
+
   if position('assessment.answer_options' in lower(v_helper_definition)) = 0
      or position('assessment.questions' in lower(v_helper_definition)) = 0 then
     raise exception 'ASSESSMENT_QUESTION_MATCH_HELPER_DOES_NOT_COMPARE_CURRENT_QUESTION_SET';
