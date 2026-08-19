@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Clock3 } from "lucide-react";
 import { openJourneyActivityAction } from "@/app/empreendedor/jornada/[journeyInstanceId]/actions";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
+import { Progress } from "@/components/ui/progress";
 import { getAuthContext } from "@/lib/auth/context";
 import { displayContentName } from "@/lib/content/display-name";
 import type { JourneyState } from "@/lib/journey-runtime/contracts";
@@ -40,6 +41,7 @@ function ActivityNavigationForm({
   direction: "previous" | "next";
 }) {
   const enabled = activity.step_status === "completed" || activity.can_open || activity.can_start;
+  const next = direction === "next";
   return (
     <form action={openJourneyActivityAction} className="min-w-0">
       <input type="hidden" name="journey_instance_id" value={journeyInstanceId} />
@@ -49,17 +51,17 @@ function ActivityNavigationForm({
       <input type="hidden" name="idempotency_key" value={randomUUID()} />
       <PendingSubmitButton
         pendingLabel="Abrindo…"
-        variant="ghost"
-        size="sm"
+        variant={next ? "primary" : "secondary"}
+        size={next ? "md" : "sm"}
         type="submit"
         disabled={!enabled}
-        className={`max-w-full gap-1.5 px-2 ${direction === "previous" ? "-ml-2" : "-mr-2"}`}
+        className={`max-w-full gap-1.5 ${next ? "px-4 shadow-sm" : "px-3"}`}
         title={activity.activity_title}
       >
-        {direction === "previous" ? <ArrowLeft size={15} aria-hidden="true" /> : null}
-        <span className="hidden sm:inline">{direction === "previous" ? "Anterior" : "Próxima aula"}</span>
-        {direction === "next" ? <span className="max-w-56 truncate text-xs font-medium text-muted">{activity.activity_title}</span> : null}
-        {direction === "next" ? <ArrowRight size={15} aria-hidden="true" /> : null}
+        {!next ? <ArrowLeft size={15} aria-hidden="true" /> : null}
+        <span>{next ? "Próxima aula" : "Anterior"}</span>
+        {next ? <span className="hidden max-w-56 truncate text-xs font-medium text-white/85 sm:inline">{activity.activity_title}</span> : null}
+        {next ? <ArrowRight size={15} aria-hidden="true" /> : null}
       </PendingSubmitButton>
     </form>
   );
@@ -77,6 +79,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
     outline?.journey_title ?? state.journey_title,
     displayContentName(state.journey_code, "Jornada"),
   );
+  const overallPercent = outline ? Math.round(outline.progress * 100) : null;
 
   let previousActivity: Parameters<typeof ActivityNavigationForm>[0]["activity"] | null = null;
   let nextActivity: Parameters<typeof ActivityNavigationForm>[0]["activity"] | null = null;
@@ -114,10 +117,19 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
           ) : null}
         </div>
       </div>
+      {current === "activity" && overallPercent !== null ? (
+        <div className="mt-4 grid gap-2" aria-label="Progresso da jornada">
+          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-muted">
+            <span>Progresso da jornada</span>
+            <span>{overallPercent}%</span>
+          </div>
+          <Progress value={overallPercent} tone="success" />
+        </div>
+      ) : null}
       {current === "activity" && (previousActivity || nextActivity) ? (
-        <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="mt-4 flex items-center justify-between gap-3">
           {previousActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={previousActivity} direction="previous" /> : <span />}
-          {nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-primary hover:underline">Ver resultado <ArrowRight size={15} /></Link>}
+          {nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <Link href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm hover:brightness-95">Ver resultado <ArrowRight size={15} /></Link>}
         </div>
       ) : null}
     </aside>
