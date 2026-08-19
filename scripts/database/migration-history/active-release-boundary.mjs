@@ -1,5 +1,11 @@
 // Historical Vanessa-video boundary before the diagnostic/journey follow-up:
 // expectedLastMigration = '20260816035500_scope_quick_activity_points_per_assessment.sql'
+// Historical boundary before the journey lifecycle/unpublish and track archive follow-up:
+// expectedLastMigration = '20260817125313_admin_landing_page_selection.sql'
+// Historical boundary before the 2026-08-19 audit-remediation batch:
+// expectedLastMigration = '20260817192700_fix_archive_active_track_assignments.sql'
+// Historical boundary before the 2026-08-19 audit-remediation batch's own follow-up merge with main:
+// expectedLastMigration = '20260819010200_drop_duplicate_certificate_template_assignment_index.sql'
 export const expectedLastMigration = '20260819124500_harden_media_progress_completion.sql';
 
 export const requiredFinalReleaseMigrations = Object.freeze([
@@ -109,6 +115,12 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260817030000_journey_completion_certificate_automation.sql',
   '20260817031500_journey_completion_certificate_selection.sql',
   '20260817033000_preserve_linked_library_lesson_edit.sql',
+  '20260817083000_restore_journey_lifecycle_product_routes.sql',
+  '20260817083500_register_journey_unpublish_event_schema.sql',
   '20260817125313_admin_landing_page_selection.sql',
+  '20260817192700_fix_archive_active_track_assignments.sql',
+  '20260819010000_implement_activity_asset_download.sql',
+  '20260819010100_cover_remaining_foreign_key_indexes.sql',
+  '20260819010200_drop_duplicate_certificate_template_assignment_index.sql',
   '20260819124500_harden_media_progress_completion.sql',
 ]);

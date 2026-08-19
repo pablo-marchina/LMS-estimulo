@@ -19,7 +19,7 @@ test("participant authentication exposes password recovery and accessible visibi
   assert.match(login, /href="\/recuperar-senha"/u);
   assert.match(login, /Sou da equipe Estímulo/u);
   assert.match(signup, /terms_document_version_id/u);
-  assert.match(signup, /\/documentos\/privacidade\?version=/u);
+  assert.match(signup, /\/privacidade\?version=/u);
   assert.match(field, /useState\(false\)/u);
   assert.match(field, /type=\{visible \? "text" : "password"\}/u);
   assert.match(field, /aria-label=\{visible \? "Ocultar senha" : "Mostrar senha"\}/u);

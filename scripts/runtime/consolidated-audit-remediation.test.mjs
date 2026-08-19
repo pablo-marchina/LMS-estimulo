@@ -52,10 +52,9 @@ test("announcement editor supports responsive artwork, image-wide links and comp
 });
 
 test("diagnostic result uses the configured participant copy without retired score blocks", async () => {
-  const [diagnostic, dashboard, chart, profile, actions, blocks] = await Promise.all([
+  const [diagnostic, dashboard, profile, actions, blocks] = await Promise.all([
     source("apps/web/app/empreendedor/perfil/diagnostico/page.tsx"),
     source("apps/web/components/diagnostic-result-dashboard.tsx"),
-    source("apps/web/components/diagnostic-dimension-chart.tsx"),
     source("apps/web/app/empreendedor/perfil/page.tsx"),
     source("apps/web/app/empreendedor/perfil/actions.ts"),
     source("apps/web/lib/diagnostics/result-blocks.ts"),
@@ -72,7 +71,6 @@ test("diagnostic result uses the configured participant copy without retired sco
   assert.match(dashboard, /Dica prática/u);
   assert.match(dashboard, /Para levar com você/u);
   assert.match(dashboard, /Seu resultado ajuda a personalizar sua experiência/u);
-  assert.match(chart, /Veja como suas respostas se distribuem nos temas que fazem parte do seu perfil\./u);
   assert.doesNotMatch(diagnostic, /Diagnóstico empreendedor principal/u);
   assert.match(diagnostic, /Seu objetivo de aplicação/u);
   assert.match(diagnostic, /saveApplicationObjectiveAction/u);

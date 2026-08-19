@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { createAdminJourneyDraftFromVersion } from "@/lib/admin/journey-editor";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 
 function text(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
@@ -13,7 +12,7 @@ function text(formData: FormData, name: string) {
 
 export async function createEditableJourneyVersionAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
+  if (auth.status !== "authenticated") {
     redirect("/entrar?erro=acesso_nao_autorizado");
   }
 

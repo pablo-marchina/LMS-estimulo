@@ -3,12 +3,11 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extensionsRuntime } from "@/lib/extensions/runtime";
 
 export async function requireAdminExtensionsWorkspace() {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
+  if (auth.status !== "authenticated") {
     redirect("/entrar/administracao?erro=acesso_nao_autorizado");
   }
   const organization = administrativeOrganization(auth.identity);

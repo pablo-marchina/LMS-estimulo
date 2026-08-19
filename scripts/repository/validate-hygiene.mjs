@@ -1,9 +1,9 @@
-import { access, readFile, readdir } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const validatorFile = "scripts/repository/validate-hygiene.mjs";
-const ignoredDirectories = new Set([".git", ".next", ".artifacts", "node_modules"]);
 const textExtensions = new Set([
   ".md", ".json", ".yaml", ".yml", ".csv", ".sql", ".mjs", ".js", ".ts", ".tsx", ".py", ".ps1", ".toml", ".txt",
 ]);
@@ -57,16 +57,13 @@ const requiredFiles = [
   "scripts/verification/verify-deployment.mjs",
 ];
 const errors = [];
-const files = [];
 
-async function walk(directory) {
-  for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) await walk(absolute);
-    else if (entry.isFile()) files.push(path.relative(root, absolute).replaceAll("\\", "/"));
-  }
+function trackedFiles() {
+  const output = execFileSync("git", ["ls-files", "-z"], { cwd: root });
+  return output.toString("utf8").split("\0").filter(Boolean);
 }
+
+const files = trackedFiles();
 
 async function exists(target) {
   try {
@@ -229,7 +226,6 @@ function collectIndexTargets(indexSource) {
   return targets;
 }
 
-await walk(root);
 validatePaths();
 await validateRequiredFiles();
 await validateEdgeFunctionSources();

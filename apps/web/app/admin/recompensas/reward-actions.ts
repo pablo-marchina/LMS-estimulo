@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 import { extensionsRuntime, type JsonRecord } from "@/lib/extensions/runtime";
 import { rewardImageBucket, removeRewardImage, uploadRewardImage, validateRewardImage } from "@/lib/storage/reward-images";
 
@@ -22,7 +21,7 @@ function nullableDate(raw: string) { if (!raw) return null; const parsed = new D
 
 async function authorize() {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar/administracao?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar/administracao?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/recompensas?erro=sem_permissao");
   return { actorUserAccountId: auth.identity.user_account_id, organizationId: organization.organization_id };

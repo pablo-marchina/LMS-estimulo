@@ -6,7 +6,6 @@ import { redirect } from "next/navigation";
 import { publishAdminJourneyVersion } from "@/lib/admin/product-management";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 
 function text(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim();
@@ -14,7 +13,7 @@ function text(formData: FormData, name: string) {
 
 export async function publishJourneyAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  if (auth.status !== "authenticated") redirect("/entrar?erro=acesso_nao_autorizado");
   const organization = administrativeOrganization(auth.identity);
   if (!organization?.permissions.includes("journey.definition.publish")) redirect("/admin/produto?erro=sem_permissao");
 

@@ -10,6 +10,7 @@ const sourceRoots = [
   "config/",
   "scripts/",
   "supabase/functions/",
+  "supabase/migrations/",
   ".github/workflows/",
 ];
 const explicitFiles = new Set(["package.json", "package-lock.json", "tsconfig.json"]);

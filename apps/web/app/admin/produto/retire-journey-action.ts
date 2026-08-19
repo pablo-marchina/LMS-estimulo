@@ -7,13 +7,12 @@ import { z } from "zod";
 import { retireAdminJourney } from "@/lib/admin/product-lifecycle";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
-import { isEstimuloAdministrativeEmail } from "@/lib/auth/administrative-email";
 
 const uuid = z.string().uuid();
 
 export async function retireJourneyAction(formData: FormData) {
   const auth = await getAuthContext();
-  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) {
+  if (auth.status !== "authenticated") {
     redirect("/entrar?erro=acesso_nao_autorizado");
   }
 

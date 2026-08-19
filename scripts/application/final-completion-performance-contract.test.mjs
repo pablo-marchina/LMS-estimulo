@@ -21,8 +21,7 @@ test("normal completion blockers are structured results, not RPC failures", () =
   assert.match(completionAction, /outcome = result\.code/u);
   const tryBlock = completionAction.match(/try \{([\s\S]*?)\} catch/u)?.[1] ?? "";
   assert.doesNotMatch(tryBlock, /redirect\(/u);
-  assert.match(completionAction, /if \(outcome === "completed"\)/u);
-  assert.match(completionAction, /redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?conclusao=ok`\)/u);
+  assert.match(completionAction, /ok: "concluir-aula"/u);
   assert.match(completionAction, /conteudo_pendente: "conteudo"/u);
   assert.match(completionAction, /avaliacao_pendente: "avaliacao"/u);
   assert.match(completionAction, /pratica_pendente: "pratica"/u);

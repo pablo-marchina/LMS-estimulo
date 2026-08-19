@@ -4,7 +4,6 @@ import test from "node:test";
 
 const activityPage = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8");
 const activityLayout = await readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/layout.tsx", "utf8");
-const workspaceFrame = await readFile("apps/web/components/activity-workspace-frame.tsx", "utf8");
 const commentPanel = await readFile("apps/web/components/activity-comment-panel.tsx", "utf8");
 const outlineRuntime = await readFile("apps/web/lib/journey-runtime/outline-runtime.ts", "utf8");
 const retirementMigration = await readFile("supabase/migrations/20260816220130_retire_unimplemented_application_objective_point_rule.sql", "utf8");
@@ -23,7 +22,6 @@ test("lesson follows the continuous Vanessa/Refined workspace instead of tabs or
 
 test("lesson layout no longer mounts the compact tab workspace", () => {
   assert.doesNotMatch(activityLayout, /ActivityCompactWorkspace/u);
-  assert.doesNotMatch(workspaceFrame, /ActivityCompactWorkspace/u);
 });
 
 test("comments publish in place and remain part of the lesson flow", () => {
