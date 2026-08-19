@@ -15,7 +15,12 @@ export default async function ParticipantLayout({ children }: { children: React.
   ]);
 
   return (
-    <AppShell area="empreendedor" email={auth.email} participantHasB2B={Boolean(shellContext?.has_b2b_access)}>
+    <AppShell
+      area="empreendedor"
+      email={auth.email}
+      participantHasB2B={Boolean(shellContext?.has_b2b_access)}
+      participantHasLibrary={Boolean(shellContext?.has_library_content)}
+    >
       <BadgeAcquisitionPopup badges={credentials?.badges ?? []} />
       {children}
       <LegalReacceptanceGate documents={shellContext?.pending_legal_documents ?? []} />
