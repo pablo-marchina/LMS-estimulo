@@ -82,8 +82,10 @@ declare
   v_src text;
   v_needle_open text := 'on conflict(activity_version_id) do update set passing_score=excluded.passing_score,max_attempts=excluded.max_attempts;delete from assessment.answer_options where question_id in(select id from assessment.questions where activity_version_id=v_activity_version_id);delete from assessment.questions where activity_version_id=v_activity_version_id;';
   v_replace_open text := 'on conflict(activity_version_id) do update set passing_score=excluded.passing_score,max_attempts=excluded.max_attempts;if not app_private.e14_assessment_questions_match_payload(v_activity_version_id,p_payload#>''{assessment,questions}'') then delete from assessment.answer_options where question_id in(select id from assessment.questions where activity_version_id=v_activity_version_id);delete from assessment.questions where activity_version_id=v_activity_version_id;';
-  v_needle_close text := E'end loop;end loop;\nelse delete from assessment.answer_options';
-  v_replace_close text := E'end loop;end loop;end if;\nelse delete from assessment.answer_options';
+  v_needle_close_newline text := E'end loop;end loop;\nelse delete from assessment.answer_options';
+  v_replace_close_newline text := E'end loop;end loop;end if;\nelse delete from assessment.answer_options';
+  v_needle_close_inline text := 'end loop;end loop;else delete from assessment.answer_options';
+  v_replace_close_inline text := 'end loop;end loop;end if;else delete from assessment.answer_options';
 begin
   select p.prosrc
   into v_src
@@ -95,10 +97,13 @@ begin
   end if;
   v_src := replace(v_src, v_needle_open, v_replace_open);
 
-  if position(v_needle_close in v_src) = 0 then
+  if position(v_needle_close_newline in v_src) > 0 then
+    v_src := replace(v_src, v_needle_close_newline, v_replace_close_newline);
+  elsif position(v_needle_close_inline in v_src) > 0 then
+    v_src := replace(v_src, v_needle_close_inline, v_replace_close_inline);
+  else
     raise exception 'SAVE_ADMIN_LESSON_ASSESSMENT_CLOSE_MARKER_NOT_FOUND';
   end if;
-  v_src := replace(v_src, v_needle_close, v_replace_close);
 
   execute format(
     'create or replace function public.save_admin_lesson(p_actor_user_account_id uuid,p_organization_id uuid,p_payload jsonb,p_idempotency_key text) returns jsonb language plpgsql security definer set search_path to ''pg_catalog'' as %L',
