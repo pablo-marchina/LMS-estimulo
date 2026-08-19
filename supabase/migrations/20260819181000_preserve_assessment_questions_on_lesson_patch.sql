@@ -79,9 +79,8 @@ grant execute on function app_private.e14_assessment_questions_match_payload(uui
 
 do $patch$
 declare
-  v_src text;
-  v_needle_open text := 'on conflict(activity_version_id) do update set passing_score=excluded.passing_score,max_attempts=excluded.max_attempts;delete from assessment.answer_options where question_id in(select id from assessment.questions where activity_version_id=v_activity_version_id);delete from assessment.questions where activity_version_id=v_activity_version_id;';
-  v_replace_open text := 'on conflict(activity_version_id) do update set passing_score=excluded.passing_score,max_attempts=excluded.max_attempts;if not app_private.e14_assessment_questions_match_payload(v_activity_version_id,p_payload#>''{assessment,questions}'') then delete from assessment.answer_options where question_id in(select id from assessment.questions where activity_version_id=v_activity_version_id);delete from assessment.questions where activity_version_id=v_activity_version_id;';
+  v_needle_open text := 'on conflict(activity_version_id) do update set passing_score=excluded.passing_score,max_attempts=excluded.max_attempts;';
+  v_replace_open text := 'on conflict(activity_version_id) do update set passing_score=excluded.passing_score,max_attempts=excluded.max_attempts;if not app_private.e14_assessment_questions_match_payload(v_activity_version_id,p_payload#>''{assessment,questions}'') then';
   v_needle_close_newline text := E'end loop;end loop;\nelse delete from assessment.answer_options';
   v_replace_close_newline text := E'end loop;end loop;end if;\nelse delete from assessment.answer_options';
   v_needle_close_inline text := 'end loop;end loop;else delete from assessment.answer_options';
