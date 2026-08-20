@@ -36,9 +36,9 @@ test("completion and assessment failures are not disguised as content-not-found"
   assert.match(activityPage, /conclusao/u);
 });
 
-test("completed journeys reopen the journey instead of sending the participant to profile or result", () => {
-  assert.match(navigation, /if \(row\.journey_status === "completed"\) return `\/empreendedor\/jornada\/\$\{instanceId\}`/u);
-  assert.doesNotMatch(navigation, /journey_status === "completed"[^\n]*\/empreendedor\/resultado/u);
+test("journey navigation always reopens the journey instead of sending completed participants to profile or result", () => {
+  assert.match(navigation, /return `\/empreendedor\/jornada\/\$\{encodeURIComponent\(state\.journey_instance_id\)\}`/u);
+  assert.doesNotMatch(navigation, /\/empreendedor\/(?:perfil|resultado)/u);
 });
 
 test("verification options do not receive a correct-answer selection before submission", () => {
@@ -60,6 +60,11 @@ test("lessons without media present an actionable completion state instead of a 
 
 test("empty recommendation shelf stays hidden until there is an actual recommendation", () => {
   assert.match(catalogPage, /\{recommended\.length \? <JourneySection/u);
+});
+
+test("partial participant catalog failures are surfaced instead of silently hiding journeys", () => {
+  assert.match(catalogPage, /skipped_invalid_journeys/u);
+  assert.match(catalogPage, /skippedJourneys > 0/u);
 });
 
 test("completed media can open the next available lesson automatically", () => {
