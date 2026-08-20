@@ -34,7 +34,7 @@ export function PhoneField({ defaultValue = "" }: { defaultValue?: string }) {
         type="tel"
         inputMode="tel"
         autoComplete="tel"
-        placeholder="Ex.: (11) 91234-5678"
+        placeholder="(00) 00000-0000"
         value={value}
         onChange={(event) => setValue(formatBrazilianPhone(event.currentTarget.value))}
         maxLength={15}
