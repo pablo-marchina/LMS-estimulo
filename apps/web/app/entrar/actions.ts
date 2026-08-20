@@ -57,17 +57,18 @@ export async function signInAction(formData: FormData) {
   if (trackedDestination) redirect(trackedDestination);
 
   const firstTouch = decodeFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value);
+  let openAiDestination: string | null = null;
   if (identity.entrepreneur_id && isOpenAiCampaign(firstTouch)) {
     try {
-      const destination = await resolveOpenAiJourneyDestination(identity.user_account_id);
+      openAiDestination = await resolveOpenAiJourneyDestination(identity.user_account_id);
       cookieStore.delete(FIRST_TOUCH_COOKIE);
-      if (destination) redirect(destination);
     } catch (error) {
       console.error("OPENAI_CAMPAIGN_LOGIN_DESTINATION_FAILED", {
         error_name: error instanceof Error ? error.name : "unknown",
       });
     }
   }
+  if (openAiDestination) redirect(openAiDestination);
 
   if (identity.entrepreneur_id) redirect("/empreendedor");
   redirect("/cadastro/concluir");
