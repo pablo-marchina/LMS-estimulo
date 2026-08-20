@@ -1,11 +1,22 @@
 # Fundação atual da aplicação
 
-**Revisado em:** 2026-08-01  
+**Revisado em:** 2026-08-20  
 **Status:** implementação atual documentada; arquitetura AWS institucional ainda pendente
 
 ## Forma do sistema
 
 O repositório contém um monorepo npm com o workspace `apps/web/`. A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Server Components, route handlers, server actions e módulos server-only compõem os casos de uso.
+
+A organização é orientada por capacidades, sem uma divisão horizontal global em `domain/application/infrastructure`. As fronteiras são aplicadas onde agregam clareza:
+
+- `apps/web/app/` é a camada de entrada e composição: rotas, páginas, route handlers e server actions;
+- `apps/web/components/` contém UI compartilhada;
+- `apps/web/lib/<feature>/` concentra modelos, regras e orquestração da capacidade;
+- `apps/web/lib/platform/`, `supabase/`, `rpc/` e `storage/` representam contratos e adapters de infraestrutura;
+- fluxos de tela com transformação relevante usam modelos próprios em `lib/`, deixando `page.tsx` responsável por autenticação, composição e renderização;
+- dependências proibidas entre módulos são descritas em `config/module-boundaries.json` e verificadas por `npm run validate:module-boundaries`.
+
+O editor administrativo de jornadas segue esse padrão: a rota compõe a tela, `product-page-model.ts` prepara o modelo da página, regras puras ficam em `product-page-core.mjs` e cada etapa visual possui um componente dedicado. Esse padrão deve ser replicado quando outras páginas ultrapassarem a responsabilidade de composição.
 
 ## Runtime ativo
 
@@ -37,9 +48,16 @@ Consulte [`JOURNEY_LIFECYCLE.md`](../journeys/JOURNEY_LIFECYCLE.md).
 - a navegação de toda a plataforma usa uma barra global de progresso;
 - skeletons de página foram removidos do carregamento inicial e das transições;
 - a área de Interface possui preview administrativo dedicado das páginas participantes;
-- o preview não depende de uma identidade participante e não grava dados.
+- o preview não depende de uma identidade participante e não grava dados;
+- a resolução da identidade de preview pertence ao módulo `interface-preview`, evitando que o contexto de autenticação conheça diretamente a implementação de outras capacidades.
 
 Consulte [`INTERFACE_PREVIEW_AND_LOADING.md`](INTERFACE_PREVIEW_AND_LOADING.md).
+
+## Testes e contratos
+
+Regras puras com resultado observável são testadas diretamente. Testes baseados em leitura de source permanecem somente para invariantes estáticos que não têm uma superfície comportamental mais apropriada, como wiring de segurança, ausência de exposição e contratos de migration.
+
+Essa separação reduz falsos positivos durante refactors sem remover os gates que protegem invariantes arquiteturais e de segurança.
 
 ## Score comportamental
 
@@ -82,6 +100,12 @@ Eventos brutos, configuração, valores intermediários, snapshots e histórico 
 - views analíticas não são expostas a `anon` ou `authenticated`;
 - replay e contratos do banco fazem parte do gate de release.
 
+## Higiene e arquitetura do repositório
+
+A higiene do repositório é declarativa em `config/repository-hygiene-policy.json`. O script `validate-hygiene.mjs` executa essas regras, mas não mantém listas históricas embutidas no código. A estrutura de dependências da aplicação é declarada separadamente em `config/module-boundaries.json`.
+
+`npm run validate:repository` executa ambos os gates. Assim, limpeza e arquitetura permanecem verificáveis sem concentrar toda a política em um único script crescente.
+
 ## AWS
 
 AWS continua sendo o destino institucional planejado. `Dockerfile.lambda` é o único artefato aprovado, mas não define entrada pública, identidade, banco, armazenamento, rede, segredos, observabilidade ou continuidade. O provider AWS permanece *fail-closed* até essas decisões.
@@ -90,6 +114,7 @@ AWS continua sendo o destino institucional planejado. `Dockerfile.lambda` é o �
 
 ```bash
 npm run validate:release-candidate
+npm run validate:module-boundaries
 npm run test:repository-tooling
 npm run test:application
 npm run test:product
