@@ -89,7 +89,7 @@ export default async function JornadasCatalogPage({ searchParams }: { searchPara
       {query.aviso === "diagnostico_requer_jornada" ? <StatusPanel title="Escolha uma jornada para iniciar o diagnóstico" tone="info"><p>Ao entrar em uma jornada, o diagnóstico ficará disponível no seu perfil.</p></StatusPanel> : null}
       {featured ? <FeaturedJourney journey={featured} /> : dataUnavailable ? null : <Card className="mt-8"><p className="text-sm text-muted">A equipe ainda não definiu uma jornada principal.</p></Card>}
       <JourneySection eyebrow="Continue avançando" title="Em andamento" description={participantCopy.journeys.inProgressDescription} journeys={inProgress} empty={participantCopy.journeys.inProgressEmpty} />
-      <JourneySection eyebrow="Feitas para o seu momento" title={participantCopy.journeys.recommendedTitle} description={participantCopy.journeys.recommendedDescription} journeys={recommended} empty={participantCopy.journeys.recommendedEmpty} />
+      {recommended.length ? <JourneySection eyebrow="Feitas para o seu momento" title={participantCopy.journeys.recommendedTitle} description={participantCopy.journeys.recommendedDescription} journeys={recommended} empty={participantCopy.journeys.recommendedEmpty} /> : null}
       <JourneySection eyebrow="Mais possibilidades" title="Outras jornadas" description={participantCopy.journeys.openDescription} journeys={open} empty="Novas jornadas disponíveis aparecerão aqui quando forem publicadas." />
       <JourneySection eyebrow="Seu histórico" title="Concluídas" description={participantCopy.journeys.completedDescription} journeys={completed} empty={participantCopy.journeys.completedEmpty} />
     </div>
