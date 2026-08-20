@@ -2,19 +2,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const page = await readFile("apps/web/app/admin/produto/page.tsx", "utf8");
+const contentSection = await readFile("apps/web/app/admin/produto/product-content-section.tsx", "utf8");
 const lessonBuilder = await readFile("apps/web/app/admin/produto/trilha-aula-builder.tsx", "utf8");
 const actions = await readFile("apps/web/app/admin/produto/actions.ts", "utf8");
 const runtime = await readFile("apps/web/lib/admin/product-management.ts", "utf8");
 
 test("product editor uses structured track and lesson forms", () => {
-  assert.match(page, /saveTrilhaAction/u);
-  assert.match(page, /TrilhaAulaBuilder/u);
-  assert.match(page, /journey_version_id/u);
+  assert.match(contentSection, /saveTrilhaAction/u);
+  assert.match(contentSection, /TrilhaAulaBuilder/u);
+  assert.match(contentSection, /journey_version_id/u);
   assert.match(lessonBuilder, /saveAulaAction/u);
   assert.match(lessonBuilder, /form action=\{saveAulaAction\}/u);
   assert.match(lessonBuilder, /name="path_template_id"/u);
-  assert.doesNotMatch(`${page}\n${lessonBuilder}`, /JSON bruto|Cole o JSON/iu);
+  assert.doesNotMatch(`${contentSection}\n${lessonBuilder}`, /JSON bruto|Cole o JSON/iu);
 });
 
 test("product actions forward typed payloads through the administrative runtime", () => {
