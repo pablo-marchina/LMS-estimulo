@@ -1,0 +1,27 @@
+{
+  "rules": [
+    {
+      "name": "auth-domain-does-not-own-product-orchestration",
+      "sourcePrefix": "apps/web/lib/auth/",
+      "forbiddenImports": [
+        "@/lib/admin/",
+        "@/lib/extensions/",
+        "@/lib/library/",
+        "@/lib/engagement/",
+        "@/lib/content/"
+      ]
+    },
+    {
+      "name": "admin-product-page-is-a-composition-root",
+      "sourceFiles": [
+        "apps/web/app/admin/produto/page.tsx"
+      ],
+      "forbiddenImports": [
+        "@/lib/admin/journey-editor",
+        "@/lib/admin/product-management",
+        "@/lib/extensions/runtime",
+        "@/lib/library/runtime"
+      ]
+    }
+  ]
+}
