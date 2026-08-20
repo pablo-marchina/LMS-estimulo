@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, CheckCircle2, CircleDot, Clock3 } from "lucide-react";
 import { openJourneyActivityAction } from "@/app/empreendedor/jornada/[journeyInstanceId]/actions";
+import { LessonAutoAdvance } from "@/components/lesson-auto-advance";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { ButtonLink } from "@/components/ui/button";
 import { getAuthContext } from "@/lib/auth/context";
@@ -125,6 +126,7 @@ export async function JourneyProgressNav({ state, current, activityTitle, estima
           {nextActivity ? <ActivityNavigationForm journeyInstanceId={state.journey_instance_id} activity={nextActivity} direction="next" /> : <ButtonLink href={`/empreendedor/resultado?journey=${state.journey_instance_id}`} size="sm" className="ml-auto" icon={<ArrowRight size={15} />}>Ver resultado</ButtonLink>}
         </div>
       ) : null}
+      {current === "activity" ? <LessonAutoAdvance /> : null}
     </aside>
   );
 }
