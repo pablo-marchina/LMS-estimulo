@@ -205,26 +205,23 @@ export async function submitQuickCheckAction(formData: FormData) {
       });
     }
 
+    let activityCompleted = false;
     try {
       const completion = await completeParticipantActivity({
         actorUserAccountId: actor,
         stepInstanceId: step,
         idempotencyKey: `${baseKey}:complete-after-assessment`,
       });
-      if (completion.status === "completed") {
-        redirect(`/empreendedor/jornada/${journey}?conclusao=ok`);
-      }
+      activityCompleted = completion.status === "completed";
     } catch (error) {
-      // A passed assessment must remain recorded even if an independent
-      // completion transition is temporarily unavailable. Keep the participant
-      // on the activity instead of turning a successful verification into an
-      // error page.
       console.error("QUICK_CHECK_POST_COMPLETION_FAILED", {
         journey_instance_id: journey,
         step_instance_id: step,
         error_name: error instanceof Error ? error.name : "unknown",
       });
     }
+
+    if (activityCompleted) redirect(`/empreendedor/jornada/${journey}?conclusao=ok`);
     redirect(activityHref(journey, step, "&avaliacao=aprovada", "avaliacao"));
   }
   redirect(activityHref(journey, step, "&avaliacao=reprovada", "avaliacao"));
