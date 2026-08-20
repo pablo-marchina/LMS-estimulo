@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
 import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
+import { completeParticipantActivity } from "@/lib/journey-runtime/completion-runtime";
 import { journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
 import { utilityRatingRuntime } from "@/lib/utility-rating/runtime";
@@ -198,6 +199,27 @@ export async function submitQuickCheckAction(formData: FormData) {
       await credentialRuntime.issue(actor, journey, step, `${baseKey}:credentials`);
     } catch (error) {
       console.error("QUICK_CHECK_CREDENTIAL_ISSUANCE_FAILED", {
+        journey_instance_id: journey,
+        step_instance_id: step,
+        error_name: error instanceof Error ? error.name : "unknown",
+      });
+    }
+
+    try {
+      const completion = await completeParticipantActivity({
+        actorUserAccountId: actor,
+        stepInstanceId: step,
+        idempotencyKey: `${baseKey}:complete-after-assessment`,
+      });
+      if (completion.status === "completed") {
+        redirect(`/empreendedor/jornada/${journey}?conclusao=ok`);
+      }
+    } catch (error) {
+      // A passed assessment must remain recorded even if an independent
+      // completion transition is temporarily unavailable. Keep the participant
+      // on the activity instead of turning a successful verification into an
+      // error page.
+      console.error("QUICK_CHECK_POST_COMPLETION_FAILED", {
         journey_instance_id: journey,
         step_instance_id: step,
         error_name: error instanceof Error ? error.name : "unknown",
