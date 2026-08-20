@@ -3,7 +3,8 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const validatorFile = "scripts/repository/validate-hygiene.mjs";
-const policyPath = path.join(root, "config/repository-hygiene-policy.json");
+const policyFile = "config/repository-hygiene-policy.json";
+const policyPath = path.join(root, policyFile);
 const policy = JSON.parse(await readFile(policyPath, "utf8"));
 const ignoredDirectories = new Set(policy.ignoredDirectories ?? []);
 const textExtensions = new Set(policy.textExtensions ?? []);
@@ -190,7 +191,7 @@ for (const file of markdownFiles) await validateLocalLinks(file);
 
 const textEntries = await readTextFiles();
 for (const { file, content } of textEntries) {
-  if (file === validatorFile) continue;
+  if (file === validatorFile || file === policyFile) continue;
   for (const reference of forbiddenReferences) {
     if (content.includes(reference)) errors.push(`development-only reference in ${file}: ${reference}`);
   }
