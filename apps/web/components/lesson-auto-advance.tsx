@@ -15,8 +15,8 @@ export function LessonAutoAdvance() {
   const scheduled = useRef(false);
 
   useEffect(() => {
-    let interval: ReturnType<typeof window.setInterval> | null = null;
-    let timeout: ReturnType<typeof window.setTimeout> | null = null;
+    let interval: number | null = null;
+    let timeout: number | null = null;
 
     function clearTimers() {
       if (interval !== null) window.clearInterval(interval);
