@@ -45,11 +45,12 @@ test("admin extension saves do not catch successful Next redirects", async () =>
 });
 
 test("participant interface preview renders real routes with read-only impersonation", async () => {
-  const [selector, previewPage, bootstrap, context, proxy, gateway, extensionGateway, edge, guard, bridge, shell] = await Promise.all([
+  const [selector, previewPage, bootstrap, contextFacade, requestContext, proxy, gateway, extensionGateway, edge, guard, bridge, shell] = await Promise.all([
     read("apps/web/app/admin/experiencia/visual-interface-selector.tsx"),
     read("apps/web/app/interface-preview/participant/page.tsx"),
     read("apps/web/app/interface-preview/participant/start/route.ts"),
     read("apps/web/lib/auth/context.ts"),
+    read("apps/web/lib/request-context/auth-context.ts"),
     read("apps/web/proxy.ts"),
     read("apps/web/lib/rpc/authenticated-gateway.ts"),
     read("apps/web/lib/extensions/gateway.ts"),
@@ -62,7 +63,9 @@ test("participant interface preview renders real routes with read-only impersona
   assert.match(selector, /sandbox="allow-same-origin allow-scripts"/);
   assert.doesNotMatch(previewPage, /Conteúdo demonstrativo|Gestão para crescer|IA aplicada ao negócio/);
   assert.match(bootstrap, /serializeInterfacePreviewIdentity/);
-  assert.match(context, /resolveInterfacePreviewIdentity/);
+  assert.match(contextFacade, /request-context\/auth-context/);
+  assert.doesNotMatch(contextFacade, /resolveInterfacePreviewIdentity/);
+  assert.match(requestContext, /resolveInterfacePreviewIdentity/);
   assert.match(proxy, /INTERFACE_PREVIEW_REQUEST_HEADER/);
   assert.match(gateway, /previewReadOnlyRpcs/);
   assert.match(extensionGateway, /preview_participant_extensions/);
