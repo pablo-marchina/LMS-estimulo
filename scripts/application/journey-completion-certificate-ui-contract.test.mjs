@@ -2,18 +2,18 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [journeyPage, journeyAction, certificatePolicyMigration] = await Promise.all([
-  readFile("apps/web/app/admin/produto/page.tsx", "utf8"),
+const [generalSection, journeyAction, certificatePolicyMigration] = await Promise.all([
+  readFile("apps/web/app/admin/produto/product-general-section.tsx", "utf8"),
   readFile("apps/web/app/admin/produto/journey-action.ts", "utf8"),
   readFile("supabase/migrations/20260817031500_journey_completion_certificate_selection.sql", "utf8"),
 ]);
 
 test("journey editor exposes an explicit completion-certificate policy", () => {
-  assert.match(journeyPage, /Conclusão e certificado/u);
-  assert.match(journeyPage, /name="completion_certificate_enabled"/u);
-  assert.match(journeyPage, /name="completion_certificate_version_id"/u);
-  assert.match(journeyPage, /Emitir certificado ao concluir a jornada/u);
-  assert.match(journeyPage, /Somente certificados publicados e já vinculados a esta jornada aparecem aqui/u);
+  assert.match(generalSection, /Conclusão e certificado/u);
+  assert.match(generalSection, /name="completion_certificate_enabled"/u);
+  assert.match(generalSection, /name="completion_certificate_version_id"/u);
+  assert.match(generalSection, /Emitir certificado ao concluir a jornada/u);
+  assert.match(generalSection, /Somente certificados publicados e já vinculados a esta jornada aparecem aqui/u);
 });
 
 test("journey save validates and persists exactly the selected published certificate", () => {
