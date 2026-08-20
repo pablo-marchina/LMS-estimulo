@@ -170,8 +170,10 @@ export default async function ActivityPage({
                 />
               ))
             ) : (
-              <StatusPanel title="Nenhum material anexado" tone="info">
-                Continue pelas etapas disponíveis nesta aula.
+              <StatusPanel title={completed ? "Etapa concluída" : "Pronto para avançar"} tone={completed ? "success" : "info"}>
+                {completed
+                  ? "Seu progresso nesta etapa já foi registrado. Se ela liberar uma conquista, a confirmação aparece automaticamente na plataforma."
+                  : "Esta etapa não possui material para assistir. Conclua a avaliação ou prática, quando houver, e use o botão de conclusão para registrar seu avanço."}
               </StatusPanel>
             )}
 
