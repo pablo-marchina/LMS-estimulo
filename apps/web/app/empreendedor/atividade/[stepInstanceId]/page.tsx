@@ -81,22 +81,8 @@ function fileSize(value: number | null): string | null {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function SectionTitle({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="min-w-0">
-      {eyebrow ? <p className="text-[11px] font-bold uppercase tracking-[.14em] text-primary">{eyebrow}</p> : null}
-      <h2 className={`${eyebrow ? "mt-1" : ""} text-xl font-black leading-tight text-secondary`}>{title}</h2>
-      {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{description}</p> : null}
-    </div>
-  );
+function SectionTitle({ title }: { title: string }) {
+  return <h2 className="text-xl font-black leading-tight text-secondary">{title}</h2>;
 }
 
 export default async function ActivityPage({
@@ -164,12 +150,8 @@ export default async function ActivityPage({
 
       <main className="mt-5 min-w-0 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-sm">
         <section id="conteudo" className="scroll-mt-24 min-w-0" aria-labelledby="conteudo-titulo">
-          <div className="border-b border-border bg-surface-muted/55 px-4 py-5 sm:px-6 sm:py-6">
-            <SectionTitle
-              eyebrow="Conteúdo"
-              title="Estude esta aula no seu ritmo"
-              description={activity.description ?? "Acompanhe os materiais abaixo. Seu progresso fica vinculado a esta aula."}
-            />
+          <div className="border-b border-border bg-surface-muted/55 px-4 py-5 sm:px-6 sm:py-6" id="conteudo-titulo">
+            <SectionTitle title="Conteúdo" />
           </div>
 
           <div className="grid min-w-0 gap-4 p-4 sm:p-6">
@@ -192,6 +174,10 @@ export default async function ActivityPage({
                 Continue pelas etapas disponíveis nesta aula.
               </StatusPanel>
             )}
+
+            {activity.description ? (
+              <p className="max-w-3xl text-sm leading-6 text-muted">{activity.description}</p>
+            ) : null}
           </div>
         </section>
 
@@ -199,13 +185,7 @@ export default async function ActivityPage({
 
         {hasAssessment ? (
           <section id="avaliacao" className="scroll-mt-24 grid min-w-0 gap-5 border-t border-border px-4 py-6 sm:px-6 sm:py-7" aria-labelledby="avaliacao-titulo">
-            <div id="avaliacao-titulo">
-              <SectionTitle
-                eyebrow="Verificação"
-                title="Verifique o que aprendeu"
-                description="Responda depois de concluir os materiais obrigatórios. Suas respostas e tentativas ficam vinculadas a esta aula."
-              />
-            </div>
+            <div id="avaliacao-titulo"><SectionTitle title="Avaliação" /></div>
             {completionTarget === "avaliacao_pendente" && completionMessage ? (
               <StatusPanel title={completionMessage.title} tone={completionMessage.tone}>{completionMessage.text}</StatusPanel>
             ) : null}
@@ -240,13 +220,7 @@ export default async function ActivityPage({
 
         {practice ? (
           <section id="pratica" className="scroll-mt-24 grid min-w-0 gap-5 border-t border-border px-4 py-6 sm:px-6 sm:py-7" aria-labelledby="pratica-titulo">
-            <div id="pratica-titulo">
-              <SectionTitle
-                eyebrow="Prática"
-                title="Aplique e envie sua evidência"
-                description="Envie PDF, imagem, TXT ou DOCX de até 6 MB. O arquivo permanece privado e nunca é executado."
-              />
-            </div>
+            <div id="pratica-titulo"><SectionTitle title="Prática" /></div>
 
             {completionTarget === "pratica_pendente" && completionMessage ? (
               <StatusPanel title={completionMessage.title} tone={completionMessage.tone}>{completionMessage.text}</StatusPanel>
@@ -326,11 +300,7 @@ export default async function ActivityPage({
 
           <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)] md:items-start">
             <div className="min-w-0">
-              <SectionTitle
-                eyebrow="Finalização"
-                title={completed ? "Aula concluída" : "Finalize quando terminar as etapas"}
-                description={completed ? "Seu progresso nesta aula já foi registrado." : "Conclua os requisitos da aula e registre seu progresso quando estiver pronto."}
-              />
+              <SectionTitle title="Finalização" />
               <form action={completeParticipantActivityAction} id="concluir-aula" className="mt-4">
                 <input type="hidden" name="journey_instance_id" value={journey} />
                 <input type="hidden" name="step_instance_id" value={stepInstanceId} />
@@ -350,7 +320,6 @@ export default async function ActivityPage({
               <p className="text-sm font-bold text-ink">
                 {query.utilidade === "registrada" || utilityRating.rating ? "Obrigado pela avaliação!" : "O que achou desta aula?"}
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted">Sua nota ajuda a melhorar o conteúdo e não interfere na conclusão.</p>
               <form action={rateActivityUtilityAction} className="mt-3 flex items-center gap-1" aria-label="Avalie esta aula de 1 a 5 estrelas">
                 <input type="hidden" name="journey_instance_id" value={journey} />
                 <input type="hidden" name="step_instance_id" value={stepInstanceId} />
@@ -380,13 +349,7 @@ export default async function ActivityPage({
         </section>
 
         <section id="comentarios" className="scroll-mt-24 min-w-0 border-t border-border px-4 py-6 sm:px-6 sm:py-7" aria-labelledby="comentarios-titulo">
-          <div id="comentarios-titulo">
-            <SectionTitle
-              eyebrow="Discussão"
-              title="Converse sobre esta aula"
-              description="Conte o que você achou ou compartilhe como isso se aplica ao seu negócio. Não publique dados pessoais, financeiros ou sensíveis."
-            />
-          </div>
+          <div id="comentarios-titulo"><SectionTitle title="Comentários" /></div>
           <div className="mt-5 max-w-3xl">
             <ActivityCommentPanel
               journeyInstanceId={journey}
