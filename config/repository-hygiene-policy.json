@@ -49,7 +49,6 @@
   "forbiddenReferences": [
     "premissas-desenvolvimento.md",
     "SOURCE_AUTHORITY_HIERARCHY.md",
-    "ADR-003-HUBSPOT-AUTHORITATIVE-DATA_SOURCE.md",
     "ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
     "RUNTIME_GAP.md",
     "SCHEMA_DELTA.md",
