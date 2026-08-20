@@ -74,6 +74,17 @@ const completionMessages: Record<string, { tone: "success" | "warning" | "danger
   },
 };
 
+const assessmentMessages: Record<string, { title: string; text: string }> = {
+  resposta_pendente: {
+    title: "Responda todas as perguntas",
+    text: "A verificação não foi enviada. Complete as respostas e tente novamente.",
+  },
+  indisponivel: {
+    title: "Verificação atualizada",
+    text: "A configuração desta verificação mudou enquanto a aula estava aberta. Recarregue a página antes de tentar novamente.",
+  },
+};
+
 function fileSize(value: number | null): string | null {
   if (value === null) return null;
   if (value < 1024) return `${value} B`;
@@ -107,19 +118,29 @@ export default async function ActivityPage({
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
 
-  const [experience, commentResult, practiceLoad, utilityRating] = await Promise.all([
-    journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey),
-    journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId),
-    practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId)
+  const actor = auth.identity.user_account_id;
+  const [experience, commentLoad, practiceLoad, utilityLoad] = await Promise.all([
+    journeyRuntime.getParticipantExperience(actor, journey),
+    journeyRuntime.listActivityComments(actor, stepInstanceId)
+      .then((value) => ({ value, unavailable: false as const }))
+      .catch(() => ({ value: { step_instance_id: stepInstanceId, comments: [] }, unavailable: true as const })),
+    practiceRuntime.listParticipant(actor, stepInstanceId)
       .then((value) => ({ value, unavailable: false as const }))
       .catch(() => ({ value: null, unavailable: true as const })),
-    utilityRatingRuntime.get(auth.identity.user_account_id, stepInstanceId),
+    utilityRatingRuntime.get(actor, stepInstanceId)
+      .then((value) => ({ value, unavailable: false as const }))
+      .catch(() => ({
+        value: { step_instance_id: stepInstanceId, rating: null, revision: 0, updated_at: null },
+        unavailable: true as const,
+      })),
   ]);
 
   if (experience.state.s?.step_instance_id !== stepInstanceId || !experience.activity) notFound();
 
   const activity = experience.activity;
   const assessment = experience.assessment;
+  const commentResult = commentLoad.value;
+  const utilityRating = utilityLoad.value;
   const requiredAssets = activity.assets
     .filter((asset) => asset.is_required)
     .map((asset) => ({ id: asset.id, completed: asset.progress.completed }));
@@ -138,6 +159,7 @@ export default async function ActivityPage({
   const completed = experience.state.s?.status === "completed";
   const completionMessage = query.conclusao ? completionMessages[query.conclusao] : null;
   const completionTarget = query.conclusao ?? null;
+  const assessmentMessage = query.avaliacao ? assessmentMessages[query.avaliacao] : null;
 
   return (
     <div className="mx-auto w-full max-w-[1100px] px-4 pb-20 pt-4 sm:px-6 sm:pt-6">
@@ -191,6 +213,7 @@ export default async function ActivityPage({
             {completionTarget === "avaliacao_pendente" && completionMessage ? (
               <StatusPanel title={completionMessage.title} tone={completionMessage.tone}>{completionMessage.text}</StatusPanel>
             ) : null}
+            {assessmentMessage ? <StatusPanel title={assessmentMessage.title} tone="warning">{assessmentMessage.text}</StatusPanel> : null}
             {query.avaliacao === "reprovada" || experience.state.q?.status === "failed" ? (
               <StatusPanel title="Revise e tente novamente" tone="warning">
                 A tentativa anterior não atingiu o critério. Reveja o conteúdo e faça uma nova tentativa.
@@ -322,27 +345,31 @@ export default async function ActivityPage({
               <p className="text-sm font-bold text-ink">
                 {query.utilidade === "registrada" || utilityRating.rating ? "Obrigado pela avaliação!" : "O que achou desta aula?"}
               </p>
-              <form action={rateActivityUtilityAction} className="mt-3 flex items-center gap-1" aria-label="Avalie esta aula de 1 a 5 estrelas">
-                <input type="hidden" name="journey_instance_id" value={journey} />
-                <input type="hidden" name="step_instance_id" value={stepInstanceId} />
-                <input type="hidden" name="idempotency_key" value={randomUUID()} />
-                {[1, 2, 3, 4, 5].map((rating) => {
-                  const active = rating <= (utilityRating.rating ?? 0);
-                  return (
-                    <button
-                      key={rating}
-                      type="submit"
-                      name="rating"
-                      value={rating}
-                      aria-label={`Avaliar com ${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
-                      title={`${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
-                      className="grid size-9 place-items-center rounded-lg text-muted transition hover:bg-primary-soft hover:text-primary focus-visible:text-primary"
-                    >
-                      <Star size={20} fill={active ? "currentColor" : "none"} className={active ? "text-primary" : ""} />
-                    </button>
-                  );
-                })}
-              </form>
+              {utilityLoad.unavailable ? (
+                <p className="mt-2 text-xs leading-5 text-muted">A nota desta aula está temporariamente indisponível. Isso não interfere no seu progresso.</p>
+              ) : (
+                <form action={rateActivityUtilityAction} className="mt-3 flex items-center gap-1" aria-label="Avalie esta aula de 1 a 5 estrelas">
+                  <input type="hidden" name="journey_instance_id" value={journey} />
+                  <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+                  <input type="hidden" name="idempotency_key" value={randomUUID()} />
+                  {[1, 2, 3, 4, 5].map((rating) => {
+                    const active = rating <= (utilityRating.rating ?? 0);
+                    return (
+                      <button
+                        key={rating}
+                        type="submit"
+                        name="rating"
+                        value={rating}
+                        aria-label={`Avaliar com ${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
+                        title={`${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
+                        className="grid size-9 place-items-center rounded-lg text-muted transition hover:bg-primary-soft hover:text-primary focus-visible:text-primary"
+                      >
+                        <Star size={20} fill={active ? "currentColor" : "none"} className={active ? "text-primary" : ""} />
+                      </button>
+                    );
+                  })}
+                </form>
+              )}
               {query.utilidade === "registrada" ? (
                 <p className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-success"><CheckCircle2 size={14} /> Avaliação registrada</p>
               ) : null}
@@ -353,11 +380,15 @@ export default async function ActivityPage({
         <section id="comentarios" className="scroll-mt-24 min-w-0 border-t border-border px-4 py-6 sm:px-6 sm:py-7" aria-labelledby="comentarios-titulo">
           <div id="comentarios-titulo"><SectionTitle title="Comentários" /></div>
           <div className="mt-5 max-w-3xl">
-            <ActivityCommentPanel
-              journeyInstanceId={journey}
-              stepInstanceId={stepInstanceId}
-              initialComments={commentResult.comments}
-            />
+            {commentLoad.unavailable ? (
+              <StatusPanel title="Comentários temporariamente indisponíveis" tone="warning">A aula e o seu progresso continuam funcionando normalmente. Recarregue a página para tentar abrir a discussão novamente.</StatusPanel>
+            ) : (
+              <ActivityCommentPanel
+                journeyInstanceId={journey}
+                stepInstanceId={stepInstanceId}
+                initialComments={commentResult.comments}
+              />
+            )}
           </div>
         </section>
       </main>
