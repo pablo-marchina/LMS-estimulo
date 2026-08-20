@@ -7,7 +7,8 @@ import { getAuthContext } from "@/lib/auth/context";
 import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { completeParticipantActivity } from "@/lib/journey-runtime/completion-runtime";
-import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import type { AssessmentQuestion } from "@/lib/journey-runtime/contracts";
+import { JourneyRpcError, journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { practiceRuntime } from "@/lib/practice/runtime";
 import { utilityRatingRuntime } from "@/lib/utility-rating/runtime";
 
@@ -20,6 +21,17 @@ const utilityRatingValue = z.coerce.number().int().min(1).max(5);
 
 function activityHref(journey: string, step: string, query = "", hash = "") {
   return `/empreendedor/atividade/${step}?journey=${journey}${query}${hash ? `#${hash}` : ""}`;
+}
+
+function quickCheckAnswer(formData: FormData, question: AssessmentQuestion) {
+  const field = `answer_${question.id}`;
+  return question.question_type === "multiple_choice"
+    ? formData.getAll(field).map(String).map((value) => value.trim()).filter(Boolean).join(",")
+    : String(formData.get(field) ?? "").trim();
+}
+
+function isStateConflict(error: unknown): error is JourneyRpcError {
+  return error instanceof JourneyRpcError && error.code === "23505";
 }
 
 async function actorId() {
@@ -161,25 +173,34 @@ export async function submitQuickCheckAction(formData: FormData) {
   let experience = await journeyRuntime.getParticipantExperience(actor, journey);
   let assessment = experience.assessment;
   if (!assessment?.questions.length || experience.state.s?.step_instance_id !== step) {
-    throw new Error("ASSESSMENT_NOT_AVAILABLE");
+    redirect(activityHref(journey, step, "&avaliacao=indisponivel", "avaliacao"));
+  }
+
+  const submittedAnswers = new Map<string, string>();
+  for (const question of assessment.questions) {
+    if (question.response) continue;
+    const answer = quickCheckAnswer(formData, question);
+    if (!answer) redirect(activityHref(journey, step, "&avaliacao=resposta_pendente", "avaliacao"));
+    submittedAnswers.set(question.id, answer);
   }
 
   if (!experience.state.q || experience.state.q.status !== "in_progress") {
-    await journeyRuntime.startQuickCheck(actor, step, `${baseKey}:start`);
+    try {
+      await journeyRuntime.startQuickCheck(actor, step, `${baseKey}:start`);
+    } catch (error) {
+      if (!isStateConflict(error)) throw error;
+    }
     experience = await journeyRuntime.getParticipantExperience(actor, journey);
     assessment = experience.assessment;
-    if (!assessment?.questions.length) throw new Error("ASSESSMENT_NOT_AVAILABLE");
+    if (!assessment?.questions.length) redirect(activityHref(journey, step, "&avaliacao=indisponivel", "avaliacao"));
   }
   const attempt = experience.state.q;
-  if (!attempt) throw new Error("ASSESSMENT_ATTEMPT_NOT_AVAILABLE");
+  if (!attempt) redirect(activityHref(journey, step, "&avaliacao=indisponivel", "avaliacao"));
 
   for (const question of assessment.questions) {
     if (question.response) continue;
-    const field = `answer_${question.id}`;
-    const answer = question.question_type === "multiple_choice"
-      ? formData.getAll(field).map(String).map((value) => value.trim()).filter(Boolean).join(",")
-      : String(formData.get(field) ?? "").trim();
-    if (!answer) throw new Error("ASSESSMENT_ANSWER_REQUIRED");
+    const answer = submittedAnswers.get(question.id) ?? quickCheckAnswer(formData, question);
+    if (!answer) redirect(activityHref(journey, step, "&avaliacao=resposta_pendente", "avaliacao"));
     await journeyRuntime.recordQuickCheckAnswer(
       actor,
       attempt.attempt_id,
@@ -191,9 +212,18 @@ export async function submitQuickCheckAction(formData: FormData) {
 
   experience = await journeyRuntime.getParticipantExperience(actor, journey);
   const current = experience.state.q;
-  if (!current) throw new Error("ASSESSMENT_VERSION_NOT_AVAILABLE");
-  await journeyRuntime.submitQuickCheck(actor, current.attempt_id, current.aggregate_version, `${baseKey}:submit`);
-  const updated = await journeyRuntime.getParticipantExperience(actor, journey);
+  if (!current) redirect(activityHref(journey, step, "&avaliacao=indisponivel", "avaliacao"));
+
+  let updated;
+  try {
+    await journeyRuntime.submitQuickCheck(actor, current.attempt_id, current.aggregate_version, `${baseKey}:submit`);
+    updated = await journeyRuntime.getParticipantExperience(actor, journey);
+  } catch (error) {
+    if (!isStateConflict(error)) throw error;
+    updated = await journeyRuntime.getParticipantExperience(actor, journey);
+    if (!updated.state.q || updated.state.q.status === "in_progress") throw error;
+  }
+
   if (updated.state.q?.passed) {
     try {
       await credentialRuntime.issue(actor, journey, step, `${baseKey}:credentials`);
