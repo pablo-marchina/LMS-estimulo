@@ -1,5 +1,6 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { publicSupabaseEnv } from "@/lib/env";
 import { platformRuntimeProvider } from "@/lib/platform/runtime-provider";
@@ -15,7 +16,7 @@ export async function clearSupabaseSessionCookies() {
   }
 }
 
-export async function createSessionClient() {
+async function createRequestSessionClient() {
   if (platformRuntimeProvider() !== "supabase") {
     throw new Error("SUPABASE_SESSION_ADAPTER_FORBIDDEN_IN_AWS_RUNTIME");
   }
@@ -36,3 +37,8 @@ export async function createSessionClient() {
     },
   });
 }
+
+// A participant page can invoke several RPCs in parallel. Reusing the same
+// request-scoped Supabase client lets the auth library coordinate a token refresh
+// instead of multiple independent clients racing on the same refresh token.
+export const createSessionClient = cache(createRequestSessionClient);
