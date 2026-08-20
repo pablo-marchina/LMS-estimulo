@@ -1,0 +1,82 @@
+{
+  "extensions": [".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"],
+  "rules": [
+    {
+      "name": "library-code-must-not-depend-on-ui",
+      "from": "apps/web/lib/",
+      "forbiddenTargets": [
+        "apps/web/app/",
+        "apps/web/components/"
+      ]
+    },
+    {
+      "name": "auth-must-not-depend-on-product-features",
+      "from": "apps/web/lib/auth/",
+      "forbiddenTargets": [
+        "apps/web/lib/admin/",
+        "apps/web/lib/content/",
+        "apps/web/lib/credentials/",
+        "apps/web/lib/diagnostics/",
+        "apps/web/lib/engagement/",
+        "apps/web/lib/library/",
+        "apps/web/lib/practice/"
+      ]
+    },
+    {
+      "name": "platform-is-a-foundation-layer",
+      "from": "apps/web/lib/platform/",
+      "forbiddenTargets": [
+        "apps/web/lib/admin/",
+        "apps/web/lib/auth/",
+        "apps/web/lib/content/",
+        "apps/web/lib/credentials/",
+        "apps/web/lib/diagnostics/",
+        "apps/web/lib/engagement/",
+        "apps/web/lib/extensions/",
+        "apps/web/lib/hubspot/",
+        "apps/web/lib/interface-content/",
+        "apps/web/lib/interface-preview/",
+        "apps/web/lib/journey-runtime/",
+        "apps/web/lib/landing-pages/",
+        "apps/web/lib/library/",
+        "apps/web/lib/maturity/",
+        "apps/web/lib/practice/",
+        "apps/web/lib/utility-rating/"
+      ]
+    },
+    {
+      "name": "supabase-is-an-infrastructure-adapter",
+      "from": "apps/web/lib/supabase/",
+      "forbiddenTargets": [
+        "apps/web/lib/admin/",
+        "apps/web/lib/content/",
+        "apps/web/lib/credentials/",
+        "apps/web/lib/diagnostics/",
+        "apps/web/lib/engagement/",
+        "apps/web/lib/extensions/",
+        "apps/web/lib/hubspot/",
+        "apps/web/lib/journey-runtime/",
+        "apps/web/lib/library/",
+        "apps/web/lib/maturity/",
+        "apps/web/lib/practice/",
+        "apps/web/lib/utility-rating/"
+      ]
+    },
+    {
+      "name": "rpc-gateway-must-not-depend-on-product-implementations",
+      "from": "apps/web/lib/rpc/",
+      "forbiddenTargets": [
+        "apps/web/lib/admin/",
+        "apps/web/lib/content/",
+        "apps/web/lib/credentials/",
+        "apps/web/lib/diagnostics/",
+        "apps/web/lib/engagement/",
+        "apps/web/lib/hubspot/",
+        "apps/web/lib/library/",
+        "apps/web/lib/maturity/",
+        "apps/web/lib/practice/",
+        "apps/web/lib/utility-rating/"
+      ]
+    }
+  ]
+}
