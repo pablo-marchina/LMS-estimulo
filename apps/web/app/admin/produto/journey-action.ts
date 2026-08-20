@@ -62,11 +62,14 @@ export async function saveJourneyAction(formData: FormData) {
   revalidatePath("/admin/produto");
   revalidatePath("/empreendedor", "layout");
 
-  const success = result.liveUpdate ? "atualizado_ao_vivo" : "rascunho_salvo";
+  const success = result.liveUpdate
+    ? "atualizado_ao_vivo"
+    : "rascunho_salvo";
   redirect(
-    `/admin/produto?etapa=$$
-      {result.themeSaveFailed ? "geral" : "conteudo"}
-    &versao=${result.savedJourneyId}&sucesso=${success}$
-      {result.themeSaveFailed ? "&erro=temas_nao_salvos" : ""}`.replaceAll("$\n      ", "$").replaceAll("\n    ", ""),
+    `/admin/produto?etapa=${
+      result.themeSaveFailed ? "geral" : "conteudo"
+    }&versao=${result.savedJourneyId}&sucesso=${success}${
+      result.themeSaveFailed ? "&erro=temas_nao_salvos" : ""
+    }`,
   );
 }
