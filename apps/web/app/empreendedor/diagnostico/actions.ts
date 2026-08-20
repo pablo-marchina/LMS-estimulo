@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertParticipantMutationAllowed, requireParticipantContext } from "@/lib/auth/participant-context";
-import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { JourneyRpcError, journeyRuntime } from "@/lib/journey-runtime/rpc";
 import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 const uuid = z.string().uuid();
@@ -17,6 +17,10 @@ const diagnosticAnswerSchema = z.object({
 
 function resultDestination(journey: string) {
   return `/empreendedor/resultado?journey=${journey}&diagnostico=concluido`;
+}
+
+function isStateConflict(error: unknown): error is JourneyRpcError {
+  return error instanceof JourneyRpcError && error.code === "23505";
 }
 
 export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof diagnosticAnswerSchema>) {
@@ -37,12 +41,16 @@ export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof dia
   }
 
   if (!experience.state.d) {
-    await journeyRuntime.startDiagnostic(
-      actor,
-      parsed.journeyInstanceId,
-      diagnostic.version_id,
-      `${parsed.idempotencyKey}:start`,
-    );
+    try {
+      await journeyRuntime.startDiagnostic(
+        actor,
+        parsed.journeyInstanceId,
+        diagnostic.version_id,
+        `${parsed.idempotencyKey}:start`,
+      );
+    } catch (error) {
+      if (!isStateConflict(error)) throw error;
+    }
     experience = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
     if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
     diagnostic = experience.diagnostic;
@@ -56,14 +64,21 @@ export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof dia
   if (latestItem.response?.option_code === parsed.optionCode) return { ok: true as const };
 
   const revision = (latestItem.response?.revision ?? 0) + 1;
-  await journeyRuntime.recordDiagnosticResponse(
-    actor,
-    sessionId,
-    parsed.itemId,
-    parsed.optionCode,
-    revision,
-    `${parsed.idempotencyKey}:item:${parsed.itemId}:revision:${revision}:option:${parsed.optionCode}`,
-  );
+  try {
+    await journeyRuntime.recordDiagnosticResponse(
+      actor,
+      sessionId,
+      parsed.itemId,
+      parsed.optionCode,
+      revision,
+      `${parsed.idempotencyKey}:item:${parsed.itemId}:revision:${revision}:option:${parsed.optionCode}`,
+    );
+  } catch (error) {
+    if (!isStateConflict(error)) throw error;
+    const latest = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
+    const persisted = latest.diagnostic?.items.find((item) => item.id === parsed.itemId)?.response?.option_code;
+    if (persisted !== parsed.optionCode) throw error;
+  }
 
   return { ok: true as const };
 }
@@ -81,7 +96,11 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
   let diagnostic = experience.diagnostic;
 
   if (!experience.state.d) {
-    await journeyRuntime.startDiagnostic(actor, journey, diagnostic.version_id, `${baseKey}:start`);
+    try {
+      await journeyRuntime.startDiagnostic(actor, journey, diagnostic.version_id, `${baseKey}:start`);
+    } catch (error) {
+      if (!isStateConflict(error)) throw error;
+    }
     experience = await journeyRuntime.getParticipantExperience(actor, journey);
     if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
     diagnostic = experience.diagnostic;
@@ -98,14 +117,21 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
     }
     if (option && item.response?.option_code !== option) {
       const revision = (item.response?.revision ?? 0) + 1;
-      await journeyRuntime.recordDiagnosticResponse(
-        actor,
-        sessionId,
-        item.id,
-        option,
-        revision,
-        `${baseKey}:item:${item.id}:revision:${revision}:option:${option}`,
-      );
+      try {
+        await journeyRuntime.recordDiagnosticResponse(
+          actor,
+          sessionId,
+          item.id,
+          option,
+          revision,
+          `${baseKey}:item:${item.id}:revision:${revision}:option:${option}`,
+        );
+      } catch (error) {
+        if (!isStateConflict(error)) throw error;
+        const latest = await journeyRuntime.getParticipantExperience(actor, journey);
+        const persisted = latest.diagnostic?.items.find((candidate) => candidate.id === item.id)?.response?.option_code;
+        if (persisted !== option) throw error;
+      }
     }
   }
 
