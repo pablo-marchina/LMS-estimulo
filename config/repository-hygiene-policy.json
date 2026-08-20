@@ -1,0 +1,84 @@
+{
+  "ignoredDirectories": [
+    ".git",
+    ".next",
+    ".artifacts",
+    "node_modules"
+  ],
+  "textExtensions": [
+    ".md",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".csv",
+    ".sql",
+    ".mjs",
+    ".js",
+    ".ts",
+    ".tsx",
+    ".py",
+    ".ps1",
+    ".toml",
+    ".txt"
+  ],
+  "forbiddenPrefixes": [
+    ".claude/",
+    ".deployment-triggers/",
+    ".github/hooks/",
+    ".github/skills/",
+    ".superpowers/",
+    "apps/web/lib/browser-e2e/",
+    "docs/superpowers/",
+    "scripts/browser-e2e/"
+  ],
+  "forbiddenExactFiles": [
+    ".github/workflows/browser-e2e.yml",
+    ".github/workflows/experience-validation.yml",
+    "apps/web/.env.example",
+    "apps/web/app/api/e2e/session/route.ts",
+    "docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
+    "docs/implementation/RUNTIME_GAP.md",
+    "docs/implementation/SCHEMA_DELTA.md",
+    "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
+    "premissas-desenvolvimento.md"
+  ],
+  "allowedEnvironmentExamples": [
+    ".env.example",
+    "config/supabase-test/.env.example"
+  ],
+  "forbiddenReferences": [
+    "premissas-desenvolvimento.md",
+    "SOURCE_AUTHORITY_HIERARCHY.md",
+    "ADR-003-HUBSPOT-AUTHORITATIVE-DATA_SOURCE.md",
+    "ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
+    "RUNTIME_GAP.md",
+    "SCHEMA_DELTA.md",
+    "BROWSER_E2E_MODE",
+    "@/lib/browser-e2e/",
+    "scripts/browser-e2e/",
+    "run-synthetic-vertical.mjs",
+    "test:browser-e2e"
+  ],
+  "requiredFiles": [
+    "README.md",
+    "PROJECT_INDEX.md",
+    "CONTRIBUTING.md",
+    ".env.example",
+    "config/module-boundaries.json",
+    "config/repository-hygiene-policy.json",
+    "docs/architecture/AWS_ARCHITECTURE_STATUS.md",
+    "docs/implementation/APPLICATION_FOUNDATION.md",
+    "docs/implementation/DELIVERY_BLOCKERS.md",
+    "docs/operations/FINAL_RELEASE_RUNBOOK.md",
+    "scripts/database/run-gates.mjs",
+    "scripts/repository/validate-module-boundaries.mjs",
+    "scripts/verification/verify-deployment.mjs"
+  ],
+  "expectedScripts": {
+    "validate:repository": "node scripts/repository/validate-hygiene.mjs && npm run validate:module-boundaries",
+    "validate:module-boundaries": "node scripts/repository/validate-module-boundaries.mjs",
+    "test:application": "node --test scripts/application/*.test.mjs",
+    "test:database": "node scripts/database/run-gates.mjs",
+    "verify:deployment": "node scripts/verification/verify-deployment.mjs"
+  }
+}
