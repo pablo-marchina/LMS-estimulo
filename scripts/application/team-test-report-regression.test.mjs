@@ -85,6 +85,6 @@ test("library publishing revalidates the draft and its authoritative content has
 });
 
 test("phone field starts as an example instead of a fake prefilled number", () => {
-  assert.match(phoneField, /placeholder="Ex\.: \(00\) 90000-0000"/u);
+  assert.match(phoneField, /placeholder="\(00\) 00000-0000"/u);
   assert.doesNotMatch(phoneField, /defaultValue="\(00\)/u);
 });
