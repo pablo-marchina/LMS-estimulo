@@ -59,6 +59,18 @@ Ao alterar comportamento, estrutura, ambiente, integração, contrato ou operaç
 
 Migrations aplicadas são imutáveis. Correções usam migrations aditivas, validadas em transação revertida antes da aplicação.
 
+## Arquitetura da aplicação
+
+A aplicação permanece um monólito modular orientado por capacidades. Não crie camadas globais artificiais nem um diretório genérico de serviços para contornar os limites dos módulos.
+
+- `apps/web/app/` contém rotas, server actions e composição da interface. Uma `page.tsx` deve coordenar a tela, não concentrar transformação de domínio, regras de negócio e múltiplos adapters;
+- `apps/web/components/` contém UI compartilhada e não é uma camada de domínio;
+- `apps/web/lib/<feature>/` contém regras, modelos e orquestração pertencentes à capacidade;
+- `apps/web/lib/platform/`, `supabase/`, `rpc/` e `storage/` são fronteiras de plataforma e infraestrutura;
+- dependências entre módulos devem seguir [`config/module-boundaries.json`](config/module-boundaries.json) e passar em `npm run validate:module-boundaries`;
+- funções puras importantes devem ser testadas pelo comportamento. Testes que leem source como texto ficam restritos a invariantes realmente estáticos, como wiring de segurança ou presença de contratos imutáveis;
+- antes de criar um novo helper global, prefira colocá-lo no módulo que possui o conceito. Só promova algo para compartilhado quando houver uso real por capacidades independentes.
+
 ## Arquitetura de plataforma
 
 O runtime Supabase/Vercel está ativo para desenvolvimento, demonstração e validação. AWS continua como destino institucional planejado e permanece bloqueado até decisão e implementação da arquitetura completa.
@@ -72,6 +84,7 @@ O runtime Supabase/Vercel está ativo para desenvolvimento, demonstração e val
 
 ```bash
 npm run validate:release-candidate
+npm run validate:module-boundaries
 npm run test:repository-tooling
 npm run test:application
 npm run test:product
