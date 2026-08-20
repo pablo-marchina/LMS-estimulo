@@ -9,6 +9,8 @@ const files = await Promise.all([
   readFile("apps/web/components/admin-delivery-operations.tsx", "utf8"),
   readFile("apps/web/app/admin/experiencia/visual-interface-selector.tsx", "utf8"),
   readFile("apps/web/app/admin/produto/page.tsx", "utf8"),
+  readFile("apps/web/app/admin/produto/journey-general-section.tsx", "utf8"),
+  readFile("apps/web/app/admin/produto/journey-publication-section.tsx", "utf8"),
   readFile("apps/web/app/admin/produto/delete-journey-action.ts", "utf8"),
   readFile("apps/web/app/admin/produto/unpublish-action.ts", "utf8"),
   readFile("apps/web/app/admin/comportamento/page.tsx", "utf8"),
@@ -17,7 +19,22 @@ const files = await Promise.all([
   readFile("supabase/migrations/20260731180000_admin_delivery_and_journey_corrections.sql", "utf8"),
 ]);
 
-const [adminShell, libraryDeliveries, operationPage, deliveryOperations, interfaceSelector, productPage, deleteAction, unpublishAction, behaviorPage, lessonPage, promptLibrary, migration] = files;
+const [
+  adminShell,
+  libraryDeliveries,
+  operationPage,
+  deliveryOperations,
+  interfaceSelector,
+  productPage,
+  generalSection,
+  publicationSection,
+  deleteAction,
+  unpublishAction,
+  behaviorPage,
+  lessonPage,
+  promptLibrary,
+  migration,
+] = files;
 void behaviorPage;
 
 test("standalone admin deliveries screen is removed and responsibilities are consolidated", async () => {
@@ -47,9 +64,11 @@ test("interface preview changes locally without remounting the administrative pa
 });
 
 test("published journeys can return to draft and only drafts can be deleted", () => {
-  assert.match(productPage, /Voltar para rascunho/u);
-  assert.match(productPage, /selectedIsDraft && selectedJourneyVersion/u);
-  assert.match(productPage, /Excluir rascunho/u);
+  assert.match(productPage, /JourneyGeneralSection/u);
+  assert.match(productPage, /JourneyPublicationSection/u);
+  assert.match(publicationSection, /Voltar para rascunho/u);
+  assert.match(generalSection, /selectedIsDraft && selectedJourneyVersion/u);
+  assert.match(generalSection, /Excluir rascunho/u);
   assert.doesNotMatch(deleteAction, /journey_definition_id/u);
   assert.match(deleteAction, /deleteAdminJourneyDraft/u);
   assert.match(unpublishAction, /unpublishAdminJourneyToDraft/u);

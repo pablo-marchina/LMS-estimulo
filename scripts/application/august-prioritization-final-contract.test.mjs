@@ -8,6 +8,7 @@ const [
   adminExtensionActions,
   rewardActions,
   journeyAction,
+  journeySave,
   journeyErrorPage,
   lessonPage,
   completionAction,
@@ -20,6 +21,7 @@ const [
   readFile("apps/web/app/admin/extension-actions.ts", "utf8"),
   readFile("apps/web/app/admin/recompensas/reward-actions.ts", "utf8"),
   readFile("apps/web/app/admin/produto/journey-action.ts", "utf8"),
+  readFile("apps/web/lib/admin/journey-save.ts", "utf8"),
   readFile("apps/web/app/admin/produto/erro/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/page.tsx", "utf8"),
   readFile("apps/web/app/empreendedor/atividade/[stepInstanceId]/completion-action.ts", "utf8"),
@@ -46,8 +48,12 @@ test("reward ordering is configurable, persisted through the image-aware save fl
 });
 
 test("journey admin keeps concrete upload failures and turns them into actionable correction guidance", () => {
-  assert.match(journeyAction, /ANNOUNCEMENT_FILE_SIZE_INVALID/u);
-  assert.match(journeyAction, /imagem_tamanho_invalido/u);
+  assert.match(journeySave, /ANNOUNCEMENT_FILE_SIZE_INVALID/u);
+  assert.match(journeySave, /ANNOUNCEMENT_CONTENT_TYPE_NOT_ALLOWED/u);
+  assert.match(journeySave, /ANNOUNCEMENT_FILE_EXTENSION_NOT_ALLOWED/u);
+  assert.match(journeySave, /ANNOUNCEMENT_STORAGE_UPLOAD_FAILED/u);
+  assert.match(journeySave, /imagem_tamanho_invalido/u);
+  assert.match(journeyAction, /journeySaveErrorCode/u);
   assert.match(journeyAction, /\/admin\/produto\/erro\?codigo=/u);
   assert.match(journeyErrorPage, /A imagem ultrapassa o limite permitido/u);
   assert.match(journeyErrorPage, /Tamanho máximo/u);

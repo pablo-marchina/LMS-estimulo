@@ -107,14 +107,17 @@ test("participant and administrative authentication remain separate", async () =
 });
 
 test("AWS production boundaries remain fail-closed while architecture is pending", async () => {
-  const [context, proxy, ready, dataGateway, storage] = await Promise.all([
+  const [contextFacade, requestContext, proxy, ready, dataGateway, storage] = await Promise.all([
     read("apps/web/lib/auth/context.ts"),
+    read("apps/web/lib/request-context/auth-context.ts"),
     read("apps/web/proxy.ts"),
     read("apps/web/app/api/health/ready/route.ts"),
     read("apps/web/lib/rpc/authenticated-gateway.ts"),
     read("apps/web/lib/platform/object-storage.ts"),
   ]);
-  assert.match(context, /AWS_IDENTITY_ARCHITECTURE_PENDING/u);
+  assert.match(contextFacade, /request-context\/auth-context/u);
+  assert.doesNotMatch(contextFacade, /AWS_IDENTITY_ARCHITECTURE_PENDING/u);
+  assert.match(requestContext, /AWS_IDENTITY_ARCHITECTURE_PENDING/u);
   assert.match(proxy, /aws_identity_architecture_pending/u);
   assert.match(ready, /aws_architecture_pending/u);
   assert.match(dataGateway, /AWS_DATA_ARCHITECTURE_PENDING/u);
