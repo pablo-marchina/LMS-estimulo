@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { BookOpen, CheckCircle2, ChevronDown, Clock3, FileText, Headphones, PlayCircle, Route, Sparkles, Wrench } from "lucide-react";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Progress } from "@/components/ui/progress";
@@ -126,12 +126,10 @@ export default async function JourneyOutlinePage({
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
 
-  let outline: ParticipantJourneyOutline;
-  try {
-    outline = await getParticipantJourneyOutline(auth.identity.user_account_id, journeyInstanceId);
-  } catch {
-    notFound();
-  }
+  // Runtime/infrastructure failures must surface through the route error boundary.
+  // Treating every exception as a 404 produced the misleading "Conteúdo não encontrado"
+  // screen even after a completion had been persisted successfully.
+  const outline = await getParticipantJourneyOutline(auth.identity.user_account_id, journeyInstanceId);
 
   const selectedActivity = query.conteudo
     ? outline.modules.flatMap((module) => module.activities).find((activity) => activity.step_instance_id === query.conteudo && (activity.step_status === "completed" || activity.can_open || activity.can_start)) ?? null
