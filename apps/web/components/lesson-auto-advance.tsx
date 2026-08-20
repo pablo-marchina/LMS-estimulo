@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type AssetProgressDetail = {
@@ -9,6 +10,7 @@ type AssetProgressDetail = {
 const AUTO_ADVANCE_SECONDS = 3;
 
 export function LessonAutoAdvance() {
+  const router = useRouter();
   const [seconds, setSeconds] = useState<number | null>(null);
   const scheduled = useRef(false);
 
@@ -27,20 +29,26 @@ export function LessonAutoAdvance() {
       const detail = (event as CustomEvent<AssetProgressDetail>).detail;
       if (!detail?.lessonCompleted || scheduled.current) return;
 
-      const nextForm = document.querySelector<HTMLFormElement>('form[data-next-lesson-form="true"]');
-      if (!nextForm) return;
-
       scheduled.current = true;
       setSeconds(AUTO_ADVANCE_SECONDS);
+      router.refresh();
+
       let remaining = AUTO_ADVANCE_SECONDS;
       interval = window.setInterval(() => {
         remaining -= 1;
         setSeconds(Math.max(0, remaining));
       }, 1000);
+
       timeout = window.setTimeout(() => {
         clearTimers();
-        if (document.contains(nextForm)) nextForm.requestSubmit();
-        else scheduled.current = false;
+        const nextForm = document.querySelector<HTMLFormElement>('form[data-next-lesson-form="true"]');
+        if (nextForm) {
+          nextForm.requestSubmit();
+          return;
+        }
+        scheduled.current = false;
+        setSeconds(null);
+        router.refresh();
       }, AUTO_ADVANCE_SECONDS * 1000);
     }
 
@@ -49,7 +57,7 @@ export function LessonAutoAdvance() {
       window.removeEventListener("estimulo:asset-progress", onProgress);
       clearTimers();
     };
-  }, []);
+  }, [router]);
 
   if (seconds === null) return null;
 
