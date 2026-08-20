@@ -107,13 +107,38 @@ export async function saveLibraryContentAction(formData: FormData) {
 export async function publishLibraryContentAction(formData: FormData) {
   const actor = await actorId();
   const organizationId = uuid.parse(formData.get("organization_id"));
+  const versionId = uuid.parse(formData.get("library_item_version_id"));
   let destination: string;
+
   try {
-    await libraryRuntime.publish(actor, organizationId, uuid.parse(formData.get("library_item_version_id")), z.string().regex(/^[0-9a-f]{64}$/).parse(formData.get("content_hash")), String(formData.get("idempotency_key") || randomUUID()));
-    destination = `/admin/biblioteca?organization=${organizationId}&publicado=1`;
+    // Reload the draft immediately before publishing. This avoids publishing with
+    // a stale hash embedded in an older rendered page and lets us give a useful
+    // validation message instead of a generic RPC error.
+    const workspace = await libraryRuntime.listOperator(actor, organizationId);
+    const draft = workspace.items.find(
+      (item) => item.library_item_version_id === versionId && item.status === "draft",
+    );
+
+    if (!draft) {
+      destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=rascunho`;
+    } else if (draft.estimated_minutes === null || draft.estimated_minutes < 1 || draft.estimated_minutes > 600) {
+      destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=duracao`;
+    } else {
+      await libraryRuntime.publish(
+        actor,
+        organizationId,
+        versionId,
+        draft.content_hash,
+        String(formData.get("idempotency_key") || randomUUID()),
+      );
+      destination = `/admin/biblioteca?organization=${organizationId}&publicado=1`;
+    }
   } catch (error) {
     const invalidDuration = error instanceof ServerRpcError && error.message.includes("INVALID_LIBRARY_DURATION");
-    destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${invalidDuration ? "duracao" : "publicacao"}`;
+    const staleDraft = error instanceof ServerRpcError && (
+      error.message.includes("CONTENT_HASH_MISMATCH") || error.message.includes("LIBRARY_VERSION_NOT_DRAFT")
+    );
+    destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${invalidDuration ? "duracao" : staleDraft ? "rascunho" : "publicacao"}`;
   }
   redirect(destination);
 }
