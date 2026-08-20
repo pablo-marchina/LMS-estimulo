@@ -11,17 +11,21 @@ const [diagnostic, signupCompletion, confirmationPage, confirmationSubmit, confi
   readFile("apps/web/components/activity-comment-panel.tsx", "utf8"),
 ]);
 
-test("diagnostic advances immediately after an answer while preserving back navigation", () => {
+test("diagnostic advances immediately after an answer while preserving back navigation and final CTA", () => {
   assert.match(diagnostic, /function selectAnswer\(itemId: string, optionCode: string\)/u);
   assert.match(diagnostic, /onChange=\{\(\) => selectAnswer\(current\.id, option\.code\)\}/u);
   assert.match(diagnostic, /setCurrentIndex\(\(index\) => Math\.min\(items\.length - 1, index \+ 1\)\)/u);
+  assert.match(diagnostic, /const isLast = currentIndex === items\.length - 1/u);
   assert.match(diagnostic, />\s*Anterior\s*</u);
+  assert.match(diagnostic, /Concluir diagnóstico/u);
+  assert.match(diagnostic, /items\.some\(\(item\) => item\.is_required && !answers\[item\.id\]\)/u);
   assert.doesNotMatch(diagnostic, />\s*Continuar\s*</u);
 });
 
-test("signup explains what associating an optional CNPJ means", () => {
-  assert.match(signupCompletion, /usaremos esse número para associar este negócio ao seu cadastro na Estímulo/u);
-  assert.match(signupCompletion, /Você pode deixar o campo em branco/u);
+test("signup explains optional CNPJ without a long disclaimer", () => {
+  assert.match(signupCompletion, /Se o seu negócio tiver CNPJ, você pode informá-lo para vinculá-lo ao cadastro/u);
+  assert.match(signupCompletion, /Se não tiver, deixe este campo em branco/u);
+  assert.doesNotMatch(signupCompletion, /não quiser informar agora/u);
 });
 
 test("email confirmation uses an app-owned token-hash flow and auto-submits on arrival", () => {
@@ -33,9 +37,9 @@ test("email confirmation uses an app-owned token-hash flow and auto-submits on a
   assert.match(confirmationSubmit, /Confirmando seu e-mail/u);
 });
 
-test("mobile lessons expose a persistent shortcut to the discussion", () => {
-  assert.match(commentPanel, /href="#comentarios"/u);
-  assert.match(commentPanel, /Comentar esta aula/u);
-  assert.match(commentPanel, /md:hidden/u);
-  assert.match(commentPanel, /fixed bottom-20 right-4/u);
+test("mobile lesson discussion stays in the page without a broken floating shortcut", () => {
+  assert.match(commentPanel, /name="body"/u);
+  assert.match(commentPanel, /Publicar/u);
+  assert.doesNotMatch(commentPanel, /Comentar esta aula/u);
+  assert.doesNotMatch(commentPanel, /fixed bottom-20 right-4/u);
 });
