@@ -42,7 +42,11 @@ function ActivityNavigationForm({
 }) {
   const enabled = activity.step_status === "completed" || activity.can_open || activity.can_start;
   return (
-    <form action={openJourneyActivityAction} className="min-w-0 flex-1 sm:flex-none">
+    <form
+      action={openJourneyActivityAction}
+      className="min-w-0 flex-1 sm:flex-none"
+      data-next-lesson-form={direction === "next" && enabled ? "true" : undefined}
+    >
       <input type="hidden" name="journey_instance_id" value={journeyInstanceId} />
       <input type="hidden" name="step_instance_id" value={activity.step_instance_id} />
       <input type="hidden" name="step_aggregate_version" value={activity.step_aggregate_version} />
