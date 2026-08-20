@@ -1,20 +1,18 @@
 import type { JourneyState } from "@/lib/journey-runtime/contracts";
 
 export function participantNextHref(state: JourneyState): string {
-  const query = `?journey=${encodeURIComponent(state.journey_instance_id)}`;
-  if (state.journey_status === "completed") return `/empreendedor/resultado${query}`;
   return `/empreendedor/jornada/${encodeURIComponent(state.journey_instance_id)}`;
 }
 
 export function participantNextActionLabel(state: JourneyState): string {
-  if (state.journey_status === "completed") return "Rever resultado";
+  if (state.journey_status === "completed") return "Rever jornada";
   if (state.journey_status === "available") return "Começar jornada";
   if (state.s) return "Abrir trilha";
   return "Continuar jornada";
 }
 
 export function participantCurrentStageLabel(state: JourneyState): string {
-  if (state.journey_status === "completed") return "Resultado disponível";
+  if (state.journey_status === "completed") return "Jornada concluída";
   if (state.q?.passed) return "Conclusão da jornada";
   if (state.s) return "Atividades da trilha disponíveis";
   return "Jornada pronta para começar";
