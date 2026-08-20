@@ -51,7 +51,9 @@ A plataforma reúne a experiência dos participantes e as ferramentas administra
 - Vercel para build e implantação do frontend atual;
 - RLS, RBAC, idempotência, auditoria, eventos e outbox;
 - RPCs privilegiadas com `search_path` fechado e gateway autenticado;
-- contratos e gates de qualidade, segurança, integridade e reprodutibilidade.
+- contratos e gates de qualidade, segurança, integridade, arquitetura e reprodutibilidade.
+
+As rotas em `apps/web/app/` funcionam como adapters e composition roots. Regras e montagem de modelos ficam nos módulos de `apps/web/lib/`; componentes compartilhados ficam em `apps/web/components/`. As dependências permitidas entre essas camadas são verificadas automaticamente por [`config/module-boundaries.json`](config/module-boundaries.json).
 
 A existência de uma tela, fluxo ou artefato não equivale à aprovação institucional de conteúdo, metodologia, segurança, privacidade, acessibilidade ou arquitetura AWS.
 
@@ -139,6 +141,7 @@ A rota `/interface-preview/participant` é interna, exige administrador autentic
 
 ```bash
 npm run validate:release-candidate
+npm run validate:module-boundaries
 npm run test:repository-tooling
 npm run test:application
 npm run test:product
@@ -150,15 +153,19 @@ npm run scan:secrets
 npm run test:secret-scanning
 ```
 
-O banco deve ser reconstruível desde zero. Nenhum passo obrigatório pode estar ausente, cancelado, ignorado ou vermelho no SHA avaliado.
+`validate:repository` executa a política de higiene e o gate de dependências entre módulos. O banco deve ser reconstruível desde zero. Nenhum passo obrigatório pode estar ausente, cancelado, ignorado ou vermelho no SHA avaliado.
 
 ## Estrutura
 
 ```text
-apps/web/                       aplicação Next.js
+apps/web/app/                   rotas, adapters e composition roots do Next.js
+apps/web/components/            UI compartilhada
+apps/web/lib/                   módulos de produto, aplicação e infraestrutura
 apps/web/lib/extensions/        gateway e runtime das extensões
 apps/web/lib/platform/          contratos e seleção do provider
 apps/web/lib/supabase/          adapter Supabase
+config/module-boundaries.json   dependências permitidas entre módulos
+config/repository-hygiene-policy.json política declarativa de limpeza do repo
 config/platform/                fronteira legível por máquina
 docs/                           documentação canônica
 scripts/                        validação, testes, segurança e operação
