@@ -3,59 +3,17 @@ import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const validatorFile = "scripts/repository/validate-hygiene.mjs";
-const ignoredDirectories = new Set([".git", ".next", ".artifacts", "node_modules"]);
-const textExtensions = new Set([
-  ".md", ".json", ".yaml", ".yml", ".csv", ".sql", ".mjs", ".js", ".ts", ".tsx", ".py", ".ps1", ".toml", ".txt",
-]);
-const forbiddenPrefixes = [
-  ".claude/",
-  ".deployment-triggers/",
-  ".github/hooks/",
-  ".github/skills/",
-  ".superpowers/",
-  "apps/web/lib/browser-e2e/",
-  "docs/superpowers/",
-  "scripts/browser-e2e/",
-];
-const forbiddenExactFiles = new Set([
-  ".github/workflows/browser-e2e.yml",
-  ".github/workflows/experience-validation.yml",
-  "apps/web/.env.example",
-  "apps/web/app/api/e2e/session/route.ts",
-  "docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
-  "docs/implementation/RUNTIME_GAP.md",
-  "docs/implementation/SCHEMA_DELTA.md",
-  "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
-  "premissas-desenvolvimento.md",
-]);
-const allowedEnvironmentExamples = new Set([
-  ".env.example",
-  "config/supabase-test/.env.example",
-]);
-const forbiddenReferences = [
-  "premissas-desenvolvimento.md",
-  "SOURCE_AUTHORITY_HIERARCHY.md",
-  "ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
-  "RUNTIME_GAP.md",
-  "SCHEMA_DELTA.md",
-  "BROWSER_E2E_MODE",
-  "@/lib/browser-e2e/",
-  "scripts/browser-e2e/",
-  "run-synthetic-vertical.mjs",
-  "test:browser-e2e",
-];
-const requiredFiles = [
-  "README.md",
-  "PROJECT_INDEX.md",
-  "CONTRIBUTING.md",
-  ".env.example",
-  "docs/architecture/AWS_ARCHITECTURE_STATUS.md",
-  "docs/implementation/APPLICATION_FOUNDATION.md",
-  "docs/implementation/DELIVERY_BLOCKERS.md",
-  "docs/operations/FINAL_RELEASE_RUNBOOK.md",
-  "scripts/database/run-gates.mjs",
-  "scripts/verification/verify-deployment.mjs",
-];
+const policyFile = "config/repository-hygiene-policy.json";
+const policyPath = path.join(root, policyFile);
+const policy = JSON.parse(await readFile(policyPath, "utf8"));
+const ignoredDirectories = new Set(policy.ignoredDirectories ?? []);
+const textExtensions = new Set(policy.textExtensions ?? []);
+const forbiddenPrefixes = policy.forbiddenPrefixes ?? [];
+const forbiddenExactFiles = new Set(policy.forbiddenExactFiles ?? []);
+const allowedEnvironmentExamples = new Set(policy.allowedEnvironmentExamples ?? []);
+const forbiddenReferences = policy.forbiddenReferences ?? [];
+const requiredFiles = policy.requiredFiles ?? [];
+const expectedScripts = policy.expectedScripts ?? {};
 const errors = [];
 const files = [];
 
@@ -148,12 +106,6 @@ async function validateRequiredFiles() {
   }
 
   const packageJson = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
-  const expectedScripts = {
-    "validate:repository": "node scripts/repository/validate-hygiene.mjs",
-    "test:application": "node --test scripts/application/*.test.mjs",
-    "test:database": "node scripts/database/run-gates.mjs",
-    "verify:deployment": "node scripts/verification/verify-deployment.mjs",
-  };
   for (const [name, command] of Object.entries(expectedScripts)) {
     if (packageJson.scripts?.[name] !== command) errors.push(`package.json must expose ${name} as ${command}`);
   }
@@ -239,7 +191,7 @@ for (const file of markdownFiles) await validateLocalLinks(file);
 
 const textEntries = await readTextFiles();
 for (const { file, content } of textEntries) {
-  if (file === validatorFile) continue;
+  if (file === validatorFile || file === policyFile) continue;
   for (const reference of forbiddenReferences) {
     if (content.includes(reference)) errors.push(`development-only reference in ${file}: ${reference}`);
   }

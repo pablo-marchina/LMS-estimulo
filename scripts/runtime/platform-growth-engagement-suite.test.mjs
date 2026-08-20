@@ -13,7 +13,7 @@ const [
   libraryAdmin,
   libraryPreview,
   libraryContentPreview,
-  journeyPage,
+  journeyGeneralSection,
   journeyAction,
   settingsPage,
   certificateAlias,
@@ -56,7 +56,7 @@ const [
   read("apps/web/app/admin/biblioteca/page.tsx"),
   read("apps/web/components/participant-library-page.tsx"),
   read("apps/web/components/participant-library-content-page.tsx"),
-  read("apps/web/app/admin/produto/page.tsx"),
+  read("apps/web/app/admin/produto/product-general-section.tsx"),
   read("apps/web/app/admin/produto/journey-action.ts"),
   read("apps/web/app/admin/configuracoes/page.tsx"),
   read("apps/web/app/admin/certificados/page.tsx"),
@@ -117,7 +117,8 @@ test("library and journeys use managed multi-theme selectors", () => {
   assert.match(settingsPage, /resource_type" value="theme"/u);
   assert.match(settingsPage, /theme_delete/u);
   assert.match(libraryAdmin, /name="theme_ids" multiple/u);
-  assert.match(journeyPage, /name="theme_ids" multiple/u);
+  assert.match(journeyGeneralSection, /name="theme_ids"/u);
+  assert.match(journeyGeneralSection, /multiple/u);
   assert.match(journeyAction, /journey_themes_set/u);
   assert.doesNotMatch(libraryAdmin, /name="topics"/u);
 });
