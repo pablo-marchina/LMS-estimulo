@@ -21,19 +21,22 @@ test("real journey CTAs open the dedicated lesson route", () => {
   assert.doesNotMatch(openActivityAction, /\?conteudo=\$\{stepInstanceId\}/u);
 });
 
-test("all lesson interaction redirects stay on the dedicated activity route", () => {
+test("lesson interactions stay on the activity route except a completed assessment returning to the journey", () => {
   assert.match(journeyActions, /function activityHref/u);
   assert.match(journeyActions, /`\/empreendedor\/atividade\/\$\{step\}\?journey=\$\{journey\}\$\{query\}/u);
   assert.match(journeyActions, /utilidade=registrada/u);
   assert.match(journeyActions, /avaliacao=reprovada/u);
+  assert.match(journeyActions, /complete-after-assessment/u);
+  assert.match(journeyActions, /if \(activityCompleted\) redirect\(`\/empreendedor\/jornada\/\$\{journey\}\?conclusao=ok`\)/u);
   assert.doesNotMatch(journeyActions, /inlineActivityHref/u);
   assert.doesNotMatch(journeyActions, /\/empreendedor\/jornada\/\$\{journey\}\?conteudo=/u);
 });
 
 test("legacy inline lesson URLs redirect instead of composing journey and lesson screens", () => {
-  assert.match(journeyPage, /import \{ notFound, redirect \} from "next\/navigation"/u);
+  assert.match(journeyPage, /import \{ redirect \} from "next\/navigation"/u);
   assert.match(journeyPage, /if \(query\.conteudo && selectedActivity\)/u);
   assert.match(journeyPage, /redirect\(`\/empreendedor\/atividade\/\$\{selectedActivity\.step_instance_id\}\?\$\{activityQuery\.toString\(\)\}`\)/u);
+  assert.doesNotMatch(journeyPage, /catch\s*\{\s*notFound\(\)/u);
   assert.doesNotMatch(journeyPage, /import ActivityPage/u);
   assert.doesNotMatch(journeyPage, /ActivityWorkspaceFrame/u);
   assert.doesNotMatch(journeyPage, /<section id="aula"/u);
