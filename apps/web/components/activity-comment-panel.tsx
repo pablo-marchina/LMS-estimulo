@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { createActivityCommentAction } from "@/app/actions/journey";
 import type { ActivityComment } from "@/lib/journey-runtime/contracts";
 import { Button } from "@/components/ui/button";
@@ -55,15 +55,6 @@ export function ActivityCommentPanel({ journeyInstanceId, stepInstanceId, initia
 
   return (
     <div>
-      <a
-        href="#comentarios"
-        className="fixed bottom-20 right-4 z-40 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-lg transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:hidden"
-        aria-label="Ir para os comentários desta aula"
-      >
-        <MessageCircle size={17} aria-hidden="true" />
-        Comentar esta aula
-      </a>
-
       {published ? (
         <div className="mb-3">
           <StatusPanel title="Comentário publicado" tone="success">Sua participação já está visível sem interromper a aula.</StatusPanel>
