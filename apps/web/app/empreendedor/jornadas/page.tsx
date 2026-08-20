@@ -69,7 +69,8 @@ export default async function JornadasCatalogPage({ searchParams }: { searchPara
   ] as const);
   const eligible = fulfilled(results[0]) ?? [];
   const participant = fulfilled(results[1]);
-  const dataUnavailable = results.some((result) => result.status === "rejected");
+  const skippedJourneys = participant?.skipped_invalid_journeys ?? 0;
+  const dataUnavailable = results.some((result) => result.status === "rejected") || skippedJourneys > 0;
 
   const enrolledModels: CatalogJourney[] = (participant?.journeys ?? []).map((journey) => ({ key: `enrolled-${journey.journey_instance_id}`, title: journey.journey_title ?? journey.journey_code, description: journey.journey_description ?? null, presentation: journey.journey_presentation ?? {}, enrolled: journey }));
   const eligibleModels: CatalogJourney[] = eligible.map((journey) => ({ key: `eligible-${journey.journey_version_id}`, title: journey.title, description: journey.description, presentation: journey.presentation ?? {}, eligible: journey }));
@@ -84,7 +85,11 @@ export default async function JornadasCatalogPage({ searchParams }: { searchPara
   return (
     <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader eyebrow="Capacitação" title="Jornadas para aprender, aplicar e evoluir" description="Escolha uma jornada, avance no seu ritmo e acompanhe seu aprendizado." />
-      {dataUnavailable ? <StatusPanel title="O catálogo não pôde ser atualizado por completo" tone="warning"><p>Nenhuma jornada foi removida. Recarregue a página para tentar novamente.</p></StatusPanel> : null}
+      {dataUnavailable ? (
+        <StatusPanel title="O catálogo não pôde ser atualizado por completo" tone="warning">
+          <p>{skippedJourneys > 0 ? `${skippedJourneys} jornada(s) não puderam ser carregadas agora. Recarregue a página; o problema não será ocultado do seu catálogo.` : "Recarregue a página para tentar novamente. As jornadas já carregadas continuam disponíveis."}</p>
+        </StatusPanel>
+      ) : null}
       {query.erro ? <StatusPanel title="Não foi possível entrar nesta jornada" tone="warning"><p>Tente novamente em instantes.</p></StatusPanel> : null}
       {query.aviso === "diagnostico_requer_jornada" ? <StatusPanel title="Escolha uma jornada para iniciar o diagnóstico" tone="info"><p>Ao entrar em uma jornada, o diagnóstico ficará disponível no seu perfil.</p></StatusPanel> : null}
       {featured ? <FeaturedJourney journey={featured} /> : dataUnavailable ? null : <Card className="mt-8"><p className="text-sm text-muted">A equipe ainda não definiu uma jornada principal.</p></Card>}
