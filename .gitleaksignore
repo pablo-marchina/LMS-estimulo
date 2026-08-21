@@ -39,9 +39,10 @@ cd7b0f4883f76e66993e471380d3d88169dcf851:.github/workflows/participant-lesson-re
 82364d6bdb128253e42f3ca6167cf89b06498b6e:.github/workflows/participant-lesson-head-proof.yml:generic-api-key:24
 82364d6bdb128253e42f3ca6167cf89b06498b6e:.github/workflows/participant-lesson-head-proof.yml:generic-api-key:25
 
-# PR 269 visual-audit history briefly carried a public Supabase publishable key and
-# deterministic CI-only crypto fixtures before the workflow was moved back to secret refs.
-# These three fingerprints classify only those reviewed historical occurrences.
+# PR 269 visual-audit history carried a public Supabase publishable key and deterministic
+# CI-only crypto fixtures. These fingerprints classify only reviewed, non-production values.
 d7322944e7832cb4e0ed31da22f33ff56f4d1082:.github/workflows/pr-269-visual-approval.yml:generic-api-key:31
 d7322944e7832cb4e0ed31da22f33ff56f4d1082:.github/workflows/pr-269-visual-approval.yml:generic-api-key:36
 d7322944e7832cb4e0ed31da22f33ff56f4d1082:.github/workflows/pr-269-visual-approval.yml:generic-api-key:37
+c4f374fd3e4437d7dc0602d005da6dff3999402a:.github/workflows/pr-269-visual-approval.yml:generic-api-key:38
+c4f374fd3e4437d7dc0602d005da6dff3999402a:.github/workflows/pr-269-visual-approval.yml:generic-api-key:39
