@@ -89,7 +89,7 @@ test("certificate templates persist a private preview and remain reusable", () =
   assert.match(certificateTemplates, /Usar como modelo geral/u);
   assert.match(certificateTemplates, /Usar no programa/u);
   assert.match(certificateTemplates, /Usar na jornada/u);
-  assert.match(certificatePreviewRoute, /certificateTemplatePreviewDownload/u);
+  assert.match(certificatePreviewRoute, /invokeMediaDescriptorGateway<Descriptor>\("get_admin_certificate_template_preview_download"/u);
   assert.match(certificatePreviewRoute, /organization_id/u);
   assert.match(certificatePreviewRoute, /private, max-age=300/u);
   assert.doesNotMatch(certificatePreviewRoute, /cache-control[^\n]*public/u);
