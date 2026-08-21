@@ -22,10 +22,11 @@ test("diagnostic advances immediately after an answer while preserving back navi
   assert.doesNotMatch(diagnostic, />\s*Continuar\s*</u);
 });
 
-test("signup explains optional CNPJ without a long disclaimer", () => {
-  assert.match(signupCompletion, /Se o seu negócio tiver CNPJ, você pode informá-lo para vinculá-lo ao cadastro/u);
-  assert.match(signupCompletion, /Se não tiver, deixe este campo em branco/u);
-  assert.doesNotMatch(signupCompletion, /não quiser informar agora/u);
+test("signup keeps CNPJ optional without explanatory disclaimer copy", () => {
+  assert.match(signupCompletion, /CNPJ <span className="font-normal text-muted">\(opcional\)<\/span>/u);
+  assert.match(signupCompletion, /name="cnpj"/u);
+  assert.doesNotMatch(signupCompletion, /Se o seu negócio tiver CNPJ/u);
+  assert.doesNotMatch(signupCompletion, /Se não tiver, deixe este campo em branco/u);
 });
 
 test("email confirmation uses an app-owned token-hash flow and auto-submits on arrival", () => {

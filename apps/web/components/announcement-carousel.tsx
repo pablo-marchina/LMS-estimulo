@@ -24,7 +24,22 @@ function BannerImage({ announcement, index }: { announcement: ParticipantAnnounc
   const desktopSrc = !desktopFailed && customDesktop ? customDesktop : fallback;
   const mobileSrc = !mobileFailed && customMobile ? customMobile : desktopSrc;
   const priority = index === 0;
-  return <picture><source media="(max-width: 639px)" srcSet={mobileSrc} /><img src={desktopSrc} alt={announcement.image_alt ?? ""} onError={() => { setDesktopFailed(true); setMobileFailed(true); }} loading={priority ? "eager" : "lazy"} fetchPriority={priority ? "high" : "auto"} decoding="async" className="brand-carousel-image" /></picture>;
+  const imageOnly = announcement.display_mode === "image_only";
+  return (
+    <picture>
+      <source media="(max-width: 639px)" srcSet={mobileSrc} />
+      <img
+        src={desktopSrc}
+        alt={announcement.image_alt ?? ""}
+        onError={() => { setDesktopFailed(true); setMobileFailed(true); }}
+        loading={priority ? "eager" : "lazy"}
+        fetchPriority={priority ? "high" : "auto"}
+        decoding="async"
+        className="brand-carousel-image"
+        style={imageOnly ? { objectFit: "contain", transform: "none", backgroundColor: "white" } : undefined}
+      />
+    </picture>
+  );
 }
 
 function SlideLink({ announcement, index }: { announcement: ParticipantAnnouncement; index: number }) {

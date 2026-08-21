@@ -8,16 +8,18 @@ const [participantShell, migration, boundary] = await Promise.all([
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
 ]);
 
-test("participant shell consumes only the current navigation registry keys", () => {
+test("participant shell consumes the launch navigation and keeps sparse Library out of the menu", () => {
   for (const key of [
     "participant.nav.home",
     "participant.nav.journeys",
-    "participant.nav.library",
     "participant.nav.rewards",
     "participant.nav.b2b",
   ]) {
     assert.match(participantShell, new RegExp(key.replaceAll(".", "\\."), "u"));
   }
+
+  assert.doesNotMatch(participantShell, /participant\.nav\.library/u);
+  assert.doesNotMatch(participantShell, /href: "\/empreendedor\/biblioteca"/u);
 
   for (const orphanedKey of [
     "participant.nav.achievements",
@@ -42,7 +44,8 @@ test("navigation registry migration retires dead controls without deleting histo
   assert.doesNotMatch(migration, /delete from experience\.interface_content/iu);
 });
 
-test("navigation registry migration registers current configurable destinations generically", () => {
+test("navigation registry migration registers configurable destinations generically", () => {
+  assert.match(migration, /participant\.nav\.library/u);
   assert.match(migration, /participant\.nav\.rewards/u);
   assert.match(migration, /participant\.nav\.b2b/u);
   assert.match(migration, /participant\.nav\.home/u);
