@@ -30,6 +30,14 @@ function textValue(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
+function libraryPublishIssue(item: OperatorLibraryItem): string | null {
+  if (item.status !== "draft") return null;
+  if (item.estimated_minutes === null || !Number.isInteger(item.estimated_minutes) || item.estimated_minutes < 1 || item.estimated_minutes > 600) {
+    return "Informe a duração entre 1 e 600 minutos antes de publicar.";
+  }
+  return null;
+}
+
 const kindLabels: Record<string, string> = { article: "Texto", external_link: "Link ou vídeo", file: "Arquivo" };
 
 export default async function AdminLibraryPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
@@ -78,7 +86,8 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
         {query.erro === "em_uso" ? <StatusPanel title="Conteúdo em uso" tone="warning">Remova primeiro as associações com aulas e jornadas. O sistema não arquiva um material que quebraria experiências publicadas.</StatusPanel> : null}
         {query.erro === "confirmacao" ? <StatusPanel title="Confirmação necessária" tone="warning">Digite ARQUIVAR para confirmar a operação.</StatusPanel> : null}
         {query.erro === "arquivamento" ? <StatusPanel title="Não foi possível arquivar" tone="warning">Recarregue a página e tente novamente. O conteúdo atual não foi alterado.</StatusPanel> : null}
-        {query.erro === "duracao" ? <StatusPanel title="Duração necessária para publicar" tone="warning">O rascunho pode ficar sem duração. Antes de publicar, edite o conteúdo e informe uma estimativa entre 1 e 600 minutos.</StatusPanel> : null}
+        {query.erro === "duracao" ? <StatusPanel title="Duração necessária para publicar" tone="warning">O rascunho continua salvo. Informe uma estimativa entre 1 e 600 minutos e salve novamente; o botão Publicar será liberado somente quando o conteúdo estiver pronto.</StatusPanel> : null}
+        {query.erro === "rascunho" ? <StatusPanel title="Rascunho atualizado" tone="warning">A versão mudou antes da publicação. Reabra o rascunho atual e tente novamente.</StatusPanel> : null}
         {query.erro === "publicacao" ? <StatusPanel title="Não foi possível publicar" tone="warning">O rascunho continua salvo. Revise os dados e tente novamente.</StatusPanel> : null}
 
         {view === "novo" && canEdit ? (
@@ -109,7 +118,7 @@ export default async function AdminLibraryPage({ searchParams }: { searchParams:
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Label>Formato<Select name="content_format" defaultValue={editing?.content_format ?? (currentFileObjectId ? "other" : "article")}><option value="article">Artigo</option><option value="video">Vídeo</option><option value="podcast">Podcast</option><option value="audio">Áudio</option><option value="image">Imagem</option><option value="pdf">PDF</option><option value="guide">Guia</option><option value="tool">Ferramenta</option><option value="course">Curso</option><option value="other">Outro</option></Select></Label>
                     <Label>Nível<Select name="level" defaultValue={editing?.level ?? "all"}><option value="all">Todos</option><option value="introductory">Introdutório</option><option value="intermediate">Intermediário</option><option value="advanced">Avançado</option></Select></Label>
-                    <Label>Duração em minutos<Input name="estimated_minutes" type="number" min={1} max={600} defaultValue={editing?.estimated_minutes ?? ""} placeholder="Opcional no rascunho" /><span className="text-[11px] font-normal text-muted">Opcional enquanto rascunho; obrigatória para publicar.</span></Label>
+                    <Label>Duração em minutos<Input id="estimated_minutes" name="estimated_minutes" type="number" min={1} max={600} defaultValue={editing?.estimated_minutes ?? ""} placeholder="Opcional no rascunho" aria-invalid={query.erro === "duracao" ? true : undefined} /><span className="text-[11px] font-normal text-muted">Opcional enquanto rascunho; obrigatória para publicar. Sem esse valor, a ação de publicação fica bloqueada.</span></Label>
                     <Label>Temas administrados
                       <select name="theme_ids" multiple size={Math.min(7, Math.max(3, managedThemes.length))} defaultValue={[...selectedThemeIds]} className="min-h-28 w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15">
                         {managedThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name}</option>)}
@@ -153,16 +162,25 @@ function LibraryTable({ title, items, organizationId, empty, canEdit }: { title:
         <TableScroll>
           <Table>
             <thead><tr><Th>Conteúdo</Th><Th>Onde aparece</Th><Th>Público</Th><Th>Uso em jornadas</Th><Th className="text-right">Ação</Th></tr></thead>
-            <tbody>{items.map((item) => (
-              <tr key={item.library_item_version_id}>
-                <Td><StatusPill tone={item.status === "published" ? "success" : "neutral"}>{item.status === "published" ? "Publicado" : "Rascunho"}</StatusPill><strong className="ml-2 text-ink">{item.title}</strong><p className="mt-1 text-xs text-muted">{kindLabels[item.content_kind] ?? item.content_kind}</p></Td>
+            <tbody>{items.map((item) => {
+              const publishIssue = libraryPublishIssue(item);
+              const publishReady = item.status !== "draft" || publishIssue === null;
+              return (
+              <tr key={item.library_item_version_id} data-library-status={item.status} data-publish-ready={item.status === "draft" ? String(publishReady) : undefined}>
+                <Td><StatusPill tone={item.status === "published" ? "success" : "neutral"}>{item.status === "published" ? "Publicado" : "Rascunho"}</StatusPill><strong className="ml-2 text-ink">{item.title}</strong><p className="mt-1 text-xs text-muted">{kindLabels[item.content_kind] ?? item.content_kind}</p>{publishIssue ? <p className="mt-1 text-xs font-semibold text-warning">{publishIssue}</p> : null}</Td>
                 <Td>{item.discoverable_in_library ? "Biblioteca e aulas" : "Somente aulas"}</Td>
                 <Td>{item.archetype_definition_ids.length ? `${item.archetype_definition_ids.length} perfil(is)` : "Todos os perfis"}</Td>
                 <Td>{item.journey_version_ids.length || "Nenhuma"}</Td>
                 <Td>
                   <div className="flex flex-wrap justify-end gap-2">
                     {canEdit ? <ButtonLink href={`/admin/biblioteca?view=novo&edit=${item.library_item_version_id}`} variant="secondary" size="sm">Editar</ButtonLink> : null}
-                    {item.status === "draft" && canEdit ? <form action={publishLibraryContentAction}><input type="hidden" name="organization_id" value={organizationId} /><input type="hidden" name="library_item_version_id" value={item.library_item_version_id} /><input type="hidden" name="content_hash" value={item.content_hash} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" size="sm">Publicar</Button></form> : null}
+                    {item.status === "draft" && canEdit ? (
+                      publishIssue ? (
+                        <ButtonLink href={`/admin/biblioteca?view=novo&edit=${item.library_item_version_id}&erro=duracao#estimated_minutes`} variant="secondary" size="sm">Completar para publicar</ButtonLink>
+                      ) : (
+                        <form action={publishLibraryContentAction}><input type="hidden" name="organization_id" value={organizationId} /><input type="hidden" name="library_item_version_id" value={item.library_item_version_id} /><input type="hidden" name="content_hash" value={item.content_hash} /><input type="hidden" name="idempotency_key" value={randomUUID()} /><Button type="submit" size="sm">Publicar</Button></form>
+                      )
+                    ) : null}
                     {item.status === "published" ? (item.external_url ? <ButtonLink href={item.external_url} target="_blank" rel="noreferrer" variant="secondary" size="sm">Visualizar</ButtonLink> : <ButtonLink href={`/capacitacao/biblioteca/${item.slug}`} variant="secondary" size="sm">Visualizar</ButtonLink>) : null}
                     {canEdit ? (
                       <details className="rounded-lg border border-border bg-white text-left">
@@ -180,7 +198,8 @@ function LibraryTable({ title, items, organizationId, empty, canEdit }: { title:
                   </div>
                 </Td>
               </tr>
-            ))}</tbody>
+              );
+            })}</tbody>
           </Table>
         </TableScroll>
       )}
