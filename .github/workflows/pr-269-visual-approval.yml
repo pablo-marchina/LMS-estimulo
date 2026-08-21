@@ -1,0 +1,151 @@
+name: PR 269 visual approval
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/pr-269-visual-approval.yml
+      - scripts/e2e/**
+      - scripts/application/**
+      - apps/web/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-269-visual-approval-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture and inspect protected preview
+    if: github.event.pull_request.number == 269
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      E2E_REFERENCE_URL: https://estimulo-polish-studio.lovable.app/
+      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
+      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_VISUAL_MAX_PAGES: '80'
+      E2E_TARGET_ENVIRONMENT: preview
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+    steps:
+      - name: Checkout audit tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Playwright without modifying the lockfile
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Resolve authenticated audited deployment
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          for name in E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required E2E input: ${name}" >&2
+              exit 1
+            fi
+          done
+
+          bridge_url="https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/e2e-visual-share-bridge-6c4f8d"
+          payload="$(jq -nc --arg email "$E2E_ADMIN_EMAIL" --arg password "$E2E_ADMIN_PASSWORD" '{email:$email,password:$password}')"
+          bridge="$(curl --fail --silent --show-error --request POST --header 'content-type: application/json' --data "$payload" "$bridge_url")"
+          target_url="$(jq -er '.target_url' <<<"$bridge")"
+          target_sha="$(jq -er '.target_sha' <<<"$bridge")"
+          share_url="$(jq -er '.share_url' <<<"$bridge")"
+
+          if [ "$(node -e 'const [a,b]=process.argv.slice(1).map((value)=>new URL(value)); process.stdout.write(a.origin===b.origin?"yes":"no")' "$target_url" "$share_url")" != "yes" ]; then
+            echo "Authenticated share URL does not match the audited deployment origin." >&2
+            exit 1
+          fi
+
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          compare="$(curl --fail --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "${api}/compare/${target_sha}...${PR_HEAD_SHA}")"
+          compare_status="$(jq -r '.status' <<<"$compare")"
+          if [ "$compare_status" != "ahead" ] && [ "$compare_status" != "identical" ]; then
+            echo "Audited deployment SHA is not an ancestor of the pull-request head (${compare_status})." >&2
+            exit 1
+          fi
+
+          runtime_diff_count="$(jq '[.files[]? | select(.filename | test("^(apps/web/|package\\.json$|package-lock\\.json$|config/|supabase/|Dockerfile\\.lambda$|\\.env\\.example$)"))] | length' <<<"$compare")"
+          if [ "$runtime_diff_count" != "0" ]; then
+            echo "The protected deployment is not runtime-equivalent to the pull-request head." >&2
+            jq -r '.files[]? | select(.filename | test("^(apps/web/|package\\.json$|package-lock\\.json$|config/|supabase/|Dockerfile\\.lambda$|\\.env\\.example$)")) | .filename' <<<"$compare" >&2
+            exit 1
+          fi
+
+          echo "Runtime-equivalent protected deployment resolved for visual approval: ${target_url} (${target_sha})."
+          echo "E2E_TARGET_URL=${target_url}" >> "$GITHUB_ENV"
+          echo "E2E_SOURCE_DEPLOYMENT_URL=${target_url}" >> "$GITHUB_ENV"
+          echo "E2E_TARGET_SHA=${target_sha}" >> "$GITHUB_ENV"
+          echo "E2E_VERCEL_SHARE_URL=${share_url}" >> "$GITHUB_ENV"
+
+      - name: Capture broad Chromium evidence
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/production-visual-capture.mjs
+
+      - name: Enforce strict broad coverage
+        if: always()
+        run: node scripts/e2e/visual-manifest-strict-gate.mjs
+
+      - name: Capture canonical participant flow
+        if: always()
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/participant-critical-flow-visual.mjs
+
+      - name: Capture critical admin states
+        if: always()
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/admin-critical-flow-visual.mjs
+
+      - name: Record visual approval provenance
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p artifacts/e2e-visual
+          node <<'NODE'
+          const fs = require('node:fs');
+          const target = process.env.E2E_TARGET_URL || null;
+          const data = {
+            targetUrl: target,
+            sourceDeploymentUrl: process.env.E2E_SOURCE_DEPLOYMENT_URL || null,
+            targetSha: process.env.E2E_TARGET_SHA || null,
+            pullRequestHeadSha: process.env.GITHUB_SHA || null,
+            targetEnvironment: process.env.E2E_TARGET_ENVIRONMENT || null,
+            authenticatedShareBootstrap: Boolean((process.env.E2E_VERCEL_SHARE_URL || '').trim()),
+            auditedAt: new Date().toISOString(),
+            workflowRun: process.env.GITHUB_RUN_ID,
+          };
+          fs.writeFileSync('artifacts/e2e-visual/approval-provenance.json', `${JSON.stringify(data, null, 2)}\n`);
+          NODE
+
+      - name: Upload Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-269-visual-approval-${{ github.run_id }}
+          path: |
+            artifacts/e2e-visual
+            artifacts/e2e-critical-flow
+            artifacts/e2e-admin-critical
+          if-no-files-found: error
+          retention-days: 14
