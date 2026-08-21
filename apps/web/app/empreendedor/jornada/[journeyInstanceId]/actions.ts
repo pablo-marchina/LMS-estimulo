@@ -19,11 +19,12 @@ export async function openJourneyActivityAction(formData: FormData) {
   const aggregateVersion = version.parse(formData.get("step_aggregate_version"));
   const status = stepStatus.parse(formData.get("step_status"));
   const key = String(formData.get("idempotency_key") || randomUUID());
+  const autoplay = String(formData.get("autoplay") || "") === "1";
 
   if (status === "available") {
     await journeyRuntime.startActivity(auth.identity.user_account_id, stepInstanceId, aggregateVersion, `${key}:start`);
   }
   await journeyRuntime.focusActivity(auth.identity.user_account_id, journeyInstanceId, stepInstanceId, `${key}:focus`);
 
-  redirect(`/empreendedor/atividade/${stepInstanceId}?journey=${journeyInstanceId}`);
+  redirect(`/empreendedor/atividade/${stepInstanceId}?journey=${journeyInstanceId}${autoplay ? "&autoplay=1" : ""}`);
 }
