@@ -8,9 +8,7 @@ export type MediaDescriptorOperation =
   | "get_journey_cover_download"
   | "get_participant_lesson_thumbnail_download"
   | "get_reward_image_download"
-  | "get_interface_content_image_download"
-  | "get_admin_certificate_issuer_media_download"
-  | "get_admin_certificate_template_preview_download";
+  | "get_interface_content_image_download";
 
 export class MediaGatewayError extends Error {
   constructor(public readonly code: string, message: string) {
