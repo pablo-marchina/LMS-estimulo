@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Brain, CheckCircle2, LockKeyhole } from "lucide-react";
 import { submitQuickCheckAction } from "@/app/actions/journey";
-import { Button } from "@/components/ui/button";
+import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
 import type { AssessmentQuestion } from "@/lib/journey-runtime/contracts";
@@ -119,7 +119,7 @@ export function QuickCheckForm({
         );
       })}
       {!attemptAvailable ? <p className="rounded-xl bg-warning-soft p-3 text-sm text-warning">O limite de tentativas desta versão foi atingido.</p> : null}
-      <Button type="submit" className="w-fit" disabled={!contentReady || !attemptAvailable}>Enviar verificação</Button>
+      <PendingSubmitButton pendingLabel="Enviando verificação…" type="submit" className="w-fit" disabled={!contentReady || !attemptAvailable}>Enviar verificação</PendingSubmitButton>
     </form>
   );
 }

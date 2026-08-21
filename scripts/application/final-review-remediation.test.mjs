@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, visualWorkflow, migration, outlineRuntime, openJourneyAction, carousel, bannerImageRoute, bannerStorage, journeyCoverRoute, thumbnailRoute, certificatePreviewRoute, authenticatedRpc] = await Promise.all([
+const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAlias, gamificationPage, uploadPreview, table, visualCapture, visualWorkflow, migration, outlineRuntime, openJourneyAction, carousel, bannerImageRoute, bannerStorage, journeyCoverRoute, thumbnailRoute, certificatePreviewRoute, authenticatedRpc, adminLibraryPage, libraryActions, adminCriticalVisual] = await Promise.all([
   readFile("apps/web/app/api/announcement-banner-uploads/route.ts", "utf8"),
   readFile("apps/web/app/admin/engajamento/page.tsx", "utf8"),
   readFile("apps/web/app/admin/certificados/page.tsx", "utf8"),
@@ -22,6 +22,9 @@ const [announcementRoute, engagementPage, certificateAlias, optionalDiagnosticAl
   readFile("apps/web/app/api/activity-thumbnails/[stepInstanceId]/route.ts", "utf8"),
   readFile("apps/web/app/api/certificate-template-previews/[fileObjectId]/route.ts", "utf8"),
   readFile("supabase/functions/authenticated-rpc/index.ts", "utf8"),
+  readFile("apps/web/app/admin/biblioteca/page.tsx", "utf8"),
+  readFile("apps/web/app/actions/library.ts", "utf8"),
+  readFile("scripts/e2e/admin-critical-flow-visual.mjs", "utf8"),
 ]);
 
 test("global announcements reject participant-private runtime destinations", () => {
@@ -76,11 +79,13 @@ test("visual auditor preserves query-state coverage and rejects semantic broken 
   assert.match(visualCapture, /finalRoute/u);
 });
 
-test("visual workflow validates pull requests without auditing stale production", () => {
-  assert.match(visualWorkflow, /Validate visual capture tooling/u);
-  assert.match(visualWorkflow, /github\.event_name == 'pull_request'/u);
-  assert.match(visualWorkflow, /node --check scripts\/e2e\/production-visual-capture\.mjs/u);
-  assert.match(visualWorkflow, /github\.event_name == 'workflow_dispatch'/u);
+test("visual workflow audits the exact pull-request preview with real Chromium", () => {
+  assert.match(visualWorkflow, /github\.event_name == 'pull_request' \|\|/u);
+  assert.match(visualWorkflow, /Resolve pull-request preview deployment/u);
+  assert.match(visualWorkflow, /deployments\?sha=\$\{PR_HEAD_SHA\}/u);
+  assert.match(visualWorkflow, /E2E_TARGET_URL=\$\{deployment_url\}/u);
+  assert.match(visualWorkflow, /github\.event\.pull_request\.head\.sha/u);
+  assert.match(visualWorkflow, /Install Chromium/u);
   assert.match(visualWorkflow, /Capture desktop and mobile visual evidence/u);
 });
 
@@ -115,4 +120,23 @@ test("certificate template preview stays on the canonical extensions gateway whi
   assert.match(certificatePreviewRoute, /extensionsRuntime\.certificateTemplatePreviewDownload/u);
   assert.match(certificatePreviewRoute, /auth\.identity\.user_account_id/u);
   assert.doesNotMatch(certificatePreviewRoute, /createPrivilegedClient/u);
+});
+
+test("library publication is structurally gated until the draft satisfies publish requirements", () => {
+  assert.match(adminLibraryPage, /function libraryPublishIssue/u);
+  assert.match(adminLibraryPage, /Informe a duração entre 1 e 600 minutos antes de publicar/u);
+  assert.match(adminLibraryPage, /data-publish-ready/u);
+  assert.match(adminLibraryPage, /Completar para publicar/u);
+  assert.match(adminLibraryPage, /publishIssue \? \(/u);
+  assert.match(adminLibraryPage, /id="estimated_minutes"/u);
+  assert.match(adminLibraryPage, /Sem esse valor, a ação de publicação fica bloqueada/u);
+  assert.match(libraryActions, /view=novo&organization=\$\{organizationId\}&edit=\$\{versionId\}&erro=duracao#estimated_minutes/u);
+});
+
+test("real admin visual gate includes library publication readiness in all viewports", () => {
+  assert.match(adminCriticalVisual, /biblioteca-publicacao/u);
+  assert.match(adminCriticalVisual, /\/admin\/biblioteca\?view=conteudos/u);
+  assert.match(adminCriticalVisual, /incompleteDraftsWithPublishButton/u);
+  assert.match(adminCriticalVisual, /incompleteDraftsMissingCompletionCta/u);
+  assert.match(adminCriticalVisual, /incomplete library draft still exposes Publish action/u);
 });

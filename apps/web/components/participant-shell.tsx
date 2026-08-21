@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { preconnect, prefetchDNS } from "react-dom";
-import { BookOpen, Building2, ChevronDown, Compass, Gift, Home, LogOut, User } from "lucide-react";
+import { Building2, ChevronDown, Compass, Gift, Home, LogOut, User } from "lucide-react";
 import { signOutAction } from "@/app/entrar/actions";
 import { BehaviorEventTracker } from "@/components/behavior-event-tracker";
 import { EstimuloBrand } from "@/components/estimulo-brand";
@@ -19,7 +19,6 @@ import { interfaceHref, interfaceOrder, interfaceText, interfaceVisible } from "
 const linkDefinitions = [
   { href: "/empreendedor", label: "Início", contentKey: "participant.nav.home", icon: Home, exact: true, order: 10 },
   { href: "/empreendedor/jornadas", label: "Jornadas", contentKey: "participant.nav.journeys", icon: Compass, order: 20 },
-  { href: "/empreendedor/biblioteca", label: "Biblioteca", contentKey: "participant.nav.library", icon: BookOpen, order: 30 },
   { href: "/empreendedor/recompensas", label: "Recompensas", contentKey: "participant.nav.rewards", icon: Gift, order: 55 },
   { href: "/empreendedor/b2b", label: "B2B", contentKey: "participant.nav.b2b", icon: Building2, order: 65 },
 ];

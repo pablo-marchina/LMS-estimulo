@@ -102,13 +102,13 @@ test("runtime identity and RPC calls use the authenticated gateway without a loc
   assert.match(edgeGateway, /ACTOR_MISMATCH/u);
 });
 
-test("first-touch attribution remains HttpOnly and limited to participant signup", async () => {
+test("first-touch attribution remains HttpOnly and limited to participant signup and sign-in", async () => {
   const [proxy, attribution] = await Promise.all([
     read("apps/web/proxy.ts"),
     read("apps/web/lib/auth/first-touch.ts"),
   ]);
   assert.match(proxy, /httpOnly:\s*true/u);
-  assert.match(proxy, /request\.nextUrl\.pathname === "\/cadastro"/u);
+  assert.match(proxy, /\["\/cadastro", "\/entrar"\]\.includes\(request\.nextUrl\.pathname\)/u);
   assert.match(proxy, /administrativePath \? "\/entrar\/administracao" : "\/entrar"/u);
   assert.match(attribution, /MAX_UTM_LENGTH = 200/u);
 });

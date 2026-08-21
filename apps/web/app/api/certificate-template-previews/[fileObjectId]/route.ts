@@ -7,6 +7,7 @@ import { createPrivateDownloadUrl } from "@/lib/platform/object-storage";
 export const dynamic = "force-dynamic";
 const SIGNED_URL_SECONDS = 900;
 const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
+type SignedDescriptor = { bucket: string; object_key: string; signed_url?: string };
 
 export async function GET(request: Request, { params }: { params: Promise<{ fileObjectId: string }> }) {
   const auth = await getAuthContext();
@@ -26,12 +27,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ file
       auth.identity.user_account_id,
       organizationId.data,
       fileId.data,
-    );
-    const url = await createPrivateDownloadUrl({
-      bucket: descriptor.bucket,
-      objectKey: descriptor.object_key,
-      expiresInSeconds: SIGNED_URL_SECONDS,
-    });
+    ) as SignedDescriptor;
+    const url = descriptor.signed_url
+      ?? await createPrivateDownloadUrl({
+        bucket: descriptor.bucket,
+        objectKey: descriptor.object_key,
+        expiresInSeconds: SIGNED_URL_SECONDS,
+      });
     return NextResponse.redirect(url, {
       status: 302,
       headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL, vary: "Cookie" },

@@ -1,0 +1,182 @@
+name: PR 269 visual approval
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/pr-269-visual-approval.yml
+      - .gitleaksignore
+      - .gitleaks.toml
+      - scripts/e2e/**
+      - scripts/application/**
+      - apps/web/**
+      - supabase/functions/authenticated-media-rpc/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-269-visual-approval-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: Capture and inspect exact PR LMS build
+    if: github.event.pull_request.number == 269
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      APP_ENV: test
+      PLATFORM_RUNTIME_PROVIDER: supabase
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_knKAm6ycwAH8_Ha9SqnrQw_xenjHzRR
+      SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+      AUTHENTICATED_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/authenticated-rpc
+      PLATFORM_EXTENSIONS_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/platform-extensions-rpc
+      AI_GRADE_SUBMISSION_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/ai-grade-submission
+      E2E_TARGET_URL: http://127.0.0.1:3000
+      E2E_REFERENCE_URL: https://estimulo-polish-studio.lovable.app/
+      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
+      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_VISUAL_MAX_PAGES: '80'
+      E2E_TARGET_ENVIRONMENT: local-pr-build
+      SOURCE_VERSION: ${{ github.event.pull_request.head.sha }}
+
+    steps:
+      - name: Checkout exact pull-request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up exact Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22.23.1'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Verify E2E credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required E2E input: ${name}" >&2
+              exit 1
+            fi
+          done
+
+      - name: Generate CI-only crypto fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "CPF_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d '\n')" >> "$GITHUB_ENV"
+          echo "CPF_LOOKUP_HMAC_KEY=$(openssl rand -base64 32 | tr -d '\n')" >> "$GITHUB_ENV"
+
+      - name: Install exact application dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Build exact pull-request application
+        run: npm run build:web
+
+      - name: Install Playwright without modifying the lockfile
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start exact pull-request build
+        shell: bash
+        run: |
+          set -euo pipefail
+          nohup npm run start:web > /tmp/lms-visual-server.log 2>&1 &
+          echo $! > /tmp/lms-visual-server.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:3000/entrar >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              cat /tmp/lms-visual-server.log >&2 || true
+              echo "Local visual server did not become ready." >&2
+              exit 1
+            fi
+            sleep 1
+          done
+
+          protected_status="$(curl --silent --output /tmp/protected-response.txt --write-out '%{http_code}' http://127.0.0.1:3000/empreendedor)"
+          if [ "$protected_status" = "503" ]; then
+            cat /tmp/protected-response.txt >&2 || true
+            cat /tmp/lms-visual-server.log >&2 || true
+            echo "Protected route is not configured for real Supabase identity." >&2
+            exit 1
+          fi
+          echo "Exact PR build is serving public and protected routes with real Supabase identity configuration."
+
+      - name: Capture broad Chromium evidence
+        run: node scripts/e2e/production-visual-capture.mjs
+
+      - name: Enforce strict broad coverage
+        if: always()
+        run: node scripts/e2e/visual-manifest-strict-gate.mjs
+
+      - name: Capture canonical participant flow
+        if: always()
+        run: node scripts/e2e/participant-critical-flow-visual.mjs
+
+      - name: Capture critical admin states
+        if: always()
+        run: node scripts/e2e/admin-critical-flow-visual.mjs
+
+      - name: Reject broken critical media
+        if: always()
+        run: node scripts/e2e/critical-image-health-visual.mjs
+
+      - name: Record visual approval provenance
+        if: always()
+        shell: bash
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p artifacts/e2e-visual
+          node <<'NODE'
+          const fs = require('node:fs');
+          const data = {
+            targetUrl: process.env.E2E_TARGET_URL,
+            targetSha: process.env.PR_HEAD_SHA,
+            sourceVersion: process.env.SOURCE_VERSION,
+            targetEnvironment: process.env.E2E_TARGET_ENVIRONMENT,
+            runtimeProvider: process.env.PLATFORM_RUNTIME_PROVIDER,
+            realSupabaseIdentityConfiguration: true,
+            privateMediaSigning: 'authenticated-edge-gateway',
+            chromiumExecution: true,
+            auditedAt: new Date().toISOString(),
+            workflowRun: process.env.GITHUB_RUN_ID,
+          };
+          fs.writeFileSync('artifacts/e2e-visual/approval-provenance.json', `${JSON.stringify(data, null, 2)}\n`);
+          NODE
+
+      - name: Preserve local server log
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p artifacts/e2e-visual
+          cp /tmp/lms-visual-server.log artifacts/e2e-visual/local-server.log 2>/dev/null || true
+
+      - name: Upload Chromium evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-269-visual-approval-${{ github.run_id }}
+          path: |
+            artifacts/e2e-visual
+            artifacts/e2e-critical-flow
+            artifacts/e2e-admin-critical
+            artifacts/e2e-image-health
+          if-no-files-found: error
+          retention-days: 14

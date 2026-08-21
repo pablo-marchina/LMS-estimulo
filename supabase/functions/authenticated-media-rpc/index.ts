@@ -8,6 +8,7 @@ const allowed = new Set([
   "get_interface_content_image_download",
 ]);
 const requestIdPattern = /^[A-Za-z0-9._:-]{1,128}$/u;
+const SIGNED_URL_SECONDS = 900;
 
 type Failure = { code?: string | null; message?: string | null } | null;
 
@@ -111,5 +112,22 @@ Deno.serve(async (request: Request) => {
     const mapped = failure(error);
     return reply(mapped.status, { ok: false, code: mapped.code, message: mapped.message }, requestId, startedAt);
   }
-  return reply(200, { ok: true, data }, requestId, startedAt);
+
+  const descriptor = data && typeof data === "object" && !Array.isArray(data)
+    ? data as Record<string, unknown>
+    : null;
+  const bucket = typeof descriptor?.bucket === "string" ? descriptor.bucket : "";
+  const objectKey = typeof descriptor?.object_key === "string" ? descriptor.object_key : "";
+  if (!descriptor || !bucket || !objectKey) {
+    return reply(500, { ok: false, code: "MEDIA_DESCRIPTOR_INVALID", message: "The media descriptor is incomplete." }, requestId, startedAt);
+  }
+
+  const { data: signedData, error: signedError } = await serviceClient.storage
+    .from(bucket)
+    .createSignedUrl(objectKey, SIGNED_URL_SECONDS);
+  if (signedError || !signedData?.signedUrl) {
+    return reply(500, { ok: false, code: "MEDIA_SIGNING_FAILED", message: "The authorized media could not be signed." }, requestId, startedAt);
+  }
+
+  return reply(200, { ok: true, data: { ...descriptor, signed_url: signedData.signedUrl } }, requestId, startedAt);
 });

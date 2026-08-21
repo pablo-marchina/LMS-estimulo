@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [visualCapture, operationPage] = await Promise.all([
+const [visualCapture, operationPage, announcementCarousel] = await Promise.all([
   readFile("scripts/e2e/production-visual-capture.mjs", "utf8"),
   readFile("apps/web/app/admin/operacao/page.tsx", "utf8"),
+  readFile("apps/web/components/announcement-carousel.tsx", "utf8"),
 ]);
 
 test("participant visual seeds follow the current information architecture", () => {
@@ -42,6 +43,11 @@ test("visual capture remains fail-closed when semantic or runtime failures exist
   assert.match(visualCapture, /if \(manifest\.failures\.length\)/u);
   assert.match(visualCapture, /process\.exitCode = 1/u);
   assert.match(visualCapture, /Evidence was still uploaded/u);
+});
+
+test("image-only home banners preserve the complete artwork instead of cropping it", () => {
+  assert.match(announcementCarousel, /const imageOnly = announcement\.display_mode === "image_only"/u);
+  assert.match(announcementCarousel, /style=\{imageOnly \? \{ objectFit: "contain", transform: "none", backgroundColor: "white" \} : undefined\}/u);
 });
 
 test("operation evidence cannot force horizontal overflow with technical identifiers", () => {

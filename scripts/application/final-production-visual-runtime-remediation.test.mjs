@@ -28,7 +28,7 @@ test("announcement management contains intrinsic mobile width without clipping i
   assert.match(engagement, /<StatusPill className="shrink-0"/u);
 });
 
-test("certificate template preview RPC is allowlisted on the same gateway used by runtime", () => {
+test("certificate template preview RPC is allowlisted on the same extensions gateway used by runtime", () => {
   assert.match(extensionsRuntime, /"get_admin_certificate_template_preview_download"/u);
   assert.match(previewRoute, /certificateTemplatePreviewDownload/u);
   assert.match(extensionsEdge, /const allowed = new Set\(\[/u);

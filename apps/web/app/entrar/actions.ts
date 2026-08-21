@@ -4,7 +4,9 @@ import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { resolveCurrentIdentity } from "@/lib/auth/current-identity";
+import { decodeFirstTouch, FIRST_TOUCH_COOKIE } from "@/lib/auth/first-touch";
 import { extensionsRuntime } from "@/lib/extensions/runtime";
+import { isOpenAiCampaign, resolveOpenAiJourneyDestination } from "@/lib/journey-runtime/openai-destination";
 import { clearSupabaseSessionCookies, createSessionClient } from "@/lib/supabase/server";
 
 function safeDestination(value: unknown) {
@@ -16,18 +18,12 @@ export async function signInAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   if (!email || !password) redirect("/entrar?erro=campos_obrigatorios");
 
-  // A stale/rotated refresh token can otherwise race the explicit password
-  // sign-in and momentarily surface an auth error even when the credentials
-  // are valid. A new login must always start from a clean local auth session.
   await clearSupabaseSessionCookies();
   const client = await createSessionClient();
   const { error } = await client.auth.signInWithPassword({ email, password });
   if (error?.code === "email_not_confirmed") redirect("/entrar?erro=confirmacao_necessaria");
   if (error) redirect("/entrar?erro=credenciais_invalidas");
 
-  // Resolve the internal identity with the exact Supabase client that just
-  // authenticated. Re-reading a cached request auth context here can observe
-  // the pre-login state before the newly issued session cookies are reflected.
   let identity = null;
   try {
     identity = await resolveCurrentIdentity(client);
@@ -59,6 +55,20 @@ export async function signInAction(formData: FormData) {
     cookieStore.delete("estimulo_tracking_visit");
   }
   if (trackedDestination) redirect(trackedDestination);
+
+  const firstTouch = decodeFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value);
+  let openAiDestination: string | null = null;
+  if (identity.entrepreneur_id && isOpenAiCampaign(firstTouch)) {
+    try {
+      openAiDestination = await resolveOpenAiJourneyDestination(identity.user_account_id);
+      cookieStore.delete(FIRST_TOUCH_COOKIE);
+    } catch (error) {
+      console.error("OPENAI_CAMPAIGN_LOGIN_DESTINATION_FAILED", {
+        error_name: error instanceof Error ? error.name : "unknown",
+      });
+    }
+  }
+  if (openAiDestination) redirect(openAiDestination);
 
   if (identity.entrepreneur_id) redirect("/empreendedor");
   redirect("/cadastro/concluir");

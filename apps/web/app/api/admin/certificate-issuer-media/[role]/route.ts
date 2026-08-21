@@ -7,8 +7,9 @@ import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
 
-type Descriptor = { bucket: string; object_key: string };
+type Descriptor = { bucket: string; object_key: string; signed_url?: string };
 const roleSchema = z.enum(["logo", "signature"]);
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ role: string }> }) {
@@ -23,9 +24,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       p_organization_id: organization.organization_id,
       p_role: roleSchema.parse((await params).role),
     });
-    const url = await createPrivateDownloadUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key, expiresInSeconds: 300 });
-    return NextResponse.redirect(url, 303);
+    const url = descriptor.signed_url
+      ?? await createPrivateDownloadUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key, expiresInSeconds: 300 });
+    return NextResponse.redirect(url, {
+      status: 303,
+      headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL, vary: "Cookie" },
+    });
   } catch {
-    return new NextResponse("Mídia não disponível.", { status: 404 });
+    return new NextResponse("Mídia não disponível.", { status: 404, headers: { "cache-control": "no-store" } });
   }
 }

@@ -17,8 +17,9 @@ const viewports = [
 const routes = [
   { key: "certificados", path: "/admin/certificados" },
   { key: "gamificacao-certificados", path: "/admin/gamificacao?tipo=certificados" },
+  { key: "biblioteca-publicacao", path: "/admin/biblioteca?view=conteudos", checkLibraryPublishReadiness: true },
 ];
-const report = { schemaVersion: 1, startedAt: new Date().toISOString(), captures: [], failures: [] };
+const report = { schemaVersion: 2, startedAt: new Date().toISOString(), captures: [], failures: [] };
 
 async function settle(page) {
   await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => {});
@@ -54,6 +55,9 @@ try {
           const width = document.documentElement.clientWidth;
           const height = document.documentElement.clientHeight;
           const documentWidth = document.documentElement.scrollWidth;
+          const draftRows = [...document.querySelectorAll('tr[data-library-status="draft"]')];
+          const incompleteDraftRows = draftRows.filter((row) => row.getAttribute("data-publish-ready") === "false");
+          const buttonText = (row) => [...row.querySelectorAll("button, a")].map((control) => control.textContent?.trim() ?? "");
           return {
             viewportWidth: width,
             viewportHeight: height,
@@ -61,6 +65,12 @@ try {
             horizontalOverflow: documentWidth > width + 2,
             bodyLength: document.body.innerText.trim().length,
             heading: h1Rect ? { top: h1Rect.top, left: h1Rect.left, right: h1Rect.right, width: h1Rect.width } : null,
+            libraryPublishReadiness: {
+              draftCount: draftRows.length,
+              incompleteDraftCount: incompleteDraftRows.length,
+              incompleteDraftsWithPublishButton: incompleteDraftRows.filter((row) => buttonText(row).includes("Publicar")).length,
+              incompleteDraftsMissingCompletionCta: incompleteDraftRows.filter((row) => !buttonText(row).includes("Completar para publicar")).length,
+            },
           };
         });
         const violations = [];
@@ -70,6 +80,10 @@ try {
         if (metrics.heading?.top > metrics.viewportHeight * 0.65) violations.push(`primary heading starts too low: ${metrics.heading.top.toFixed(1)}px`);
         if (metrics.heading && (metrics.heading.left < -2 || metrics.heading.right > metrics.viewportWidth + 2)) violations.push("primary heading clipped horizontally");
         if (/Conteúdo não encontrado/i.test(await page.locator("body").innerText().catch(() => ""))) violations.push("semantic not-found state rendered");
+        if (route.checkLibraryPublishReadiness) {
+          if (metrics.libraryPublishReadiness.incompleteDraftsWithPublishButton > 0) violations.push("incomplete library draft still exposes Publish action");
+          if (metrics.libraryPublishReadiness.incompleteDraftsMissingCompletionCta > 0) violations.push("incomplete library draft is missing completion CTA");
+        }
         if (pageErrors.length) violations.push(`${pageErrors.length} uncaught page error(s)`);
 
         const screenshot = path.join(outputDir, `${viewport.key}-${route.key}.png`);

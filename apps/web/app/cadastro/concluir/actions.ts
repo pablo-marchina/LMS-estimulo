@@ -12,6 +12,7 @@ import {
   provisionPublicSignupParticipant,
   stagePublicSignupLegalSnapshot,
 } from "@/lib/auth/public-signup-provisioning";
+import { isOpenAiCampaign, resolveOpenAiJourneyDestination } from "@/lib/journey-runtime/openai-destination";
 import { assertCpfProtectionReady, isValidCpf, protectCpf, unprotectCpf, type ProtectedCpf } from "@/lib/identity/cpf";
 import { isValidCnpj, normalizeCnpj } from "@/lib/identity/cnpj-core.mjs";
 import { isValidPhoneBr, toE164Br } from "@/lib/identity/phone-br.mjs";
@@ -68,12 +69,6 @@ export async function completePublicSignupAction(formData: FormData) {
   if (!userData.user) redirect("/entrar?erro=confirmacao_necessaria");
   const metadata = (userData.user.user_metadata ?? {}) as Record<string, unknown>;
 
-  // Accounts created before immutable legal snapshots were introduced can still
-  // authenticate, but they do not have the token required by provisioning v3.
-  // Recover that compatibility gap here by collecting an explicit acceptance of
-  // the exact governed versions shown on /cadastro/concluir, then stage the same
-  // server-side snapshot used by new signups. New accounts keep their original
-  // signup-time snapshot untouched.
   if (!hasSignupLegalSnapshotToken(metadata)) {
     const termsDocumentVersionId = uuidSchema.safeParse(String(formData.get("terms_document_version_id") ?? ""));
     const privacyDocumentVersionId = uuidSchema.safeParse(String(formData.get("privacy_document_version_id") ?? ""));
@@ -166,6 +161,7 @@ export async function completePublicSignupAction(formData: FormData) {
   const attribution = decodeFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value) ?? {
     utm_source: null, utm_medium: null, utm_campaign: null, utm_content: null, utm_term: null, landing_path: "/cadastro",
   };
+  const openAiCampaign = isOpenAiCampaign(attribution);
 
   try {
     await provisionPublicSignupParticipant({
@@ -189,8 +185,6 @@ export async function completePublicSignupAction(formData: FormData) {
     redirect("/cadastro/concluir?erro=provisionamento_falhou");
   }
 
-  // The profile is already committed at this point. Metadata cleanup is
-  // maintenance only and must never turn a successful signup into an error.
   try {
     const { error: cleanupError } = await createPrivilegedClient().auth.admin.updateUserById(userData.user.id, {
       user_metadata: {
@@ -211,6 +205,18 @@ export async function completePublicSignupAction(formData: FormData) {
     });
   }
 
+  let openAiDestination: string | null = null;
+  if (openAiCampaign) {
+    try {
+      openAiDestination = await resolveOpenAiJourneyDestination(auth.identity.user_account_id);
+    } catch (error) {
+      console.error("OPENAI_CAMPAIGN_SIGNUP_DESTINATION_FAILED", {
+        error_name: error instanceof Error ? error.name : "unknown",
+      });
+    }
+  }
+
   cookieStore.delete(FIRST_TOUCH_COOKIE);
+  if (openAiDestination) redirect(openAiDestination);
   redirect("/empreendedor");
 }

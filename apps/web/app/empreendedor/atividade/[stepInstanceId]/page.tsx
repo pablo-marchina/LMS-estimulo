@@ -74,6 +74,17 @@ const completionMessages: Record<string, { tone: "success" | "warning" | "danger
   },
 };
 
+const assessmentMessages: Record<string, { title: string; text: string }> = {
+  resposta_pendente: {
+    title: "Responda todas as perguntas",
+    text: "A verificação não foi enviada. Complete as respostas e tente novamente.",
+  },
+  indisponivel: {
+    title: "Verificação atualizada",
+    text: "A configuração desta verificação mudou enquanto a aula estava aberta. Recarregue a página antes de tentar novamente.",
+  },
+};
+
 function fileSize(value: number | null): string | null {
   if (value === null) return null;
   if (value < 1024) return `${value} B`;
@@ -81,22 +92,8 @@ function fileSize(value: number | null): string | null {
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function SectionTitle({
-  eyebrow,
-  title,
-  description,
-}: {
-  eyebrow?: string;
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="min-w-0">
-      {eyebrow ? <p className="text-[11px] font-bold uppercase tracking-[.14em] text-primary">{eyebrow}</p> : null}
-      <h2 className={`${eyebrow ? "mt-1" : ""} text-xl font-black leading-tight text-secondary`}>{title}</h2>
-      {description ? <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">{description}</p> : null}
-    </div>
-  );
+function SectionTitle({ title }: { title: string }) {
+  return <h2 className="text-xl font-black leading-tight text-secondary">{title}</h2>;
 }
 
 export default async function ActivityPage({
@@ -121,19 +118,29 @@ export default async function ActivityPage({
   const auth = await getAuthContext();
   if (auth.status !== "authenticated") return null;
 
-  const [experience, commentResult, practiceLoad, utilityRating] = await Promise.all([
-    journeyRuntime.getParticipantExperience(auth.identity.user_account_id, journey),
-    journeyRuntime.listActivityComments(auth.identity.user_account_id, stepInstanceId),
-    practiceRuntime.listParticipant(auth.identity.user_account_id, stepInstanceId)
+  const actor = auth.identity.user_account_id;
+  const [experience, commentLoad, practiceLoad, utilityLoad] = await Promise.all([
+    journeyRuntime.getParticipantExperience(actor, journey),
+    journeyRuntime.listActivityComments(actor, stepInstanceId)
+      .then((value) => ({ value, unavailable: false as const }))
+      .catch(() => ({ value: { step_instance_id: stepInstanceId, comments: [] }, unavailable: true as const })),
+    practiceRuntime.listParticipant(actor, stepInstanceId)
       .then((value) => ({ value, unavailable: false as const }))
       .catch(() => ({ value: null, unavailable: true as const })),
-    utilityRatingRuntime.get(auth.identity.user_account_id, stepInstanceId),
+    utilityRatingRuntime.get(actor, stepInstanceId)
+      .then((value) => ({ value, unavailable: false as const }))
+      .catch(() => ({
+        value: { step_instance_id: stepInstanceId, rating: null, revision: 0, updated_at: null },
+        unavailable: true as const,
+      })),
   ]);
 
   if (experience.state.s?.step_instance_id !== stepInstanceId || !experience.activity) notFound();
 
   const activity = experience.activity;
   const assessment = experience.assessment;
+  const commentResult = commentLoad.value;
+  const utilityRating = utilityLoad.value;
   const requiredAssets = activity.assets
     .filter((asset) => asset.is_required)
     .map((asset) => ({ id: asset.id, completed: asset.progress.completed }));
@@ -152,6 +159,7 @@ export default async function ActivityPage({
   const completed = experience.state.s?.status === "completed";
   const completionMessage = query.conclusao ? completionMessages[query.conclusao] : null;
   const completionTarget = query.conclusao ?? null;
+  const assessmentMessage = query.avaliacao ? assessmentMessages[query.avaliacao] : null;
 
   return (
     <div className="mx-auto w-full max-w-[1100px] px-4 pb-20 pt-4 sm:px-6 sm:pt-6">
@@ -164,12 +172,8 @@ export default async function ActivityPage({
 
       <main className="mt-5 min-w-0 overflow-hidden rounded-[1.75rem] border border-border bg-white shadow-sm">
         <section id="conteudo" className="scroll-mt-24 min-w-0" aria-labelledby="conteudo-titulo">
-          <div className="border-b border-border bg-surface-muted/55 px-4 py-5 sm:px-6 sm:py-6">
-            <SectionTitle
-              eyebrow="Conteúdo"
-              title="Estude esta aula no seu ritmo"
-              description={activity.description ?? "Acompanhe os materiais abaixo. Seu progresso fica vinculado a esta aula."}
-            />
+          <div className="border-b border-border bg-surface-muted/55 px-4 py-5 sm:px-6 sm:py-6" id="conteudo-titulo">
+            <SectionTitle title="Conteúdo" />
           </div>
 
           <div className="grid min-w-0 gap-4 p-4 sm:p-6">
@@ -188,10 +192,16 @@ export default async function ActivityPage({
                 />
               ))
             ) : (
-              <StatusPanel title="Nenhum material anexado" tone="info">
-                Continue pelas etapas disponíveis nesta aula.
+              <StatusPanel title={completed ? "Etapa concluída" : "Pronto para avançar"} tone={completed ? "success" : "info"}>
+                {completed
+                  ? "Seu progresso nesta etapa já foi registrado. Se ela liberar uma conquista, a confirmação aparece automaticamente na plataforma."
+                  : "Esta etapa não possui material para assistir. Conclua a avaliação ou prática, quando houver, e use o botão de conclusão para registrar seu avanço."}
               </StatusPanel>
             )}
+
+            {activity.description ? (
+              <p className="max-w-3xl text-sm leading-6 text-muted">{activity.description}</p>
+            ) : null}
           </div>
         </section>
 
@@ -199,16 +209,11 @@ export default async function ActivityPage({
 
         {hasAssessment ? (
           <section id="avaliacao" className="scroll-mt-24 grid min-w-0 gap-5 border-t border-border px-4 py-6 sm:px-6 sm:py-7" aria-labelledby="avaliacao-titulo">
-            <div id="avaliacao-titulo">
-              <SectionTitle
-                eyebrow="Verificação"
-                title="Verifique o que aprendeu"
-                description="Responda depois de concluir os materiais obrigatórios. Suas respostas e tentativas ficam vinculadas a esta aula."
-              />
-            </div>
+            <div id="avaliacao-titulo"><SectionTitle title="Avaliação" /></div>
             {completionTarget === "avaliacao_pendente" && completionMessage ? (
               <StatusPanel title={completionMessage.title} tone={completionMessage.tone}>{completionMessage.text}</StatusPanel>
             ) : null}
+            {assessmentMessage ? <StatusPanel title={assessmentMessage.title} tone="warning">{assessmentMessage.text}</StatusPanel> : null}
             {query.avaliacao === "reprovada" || experience.state.q?.status === "failed" ? (
               <StatusPanel title="Revise e tente novamente" tone="warning">
                 A tentativa anterior não atingiu o critério. Reveja o conteúdo e faça uma nova tentativa.
@@ -240,13 +245,7 @@ export default async function ActivityPage({
 
         {practice ? (
           <section id="pratica" className="scroll-mt-24 grid min-w-0 gap-5 border-t border-border px-4 py-6 sm:px-6 sm:py-7" aria-labelledby="pratica-titulo">
-            <div id="pratica-titulo">
-              <SectionTitle
-                eyebrow="Prática"
-                title="Aplique e envie sua evidência"
-                description="Envie PDF, imagem, TXT ou DOCX de até 6 MB. O arquivo permanece privado e nunca é executado."
-              />
-            </div>
+            <div id="pratica-titulo"><SectionTitle title="Prática" /></div>
 
             {completionTarget === "pratica_pendente" && completionMessage ? (
               <StatusPanel title={completionMessage.title} tone={completionMessage.tone}>{completionMessage.text}</StatusPanel>
@@ -326,11 +325,7 @@ export default async function ActivityPage({
 
           <div className="grid min-w-0 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)] md:items-start">
             <div className="min-w-0">
-              <SectionTitle
-                eyebrow="Finalização"
-                title={completed ? "Aula concluída" : "Finalize quando terminar as etapas"}
-                description={completed ? "Seu progresso nesta aula já foi registrado." : "Conclua os requisitos da aula e registre seu progresso quando estiver pronto."}
-              />
+              <SectionTitle title="Finalização" />
               <form action={completeParticipantActivityAction} id="concluir-aula" className="mt-4">
                 <input type="hidden" name="journey_instance_id" value={journey} />
                 <input type="hidden" name="step_instance_id" value={stepInstanceId} />
@@ -350,28 +345,31 @@ export default async function ActivityPage({
               <p className="text-sm font-bold text-ink">
                 {query.utilidade === "registrada" || utilityRating.rating ? "Obrigado pela avaliação!" : "O que achou desta aula?"}
               </p>
-              <p className="mt-1 text-xs leading-5 text-muted">Sua nota ajuda a melhorar o conteúdo e não interfere na conclusão.</p>
-              <form action={rateActivityUtilityAction} className="mt-3 flex items-center gap-1" aria-label="Avalie esta aula de 1 a 5 estrelas">
-                <input type="hidden" name="journey_instance_id" value={journey} />
-                <input type="hidden" name="step_instance_id" value={stepInstanceId} />
-                <input type="hidden" name="idempotency_key" value={randomUUID()} />
-                {[1, 2, 3, 4, 5].map((rating) => {
-                  const active = rating <= (utilityRating.rating ?? 0);
-                  return (
-                    <button
-                      key={rating}
-                      type="submit"
-                      name="rating"
-                      value={rating}
-                      aria-label={`Avaliar com ${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
-                      title={`${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
-                      className="grid size-9 place-items-center rounded-lg text-muted transition hover:bg-primary-soft hover:text-primary focus-visible:text-primary"
-                    >
-                      <Star size={20} fill={active ? "currentColor" : "none"} className={active ? "text-primary" : ""} />
-                    </button>
-                  );
-                })}
-              </form>
+              {utilityLoad.unavailable ? (
+                <p className="mt-2 text-xs leading-5 text-muted">A nota desta aula está temporariamente indisponível. Isso não interfere no seu progresso.</p>
+              ) : (
+                <form action={rateActivityUtilityAction} className="mt-3 flex items-center gap-1" aria-label="Avalie esta aula de 1 a 5 estrelas">
+                  <input type="hidden" name="journey_instance_id" value={journey} />
+                  <input type="hidden" name="step_instance_id" value={stepInstanceId} />
+                  <input type="hidden" name="idempotency_key" value={randomUUID()} />
+                  {[1, 2, 3, 4, 5].map((rating) => {
+                    const active = rating <= (utilityRating.rating ?? 0);
+                    return (
+                      <button
+                        key={rating}
+                        type="submit"
+                        name="rating"
+                        value={rating}
+                        aria-label={`Avaliar com ${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
+                        title={`${rating} ${rating === 1 ? "estrela" : "estrelas"}`}
+                        className="grid size-9 place-items-center rounded-lg text-muted transition hover:bg-primary-soft hover:text-primary focus-visible:text-primary"
+                      >
+                        <Star size={20} fill={active ? "currentColor" : "none"} className={active ? "text-primary" : ""} />
+                      </button>
+                    );
+                  })}
+                </form>
+              )}
               {query.utilidade === "registrada" ? (
                 <p className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-success"><CheckCircle2 size={14} /> Avaliação registrada</p>
               ) : null}
@@ -380,19 +378,17 @@ export default async function ActivityPage({
         </section>
 
         <section id="comentarios" className="scroll-mt-24 min-w-0 border-t border-border px-4 py-6 sm:px-6 sm:py-7" aria-labelledby="comentarios-titulo">
-          <div id="comentarios-titulo">
-            <SectionTitle
-              eyebrow="Discussão"
-              title="Converse sobre esta aula"
-              description="Conte o que você achou ou compartilhe como isso se aplica ao seu negócio. Não publique dados pessoais, financeiros ou sensíveis."
-            />
-          </div>
+          <div id="comentarios-titulo"><SectionTitle title="Comentários" /></div>
           <div className="mt-5 max-w-3xl">
-            <ActivityCommentPanel
-              journeyInstanceId={journey}
-              stepInstanceId={stepInstanceId}
-              initialComments={commentResult.comments}
-            />
+            {commentLoad.unavailable ? (
+              <StatusPanel title="Comentários temporariamente indisponíveis" tone="warning">A aula e o seu progresso continuam funcionando normalmente. Recarregue a página para tentar abrir a discussão novamente.</StatusPanel>
+            ) : (
+              <ActivityCommentPanel
+                journeyInstanceId={journey}
+                stepInstanceId={stepInstanceId}
+                initialComments={commentResult.comments}
+              />
+            )}
           </div>
         </section>
       </main>

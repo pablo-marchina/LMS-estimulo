@@ -13,7 +13,7 @@ test("lesson follows the continuous Vanessa/Refined workspace instead of tabs or
   assert.match(activityPage, /max-w-\[1100px\]/u);
   assert.match(activityPage, /Marcar como concluída/u);
   assert.match(activityPage, /O que achou desta aula\?/u);
-  assert.match(activityPage, /Converse sobre esta aula/u);
+  assert.match(activityPage, /SectionTitle title="Comentários"/u);
   assert.match(activityPage, /rateActivityUtilityAction/u);
   assert.match(activityPage, /completeParticipantActivityAction/u);
   assert.doesNotMatch(activityPage, /ActivityContentProgress/u);
