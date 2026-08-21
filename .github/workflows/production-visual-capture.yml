@@ -29,6 +29,7 @@ on:
 
 permissions:
   contents: read
+  deployments: read
 
 concurrency:
   group: production-visual-capture-${{ github.event_name }}-${{ github.event.deployment.id || github.ref }}
@@ -67,20 +68,20 @@ jobs:
     name: Capture desktop and mobile visual evidence
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
       (github.event_name == 'deployment_status' &&
        github.event.deployment_status.state == 'success' &&
        github.event.deployment_status.environment_url != '')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # Vercel protects immutable production deployment URLs in this project even
-      # though the canonical production alias is public. Audit the public alias for
-      # production events so the visual gate exercises the real user-facing origin.
-      # Preview events still use their immutable URL and can opt into the bypass secret.
+      # Production deployment events use the canonical public alias. Preview
+      # pull requests resolve the exact successful deployment for their head SHA
+      # in a dedicated step below, so Chromium audits the code being reviewed.
       E2E_TARGET_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment.environment == 'Production' && 'https://lms-estimulo-web.vercel.app' || github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || inputs.target_url || secrets.E2E_PRODUCTION_URL }}
       E2E_SOURCE_DEPLOYMENT_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || '' }}
-      E2E_TARGET_SHA: ${{ github.event_name == 'deployment_status' && github.event.deployment.sha || github.sha }}
-      E2E_TARGET_ENVIRONMENT: ${{ github.event_name == 'deployment_status' && github.event.deployment.environment || 'manual' }}
+      E2E_TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'deployment_status' && github.event.deployment.sha || github.sha }}
+      E2E_TARGET_ENVIRONMENT: ${{ github.event_name == 'pull_request' && 'preview' || github.event_name == 'deployment_status' && github.event.deployment.environment || 'manual' }}
       E2E_REFERENCE_URL: ${{ inputs.reference_url || 'https://estimulo-polish-studio.lovable.app/' }}
       E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
       E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
@@ -90,10 +91,10 @@ jobs:
       E2E_VISUAL_MAX_PAGES: '80'
 
     steps:
-      - name: Checkout latest audit tooling from main
+      - name: Checkout audit tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: main
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -106,6 +107,43 @@ jobs:
 
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+
+      - name: Resolve pull-request preview deployment
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          for attempt in $(seq 1 40); do
+            deployment_ids="$(curl -fsSL \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "${api}/deployments?sha=${PR_HEAD_SHA}&per_page=20" | jq -r '.[].id')"
+
+            for deployment_id in ${deployment_ids}; do
+              deployment_url="$(curl -fsSL \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "${api}/deployments/${deployment_id}/statuses?per_page=20" | jq -r '[.[] | select(.state == "success" and ((.environment_url // "") | length > 0))][0].environment_url // empty')"
+              if [ -n "${deployment_url}" ]; then
+                echo "Resolved preview deployment for ${PR_HEAD_SHA}: ${deployment_url}"
+                echo "E2E_TARGET_URL=${deployment_url}" >> "${GITHUB_ENV}"
+                echo "E2E_SOURCE_DEPLOYMENT_URL=${deployment_url}" >> "${GITHUB_ENV}"
+                exit 0
+              fi
+            done
+
+            echo "Preview deployment is not ready yet (attempt ${attempt}/40)."
+            sleep 15
+          done
+
+          echo "No successful preview deployment with an environment URL was found for ${PR_HEAD_SHA}." >&2
+          exit 1
 
       - name: Verify required E2E inputs are present
         shell: bash
