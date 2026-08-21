@@ -13,7 +13,7 @@ const uuid = z.string().uuid();
 const variantSchema = z.enum(["card", "featured"]);
 const SIGNED_URL_SECONDS = 900;
 const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
-type CoverDescriptor = { bucket: string; object_key: string; filename: string; content_type: string };
+type CoverDescriptor = { bucket: string; object_key: string; filename: string; content_type: string; signed_url?: string };
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ journeyVersionId: string; variant: string }> }) {
   try {
@@ -21,7 +21,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const parsedJourneyVersionId = uuid.parse(journeyVersionId);
     const parsedVariant = variantSchema.parse(variant);
     let descriptor: CoverDescriptor;
-    if (request.headers.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1") {
+    const interfacePreview = request.headers.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1";
+    if (interfacePreview) {
       const auth = await getAuthContext();
       if (auth.status !== "authenticated") return NextResponse.redirect(new URL("/entrar", request.url), 303);
       descriptor = await invokeServerRpc<CoverDescriptor>("get_journey_cover_download", {
@@ -35,10 +36,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         p_variant: parsedVariant,
       });
     }
-    const client = createPrivilegedClient();
-    const { data, error } = await client.storage.from(descriptor.bucket).createSignedUrl(descriptor.object_key, SIGNED_URL_SECONDS);
-    if (error || !data?.signedUrl) throw new Error("JOURNEY_COVER_SIGNED_URL_FAILED");
-    const response = NextResponse.redirect(data.signedUrl, 303);
+    let url = !interfacePreview ? descriptor.signed_url : undefined;
+    if (!url) {
+      const client = createPrivilegedClient();
+      const { data, error } = await client.storage.from(descriptor.bucket).createSignedUrl(descriptor.object_key, SIGNED_URL_SECONDS);
+      if (error || !data?.signedUrl) throw new Error("JOURNEY_COVER_SIGNED_URL_FAILED");
+      url = data.signedUrl;
+    }
+    const response = NextResponse.redirect(url, 303);
     response.headers.set("cache-control", PRIVATE_MEDIA_CACHE_CONTROL);
     response.headers.set("vary", "Cookie");
     return response;
