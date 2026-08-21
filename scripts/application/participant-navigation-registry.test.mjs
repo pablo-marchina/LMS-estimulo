@@ -44,8 +44,7 @@ test("navigation registry migration retires dead controls without deleting histo
   assert.doesNotMatch(migration, /delete from experience\.interface_content/iu);
 });
 
-test("navigation registry migration registers configurable destinations generically", () => {
-  assert.match(migration, /participant\.nav\.library/u);
+test("navigation registry migration registers missing configurable destinations generically", () => {
   assert.match(migration, /participant\.nav\.rewards/u);
   assert.match(migration, /participant\.nav\.b2b/u);
   assert.match(migration, /participant\.nav\.home/u);
