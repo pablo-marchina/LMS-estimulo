@@ -43,6 +43,14 @@ export function LessonAutoAdvance() {
         clearTimers();
         const nextForm = document.querySelector<HTMLFormElement>('form[data-next-lesson-form="true"]');
         if (nextForm) {
+          let autoplayInput = nextForm.querySelector<HTMLInputElement>('input[name="autoplay"]');
+          if (!autoplayInput) {
+            autoplayInput = document.createElement("input");
+            autoplayInput.type = "hidden";
+            autoplayInput.name = "autoplay";
+            nextForm.appendChild(autoplayInput);
+          }
+          autoplayInput.value = "1";
           nextForm.requestSubmit();
           return;
         }
