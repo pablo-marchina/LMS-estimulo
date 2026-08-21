@@ -8,7 +8,7 @@ import { createRewardImageUrl } from "@/lib/storage/reward-images";
 
 export const dynamic = "force-dynamic";
 const PRIVATE_MEDIA_CACHE_CONTROL = "private, max-age=300";
-type Descriptor = { bucket: string; object_key: string };
+type Descriptor = { bucket: string; object_key: string; signed_url?: string };
 
 export async function GET(request: Request, { params }: { params: Promise<{ rewardId: string }> }) {
   const parsed = z.string().uuid().safeParse((await params).rewardId);
@@ -16,7 +16,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ rewa
 
   try {
     let descriptor: Descriptor;
-    if (request.headers.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1") {
+    const interfacePreview = request.headers.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1";
+    if (interfacePreview) {
       const auth = await getAuthContext();
       if (auth.status !== "authenticated") return NextResponse.json({ error: "AUTHENTICATED_SESSION_REQUIRED" }, { status: 401 });
       descriptor = await extensionsRuntime.rewardImageDownload(auth.identity.user_account_id, parsed.data);
@@ -25,7 +26,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ rewa
         p_reward_id: parsed.data,
       });
     }
-    const url = await createRewardImageUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key });
+    const url = !interfacePreview && descriptor.signed_url
+      ? descriptor.signed_url
+      : await createRewardImageUrl({ bucket: descriptor.bucket, objectKey: descriptor.object_key });
     return NextResponse.redirect(url, { status: 302, headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL, vary: "Cookie" } });
   } catch (error) {
     const raw = error instanceof Error ? error.message : "";
