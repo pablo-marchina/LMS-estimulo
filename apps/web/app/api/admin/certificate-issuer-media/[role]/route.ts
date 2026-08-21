@@ -3,7 +3,7 @@ import { z } from "zod";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { getAuthContext } from "@/lib/auth/context";
 import { createPrivateDownloadUrl } from "@/lib/platform/object-storage";
-import { invokeMediaDescriptorGateway, MediaGatewayError } from "@/lib/rpc/media-gateway";
+import { invokeServerRpc } from "@/lib/rpc/server-invoke";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +19,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!organization) return new NextResponse("Mídia não disponível.", { status: 404 });
 
   try {
-    const descriptor = await invokeMediaDescriptorGateway<Descriptor>("get_admin_certificate_issuer_media_download", {
+    const descriptor = await invokeServerRpc<Descriptor>("get_admin_certificate_issuer_media_download", {
+      p_actor_user_account_id: auth.identity.user_account_id,
       p_organization_id: organization.organization_id,
       p_role: roleSchema.parse((await params).role),
     });
@@ -29,10 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       status: 303,
       headers: { "cache-control": PRIVATE_MEDIA_CACHE_CONTROL, vary: "Cookie" },
     });
-  } catch (error) {
-    if (error instanceof MediaGatewayError && ["AUTHENTICATED_SESSION_REQUIRED", "VERIFIED_SESSION_REQUIRED"].includes(error.code)) {
-      return NextResponse.redirect(new URL("/entrar", request.url), 303);
-    }
+  } catch {
     return new NextResponse("Mídia não disponível.", { status: 404, headers: { "cache-control": "no-store" } });
   }
 }
