@@ -15,6 +15,8 @@ const [edge, client, banner, cover, thumbnail, reward, interfaceImage, carousel,
 ]);
 
 const operations = [
+  "get_admin_certificate_issuer_media_download",
+  "get_admin_certificate_template_preview_download",
   "get_announcement_banner_download",
   "get_interface_content_image_download",
   "get_journey_cover_download",
