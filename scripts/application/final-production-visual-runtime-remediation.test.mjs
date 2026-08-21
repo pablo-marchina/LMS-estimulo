@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [card, table, reports, engagement, extensionsRuntime, extensionsEdge, previewRoute] = await Promise.all([
+const [card, table, reports, engagement, mediaGateway, mediaEdge, previewRoute] = await Promise.all([
   readFile("apps/web/components/ui/card.tsx", "utf8"),
   readFile("apps/web/components/ui/table.tsx", "utf8"),
   readFile("apps/web/app/admin/relatorios/page.tsx", "utf8"),
   readFile("apps/web/app/admin/engajamento/page.tsx", "utf8"),
-  readFile("apps/web/lib/extensions/runtime.ts", "utf8"),
-  readFile("supabase/functions/platform-extensions-rpc/index.ts", "utf8"),
+  readFile("apps/web/lib/rpc/media-gateway.ts", "utf8"),
+  readFile("supabase/functions/authenticated-media-rpc/index.ts", "utf8"),
   readFile("apps/web/app/api/certificate-template-previews/[fileObjectId]/route.ts", "utf8"),
 ]);
 
@@ -28,10 +28,10 @@ test("announcement management contains intrinsic mobile width without clipping i
   assert.match(engagement, /<StatusPill className="shrink-0"/u);
 });
 
-test("certificate template preview RPC is allowlisted on the same gateway used by runtime", () => {
-  assert.match(extensionsRuntime, /"get_admin_certificate_template_preview_download"/u);
-  assert.match(previewRoute, /certificateTemplatePreviewDownload/u);
-  assert.match(extensionsEdge, /const allowed = new Set\(\[/u);
-  assert.match(extensionsEdge, /"get_admin_certificate_template_preview_download"/u);
-  assert.match(extensionsEdge, /args\.p_actor_user_account_id = userAccountId/u);
+test("certificate template preview RPC is allowlisted on the dedicated media gateway used by runtime", () => {
+  assert.match(mediaGateway, /"get_admin_certificate_template_preview_download"/u);
+  assert.match(previewRoute, /invokeMediaDescriptorGateway<Descriptor>\("get_admin_certificate_template_preview_download"/u);
+  assert.match(mediaEdge, /const allowed = new Set\(\[/u);
+  assert.match(mediaEdge, /"get_admin_certificate_template_preview_download"/u);
+  assert.match(mediaEdge, /args\.p_actor_user_account_id = userAccountId/u);
 });
