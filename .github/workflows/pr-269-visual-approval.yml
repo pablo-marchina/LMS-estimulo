@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - .github/workflows/pr-269-visual-approval.yml
+      - .gitleaksignore
+      - .gitleaks.toml
       - scripts/e2e/**
       - scripts/application/**
       - apps/web/**
@@ -35,8 +37,6 @@ jobs:
       AUTHENTICATED_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/authenticated-rpc
       PLATFORM_EXTENSIONS_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/platform-extensions-rpc
       AI_GRADE_SUBMISSION_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/ai-grade-submission
-      CPF_ENCRYPTION_KEY: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
-      CPF_LOOKUP_HMAC_KEY: ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=
       E2E_TARGET_URL: http://127.0.0.1:3000
       E2E_REFERENCE_URL: https://estimulo-polish-studio.lovable.app/
       E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
@@ -71,6 +71,13 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Generate CI-only crypto fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "CPF_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d '\n')" >> "$GITHUB_ENV"
+          echo "CPF_LOOKUP_HMAC_KEY=$(openssl rand -base64 32 | tr -d '\n')" >> "$GITHUB_ENV"
 
       - name: Install exact application dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
