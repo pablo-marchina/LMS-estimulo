@@ -14,8 +14,8 @@ test("certificate media operations are authorized by the authenticated media sig
     "get_admin_certificate_issuer_media_download",
     "get_admin_certificate_template_preview_download",
   ]) {
-    assert.match(mediaGateway, new RegExp(`\\| \\"${operation}\\"`, "u"));
-    assert.match(mediaEdge, new RegExp(`\\"${operation}\\"`, "u"));
+    assert.ok(mediaGateway.includes(`| "${operation}"`));
+    assert.ok(mediaEdge.includes(`"${operation}"`));
   }
   assert.match(mediaEdge, /createSignedUrl\(objectKey, SIGNED_URL_SECONDS\)/u);
   assert.match(mediaEdge, /signed_url: signedData\.signedUrl/u);
