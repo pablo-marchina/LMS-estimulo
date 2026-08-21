@@ -20,3 +20,11 @@ condition = "AND"
 regexTarget = "line"
 paths = ['''^\.github/workflows/migrate-lesson-videos\.yml$''']
 regexes = ['''^\s*SUPABASE_PUBLISHABLE_KEY\s*:\s*sb_publishable_[A-Za-z0-9_]+\s*$''']
+
+[[allowlists]]
+description = "PR 269 browser audit uses the production project's client-visible Supabase publishable key"
+targetRules = ["generic-api-key"]
+condition = "AND"
+regexTarget = "line"
+paths = ['''^\.github/workflows/pr-269-visual-approval\.yml$''']
+regexes = ['''^\s*NEXT_PUBLIC_SUPABASE_ANON_KEY\s*:\s*sb_publishable_[A-Za-z0-9_]+\s*$''']
