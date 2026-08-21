@@ -122,7 +122,7 @@ export async function publishLibraryContentAction(formData: FormData) {
     if (!draft) {
       destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=rascunho`;
     } else if (draft.estimated_minutes === null || draft.estimated_minutes < 1 || draft.estimated_minutes > 600) {
-      destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=duracao`;
+      destination = `/admin/biblioteca?view=novo&organization=${organizationId}&edit=${versionId}&erro=duracao#estimated_minutes`;
     } else {
       await libraryRuntime.publish(
         actor,
@@ -138,7 +138,11 @@ export async function publishLibraryContentAction(formData: FormData) {
     const staleDraft = error instanceof ServerRpcError && (
       error.message.includes("CONTENT_HASH_MISMATCH") || error.message.includes("LIBRARY_VERSION_NOT_DRAFT")
     );
-    destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${invalidDuration ? "duracao" : staleDraft ? "rascunho" : "publicacao"}`;
+    if (invalidDuration) {
+      destination = `/admin/biblioteca?view=novo&organization=${organizationId}&edit=${versionId}&erro=duracao#estimated_minutes`;
+    } else {
+      destination = `/admin/biblioteca?view=conteudos&organization=${organizationId}&erro=${staleDraft ? "rascunho" : "publicacao"}`;
+    }
   }
   redirect(destination);
 }
