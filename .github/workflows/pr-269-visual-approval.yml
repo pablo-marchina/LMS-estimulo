@@ -30,6 +30,10 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_knKAm6ycwAH8_Ha9SqnrQw_xenjHzRR
       SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
+      # Presence is required by the build contract. The visual approval uses
+      # participant/admin sessions and authenticated user-scoped RPC gateways;
+      # privileged database access is intentionally not exercised here.
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
       AUTHENTICATED_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/authenticated-rpc
       PLATFORM_EXTENSIONS_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/platform-extensions-rpc
       AI_GRADE_SUBMISSION_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/ai-grade-submission
