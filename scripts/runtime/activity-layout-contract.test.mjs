@@ -22,7 +22,7 @@ test("activity route is a continuous lesson workspace", () => {
   assert.match(lesson, /max-w-\[1100px\]/u);
   assert.match(lesson, /Marcar como concluída/u);
   assert.match(lesson, /O que achou desta aula/u);
-  assert.match(lesson, /Converse sobre esta aula/u);
+  assert.match(lesson, /SectionTitle title="Comentários"/u);
   assert.doesNotMatch(lesson, /ActivityContentProgress/u);
   assert.doesNotMatch(lesson, /Índice da aula/u);
   assert.doesNotMatch(lesson, /300px/u);
@@ -35,11 +35,12 @@ test("activity route is a continuous lesson workspace", () => {
 
 test("lesson sections read as one aligned visual surface", () => {
   assert.match(lesson, /overflow-hidden rounded-\[1\.75rem\] border border-border bg-white shadow-sm/u);
-  assert.match(lesson, /eyebrow="Conteúdo"/u);
-  assert.match(lesson, /eyebrow="Verificação"/u);
-  assert.match(lesson, /eyebrow="Prática"/u);
-  assert.match(lesson, /eyebrow="Finalização"/u);
-  assert.match(lesson, /eyebrow="Discussão"/u);
+  assert.match(lesson, /SectionTitle title="Conteúdo"/u);
+  assert.match(lesson, /SectionTitle title="Avaliação"/u);
+  assert.match(lesson, /SectionTitle title="Prática"/u);
+  assert.match(lesson, /SectionTitle title="Finalização"/u);
+  assert.match(lesson, /SectionTitle title="Comentários"/u);
+  assert.doesNotMatch(lesson, /eyebrow="(Conteúdo|Verificação|Prática|Finalização|Discussão)"/u);
   assert.match(lesson, /bg-surface-muted\/45/u);
   assert.match(lesson, /completionTarget === "conteudo_pendente"/u);
   assert.match(lesson, /completionTarget === "avaliacao_pendente"/u);

@@ -84,8 +84,8 @@ test("published lesson keeps versioned prompts inside the continuous lesson flow
   assert.doesNotMatch(migration, /-'content_sections'-'prompts'/u);
   assert.match(lessonPage, /max-w-\[1100px\]/u);
   assert.match(lessonPage, /Marcar como concluída/u);
-  assert.match(lessonPage, /Verifique o que aprendeu/u);
-  assert.match(lessonPage, /Converse sobre esta aula/u);
+  assert.match(lessonPage, /SectionTitle title="Avaliação"/u);
+  assert.match(lessonPage, /SectionTitle title="Comentários"/u);
   assert.doesNotMatch(lessonPage, /Índice da aula/u);
   assert.doesNotMatch(lessonPage, /300px/u);
 });
