@@ -6,8 +6,6 @@ const allowed = new Set([
   "get_participant_lesson_thumbnail_download",
   "get_reward_image_download",
   "get_interface_content_image_download",
-  "get_admin_certificate_issuer_media_download",
-  "get_admin_certificate_template_preview_download",
 ]);
 const requestIdPattern = /^[A-Za-z0-9._:-]{1,128}$/u;
 const SIGNED_URL_SECONDS = 900;
