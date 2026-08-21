@@ -51,6 +51,7 @@ const requestIdPattern = /^[A-Za-z0-9._:-]{1,128}$/u;
 const semanticCodePattern = /\b([A-Z][A-Z0-9_]{2,127})\b/u;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const previewPermissions = new Set(["participant.manage", "journey.execution.read", "journey.execution.manage"]);
+const SIGNED_URL_SECONDS = 900;
 
 function response(status: number, body: Record<string, unknown>, requestId: string) {
   return new Response(JSON.stringify(body), {
@@ -106,6 +107,18 @@ async function validatePreviewParticipant(
   const participants = Array.isArray(workspace?.participants) ? workspace.participants.map(record) : [];
   const participant = participants.find((item) => item?.user_account_id === previewUserAccountId && typeof item.entrepreneur_id === "string");
   return participant ? { ok: true as const } : { ok: false as const, error: { code: "P0002", message: "INTERFACE_PREVIEW_PARTICIPANT_UNAVAILABLE" } };
+}
+async function signDescriptor(
+  serviceClient: ReturnType<typeof createClient>,
+  value: unknown,
+) {
+  const descriptor = record(value);
+  const bucket = typeof descriptor?.bucket === "string" ? descriptor.bucket : "";
+  const objectKey = typeof descriptor?.object_key === "string" ? descriptor.object_key : "";
+  if (!descriptor || !bucket || !objectKey) return { ok: false as const, code: "MEDIA_DESCRIPTOR_INVALID" };
+  const { data, error } = await serviceClient.storage.from(bucket).createSignedUrl(objectKey, SIGNED_URL_SECONDS);
+  if (error || !data?.signedUrl) return { ok: false as const, code: "MEDIA_SIGNING_FAILED" };
+  return { ok: true as const, data: { ...descriptor, signed_url: data.signedUrl } };
 }
 
 Deno.serve(async (request: Request) => {
@@ -208,6 +221,11 @@ Deno.serve(async (request: Request) => {
     const mapped = failure(error);
     console.error(JSON.stringify({ event: "extension_rpc_failed", request_id: requestId, operation: name, sql_state: error.code, code: mapped.code }));
     return response(mapped.status, { ok: false, code: mapped.code, message: mapped.message }, requestId);
+  }
+  if (name === "get_admin_certificate_template_preview_download") {
+    const signed = await signDescriptor(serviceClient, data);
+    if (!signed.ok) return response(500, { ok: false, code: signed.code, message: "The certificate preview could not be signed." }, requestId);
+    return response(200, { ok: true, data: signed.data }, requestId);
   }
   return response(200, { ok: true, data }, requestId);
 });
