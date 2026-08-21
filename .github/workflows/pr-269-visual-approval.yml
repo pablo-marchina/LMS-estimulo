@@ -30,10 +30,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_knKAm6ycwAH8_Ha9SqnrQw_xenjHzRR
       SUPABASE_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co
-      # Presence is required by the build contract. The visual approval uses
-      # participant/admin sessions and authenticated user-scoped RPC gateways;
-      # privileged database access is intentionally not exercised here.
-      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       AUTHENTICATED_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/authenticated-rpc
       PLATFORM_EXTENSIONS_RPC_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/platform-extensions-rpc
       AI_GRADE_SUBMISSION_FUNCTION_URL: https://cfpfeavjlgheqqiaqtzv.supabase.co/functions/v1/ai-grade-submission
@@ -67,9 +64,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for name in E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
+          for name in E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD SUPABASE_SERVICE_ROLE_KEY; do
             if [ -z "${!name:-}" ]; then
-              echo "Missing required E2E input: ${name}" >&2
+              echo "Missing required visual approval input: ${name}" >&2
               exit 1
             fi
           done
@@ -111,7 +108,7 @@ jobs:
             echo "Protected route is not configured for real Supabase identity." >&2
             exit 1
           fi
-          echo "Exact PR build is serving public and protected routes with real Supabase identity configuration."
+          echo "Exact PR build is serving public and protected routes with real Supabase identity and private media configuration."
 
       - name: Capture broad Chromium evidence
         run: node scripts/e2e/production-visual-capture.mjs
@@ -144,6 +141,7 @@ jobs:
             targetEnvironment: process.env.E2E_TARGET_ENVIRONMENT,
             runtimeProvider: process.env.PLATFORM_RUNTIME_PROVIDER,
             realSupabaseIdentityConfiguration: true,
+            realPrivateMediaConfiguration: Boolean((process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()),
             chromiumExecution: true,
             auditedAt: new Date().toISOString(),
             workflowRun: process.env.GITHUB_RUN_ID,
