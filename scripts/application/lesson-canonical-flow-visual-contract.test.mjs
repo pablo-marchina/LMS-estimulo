@@ -120,13 +120,14 @@ test("production visual workflow always runs every strict and critical visual ga
   assert.match(visualWorkflow, /artifacts\/e2e-admin-critical/u);
 });
 
-test("successful published deployments automatically run the latest fail-closed visual audit", () => {
+test("successful deployments and pull requests use fail-closed visual audit provenance", () => {
   assert.match(visualWorkflow, /deployment_status:/u);
   assert.match(visualWorkflow, /github\.event\.deployment_status\.state == 'success'/u);
   assert.match(visualWorkflow, /github\.event\.deployment_status\.environment_url != ''/u);
+  assert.match(visualWorkflow, /github\.event_name == 'pull_request' \|\|/u);
   assert.match(visualWorkflow, /E2E_TARGET_URL: \$\{\{ github\.event_name == 'deployment_status'/u);
   assert.match(visualWorkflow, /E2E_TARGET_SHA:/u);
-  assert.match(visualWorkflow, /ref: main/u);
+  assert.match(visualWorkflow, /ref: \$\{\{ github\.event_name == 'pull_request' && github\.event\.pull_request\.head\.sha \|\| 'main' \}\}/u);
   assert.match(visualWorkflow, /deployment-provenance\.json/u);
   assert.match(visualWorkflow, /apps\/web\/\*\*/u);
 });
