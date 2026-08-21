@@ -7,6 +7,7 @@ const participantOnlyRpcs = new Set(`award_participant_action_points complete_pa
 
 const legacyActorArgument = new Set(`e14_acknowledge_section e14_complete_diagnostic e14_get_operator_result e14_get_participant_state e14_record_quick_check_answer e14_start_activity e14_start_quick_check e14_submit_quick_check`.split(/\s+/u));
 const userAccountActorArgument = new Set(["provision_public_signup_participant_v3"]);
+const SIGNED_URL_SECONDS = 900;
 
 type AccessMode = "participant" | "administrative" | "onboarding_required";
 type MetricSet = Partial<Record<"auth" | "identity" | "rpc", number>>;
@@ -173,6 +174,16 @@ function rpcFailure(error: { code?: string | null } | null): { status: number; c
   return { status: 500, code, message: "The operation could not be completed." };
 }
 
+async function signMediaDescriptor(admin: ReturnType<typeof createClient>, value: unknown) {
+  const descriptor = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  const bucket = typeof descriptor?.bucket === "string" ? descriptor.bucket : "";
+  const objectKey = typeof descriptor?.object_key === "string" ? descriptor.object_key : "";
+  if (!descriptor || !bucket || !objectKey) return { ok: false as const, code: "MEDIA_DESCRIPTOR_INVALID" };
+  const { data, error } = await admin.storage.from(bucket).createSignedUrl(objectKey, SIGNED_URL_SECONDS);
+  if (error || !data?.signedUrl) return { ok: false as const, code: "MEDIA_SIGNING_FAILED" };
+  return { ok: true as const, data: { ...descriptor, signed_url: data.signedUrl } };
+}
+
 async function handleRequest(request: Request): Promise<Response> {
   const startedAt = performance.now();
   const id = resolveRequestId(request);
@@ -276,6 +287,11 @@ async function handleRequest(request: Request): Promise<Response> {
   if (error) {
     const failure = rpcFailure(error);
     return jsonResponse(failure.status, { ok: false, code: failure.code, message: failure.message }, { id, startedAt, operation, metrics });
+  }
+  if (operation === "get_admin_certificate_issuer_media_download") {
+    const signed = await signMediaDescriptor(admin, data);
+    if (!signed.ok) return jsonResponse(500, { ok: false, code: signed.code, message: "The certificate issuer media could not be signed." }, { id, startedAt, operation, metrics });
+    return jsonResponse(200, { ok: true, data: signed.data }, { id, startedAt, operation, metrics });
   }
   return jsonResponse(200, { ok: true, data }, { id, startedAt, operation, metrics });
 }
