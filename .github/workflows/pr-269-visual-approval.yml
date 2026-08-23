@@ -137,6 +137,10 @@ jobs:
         if: always()
         run: node scripts/e2e/critical-image-health-visual.mjs
 
+      - name: Run real participant and admin functional lifecycle
+        if: always()
+        run: node scripts/e2e/participant-admin-functional.mjs
+
       - name: Record visual approval provenance
         if: always()
         shell: bash
@@ -178,5 +182,6 @@ jobs:
             artifacts/e2e-critical-flow
             artifacts/e2e-admin-critical
             artifacts/e2e-image-health
+            artifacts/e2e-functional
           if-no-files-found: error
           retention-days: 14
