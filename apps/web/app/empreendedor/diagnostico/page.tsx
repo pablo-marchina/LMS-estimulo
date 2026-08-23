@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { redirect } from "next/navigation";
 import { DiagnosticStepper } from "@/components/diagnostic-stepper";
 import { JourneyProgressNav } from "@/components/journey-progress-nav";
 import { StatusPanel } from "@/components/status-panel";
@@ -7,23 +8,62 @@ import { PageHeader } from "@/components/ui/page-header";
 import { requireParticipantContext } from "@/lib/auth/participant-context";
 import { participantDiagnosticRuntime } from "@/lib/diagnostics/participant-runtime";
 
-export default async function DiagnosisPage({ searchParams }: { searchParams: Promise<{ journey?: string }> }) {
-  const { journey } = await searchParams;
+const diagnosticMessages: Record<string, { title: string; text: string }> = {
+  resposta_pendente: {
+    title: "Complete as respostas obrigatórias",
+    text: "Suas respostas já registradas foram preservadas. Responda os itens pendentes e tente concluir novamente.",
+  },
+  sincronizacao: {
+    title: "Não foi possível sincronizar agora",
+    text: "Nenhuma resposta foi apagada. Recarregue o diagnóstico e continue de onde parou.",
+  },
+};
+
+export default async function DiagnosisPage({ searchParams }: { searchParams: Promise<{ journey?: string; erro?: string }> }) {
+  const { journey, erro } = await searchParams;
+  const auth = await requireParticipantContext();
+  const actor = auth.identity.user_account_id;
+
   if (!journey) {
+    let entry;
+    try {
+      entry = await participantDiagnosticRuntime.resolveEntry(actor);
+    } catch {
+      return (
+        <div className="mx-auto max-w-[980px] px-5 py-8 lg:px-9 lg:py-10">
+          <StatusPanel title="Diagnóstico temporariamente indisponível" tone="warning">
+            <p>Não foi possível localizar seu diagnóstico agora. Tente novamente sem perder seu progresso.</p>
+            <ButtonLink href="/empreendedor/diagnostico" variant="secondary" className="mt-3">Tentar novamente</ButtonLink>
+          </StatusPanel>
+        </div>
+      );
+    }
+
+    if (["available", "in_progress", "completed"].includes(entry.status) && entry.next_path) {
+      redirect(entry.next_path);
+    }
+    if (entry.status === "journey_required") redirect("/empreendedor/jornadas");
+    if (entry.status === "profile_required") redirect("/empreendedor/perfil");
+    redirect("/empreendedor/perfil/diagnostico?erro=indisponivel");
+  }
+
+  let experience;
+  try {
+    experience = await participantDiagnosticRuntime.getExperience(actor, journey);
+  } catch {
     return (
-      <div className="mx-auto max-w-[1400px] px-5 py-8 lg:px-9 lg:py-10">
-        <StatusPanel title="Jornada não informada" tone="warning">
-          <p>Volte para o painel e selecione uma jornada.</p>
-          <ButtonLink href="/empreendedor" variant="secondary" className="mt-3">
-            Ir para o painel
-          </ButtonLink>
+      <div className="mx-auto grid max-w-[980px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
+        <PageHeader eyebrow="Diagnóstico" title="Vamos retomar seu diagnóstico" description="Seu progresso permanece salvo." />
+        <StatusPanel title="Não foi possível carregar esta etapa" tone="warning">
+          <p>Reabra o diagnóstico para sincronizar a jornada e continuar com segurança.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ButtonLink href="/empreendedor/diagnostico">Reabrir diagnóstico</ButtonLink>
+            <ButtonLink href="/empreendedor/perfil/diagnostico" variant="secondary">Voltar ao perfil</ButtonLink>
+          </div>
         </StatusPanel>
       </div>
     );
   }
-
-  const auth = await requireParticipantContext();
-  const experience = await participantDiagnosticRuntime.getExperience(auth.identity.user_account_id, journey);
 
   if (experience.state.d?.status === "completed") {
     return (
@@ -50,14 +90,15 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
         <JourneyProgressNav state={experience.state} current="diagnostic" />
         <StatusPanel title="Diagnóstico indisponível" tone="warning">
           <p>O diagnóstico de perfil ainda não está publicado. Nenhuma resposta foi perdida.</p>
-          <ButtonLink href="/empreendedor/perfil" variant="secondary" className="mt-3">
-            Voltar ao perfil
+          <ButtonLink href="/empreendedor/perfil/diagnostico" variant="secondary" className="mt-3">
+            Voltar ao diagnóstico
           </ButtonLink>
         </StatusPanel>
       </div>
     );
   }
 
+  const message = erro ? diagnosticMessages[erro] : null;
   return (
     <div className="mx-auto grid max-w-[980px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
       <PageHeader
@@ -65,6 +106,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
         title="Diagnóstico empreendedor"
         description="Responda algumas perguntas para que possamos conhecer melhor você e o seu negócio. Assim, recomendamos conteúdos e jornadas mais alinhados ao seu momento e às suas necessidades."
       />
+      {message ? <StatusPanel title={message.title} tone="warning"><p>{message.text}</p></StatusPanel> : null}
       <JourneyProgressNav state={experience.state} current="diagnostic" />
       <DiagnosticStepper
         journeyInstanceId={journey}
