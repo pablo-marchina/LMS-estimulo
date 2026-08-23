@@ -45,7 +45,6 @@ export default async function PublicSignupPage({ searchParams }: { searchParams:
     <AuthLayout
       eyebrow="Crie sua conta grátis"
       title="Crie sua conta"
-      description="Primeiro, confirme seu e-mail. Depois, você preenche CPF e telefone — só para confirmarmos que é você e emitirmos seu certificado no futuro."
       wide
     >
       {erro ? <FormMessage tone="error">{errorMessages[erro] ?? "Não foi possível concluir o cadastro."}</FormMessage> : null}
@@ -78,10 +77,6 @@ export default async function PublicSignupPage({ searchParams }: { searchParams:
             required
           />
         </div>
-
-        <p className="rounded-xl border border-primary/15 bg-primary-soft/55 px-4 py-3 text-xs leading-5 text-muted">
-          Seu CPF e telefone só são pedidos depois que você confirma o e-mail, e ficam protegidos com a gente.
-        </p>
 
         <input type="hidden" name="terms_document_version_id" value={legalSnapshot.terms.id} />
         <input type="hidden" name="privacy_document_version_id" value={legalSnapshot.privacy.id} />
