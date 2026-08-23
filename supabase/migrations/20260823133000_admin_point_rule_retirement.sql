@@ -47,7 +47,7 @@ begin
   end if;
 
   update engagement.point_rule_definitions
-     set status = 'retired', updated_at = now()
+     set status = 'retired'
    where id = p_point_rule_definition_id;
 
   select to_jsonb(definition)
