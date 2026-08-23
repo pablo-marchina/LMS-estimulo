@@ -63,10 +63,11 @@ test("announcement artwork keeps the intended desktop and mobile aspect contract
 });
 
 test("password field keeps the reveal control centered without shrinking the input", () => {
+  assert.match(passwordField, /grid w-full min-w-0/u);
   assert.match(passwordField, /relative block w-full/u);
-  assert.match(passwordField, /pr-12/u);
-  assert.match(passwordField, /absolute inset-y-0 right-1/u);
-  assert.match(passwordField, /my-1 grid w-10/u);
+  assert.match(passwordField, /w-full pr-12/u);
+  assert.match(passwordField, /absolute right-2 top-1\/2/u);
+  assert.match(passwordField, /-translate-y-1\/2/u);
 });
 
 test("embedded lesson media no longer exposes the generic source escape hatch", () => {
