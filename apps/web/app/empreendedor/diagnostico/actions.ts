@@ -19,6 +19,10 @@ function resultDestination(journey: string) {
   return `/empreendedor/resultado?journey=${journey}&diagnostico=concluido`;
 }
 
+function diagnosticDestination(journey: string, error: "resposta_pendente" | "sincronizacao") {
+  return `/empreendedor/diagnostico?journey=${journey}&erro=${error}`;
+}
+
 function isStateConflict(error: unknown): error is JourneyRpcError {
   return error instanceof JourneyRpcError && error.code === "23505";
 }
@@ -31,13 +35,13 @@ export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof dia
 
   let experience = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
   if (experience.state.d?.status === "completed") return { ok: true as const };
-  if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
+  if (!experience.diagnostic) return { ok: false as const, code: "DIAGNOSTIC_NOT_AVAILABLE" };
   let diagnostic = experience.diagnostic;
 
   const submittedItem = diagnostic.items.find((item) => item.id === parsed.itemId);
-  if (!submittedItem) throw new Error("DIAGNOSTIC_ITEM_NOT_AVAILABLE");
+  if (!submittedItem) return { ok: false as const, code: "DIAGNOSTIC_ITEM_NOT_AVAILABLE" };
   if (!submittedItem.options.some((option) => option.code === parsed.optionCode)) {
-    throw new Error("DIAGNOSTIC_OPTION_NOT_AVAILABLE");
+    return { ok: false as const, code: "DIAGNOSTIC_OPTION_NOT_AVAILABLE" };
   }
 
   if (!experience.state.d) {
@@ -49,18 +53,21 @@ export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof dia
         `${parsed.idempotencyKey}:start`,
       );
     } catch (error) {
-      if (!isStateConflict(error)) throw error;
+      if (!isStateConflict(error)) {
+        const latest = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId).catch(() => null);
+        if (!latest?.state.d) return { ok: false as const, code: "DIAGNOSTIC_START_FAILED" };
+      }
     }
     experience = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
-    if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
+    if (!experience.diagnostic) return { ok: false as const, code: "DIAGNOSTIC_NOT_AVAILABLE" };
     diagnostic = experience.diagnostic;
   }
 
   const sessionId = experience.state.d?.session_id;
-  if (!sessionId) throw new Error("DIAGNOSTIC_SESSION_NOT_AVAILABLE");
+  if (!sessionId) return { ok: false as const, code: "DIAGNOSTIC_SESSION_NOT_AVAILABLE" };
 
   const latestItem = diagnostic.items.find((item) => item.id === parsed.itemId);
-  if (!latestItem) throw new Error("DIAGNOSTIC_ITEM_NOT_AVAILABLE");
+  if (!latestItem) return { ok: false as const, code: "DIAGNOSTIC_ITEM_NOT_AVAILABLE" };
   if (latestItem.response?.option_code === parsed.optionCode) return { ok: true as const };
 
   const revision = (latestItem.response?.revision ?? 0) + 1;
@@ -74,10 +81,11 @@ export async function saveProfileDiagnosisAnswerAction(input: z.infer<typeof dia
       `${parsed.idempotencyKey}:item:${parsed.itemId}:revision:${revision}:option:${parsed.optionCode}`,
     );
   } catch (error) {
-    if (!isStateConflict(error)) throw error;
-    const latest = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId);
-    const persisted = latest.diagnostic?.items.find((item) => item.id === parsed.itemId)?.response?.option_code;
-    if (persisted !== parsed.optionCode) throw error;
+    const latest = await journeyRuntime.getParticipantExperience(actor, parsed.journeyInstanceId).catch(() => null);
+    const persisted = latest?.diagnostic?.items.find((item) => item.id === parsed.itemId)?.response?.option_code;
+    if (persisted !== parsed.optionCode) {
+      return { ok: false as const, code: isStateConflict(error) ? "DIAGNOSTIC_STATE_CONFLICT" : "DIAGNOSTIC_RESPONSE_FAILED" };
+    }
   }
 
   return { ok: true as const };
@@ -90,30 +98,35 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
   const journey = uuid.parse(formData.get("journey_instance_id"));
   const baseKey = String(formData.get("idempotency_key") || randomUUID());
 
-  let experience = await journeyRuntime.getParticipantExperience(actor, journey);
+  let experience;
+  try {
+    experience = await journeyRuntime.getParticipantExperience(actor, journey);
+  } catch {
+    redirect(diagnosticDestination(journey, "sincronizacao"));
+  }
   if (experience.state.d?.status === "completed") redirect(resultDestination(journey));
-  if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
+  if (!experience.diagnostic) redirect(diagnosticDestination(journey, "sincronizacao"));
   let diagnostic = experience.diagnostic;
 
   if (!experience.state.d) {
     try {
       await journeyRuntime.startDiagnostic(actor, journey, diagnostic.version_id, `${baseKey}:start`);
-    } catch (error) {
-      if (!isStateConflict(error)) throw error;
+    } catch {
+      // Re-read below. A concurrent start or a delayed response is valid if the session now exists.
     }
-    experience = await journeyRuntime.getParticipantExperience(actor, journey);
-    if (!experience.diagnostic) throw new Error("DIAGNOSTIC_NOT_AVAILABLE");
+    experience = await journeyRuntime.getParticipantExperience(actor, journey).catch(() => null);
+    if (!experience?.diagnostic || !experience.state.d) redirect(diagnosticDestination(journey, "sincronizacao"));
     diagnostic = experience.diagnostic;
   }
 
   const sessionId = experience.state.d?.session_id;
-  if (!sessionId) throw new Error("DIAGNOSTIC_SESSION_NOT_AVAILABLE");
+  if (!sessionId) redirect(diagnosticDestination(journey, "sincronizacao"));
 
   for (const item of diagnostic.items) {
     const option = String(formData.get(`answer_${item.id}`) ?? "").trim();
-    if (item.is_required && !option) throw new Error("DIAGNOSTIC_REQUIRED_ANSWER_MISSING");
+    if (item.is_required && !option) redirect(diagnosticDestination(journey, "resposta_pendente"));
     if (option && !item.options.some((candidate) => candidate.code === option)) {
-      throw new Error("DIAGNOSTIC_OPTION_NOT_AVAILABLE");
+      redirect(diagnosticDestination(journey, "sincronizacao"));
     }
     if (option && item.response?.option_code !== option) {
       const revision = (item.response?.revision ?? 0) + 1;
@@ -126,20 +139,20 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
           revision,
           `${baseKey}:item:${item.id}:revision:${revision}:option:${option}`,
         );
-      } catch (error) {
-        if (!isStateConflict(error)) throw error;
-        const latest = await journeyRuntime.getParticipantExperience(actor, journey);
-        const persisted = latest.diagnostic?.items.find((candidate) => candidate.id === item.id)?.response?.option_code;
-        if (persisted !== option) throw error;
+      } catch {
+        const latest = await journeyRuntime.getParticipantExperience(actor, journey).catch(() => null);
+        const persisted = latest?.diagnostic?.items.find((candidate) => candidate.id === item.id)?.response?.option_code;
+        if (persisted !== option) redirect(diagnosticDestination(journey, "sincronizacao"));
       }
     }
   }
 
-  experience = await journeyRuntime.getParticipantExperience(actor, journey);
+  experience = await journeyRuntime.getParticipantExperience(actor, journey).catch(() => null);
+  if (!experience) redirect(diagnosticDestination(journey, "sincronizacao"));
+  if (experience.state.d?.status === "completed") redirect(resultDestination(journey));
   const aggregate = experience.state.d?.aggregate_version;
-  if (aggregate === undefined) throw new Error("DIAGNOSTIC_VERSION_NOT_AVAILABLE");
+  if (aggregate === undefined) redirect(diagnosticDestination(journey, "sincronizacao"));
 
-  let completionError: unknown = null;
   try {
     await invokeServerRpc("complete_participant_diagnostic_with_points", {
       p_actor_user_account_id: actor,
@@ -149,13 +162,9 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
       p_completion_idempotency_key: `${baseKey}:complete`,
       p_points_idempotency_key: `${baseKey}:points`,
     });
-  } catch (error) {
-    completionError = error;
-  }
-
-  if (completionError) {
-    const latest = await journeyRuntime.getParticipantExperience(actor, journey);
-    if (latest.state.d?.status !== "completed") throw completionError;
+  } catch {
+    const latest = await journeyRuntime.getParticipantExperience(actor, journey).catch(() => null);
+    if (latest?.state.d?.status !== "completed") redirect(diagnosticDestination(journey, "sincronizacao"));
   }
 
   redirect(resultDestination(journey));
