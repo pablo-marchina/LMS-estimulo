@@ -19,6 +19,13 @@ export const participantDiagnosticRuntime = {
     "resolve_participant_diagnostic_entry",
     { p_actor_user_account_id: actorUserAccountId },
   ),
+  ensureEntry: (actorUserAccountId: string, idempotencyKey: string) => invokeServerRpc<ParticipantDiagnosticEntry>(
+    "ensure_participant_diagnostic_entry",
+    {
+      p_actor_user_account_id: actorUserAccountId,
+      p_idempotency_key: idempotencyKey,
+    },
+  ),
   getExperience: (actorUserAccountId: string, journeyInstanceId: string) => invokeServerRpc<ParticipantExperience>(
     "get_participant_experience_with_default_diagnostic",
     { p_actor_user_account_id: actorUserAccountId, p_journey_instance_id: journeyInstanceId },
