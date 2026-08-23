@@ -38,7 +38,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
   if (!effectiveJourney) {
     let entry;
     try {
-      entry = await participantDiagnosticRuntime.ensureEntry(actor, randomUUID());
+      entry = await participantDiagnosticRuntime.ensureEntry(actor);
     } catch {
       return (
         <div className="mx-auto max-w-[980px] px-5 py-8 lg:px-9 lg:py-10">
