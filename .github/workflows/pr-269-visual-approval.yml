@@ -1,4 +1,4 @@
-name: PR 269 visual approval
+name: PR 270 visual approval
 
 on:
   pull_request:
@@ -17,13 +17,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-269-visual-approval-${{ github.event.pull_request.number }}
+  group: pr-270-visual-approval-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
   capture:
     name: Capture and inspect exact PR LMS build
-    if: github.event.pull_request.number == 269
+    if: github.event.pull_request.number == 270
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -172,7 +172,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: pr-269-visual-approval-${{ github.run_id }}
+          name: pr-270-visual-approval-${{ github.run_id }}
           path: |
             artifacts/e2e-visual
             artifacts/e2e-critical-flow
