@@ -17,7 +17,10 @@ const [
   gamificationActions,
   productManagement,
   pointRuleMigration,
+  pointRuleGrantMigration,
   migrationBoundary,
+  participantVisual,
+  adminVisual,
 ] = await Promise.all([
   readFile("apps/web/app/actions/quick-check.ts", "utf8"),
   readFile("apps/web/components/quick-check-form.tsx", "utf8"),
@@ -33,7 +36,10 @@ const [
   readFile("apps/web/app/admin/gamificacao/actions.ts", "utf8"),
   readFile("apps/web/lib/admin/product-management.ts", "utf8"),
   readFile("supabase/migrations/20260823133000_admin_point_rule_retirement.sql", "utf8"),
+  readFile("supabase/migrations/20260823164000_harden_admin_point_rule_retirement_grants.sql", "utf8"),
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
+  readFile("scripts/e2e/participant-critical-flow-visual.mjs", "utf8"),
+  readFile("scripts/e2e/admin-critical-flow-visual.mjs", "utf8"),
 ]);
 
 test("quick-check submissions reconcile persisted state instead of surfacing a generic error page", () => {
@@ -43,7 +49,8 @@ test("quick-check submissions reconcile persisted state instead of surfacing a g
   assert.match(quickCheckAction, /const persisted = latest\.assessment\?\.questions/u);
   assert.match(quickCheckAction, /avaliacao=erro/u);
   assert.doesNotMatch(quickCheckAction, /throw error/u);
-  assert.match(activityPage, /assessmentMessages/u);
+  assert.match(activityPage, /Verificação preservada/u);
+  assert.match(activityPage, /Sua resposta continua salva/u);
 });
 
 test("diagnostic entry is resolvable directly and remains reachable from the participant profile", () => {
@@ -92,7 +99,35 @@ test("point-rule descriptions are editable and retirement is auditable without d
   assert.doesNotMatch(pointRuleMigration, /updated_at/u);
 });
 
-test("release migration boundary includes the point-rule retirement migration", () => {
-  assert.match(migrationBoundary, /expectedLastMigration = '20260823133000_admin_point_rule_retirement\.sql'/u);
+test("point-rule retirement RPC is restricted to the service gateway", () => {
+  assert.match(pointRuleGrantMigration, /revoke execute on function public\.retire_admin_point_rule\(uuid, uuid, uuid, text\) from public/u);
+  assert.match(pointRuleGrantMigration, /from anon/u);
+  assert.match(pointRuleGrantMigration, /from authenticated/u);
+  assert.match(pointRuleGrantMigration, /grant execute on function public\.retire_admin_point_rule\(uuid, uuid, uuid, text\) to service_role/u);
+});
+
+test("release migration boundary includes retirement and its grant hardening", () => {
+  assert.match(migrationBoundary, /expectedLastMigration = '20260823164000_harden_admin_point_rule_retirement_grants\.sql'/u);
   assert.match(migrationBoundary, /'20260823133000_admin_point_rule_retirement\.sql'/u);
+  assert.match(migrationBoundary, /'20260823164000_harden_admin_point_rule_retirement_grants\.sql'/u);
+});
+
+test("real participant visual gate checks login, banner, diagnostic and lesson follow-ups", () => {
+  assert.match(participantVisual, /inspectLogin/u);
+  assert.match(participantVisual, /login input width mismatch/u);
+  assert.match(participantVisual, /password reveal control is not vertically centered/u);
+  assert.match(participantVisual, /inspectHomeBanner/u);
+  assert.match(participantVisual, /expected 8:3/u);
+  assert.match(participantVisual, /expected 4:5/u);
+  assert.match(participantVisual, /inspectDiagnosticEntry/u);
+  assert.match(participantVisual, /sourceEscapeHatchPresent/u);
+  assert.match(participantVisual, /lesson still exposes the generic Abrir na fonte action/u);
+});
+
+test("real admin visual gate checks point-rule description and retirement controls", () => {
+  assert.match(adminVisual, /\/admin\/gamificacao\?tipo=pontos/u);
+  assert.match(adminVisual, /checkPointRuleControls/u);
+  assert.match(adminVisual, /descriptionFieldPresent/u);
+  assert.match(adminVisual, /removalActionPresent/u);
+  assert.match(adminVisual, /existing point rule does not expose the retirement action/u);
 });
