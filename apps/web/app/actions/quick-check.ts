@@ -23,7 +23,7 @@ function quickCheckAnswer(formData: FormData, question: AssessmentQuestion) {
     : String(formData.get(field) ?? "").trim();
 }
 
-function quickCheckError(journey: string, step: string) {
+function quickCheckError(journey: string, step: string): never {
   redirect(activityHref(journey, step, "&avaliacao=erro", "avaliacao"));
 }
 
