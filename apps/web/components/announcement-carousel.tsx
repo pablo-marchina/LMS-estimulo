@@ -27,7 +27,7 @@ function BannerImage({ announcement, index }: { announcement: ParticipantAnnounc
   const imageOnly = announcement.display_mode === "image_only";
   return (
     <picture>
-      <source media="(max-width: 639px)" srcSet={mobileSrc} />
+      <source media="(max-width: 767px)" srcSet={mobileSrc} />
       <img
         src={desktopSrc}
         alt={announcement.image_alt ?? ""}
@@ -90,9 +90,9 @@ export function AnnouncementCarousel({ announcements }: { announcements: Partici
       <div ref={viewportRef} onScroll={syncActiveSlide} className="brand-carousel-viewport" role="region" aria-label="Carrossel de anúncios" tabIndex={0}>
         {slides.map((announcement, index) => {
           const imageOnly = announcement.display_mode === "image_only";
-          const mobileAspect = announcement.mobile_image_file_object_id ? "max-sm:!aspect-[4/5]" : "max-sm:!aspect-[8/3]";
+          const mobileAspect = announcement.mobile_image_file_object_id ? "max-md:!aspect-[4/5]" : "max-md:!aspect-[8/3]";
           return (
-            <article key={announcement.id} className={`brand-carousel-slide ${mobileAspect} sm:min-h-0 sm:max-h-[40vh]`} aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
+            <article key={announcement.id} className={`brand-carousel-slide ${mobileAspect}`} aria-label={`Anúncio ${index + 1} de ${slides.length}: ${announcement.title}`}>
               <BannerImage announcement={announcement} index={index} />
               {!imageOnly ? <><div className="brand-carousel-overlay !bg-[linear-gradient(90deg,rgba(0,0,80,.58),rgba(0,0,80,.22),rgba(0,0,80,.04))]" aria-hidden="true" /><div className="brand-carousel-copy"><span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-bold uppercase tracking-[.12em] text-white backdrop-blur-sm"><Sparkles size={13} /> Estímulo em movimento</span><h3 className="display-font mt-3 max-w-2xl text-2xl leading-none text-white sm:text-3xl lg:text-4xl">{announcement.title}</h3>{announcement.body ? <p className="mt-3 max-w-2xl text-sm leading-6 text-white/85 sm:text-base">{announcement.body}</p> : null}</div></> : null}
               <SlideLink announcement={announcement} index={index} />
