@@ -16,18 +16,18 @@ export function PasswordField({ id, label = "Senha", help, className, ...props }
   const [visible, setVisible] = useState(false);
 
   return (
-    <label className="grid gap-1.5 text-sm font-medium text-ink" htmlFor={inputId}>
+    <label className="grid w-full min-w-0 gap-1.5 text-sm font-medium text-ink" htmlFor={inputId}>
       <span>{label}</span>
-      <span className="relative block">
+      <span className="relative block w-full min-w-0">
         <Input
           {...props}
           id={inputId}
           type={visible ? "text" : "password"}
-          className={cn("pr-12", className)}
+          className={cn("w-full pr-12", className)}
         />
         <button
           type="button"
-          className="absolute inset-y-0 right-1 my-1 grid w-10 place-items-center rounded-md text-muted transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
+          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-md text-muted transition hover:bg-surface-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-ring)"
           aria-label={visible ? "Ocultar senha" : "Mostrar senha"}
           aria-pressed={visible}
           onClick={() => setVisible((current) => !current)}

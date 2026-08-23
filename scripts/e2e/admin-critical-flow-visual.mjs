@@ -17,9 +17,10 @@ const viewports = [
 const routes = [
   { key: "certificados", path: "/admin/certificados" },
   { key: "gamificacao-certificados", path: "/admin/gamificacao?tipo=certificados" },
+  { key: "gamificacao-pontos", path: "/admin/gamificacao?tipo=pontos", checkPointRuleControls: true },
   { key: "biblioteca-publicacao", path: "/admin/biblioteca?view=conteudos", checkLibraryPublishReadiness: true },
 ];
-const report = { schemaVersion: 2, startedAt: new Date().toISOString(), captures: [], failures: [] };
+const report = { schemaVersion: 3, startedAt: new Date().toISOString(), captures: [], failures: [] };
 
 async function settle(page) {
   await page.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => {});
@@ -37,6 +38,17 @@ async function signIn(page) {
   await settle(page);
 }
 
+async function selectExistingPointRule(page) {
+  const select = page.locator('select[name="definition_id"]').first();
+  if (!(await select.count())) return 0;
+  const options = await select.locator('option[value]:not([value=""])').evaluateAll((nodes) => nodes.map((node) => node.getAttribute("value")).filter(Boolean));
+  if (options.length) {
+    await select.selectOption(options[0]);
+    await page.waitForTimeout(150);
+  }
+  return options.length;
+}
+
 const browser = await chromium.launch({ headless: true });
 try {
   for (const viewport of viewports) {
@@ -49,6 +61,7 @@ try {
       for (const route of routes) {
         const response = await page.goto(`${targetUrl}${route.path}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
         await settle(page);
+        const existingPointRules = route.checkPointRuleControls ? await selectExistingPointRule(page) : 0;
         const metrics = await page.evaluate(() => {
           const h1 = document.querySelector("h1");
           const h1Rect = h1?.getBoundingClientRect() ?? null;
@@ -58,6 +71,7 @@ try {
           const draftRows = [...document.querySelectorAll('tr[data-library-status="draft"]')];
           const incompleteDraftRows = draftRows.filter((row) => row.getAttribute("data-publish-ready") === "false");
           const buttonText = (row) => [...row.querySelectorAll("button, a")].map((control) => control.textContent?.trim() ?? "");
+          const allControls = [...document.querySelectorAll("button, a")].map((control) => control.textContent?.trim() ?? "");
           return {
             viewportWidth: width,
             viewportHeight: height,
@@ -71,6 +85,11 @@ try {
               incompleteDraftsWithPublishButton: incompleteDraftRows.filter((row) => buttonText(row).includes("Publicar")).length,
               incompleteDraftsMissingCompletionCta: incompleteDraftRows.filter((row) => !buttonText(row).includes("Completar para publicar")).length,
             },
+            pointRuleControls: {
+              descriptionFieldPresent: Boolean(document.querySelector('textarea[name="description"]')),
+              definitionSelectorPresent: Boolean(document.querySelector('select[name="definition_id"]')),
+              removalActionPresent: allControls.includes("Remover pontuação desta ação"),
+            },
           };
         });
         const violations = [];
@@ -79,16 +98,21 @@ try {
         if (metrics.horizontalOverflow) violations.push(`horizontal overflow: ${metrics.documentWidth}/${metrics.viewportWidth}`);
         if (metrics.heading?.top > metrics.viewportHeight * 0.65) violations.push(`primary heading starts too low: ${metrics.heading.top.toFixed(1)}px`);
         if (metrics.heading && (metrics.heading.left < -2 || metrics.heading.right > metrics.viewportWidth + 2)) violations.push("primary heading clipped horizontally");
-        if (/Conteúdo não encontrado/i.test(await page.locator("body").innerText().catch(() => ""))) violations.push("semantic not-found state rendered");
+        if (/Conteúdo não encontrado|Application error|Internal Server Error/i.test(await page.locator("body").innerText().catch(() => ""))) violations.push("semantic or generic error state rendered");
         if (route.checkLibraryPublishReadiness) {
           if (metrics.libraryPublishReadiness.incompleteDraftsWithPublishButton > 0) violations.push("incomplete library draft still exposes Publish action");
           if (metrics.libraryPublishReadiness.incompleteDraftsMissingCompletionCta > 0) violations.push("incomplete library draft is missing completion CTA");
+        }
+        if (route.checkPointRuleControls) {
+          if (!metrics.pointRuleControls.descriptionFieldPresent) violations.push("point-rule participant description field is missing");
+          if (!metrics.pointRuleControls.definitionSelectorPresent) violations.push("point-rule definition selector is missing");
+          if (existingPointRules > 0 && !metrics.pointRuleControls.removalActionPresent) violations.push("existing point rule does not expose the retirement action");
         }
         if (pageErrors.length) violations.push(`${pageErrors.length} uncaught page error(s)`);
 
         const screenshot = path.join(outputDir, `${viewport.key}-${route.key}.png`);
         await page.screenshot({ path: screenshot, fullPage: true, animations: "disabled", caret: "hide" });
-        report.captures.push({ viewport, route: route.path, finalUrl: page.url(), metrics, violations, screenshot: path.relative(process.cwd(), screenshot) });
+        report.captures.push({ viewport, route: route.path, finalUrl: page.url(), existingPointRules, metrics, violations, screenshot: path.relative(process.cwd(), screenshot) });
         for (const violation of violations) report.failures.push(`${viewport.key} ${route.path}: ${violation}`);
         pageErrors.length = 0;
       }

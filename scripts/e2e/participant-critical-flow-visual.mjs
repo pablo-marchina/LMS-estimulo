@@ -18,7 +18,7 @@ const viewports = [
 ];
 
 const report = {
-  schemaVersion: 3,
+  schemaVersion: 4,
   startedAt: new Date().toISOString(),
   targetUrl,
   captures: [],
@@ -31,14 +31,98 @@ async function settle(page) {
   await page.waitForTimeout(350);
 }
 
-async function signIn(page) {
+async function inspectLogin(page, viewport) {
+  const metrics = await page.evaluate(() => {
+    const email = document.querySelector('input[name="email"]');
+    const password = document.querySelector('input[name="password"]');
+    const reveal = document.querySelector('button[aria-label="Mostrar senha"], button[aria-label="Ocultar senha"]');
+    const emailRect = email?.getBoundingClientRect() ?? null;
+    const passwordRect = password?.getBoundingClientRect() ?? null;
+    const revealRect = reveal?.getBoundingClientRect() ?? null;
+    const viewportWidth = document.documentElement.clientWidth;
+    return {
+      viewportWidth,
+      documentWidth: document.documentElement.scrollWidth,
+      email: emailRect ? { left: emailRect.left, top: emailRect.top, width: emailRect.width, height: emailRect.height } : null,
+      password: passwordRect ? { left: passwordRect.left, top: passwordRect.top, width: passwordRect.width, height: passwordRect.height } : null,
+      reveal: revealRect ? { left: revealRect.left, top: revealRect.top, width: revealRect.width, height: revealRect.height } : null,
+    };
+  });
+  const violations = [];
+  if (!metrics.email || !metrics.password || !metrics.reveal) violations.push("login email/password/reveal controls are incomplete");
+  if (metrics.documentWidth > metrics.viewportWidth + 2) violations.push(`login horizontal overflow: ${metrics.documentWidth}/${metrics.viewportWidth}`);
+  if (metrics.email && metrics.password) {
+    if (Math.abs(metrics.email.width - metrics.password.width) > 2) violations.push(`login input width mismatch: ${metrics.email.width.toFixed(1)}px vs ${metrics.password.width.toFixed(1)}px`);
+    if (Math.abs(metrics.email.left - metrics.password.left) > 2) violations.push(`login input left-edge mismatch: ${metrics.email.left.toFixed(1)}px vs ${metrics.password.left.toFixed(1)}px`);
+  }
+  if (metrics.password && metrics.reveal) {
+    const passwordCenter = metrics.password.top + metrics.password.height / 2;
+    const revealCenter = metrics.reveal.top + metrics.reveal.height / 2;
+    if (Math.abs(passwordCenter - revealCenter) > 2) violations.push(`password reveal control is not vertically centered: delta=${Math.abs(passwordCenter - revealCenter).toFixed(1)}px`);
+  }
+  const screenshot = path.join(outputDir, `${viewport.key}-login.png`);
+  await page.screenshot({ path: screenshot, fullPage: false, animations: "disabled", caret: "hide" });
+  return { metrics, violations, screenshot: path.relative(process.cwd(), screenshot) };
+}
+
+async function signIn(page, viewport) {
   const response = await page.goto(`${targetUrl}/entrar`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   if (!response || response.status() >= 500) throw new Error(`login page unavailable (${response?.status() ?? "no response"})`);
+  const login = await inspectLogin(page, viewport);
   await page.locator('input[name="email"]').fill(process.env.E2E_PARTICIPANT_EMAIL);
   await page.locator('input[name="password"]').fill(process.env.E2E_PARTICIPANT_PASSWORD);
   await page.locator('button[type="submit"]').click();
   await page.waitForURL((url) => url.pathname.startsWith("/empreendedor"), { timeout: 30_000 });
   await settle(page);
+  return login;
+}
+
+async function inspectHomeBanner(page, viewport) {
+  await page.goto(`${targetUrl}/empreendedor`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await settle(page);
+  const metrics = await page.evaluate(() => {
+    const slide = document.querySelector(".brand-carousel-slide");
+    const image = slide?.querySelector(".brand-carousel-image");
+    const slideRect = slide?.getBoundingClientRect() ?? null;
+    const imageRect = image?.getBoundingClientRect() ?? null;
+    return {
+      slide: slideRect ? { width: slideRect.width, height: slideRect.height, ratio: slideRect.height > 0 ? slideRect.width / slideRect.height : null, className: slide?.className ?? "" } : null,
+      image: imageRect ? { width: imageRect.width, height: imageRect.height } : null,
+      documentWidth: document.documentElement.scrollWidth,
+      viewportWidth: document.documentElement.clientWidth,
+      bodyText: document.body.innerText.slice(0, 4000),
+    };
+  });
+  const violations = [];
+  if (metrics.documentWidth > metrics.viewportWidth + 2) violations.push(`home horizontal overflow: ${metrics.documentWidth}/${metrics.viewportWidth}`);
+  if (metrics.slide) {
+    if (viewport.width >= 768 && Math.abs((metrics.slide.ratio ?? 0) - 8 / 3) > 0.12) violations.push(`desktop announcement ratio is ${metrics.slide.ratio?.toFixed(3)}, expected 8:3`);
+    if (viewport.width < 768 && metrics.slide.className.includes("max-md:!aspect-[4/5]") && Math.abs((metrics.slide.ratio ?? 0) - 4 / 5) > 0.08) violations.push(`mobile announcement ratio is ${metrics.slide.ratio?.toFixed(3)}, expected 4:5`);
+    if (!metrics.image || Math.abs(metrics.image.width - metrics.slide.width) > 2 || Math.abs(metrics.image.height - metrics.slide.height) > 2) violations.push("announcement artwork does not fill its slide geometry");
+  }
+  if (/Application error|Internal Server Error/i.test(metrics.bodyText)) violations.push("home rendered a generic application error");
+  const screenshot = path.join(outputDir, `${viewport.key}-home-banner.png`);
+  await page.screenshot({ path: screenshot, fullPage: false, animations: "disabled", caret: "hide" });
+  return { metrics, violations, screenshot: path.relative(process.cwd(), screenshot) };
+}
+
+async function inspectDiagnosticEntry(page, viewport) {
+  const response = await page.goto(`${targetUrl}/empreendedor/diagnostico`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await settle(page);
+  const finalUrl = new URL(page.url());
+  const bodyText = await page.locator("body").innerText().catch(() => "");
+  const violations = [];
+  if (!response || response.status() >= 500) violations.push(`diagnostic entry HTTP ${response?.status() ?? "no response"}`);
+  if (!finalUrl.pathname.startsWith("/empreendedor")) violations.push(`diagnostic entry escaped participant area: ${finalUrl.pathname}`);
+  if (/Application error|Internal Server Error|Conteúdo não encontrado/i.test(bodyText)) violations.push("diagnostic entry rendered a generic or semantic error state");
+  const screenshot = path.join(outputDir, `${viewport.key}-diagnostic-entry.png`);
+  await page.screenshot({ path: screenshot, fullPage: false, animations: "disabled", caret: "hide" });
+  return {
+    finalRoute: `${finalUrl.pathname}${finalUrl.search}`,
+    bodyLength: bodyText.trim().length,
+    violations,
+    screenshot: path.relative(process.cwd(), screenshot),
+  };
 }
 
 async function openEnrolledJourney(page) {
@@ -110,6 +194,8 @@ async function inspectLesson(page, viewport) {
     const h1 = document.querySelector("h1");
     const journeyProgress = document.querySelector('[aria-label="Seu progresso nesta jornada"]');
     const nextControl = [...document.querySelectorAll("button, a")].find((element) => element.textContent?.includes("Próxima aula"));
+    const sourceEscapeHatchPresent = [...document.querySelectorAll("button, a")].some((element) => element.textContent?.trim() === "Abrir na fonte");
+    const bodyText = document.body.innerText;
     const h1Rect = h1?.getBoundingClientRect() ?? null;
     const activityPageRect = activityPage?.getBoundingClientRect() ?? null;
     const canvasRect = canvas?.getBoundingClientRect() ?? null;
@@ -146,6 +232,8 @@ async function inspectLesson(page, viewport) {
       promptsPadding: effectivePadding(promptsHeader),
       repeatedQuickCheckTitle,
       hasQuickCheckCard: Boolean(quickCheckCard),
+      sourceEscapeHatchPresent,
+      genericErrorPresent: /Application error|Internal Server Error|Conteúdo não encontrado/i.test(bodyText),
     };
   }, viewport);
 
@@ -177,6 +265,8 @@ async function inspectLesson(page, viewport) {
   }
   if (result.repeatedQuickCheckTitle) violations.push("repeated verification heading is still visible");
   if (result.hasQuickCheckCard) violations.push("embedded verification still renders a nested quick-check card");
+  if (result.sourceEscapeHatchPresent) violations.push("lesson still exposes the generic Abrir na fonte action");
+  if (result.genericErrorPresent) violations.push("lesson rendered a generic or semantic error state");
 
   return { result, violations };
 }
@@ -189,7 +279,9 @@ try {
     const pageErrors = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
     try {
-      await signIn(page);
+      const login = await signIn(page, viewport);
+      const home = await inspectHomeBanner(page, viewport);
+      const diagnostic = await inspectDiagnosticEntry(page, viewport);
       await openEnrolledJourney(page);
       await openActivityThroughRealForm(page);
 
@@ -199,6 +291,9 @@ try {
       }
 
       const { result, violations } = await inspectLesson(page, viewport);
+      violations.push(...login.violations.map((violation) => `login: ${violation}`));
+      violations.push(...home.violations.map((violation) => `home: ${violation}`));
+      violations.push(...diagnostic.violations.map((violation) => `diagnostic: ${violation}`));
       if (pageErrors.length) violations.push(`${pageErrors.length} uncaught page error(s): ${pageErrors.join(" | ")}`);
 
       const firstFold = path.join(outputDir, `${viewport.key}-lesson-first-fold.png`);
@@ -208,11 +303,14 @@ try {
 
       const capture = {
         viewport,
+        login,
+        home,
+        diagnostic,
         finalRoute: `${finalUrl.pathname}${finalUrl.search}`,
         metrics: result,
         pageErrors,
         violations,
-        screenshots: [path.relative(process.cwd(), firstFold), path.relative(process.cwd(), fullPage)],
+        screenshots: [login.screenshot, home.screenshot, diagnostic.screenshot, path.relative(process.cwd(), firstFold), path.relative(process.cwd(), fullPage)],
       };
       report.captures.push(capture);
       for (const violation of violations) report.failures.push(`${viewport.key}: ${violation}`);

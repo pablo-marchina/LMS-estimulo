@@ -83,6 +83,10 @@ const assessmentMessages: Record<string, { title: string; text: string }> = {
     title: "Verificação atualizada",
     text: "A configuração desta verificação mudou enquanto a aula estava aberta. Recarregue a página antes de tentar novamente.",
   },
+  erro: {
+    title: "Verificação preservada",
+    text: "Sua resposta continua salva. Recarregue a página e tente enviar novamente.",
+  },
 };
 
 function fileSize(value: number | null): string | null {

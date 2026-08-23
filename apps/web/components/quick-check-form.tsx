@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Brain, CheckCircle2, LockKeyhole } from "lucide-react";
-import { submitQuickCheckAction } from "@/app/actions/journey";
+import { submitQuickCheckAction } from "@/app/actions/quick-check";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";

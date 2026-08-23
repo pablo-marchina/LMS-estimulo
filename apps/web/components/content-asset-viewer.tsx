@@ -182,6 +182,7 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
   const viewerClass = compact ? "rounded-xl" : "rounded-2xl";
   const mediaUrl = downloadHref ?? externalUrl;
   const isLibraryArticle = type === "library_article" && Boolean(asset.library_body);
+  const isDirectExternalContent = ["external_link", "link", "library"].includes(type);
   const embedded = Boolean(youtubeUrl || vimeo || googleDriveUrl);
   const requiresTimedEmbedProgress = Boolean(googleDriveUrl || vimeo || (youtube?.playlistId && !youtube.videoId));
   const supportsAutomaticResume = Boolean(youtube?.videoId || (!embedded && ["video", "audio"].includes(type)));
@@ -305,18 +306,18 @@ export function ContentAssetViewer({ asset, progressEndpoint, downloadHref, comp
       {type === "image" && mediaUrl ? <img src={mediaUrl} alt={metadataText(asset, "alt") ?? asset.title} className="max-h-[38rem] w-full bg-surface-muted object-contain" /> : null}
       {type === "pdf" && mediaUrl ? <object data={mediaUrl} type="application/pdf" className="h-[min(70vh,48rem)] w-full"><p className="p-6 text-sm text-muted">Seu navegador não exibiu o PDF. Use o botão abaixo para abrir o arquivo.</p></object> : null}
       {isLibraryArticle ? <div className="grid gap-4 px-5 py-6 text-sm leading-7 text-ink/90">{asset.library_body?.split(/\n{2,}/).map((paragraph, index) => <p key={`${index}-${paragraph.slice(0, 20)}`} className="whitespace-pre-line">{paragraph}</p>)}</div> : null}
-      {(type === "external_link" || type === "link" || type === "library") && !embedded ? <div className="grid min-h-44 place-items-center bg-primary-soft/55 p-6 text-center"><div><ExternalLink className="mx-auto text-primary" size={34} /><p className="mt-3 max-w-xl text-sm leading-6 text-muted">Este conteúdo é mantido pela fonte indicada. Use o botão abaixo para acessá-lo.</p></div></div> : null}
-      {!mediaUrl && !embedded && !isLibraryArticle ? <div className="grid min-h-40 place-items-center bg-surface-muted p-6 text-center"><FileText className="text-primary" size={34} /><p className="mt-2 text-sm text-muted">O conteúdo não pôde ser carregado. Abra a fonte ou tente novamente.</p></div> : null}
+      {isDirectExternalContent && !embedded ? <div className="grid min-h-44 place-items-center bg-primary-soft/55 p-6 text-center"><div><ExternalLink className="mx-auto text-primary" size={34} /><p className="mt-3 max-w-xl text-sm leading-6 text-muted">Este conteúdo é mantido pela fonte indicada. Use o botão abaixo para acessá-lo.</p></div></div> : null}
+      {!mediaUrl && !embedded && !isLibraryArticle ? <div className="grid min-h-40 place-items-center bg-surface-muted p-6 text-center"><FileText className="text-primary" size={34} /><p className="mt-2 text-sm text-muted">O conteúdo não pôde ser carregado. Recarregue a página ou tente novamente em instantes.</p></div> : null}
 
       <div className="grid min-w-0 gap-3 px-4 py-3">
         {progressEndpoint ? <div className="grid gap-1.5"><div className="flex justify-between text-xs font-semibold text-muted"><span>Progresso deste conteúdo</span><span>{saving ? "Salvando…" : `${Math.round(ratio * 100)}%`}</span></div><div className="h-2 overflow-hidden rounded-full bg-primary-soft"><div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.round(ratio * 100)}%` }} /></div></div> : null}
         {requiresTimedEmbedProgress && !completed ? <p className="text-xs leading-5 text-muted">O progresso é registrado enquanto este conteúdo permanece aberto e ativo nesta página. Não é necessário marcar o vídeo manualmente como concluído.</p> : null}
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {externalUrl ? <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft"><ExternalLink size={15} /> Abrir na fonte</a> : null}
+          {externalUrl && isDirectExternalContent ? <a href={externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft"><ExternalLink size={15} /> Acessar conteúdo</a> : null}
           {downloadHref ? <a href={downloadHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-white px-4 py-2 text-sm font-bold text-primary hover:bg-primary-soft">{type === "image" ? <FileImage size={15} /> : <FileText size={15} />} Abrir arquivo</a> : null}
           {progressEndpoint && !completed && !["video", "audio"].includes(type) ? <button type="button" onClick={markViewed} disabled={saving} className="rounded-full bg-success px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 disabled:opacity-60">Marcar como concluído</button> : null}
         </div>
-        {!googleDriveUrl && embedded ? <p className="text-xs text-muted">Caso a fonte bloqueie a reprodução incorporada, use “Abrir na fonte”. Seu acesso à atividade continua disponível.</p> : null}
+        {!googleDriveUrl && embedded ? <p className="text-xs text-muted">Se a reprodução incorporada não carregar, recarregue a página. Seu progresso permanece salvo.</p> : null}
       </div>
     </article>
   );

@@ -142,7 +142,7 @@ export async function getAdminProductWorkspace(actorUserAccountId: string, organ
 export async function saveAdminProductResource(input: {
   actorUserAccountId: string;
   organizationId: string;
-  resourceType: "journey" | "activity" | "path_step" | "path_template" | "rule" | "diagnostic" | "point_rule" | "badge" | "certificate";
+  resourceType: "journey" | "activity" | "path_step" | "path_template" | "rule" | "diagnostic" | "point_rule" | "point_rule_retire" | "badge" | "certificate";
   payload: Record<string, unknown>;
   idempotencyKey: string;
 }) {
