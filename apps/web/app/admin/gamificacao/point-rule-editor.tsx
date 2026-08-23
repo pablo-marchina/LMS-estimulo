@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { AdminDisclosure } from "@/components/admin-section-nav";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { Card } from "@/components/ui/card";
-import { Input, Label, Select } from "@/components/ui/input";
-import { saveGamificationResourceAction } from "./actions";
+import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { retirePointRuleAction, saveGamificationResourceAction } from "./actions";
 
 type RuleVersion = {
   id: string;
@@ -74,12 +74,13 @@ export function PointRuleEditor({ pointRules, assessmentTargets }: { pointRules:
   const requiresAssessmentTarget = triggerEvent === "assessment.attempt.passed";
 
   return <Card>
-    <div><h2 className="text-lg font-black text-secondary">Criar ou atualizar regra</h2><p className="mt-1 text-sm text-muted">Configure a ação de negócio e, quando houver avaliação, selecione exatamente em qual conteúdo ela acontece. Assim o gatilho fica legível e auditável sem depender de IDs internos.</p></div>
+    <div><h2 className="text-lg font-black text-secondary">Criar ou atualizar regra</h2><p className="mt-1 text-sm text-muted">Configure quais ações geram pontos, edite o texto mostrado ao participante e desative regras que não devem mais pontuar.</p></div>
     <form key={selectedDefinitionId || "new"} action={saveGamificationResourceAction} className="mt-5 grid gap-4">
       <input type="hidden" name="resource_type" value="point_rule" />
       <div className="grid gap-4 sm:grid-cols-2">
         <Label>Regra existente<Select name="definition_id" value={selectedDefinitionId} onChange={(event) => selectRule(event.target.value)}><option value="">Criar nova</option>{pointRules.map((item) => <option value={item.definition_id} key={item.definition_id}>{item.name}</option>)}</Select><span className="text-[11px] font-normal text-muted">Selecionar uma regra não altera a versão publicada até você salvar.</span></Label>
         <Label>Nome mostrado no admin<Input name="name" required defaultValue={selected?.name ?? ""} placeholder="Ex.: Aprovar o desafio final da formação-base" /><span className="text-[11px] font-normal text-muted">Use um nome que diga claramente qual ação gera os pontos.</span></Label>
+        <Label className="sm:col-span-2">Descrição mostrada ao participante<Textarea name="description" maxLength={320} defaultValue={String(recurrence.description ?? "")} placeholder="Ex.: Você ganha pontos ao concluir esta aula." /><span className="text-[11px] font-normal text-muted">Pode ser alterada sem mudar o histórico de pontos já concedidos.</span></Label>
         <Label>Ação que gera pontos<Select name="trigger_event" required value={triggerEvent} onChange={(event) => { setTriggerEvent(event.target.value); if (event.target.value !== "assessment.attempt.passed") setSelectedActivities([]); }}><option value="">Selecione</option>{triggerOptions.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</Select></Label>
         <Label>Pontos por ação<Input name="amount" type="number" min="1" required defaultValue={String(version?.amount ?? 10)} /></Label>
       </div>
@@ -110,5 +111,16 @@ export function PointRuleEditor({ pointRules, assessmentTargets }: { pointRules:
       </AdminDisclosure>
       <PendingSubmitButton pendingLabel="Salvando regra…" className="w-fit">Salvar regra</PendingSubmitButton>
     </form>
+
+    {selected ? <form
+      action={retirePointRuleAction}
+      className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-danger/15 pt-5"
+      onSubmit={(event) => { if (!window.confirm(`Remover a pontuação de “${selected.name}”? O histórico já concedido será preservado.`)) event.preventDefault(); }}
+    >
+      <input type="hidden" name="definition_id" value={selected.definition_id} />
+      <input type="hidden" name="idempotency_key" value={`retire:${selected.definition_id}`} />
+      <p className="max-w-xl text-xs leading-5 text-muted">A ação deixa de gerar novos pontos. Pontos já concedidos e o histórico de auditoria são preservados.</p>
+      <PendingSubmitButton pendingLabel="Removendo pontuação…" className="w-fit bg-danger text-white hover:bg-danger/90">Remover pontuação desta ação</PendingSubmitButton>
+    </form> : null}
   </Card>;
 }
