@@ -41,8 +41,10 @@ test("profile achievements navigation stays on the canonical profile route", () 
   assert.doesNotMatch(profilePage, /href="\/empreendedor\/conquistas"/u);
 });
 
-test("desktop announcements cannot exceed forty percent of the viewport and admins can remove them", () => {
-  assert.match(announcementCarousel, /sm:min-h-0 sm:max-h-\[40vh\]/u);
+test("announcement carousel preserves the approved artwork aspect and admins can remove banners", () => {
+  assert.match(announcementCarousel, /max-md:!aspect-\[4\/5\]/u);
+  assert.match(announcementCarousel, /max-md:!aspect-\[8\/3\]/u);
+  assert.doesNotMatch(announcementCarousel, /max-h-\[40vh\]/u);
   assert.match(engagementAdmin, /Excluir banner/u);
   assert.match(engagementAdmin, /retireAnnouncementAction/u);
   assert.match(engagementAdmin, /O histórico administrativo foi preservado/u);
