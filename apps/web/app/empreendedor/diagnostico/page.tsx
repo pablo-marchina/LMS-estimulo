@@ -19,12 +19,23 @@ const diagnosticMessages: Record<string, { title: string; text: string }> = {
   },
 };
 
+function diagnosticJourneyFromPath(nextPath: string) {
+  try {
+    const next = new URL(nextPath, "http://local.estimulo");
+    if (next.pathname !== "/empreendedor/diagnostico") return null;
+    return next.searchParams.get("journey");
+  } catch {
+    return null;
+  }
+}
+
 export default async function DiagnosisPage({ searchParams }: { searchParams: Promise<{ journey?: string; erro?: string }> }) {
   const { journey, erro } = await searchParams;
   const auth = await requireParticipantContext();
   const actor = auth.identity.user_account_id;
+  let effectiveJourney = journey;
 
-  if (!journey) {
+  if (!effectiveJourney) {
     let entry;
     try {
       entry = await participantDiagnosticRuntime.resolveEntry(actor);
@@ -40,16 +51,23 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
     }
 
     if (["available", "in_progress", "completed"].includes(entry.status) && entry.next_path) {
-      redirect(entry.next_path);
+      const resolvedJourney = diagnosticJourneyFromPath(entry.next_path);
+      if (resolvedJourney) effectiveJourney = resolvedJourney;
+      else redirect(entry.next_path);
+    } else if (entry.status === "journey_required") {
+      redirect("/empreendedor/jornadas");
+    } else if (entry.status === "profile_required") {
+      redirect("/empreendedor/perfil");
+    } else {
+      redirect("/empreendedor/perfil/diagnostico?erro=indisponivel");
     }
-    if (entry.status === "journey_required") redirect("/empreendedor/jornadas");
-    if (entry.status === "profile_required") redirect("/empreendedor/perfil");
-    redirect("/empreendedor/perfil/diagnostico?erro=indisponivel");
   }
+
+  if (!effectiveJourney) redirect("/empreendedor/perfil/diagnostico?erro=indisponivel");
 
   let experience;
   try {
-    experience = await participantDiagnosticRuntime.getExperience(actor, journey);
+    experience = await participantDiagnosticRuntime.getExperience(actor, effectiveJourney);
   } catch {
     return (
       <div className="mx-auto grid max-w-[980px] gap-8 px-5 py-8 lg:px-9 lg:py-10">
@@ -76,7 +94,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
         <JourneyProgressNav state={experience.state} current="diagnostic" />
         <StatusPanel title="Diagnóstico concluído" tone="success">
           <p>Suas respostas e seu resultado continuam salvos.</p>
-          <ButtonLink href={`/empreendedor/resultado?journey=${journey}`} className="mt-3">
+          <ButtonLink href={`/empreendedor/resultado?journey=${effectiveJourney}`} className="mt-3">
             Ver resultado do diagnóstico
           </ButtonLink>
         </StatusPanel>
@@ -109,7 +127,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
       {message ? <StatusPanel title={message.title} tone="warning"><p>{message.text}</p></StatusPanel> : null}
       <JourneyProgressNav state={experience.state} current="diagnostic" />
       <DiagnosticStepper
-        journeyInstanceId={journey}
+        journeyInstanceId={effectiveJourney}
         idempotencyKey={randomUUID()}
         items={experience.diagnostic.items}
       />
