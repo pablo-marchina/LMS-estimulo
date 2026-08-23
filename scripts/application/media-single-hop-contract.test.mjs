@@ -56,7 +56,8 @@ test("normal media requests use one gateway while interface preview preserves th
 });
 
 test("banner mobile aspect follows the asset that is actually available", () => {
-  assert.match(carousel, /mobile_image_file_object_id \? "max-sm:!aspect-\[4\/5\]" : "max-sm:!aspect-\[8\/3\]"/u);
+  assert.match(carousel, /mobile_image_file_object_id \? "max-md:!aspect-\[4\/5\]" : "max-md:!aspect-\[8\/3\]"/u);
+  assert.match(carousel, /media="\(max-width: 767px\)"/u);
   assert.match(carousel, /imageOnly/u);
 });
 
