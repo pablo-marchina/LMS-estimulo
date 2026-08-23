@@ -32,10 +32,39 @@ function recurrencePolicy(formData: FormData): Record<string, unknown> {
     ...(activityCodes.length ? { activity_codes: activityCodes } : {}),
     ...(pathCodes.length ? { path_codes: pathCodes } : {}),
   };
-  if (frequency === "per_certificate") return { scope: "event", frequency: "per_certificate", transferable: false, trigger };
-  return { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false, trigger };
+  const description = text(formData, "description");
+  const policy = frequency === "per_certificate"
+    ? { scope: "event", frequency: "per_certificate", transferable: false, trigger }
+    : { scope: scope[frequency] ?? "participant", ...(frequency === "unlimited" ? {} : { maximum }), transferable: false, trigger };
+  return description ? { ...policy, description } : policy;
 }
 function validityPolicy(formData: FormData): Record<string, unknown> { return text(formData, "validity_mode") === "months" ? { expires: true, duration_months: positiveInteger(text(formData, "validity_months"), 12) } : { expires: false }; }
+
+async function requireEngagementAdmin() {
+  const auth = await getAuthContext();
+  if (auth.status !== "authenticated" || !isEstimuloAdministrativeEmail(auth.email)) redirect("/entrar?erro=acesso_nao_autorizado");
+  const organization = administrativeOrganization(auth.identity);
+  if (!organization?.permissions.includes("engagement.manage")) redirect("/admin/gamificacao?erro=sem_permissao");
+  return { auth, organization };
+}
+
+export async function retirePointRuleAction(formData: FormData) {
+  const { auth, organization } = await requireEngagementAdmin();
+  const definitionId = text(formData, "definition_id");
+  if (!definitionId) redirect("/admin/gamificacao?tipo=pontos&erro=regra_invalida");
+  try {
+    await saveAdminProductResource({
+      actorUserAccountId: auth.identity.user_account_id,
+      organizationId: organization.organization_id,
+      resourceType: "point_rule_retire",
+      payload: { point_rule_definition_id: definitionId },
+      idempotencyKey: String(formData.get("idempotency_key") || randomUUID()),
+    });
+  } catch {
+    redirect("/admin/gamificacao?tipo=pontos&erro=falha_remover");
+  }
+  redirect("/admin/gamificacao?tipo=pontos&sucesso=regra_removida");
+}
 
 export async function saveGamificationResourceAction(formData: FormData) {
   const auth = await getAuthContext();
