@@ -164,7 +164,7 @@ export async function submitProfileDiagnosisAction(formData: FormData) {
     });
   } catch {
     const latest = await journeyRuntime.getParticipantExperience(actor, journey).catch(() => null);
-    if (latest?.state.d?.status !== "completed") redirect(diagnosticDestination(journey, "sincronizacao"));
+    if (!latest || latest.state.d?.status !== "completed") redirect(diagnosticDestination(journey, "sincronizacao"));
   }
 
   redirect(resultDestination(journey));
