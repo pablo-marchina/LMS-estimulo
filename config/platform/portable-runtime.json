@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Versioned transfer contract for the repository, Supabase non-institutional runtime, and Vercel deployment.",
+  "repository": {
+    "buildFromRepositoryRoot": true,
+    "defaultBranch": "main",
+    "nodeVersionFile": ".node-version"
+  },
+  "vercel": {
+    "framework": "nextjs",
+    "nodeEngine": "22.x",
+    "rootDirectory": "."
+  },
+  "environment": {
+    "requiredForSupabaseRuntime": [
+      { "name": "APP_ENV", "visibility": "server", "secret": false },
+      { "name": "PLATFORM_RUNTIME_PROVIDER", "visibility": "server", "secret": false },
+      { "name": "NEXT_PUBLIC_APP_URL", "visibility": "public", "secret": false },
+      { "name": "NEXT_PUBLIC_SUPABASE_URL", "visibility": "public", "secret": false },
+      { "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "visibility": "public", "secret": false },
+      { "name": "SUPABASE_SERVICE_ROLE_KEY", "visibility": "server", "secret": true },
+      { "name": "CPF_ENCRYPTION_KEY", "visibility": "server", "secret": true },
+      { "name": "CPF_LOOKUP_HMAC_KEY", "visibility": "server", "secret": true }
+    ],
+    "targetSpecificOptional": [
+      "ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN",
+      "AUTHENTICATED_RPC_FUNCTION_URL",
+      "PLATFORM_EXTENSIONS_RPC_FUNCTION_URL",
+      "AI_GRADE_SUBMISSION_FUNCTION_URL",
+      "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID",
+      "SOURCE_VERSION",
+      "ETL_DESTINATION_URL",
+      "ETL_AUTH_TOKEN",
+      "AI_GRADING_API_URL",
+      "AI_GRADING_API_KEY",
+      "AI_GRADING_MODEL"
+    ]
+  },
+  "supabase": {
+    "edgeFunctions": [
+      {
+        "slug": "authenticated-rpc",
+        "verifyJwt": true,
+        "source": "supabase/functions/authenticated-rpc"
+      },
+      {
+        "slug": "authenticated-media-rpc",
+        "verifyJwt": true,
+        "source": "supabase/functions/authenticated-media-rpc"
+      },
+      {
+        "slug": "platform-extensions-rpc",
+        "verifyJwt": true,
+        "source": "supabase/functions/platform-extensions-rpc"
+      },
+      {
+        "slug": "ai-grade-submission",
+        "verifyJwt": true,
+        "source": "supabase/functions/ai-grade-submission"
+      },
+      {
+        "slug": "public-landing-journey",
+        "verifyJwt": false,
+        "source": "supabase/functions/public-landing-journey"
+      }
+    ],
+    "storageBuckets": [
+      { "environment": "CREDENTIAL_FILES_BUCKET", "default": "credential-files" },
+      { "environment": "CERTIFICATE_TEMPLATE_BUCKET", "default": "certificate-templates" },
+      { "environment": "DELIVERY_FILES_BUCKET", "default": "delivery-submissions" },
+      { "environment": "ANNOUNCEMENT_BANNER_BUCKET", "default": "announcement-banners" },
+      { "environment": "REWARD_IMAGE_BUCKET", "default": "reward-images" }
+    ]
+  }
+}
