@@ -3,8 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { getAuthContext } from "@/lib/auth/context";
-import { assertParticipantMutationAllowed } from "@/lib/auth/participant-context";
+import { assertParticipantMutationAllowed, requireParticipantContext } from "@/lib/auth/participant-context";
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { completeParticipantActivity } from "@/lib/journey-runtime/completion-runtime";
 import type { AssessmentQuestion } from "@/lib/journey-runtime/contracts";
@@ -29,8 +28,7 @@ function quickCheckError(journey: string, step: string): never {
 
 async function actorId() {
   await assertParticipantMutationAllowed();
-  const auth = await getAuthContext();
-  if (auth.status !== "authenticated") redirect("/entrar");
+  const auth = await requireParticipantContext();
   return auth.identity.user_account_id;
 }
 
