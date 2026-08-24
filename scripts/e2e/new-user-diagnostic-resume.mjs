@@ -73,10 +73,6 @@ async function answerIfPending(page, answer, nextAnswer) {
   const visible = await radio.isVisible().catch(() => false);
   if (!visible) return { skipped: true, reason: "not_current_question" };
 
-  if (await radio.isChecked()) {
-    return { skipped: true, reason: "already_checked" };
-  }
-
   const saveResponse = page.waitForResponse(
     (response) => {
       const url = new URL(response.url());
@@ -85,7 +81,9 @@ async function answerIfPending(page, answer, nextAnswer) {
     { timeout: 120_000 },
   );
 
-  await radio.check();
+  // The UI auto-advances and unmounts the selected radio immediately. Using click()
+  // mirrors the user's interaction without waiting for a checked state on a removed node.
+  await radio.click();
   const response = await saveResponse;
   if (!response.ok()) {
     throw new Error(`Per-answer diagnostic save failed with HTTP ${response.status()}`);
