@@ -1,11 +1,31 @@
 {
   "schemaVersion": 1,
-  "purpose": "Versioned transfer contract for the repository, Supabase non-institutional runtime, and Vercel deployment.",
+  "purpose": "Versioned transfer contract for the repository, Supabase non-institutional runtime, Vercel deployment, and GitHub Actions configuration.",
   "repository": {
     "buildFromRepositoryRoot": true,
     "defaultBranch": "main",
     "nodeVersionFile": ".node-version",
     "ciNodeVersion": "22.23.1"
+  },
+  "github": {
+    "actionsRequiredSecrets": [
+      "E2E_ADMIN_EMAIL",
+      "E2E_ADMIN_PASSWORD",
+      "E2E_PARTICIPANT_EMAIL",
+      "E2E_PARTICIPANT_PASSWORD",
+      "E2E_PRODUCTION_URL",
+      "VERCEL_AUTOMATION_BYPASS_SECRET"
+    ],
+    "actionsRequiredVariables": [],
+    "targetSpecificSettings": [
+      "default branch",
+      "branch protection and rulesets",
+      "Actions secrets, variables, and environments",
+      "collaborator and team permissions",
+      "GitHub Apps and Vercel Git integration",
+      "webhooks",
+      "deploy keys"
+    ]
   },
   "vercel": {
     "framework": "nextjs",
