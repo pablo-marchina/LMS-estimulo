@@ -14,6 +14,19 @@ function fail(message) {
   failures.push(message);
 }
 
+function sortedUnique(values) {
+  return [...new Set(values)].sort();
+}
+
+function collectStaticContextReferences(content, contextName) {
+  const references = [];
+  const dotPattern = new RegExp(`\\b${contextName}\\.([A-Z0-9_]+)\\b`, "gu");
+  const bracketPattern = new RegExp(`\\b${contextName}\\s*\\[\\s*[\"']([A-Z0-9_]+)[\"']\\s*\\]`, "gu");
+  for (const match of content.matchAll(dotPattern)) references.push(match[1]);
+  for (const match of content.matchAll(bracketPattern)) references.push(match[1]);
+  return references;
+}
+
 const failures = [];
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const envExample = read(".env.example");
@@ -73,6 +86,42 @@ for (const requiredIgnore of [".vercel/", "supabase/.temp/", "supabase/.branches
 
 if (/vercel\.app/iu.test(supabaseConfig)) {
   fail("supabase/config.toml must not contain a hosted Vercel origin");
+}
+
+const workflowsDirectory = path.join(repositoryRoot, ".github/workflows");
+const workflowFiles = fs
+  .readdirSync(workflowsDirectory, { withFileTypes: true })
+  .filter((entry) => entry.isFile() && /\.ya?ml$/u.test(entry.name))
+  .map((entry) => entry.name)
+  .sort();
+const workflowSources = workflowFiles.map((name) => ({
+  name,
+  content: fs.readFileSync(path.join(workflowsDirectory, name), "utf8"),
+}));
+
+const actionSecrets = sortedUnique(
+  workflowSources.flatMap(({ content }) => collectStaticContextReferences(content, "secrets")),
+).filter((name) => name !== "GITHUB_TOKEN");
+const actionVariables = sortedUnique(
+  workflowSources.flatMap(({ content }) => collectStaticContextReferences(content, "vars")),
+);
+const expectedActionSecrets = sortedUnique(manifest.github?.actionsRequiredSecrets ?? []);
+const expectedActionVariables = sortedUnique(manifest.github?.actionsRequiredVariables ?? []);
+
+if (JSON.stringify(actionSecrets) !== JSON.stringify(expectedActionSecrets)) {
+  fail(
+    `GitHub Actions secret inventory mismatch; workflows=${actionSecrets.join(",")} manifest=${expectedActionSecrets.join(",")}`,
+  );
+}
+if (JSON.stringify(actionVariables) !== JSON.stringify(expectedActionVariables)) {
+  fail(
+    `GitHub Actions variable inventory mismatch; workflows=${actionVariables.join(",")} manifest=${expectedActionVariables.join(",")}`,
+  );
+}
+for (const { name, content } of workflowSources) {
+  if (/\b(?:secrets|vars)\s*\[\s*(?!["'])/u.test(content)) {
+    fail(`${name} contains a dynamic secrets/vars lookup that cannot be inventoried statically`);
+  }
 }
 
 const canonicalFunctionDirectory = path.join(repositoryRoot, "supabase/functions");
@@ -158,5 +207,5 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `[portability] contract valid: ${manifestFunctionSlugs.length} canonical Supabase Edge Functions; Node engine ${manifest.vercel.nodeEngine}; provider-bound deployment identifiers absent\n`,
+  `[portability] contract valid: ${manifestFunctionSlugs.length} canonical Supabase Edge Functions; ${actionSecrets.length} GitHub Actions secrets; Node engine ${manifest.vercel.nodeEngine}; provider-bound deployment identifiers absent\n`,
 );
