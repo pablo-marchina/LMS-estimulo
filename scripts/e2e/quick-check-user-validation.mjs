@@ -25,6 +25,7 @@ const report = {
   login: null,
   journey: null,
   activity: null,
+  retryPreparation: null,
   submitted: null,
   persistence: null,
   failures: [],
@@ -126,8 +127,76 @@ async function openTargetActivityFromJourney(page, evidenceName) {
   return { buttonText, journeyShot, route: routeOf(page.url()) };
 }
 
-async function selectCorrectAnswers(page) {
+function expectedQuestionLocators(page) {
   const form = page.locator("form#verificacao");
+  const q1 = form.locator("fieldset").filter({ hasText: "Qual é a proposta desta jornada?" }).first();
+  const q2 = form.locator("fieldset").filter({ hasText: "Você precisa ter experiência com inteligência artificial para acompanhar esta jornada?" }).first();
+  return { form, q1, q2 };
+}
+
+async function inputsAreEditable(page) {
+  const { q1, q2 } = expectedQuestionLocators(page);
+  const input1 = q1.locator('input[value="opcao_2"]');
+  const input2 = q2.locator('input[value="opcao_3"]');
+  if (!(await input1.count()) || !(await input2.count())) return false;
+  return !(await input1.isDisabled()) && !(await input2.isDisabled());
+}
+
+async function preparePublishedRetryFlow(page) {
+  const { form } = expectedQuestionLocators(page);
+  if (!(await form.count())) throw new Error("quick-check form is not visible");
+  if (await inputsAreEditable(page)) {
+    report.retryPreparation = { needed: false, route: routeOf(page.url()) };
+    return;
+  }
+
+  const body = await page.locator("body").innerText();
+  const recordedCount = await form.getByText("Resposta registrada nesta tentativa.", { exact: true }).count().catch(() => 0);
+  if (!/Revise e tente novamente/i.test(body) || recordedCount < 2) {
+    throw new Error("quick-check inputs are unavailable and the published retry state was not recognized");
+  }
+
+  const submit = form.locator('button[type="submit"]');
+  if (!(await submit.count()) || await submit.isDisabled()) throw new Error("published retry CTA is unavailable");
+
+  const beforeRoute = routeOf(page.url());
+  const beforeShot = await screenshot(page, "03-retry-state-before-opening-attempt.png");
+  await submit.click();
+
+  const deadline = Date.now() + 75_000;
+  let lastRoute = routeOf(page.url());
+  let lastBody = body;
+  while (Date.now() < deadline) {
+    await page.waitForTimeout(750);
+    lastRoute = routeOf(page.url());
+    lastBody = await page.locator("body").innerText().catch(() => lastBody);
+    if (await inputsAreEditable(page)) {
+      const afterShot = await screenshot(page, "04-third-attempt-opened.png");
+      report.retryPreparation = {
+        needed: true,
+        beforeRoute,
+        afterRoute: lastRoute,
+        recordedCountBefore: recordedCount,
+        responsePendingShown: /avaliacao=resposta_pendente/.test(lastRoute) || /Responda todas as perguntas/i.test(lastBody),
+        beforeScreenshot: beforeShot,
+        afterScreenshot: afterShot,
+        ok: true,
+      };
+      return;
+    }
+    if (/avaliacao=erro/.test(lastRoute) || /Verificação preservada/i.test(lastBody)) {
+      throw new Error(`published retry CTA failed while opening the final attempt (${lastRoute})`);
+    }
+    if (/limite de tentativas/i.test(lastBody)) throw new Error("quick-check attempt limit reached while opening final attempt");
+  }
+
+  throw new Error(`published retry CTA did not expose editable answers within timeout (${lastRoute})`);
+}
+
+async function selectCorrectAnswers(page) {
+  await preparePublishedRetryFlow(page);
+
+  const { form, q1, q2 } = expectedQuestionLocators(page);
   if (!(await form.count())) throw new Error("quick-check form is not visible");
   const submit = form.locator('button[type="submit"]');
   if (!(await submit.count()) || await submit.isDisabled()) {
@@ -136,23 +205,24 @@ async function selectCorrectAnswers(page) {
   }
 
   const metadata = (await form.locator("p").first().innerText().catch(() => "")).trim();
-  const q1 = form.locator("fieldset").filter({ hasText: "Qual é a proposta desta jornada?" }).first();
-  const q2 = form.locator("fieldset").filter({ hasText: "Você precisa ter experiência com inteligência artificial para acompanhar esta jornada?" }).first();
   if (!(await q1.count()) || !(await q2.count())) throw new Error("expected quick-check questions are not visible");
 
-  await q1.locator('input[value="opcao_2"]').check();
-  await q2.locator('input[value="opcao_3"]').check();
+  const correct1 = q1.locator('input[value="opcao_2"]');
+  const correct2 = q2.locator('input[value="opcao_3"]');
+  if (!(await correct1.count()) || !(await correct2.count())) throw new Error("correct answer controls are not visible in the final attempt");
+  await correct1.check();
+  await correct2.check();
 
   const answers = [
     {
       prompt: "Qual é a proposta desta jornada?",
       value: "opcao_2",
-      label: (await q1.locator('input[value="opcao_2"]').locator("xpath=ancestor::label").innerText()).trim(),
+      label: (await correct1.locator("xpath=ancestor::label").innerText()).trim(),
     },
     {
       prompt: "Você precisa ter experiência com inteligência artificial para acompanhar esta jornada?",
       value: "opcao_3",
-      label: (await q2.locator('input[value="opcao_3"]').locator("xpath=ancestor::label").innerText()).trim(),
+      label: (await correct2.locator("xpath=ancestor::label").innerText()).trim(),
     },
   ];
 
@@ -168,7 +238,7 @@ async function waitForSubmissionOutcome(page) {
     lastRoute = routeOf(page.url());
     lastBody = await page.locator("body").innerText().catch(() => "");
     const decisive = /[?&](?:avaliacao=aprovada|avaliacao=reprovada|avaliacao=erro|avaliacao=resposta_pendente|conclusao=ok)(?:&|$)/.test(lastRoute)
-      || /Aprendizado registrado|Revise e tente novamente|Verificação preservada|Responda todas as perguntas/i.test(lastBody);
+      || /Aprendizado registrado|Aula concluída|Verificação preservada|Responda todas as perguntas/i.test(lastBody);
     if (decisive) return { route: lastRoute, body: lastBody, timedOut: false };
   }
   return { route: lastRoute, body: lastBody, timedOut: true };
@@ -176,7 +246,7 @@ async function waitForSubmissionOutcome(page) {
 
 async function submitAndRequirePass(page) {
   const { submit, metadata, answers } = await selectCorrectAnswers(page);
-  const selectedShot = await screenshot(page, "03-correct-answers-selected.png");
+  const selectedShot = await screenshot(page, "05-correct-answers-selected.png");
   const beforeRoute = routeOf(page.url());
 
   await submit.click();
@@ -184,9 +254,9 @@ async function submitAndRequirePass(page) {
   await settle(page);
   const afterRoute = routeOf(page.url());
   const afterBody = await page.locator("body").innerText().catch(() => result.body);
-  const afterShot = await screenshot(page, "04-after-submit.png");
+  const afterShot = await screenshot(page, "06-after-submit.png");
 
-  const passed = /[?&](?:avaliacao=aprovada|conclusao=ok)(?:&|$)/.test(afterRoute) || /Aprendizado registrado/i.test(afterBody);
+  const passed = /[?&](?:avaliacao=aprovada|conclusao=ok)(?:&|$)/.test(afterRoute) || /Aprendizado registrado|Aula concluída/i.test(afterBody);
   const failed = /[?&]avaliacao=reprovada(?:&|$)/.test(afterRoute) || /Revise e tente novamente/i.test(afterBody);
   const errored = /[?&]avaliacao=(?:erro|resposta_pendente)(?:&|$)/.test(afterRoute) || /Verificação preservada|Responda todas as perguntas/i.test(afterBody);
 
@@ -221,7 +291,7 @@ async function verifyPersistenceThroughRealReopen(page) {
     }
   }
 
-  const reopen = await openTargetActivityFromJourney(page, "05-journey-after-save.png");
+  const reopen = await openTargetActivityFromJourney(page, "07-journey-after-save.png");
   await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
   await settle(page);
 
@@ -229,7 +299,7 @@ async function verifyPersistenceThroughRealReopen(page) {
   const registered = /Aprendizado registrado/i.test(body);
   const passedCardVisible = await page.locator('#verificacao:has-text("Aprendizado registrado")').isVisible().catch(() => false);
   const quickCheckFormStillPresent = (await page.locator("form#verificacao").count()) > 0;
-  const reloadShot = await screenshot(page, "06-after-clean-reload.png");
+  const reloadShot = await screenshot(page, "08-after-clean-reload.png");
 
   report.persistence = {
     reopenButtonText: reopen.buttonText,
