@@ -4,7 +4,7 @@ LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdos
 
 > **Ambientes:** o runtime Supabase/Vercel está ativo para desenvolvimento, demonstração e validação controlada. A AWS continua sendo o destino institucional planejado para produção definitiva, mas sua arquitetura ainda depende de decisão e implementação. O único artefato AWS aprovado é [`Dockerfile.lambda`](Dockerfile.lambda), e esse runtime permanece *fail-closed*.
 
-[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Fundação atual](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Preview e carregamento](docs/implementation/INTERFACE_PREVIEW_AND_LOADING.md)
+[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Fundação atual](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Preview e carregamento](docs/implementation/INTERFACE_PREVIEW_AND_LOADING.md) · [Handoff Supabase/Vercel](docs/deployments/SUPABASE_VERCEL_HANDOFF.md)
 
 ## Produto
 
@@ -68,7 +68,7 @@ A existência de uma tela, fluxo ou artefato não equivale à aprovação instit
 | `staging` institucional | AWS | bloqueado até definição da arquitetura |
 | `production` institucional | AWS | bloqueado até conclusão dos gates finais |
 
-Produção web atualmente publicada: `https://lms-estimulo-web.vercel.app/`.
+A URL da implantação web atual é configuração do ambiente, não um contrato do repositório. Para recriar a implantação em outra conta/projeto, siga [`SUPABASE_VERCEL_HANDOFF.md`](docs/deployments/SUPABASE_VERCEL_HANDOFF.md).
 
 Consulte [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md) para a distinção entre implantação operacional atual e arquitetura institucional definitiva.
 
