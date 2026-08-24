@@ -69,8 +69,8 @@ try {
   await page.goto(`${targetUrl}/cadastro`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.getByLabel("Seu nome").fill("Teste E2E Diagnóstico");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha", { exact: true }).fill(password);
-  await page.getByLabel("Confirmar senha").fill(password);
+  await page.locator('input[name="password"]').fill(password);
+  await page.locator('input[name="password_confirmation"]').fill(password);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Criar minha conta" }).click();
   await page.waitForLoadState("domcontentloaded").catch(() => {});
@@ -86,7 +86,7 @@ try {
     for (let attempt = 1; attempt <= 120; attempt += 1) {
       await page.goto(`${targetUrl}/entrar`, { waitUntil: "domcontentloaded", timeout: 60_000 });
       await page.getByLabel("E-mail").fill(email);
-      await page.getByLabel("Senha").fill(password);
+      await page.locator('input[name="password"]').fill(password);
       await page.getByRole("button", { name: "Entrar", exact: true }).click();
       await page.waitForLoadState("domcontentloaded").catch(() => {});
       if (!page.url().includes("/entrar")) {
