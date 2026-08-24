@@ -11,8 +11,9 @@
     "start:web": "npm --workspace @estimulo/web run start",
     "typecheck:web": "npm --workspace @estimulo/web run typecheck",
     "lint:source": "node scripts/repository/lint-source.mjs",
-    "validate:repository": "node scripts/repository/validate-hygiene.mjs && npm run validate:module-boundaries",
+    "validate:repository": "node scripts/repository/validate-hygiene.mjs && npm run validate:module-boundaries && npm run validate:portability",
     "validate:module-boundaries": "node scripts/repository/validate-module-boundaries.mjs",
+    "validate:portability": "node scripts/repository/validate-portability.mjs",
     "validate:dependency-lock": "node scripts/repository/validate-package-lock.mjs",
     "validate:application-foundation": "node scripts/application/validate-foundation.mjs",
     "validate:platform-contract": "node scripts/runtime/validate-platform-contract.mjs",
@@ -41,7 +42,7 @@
     "bootstrap:role-manager": "node scripts/operations/bootstrap-role-manager.mjs"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
   },
   "overrides": {
     "postcss": "8.5.23",
