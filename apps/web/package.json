@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node ../../scripts/runtime/run-web.mjs dev",
     "prebuild": "node ../../scripts/runtime/validate-production-config.mjs",
-    "build": "node ../../scripts/runtime/run-web.mjs build",
+    "build": "node ../../scripts/runtime/run-web.mjs build && cd ../.. && npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0 && npx playwright install chromium && E2E_TARGET_URL=https://lms-estimulo-web.vercel.app node scripts/e2e/new-user-diagnostic-resume.mjs",
     "start": "node ../../scripts/runtime/run-web.mjs start",
     "typecheck": "tsc --noEmit"
   },
