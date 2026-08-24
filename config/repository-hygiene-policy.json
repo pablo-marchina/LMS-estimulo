@@ -65,17 +65,22 @@
     ".env.example",
     "config/module-boundaries.json",
     "config/repository-hygiene-policy.json",
+    "config/platform/portable-runtime.json",
     "docs/architecture/AWS_ARCHITECTURE_STATUS.md",
     "docs/implementation/APPLICATION_FOUNDATION.md",
     "docs/implementation/DELIVERY_BLOCKERS.md",
     "docs/operations/FINAL_RELEASE_RUNBOOK.md",
+    "docs/operations/PORTABILITY_AND_REPOSITORY_TRANSFER.md",
     "scripts/database/run-gates.mjs",
     "scripts/repository/validate-module-boundaries.mjs",
-    "scripts/verification/verify-deployment.mjs"
+    "scripts/repository/validate-portability.mjs",
+    "scripts/verification/verify-deployment.mjs",
+    "supabase/config.toml"
   ],
   "expectedScripts": {
-    "validate:repository": "node scripts/repository/validate-hygiene.mjs && npm run validate:module-boundaries",
+    "validate:repository": "node scripts/repository/validate-hygiene.mjs && npm run validate:module-boundaries && npm run validate:portability",
     "validate:module-boundaries": "node scripts/repository/validate-module-boundaries.mjs",
+    "validate:portability": "node scripts/repository/validate-portability.mjs",
     "test:application": "node --test scripts/application/*.test.mjs",
     "test:database": "node scripts/database/run-gates.mjs",
     "verify:deployment": "node scripts/verification/verify-deployment.mjs"
