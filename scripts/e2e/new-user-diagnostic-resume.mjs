@@ -54,6 +54,20 @@ function record(name, data = {}) {
   console.log(`NEW_USER_RESUME_STEP ${name} ${JSON.stringify(data)}`);
 }
 
+async function openDiagnosticFromHome(page) {
+  if (new URL(page.url()).pathname !== "/empreendedor") {
+    await page.goto(`${base}/empreendedor`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  }
+  const diagnosticButton = page.getByRole("button", { name: /Fazer diagnóstico|Continuar diagnóstico/ });
+  await diagnosticButton.waitFor({ state: "visible", timeout: 60_000 });
+  const destination = page.waitForURL(
+    (url) => url.pathname.startsWith("/empreendedor/diagnostico") || url.pathname === "/empreendedor/jornadas",
+    { timeout: 120_000 },
+  );
+  await diagnosticButton.click();
+  await destination;
+}
+
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
 const page = await context.newPage();
@@ -102,16 +116,52 @@ try {
     record("profile_already_completed", { url: page.url() });
   }
 
-  if (new URL(page.url()).pathname !== "/empreendedor") {
-    await page.goto(`${base}/empreendedor`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-  }
+  await page.goto(`${base}/empreendedor`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.screenshot({ path: `${artifactDir}/03-participant-home.png`, fullPage: true });
 
-  const diagnosticButton = page.getByRole("button", { name: /Fazer diagnóstico|Continuar diagnóstico/ });
-  await diagnosticButton.waitFor({ state: "visible", timeout: 60_000 });
-  await diagnosticButton.click();
-  await page.waitForURL(/\/empreendedor\/diagnostico/, { timeout: 120_000 });
-  await page.screenshot({ path: `${artifactDir}/04-diagnostic-opened.png`, fullPage: true });
+  await openDiagnosticFromHome(page);
+
+  if (new URL(page.url()).pathname === "/empreendedor/jornadas") {
+    await page.screenshot({ path: `${artifactDir}/04-journey-required.png`, fullPage: true });
+    record("journey_required", { url: page.url() });
+
+    if (new URL(page.url()).searchParams.get("erro")) {
+      throw new Error(`Journey catalog returned application error: ${page.url()} :: ${(await page.locator("body").innerText()).slice(0, 1600)}`);
+    }
+
+    const enrollmentForms = page.locator('form:has(input[name="journey_version_id"])');
+    const enrollmentCount = await enrollmentForms.count();
+    if (enrollmentCount === 0) {
+      throw new Error(`No eligible journey enrollment action found :: ${(await page.locator("body").innerText()).slice(0, 2200)}`);
+    }
+
+    const enrollForm = enrollmentForms.first();
+    const enrollButton = enrollForm.getByRole("button");
+    await enrollButton.waitFor({ state: "visible", timeout: 60_000 });
+    const enrollLabel = (await enrollButton.innerText()).trim();
+    const journeyDestination = page.waitForURL(
+      (url) => url.pathname.startsWith("/empreendedor/jornada/") || (url.pathname === "/empreendedor/jornadas" && url.searchParams.has("erro")),
+      { timeout: 180_000 },
+    );
+    await enrollButton.click();
+    await journeyDestination;
+    await page.screenshot({ path: `${artifactDir}/05-journey-enrolled.png`, fullPage: true });
+
+    if (new URL(page.url()).pathname === "/empreendedor/jornadas") {
+      throw new Error(`Journey enrollment returned application error: ${page.url()} :: ${(await page.locator("body").innerText()).slice(0, 1800)}`);
+    }
+
+    record("journey_enrolled", { url: page.url(), actionLabel: enrollLabel });
+
+    await page.goto(`${base}/empreendedor`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await openDiagnosticFromHome(page);
+  }
+
+  if (!new URL(page.url()).pathname.startsWith("/empreendedor/diagnostico")) {
+    throw new Error(`Diagnostic did not open after journey enrollment: ${page.url()} :: ${(await page.locator("body").innerText()).slice(0, 1800)}`);
+  }
+
+  await page.screenshot({ path: `${artifactDir}/06-diagnostic-opened.png`, fullPage: true });
   record("diagnostic_opened", { url: page.url() });
 
   for (let i = 0; i < answers.length; i += 1) {
@@ -125,7 +175,7 @@ try {
     }
   }
 
-  await page.screenshot({ path: `${artifactDir}/05-all-answers.png`, fullPage: true });
+  await page.screenshot({ path: `${artifactDir}/07-all-answers.png`, fullPage: true });
   const submit = page.getByRole("button", { name: "Enviar respostas e concluir diagnóstico" });
   await submit.waitFor({ state: "visible", timeout: 60_000 });
   await page.waitForFunction(() => {
@@ -147,7 +197,7 @@ try {
 
   await page.getByText("Diagnóstico concluído", { exact: true }).waitFor({ state: "visible", timeout: 120_000 });
   await page.getByText("🌱 Fortalecendo a Base", { exact: true }).waitFor({ state: "visible", timeout: 120_000 });
-  await page.screenshot({ path: `${artifactDir}/06-diagnostic-result.png`, fullPage: true });
+  await page.screenshot({ path: `${artifactDir}/08-diagnostic-result.png`, fullPage: true });
 
   const bodyText = await page.locator("body").innerText();
   report.finalUrl = page.url();
