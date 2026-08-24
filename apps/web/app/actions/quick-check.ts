@@ -7,9 +7,14 @@ import { assertParticipantMutationAllowed, requireParticipantContext } from "@/l
 import { credentialRuntime } from "@/lib/credentials/runtime";
 import { completeParticipantActivity } from "@/lib/journey-runtime/completion-runtime";
 import type { AssessmentQuestion } from "@/lib/journey-runtime/contracts";
-import { journeyRuntime } from "@/lib/journey-runtime/rpc";
+import { JourneyRpcError, journeyRuntime } from "@/lib/journey-runtime/rpc";
 
 const uuid = z.string().uuid();
+const transientRefreshCodes = new Set([
+  "RPC_GATEWAY_TIMEOUT",
+  "RPC_GATEWAY_UNAVAILABLE",
+  "RPC_GATEWAY_QUEUE_TIMEOUT",
+]);
 
 function activityHref(journey: string, step: string, query = "", hash = "") {
   return `/empreendedor/atividade/${step}?journey=${journey}${query}${hash ? `#${hash}` : ""}`;
@@ -32,17 +37,35 @@ async function actorId() {
   return auth.identity.user_account_id;
 }
 
+function transientRefreshError(error: unknown): error is JourneyRpcError {
+  return error instanceof JourneyRpcError && transientRefreshCodes.has(error.code);
+}
+
 async function refreshOrFail(actor: string, journey: string, step: string) {
-  try {
-    return await journeyRuntime.getParticipantExperience(actor, journey);
-  } catch (error) {
-    console.error("QUICK_CHECK_REFRESH_FAILED", {
-      journey_instance_id: journey,
-      step_instance_id: step,
-      error_name: error instanceof Error ? error.name : "unknown",
-    });
-    quickCheckError(journey, step);
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      return await journeyRuntime.getParticipantExperience(actor, journey);
+    } catch (error) {
+      lastError = error;
+      if (!transientRefreshError(error) || attempt === 2) break;
+      console.info("QUICK_CHECK_REFRESH_RETRY", {
+        journey_instance_id: journey,
+        step_instance_id: step,
+        attempt,
+        error_code: error.code,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
   }
+
+  console.error("QUICK_CHECK_REFRESH_FAILED", {
+    journey_instance_id: journey,
+    step_instance_id: step,
+    error_name: lastError instanceof Error ? lastError.name : "unknown",
+    error_code: lastError instanceof JourneyRpcError ? lastError.code : "unknown",
+  });
+  quickCheckError(journey, step);
 }
 
 export async function submitQuickCheckAction(formData: FormData) {
