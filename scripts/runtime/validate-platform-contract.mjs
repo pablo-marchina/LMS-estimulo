@@ -117,7 +117,9 @@ assert.doesNotMatch(buildConfiguration, /fetch\(/, "Build validation must remain
 assert.match(publicOrigin, /resolvePublicApplicationOrigin/, "Public origin wrapper must use the central resolver");
 assert.match(publicOriginCore, /DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED/, "Deployed origin must fail closed");
 assert.doesNotMatch(`${publicOrigin}\n${publicOriginCore}`, /CANONICAL_VERCEL_ORIGIN/, "AWS production must not fall back to Vercel");
-assert.match(supabaseConfig, /lms-estimulo-web\.vercel\.app/, "Supabase must retain the controlled test preview callback");
+assert.match(supabaseConfig, /http:\/\/localhost:3000\/\*\*/, "Supabase local config must retain the localhost callback");
+assert.match(supabaseConfig, /http:\/\/127\.0\.0\.1:3000\/\*\*/, "Supabase local config must retain the loopback callback");
+assert.doesNotMatch(supabaseConfig, /https?:\/\/[^\s\"]+\.vercel\.app/, "Supabase local config must not pin a hosted Vercel callback");
 assert.doesNotMatch(supabaseConfig, /plataforma\.estimulo\.org/, "Supabase must not claim the production domain");
 
 assert.match(architectureStatus, /decisões de arquitetura.*pendentes/is, "AWS status must explicitly remain undecided");

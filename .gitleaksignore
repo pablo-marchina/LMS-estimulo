@@ -46,3 +46,8 @@ d7322944e7832cb4e0ed31da22f33ff56f4d1082:.github/workflows/pr-269-visual-approva
 d7322944e7832cb4e0ed31da22f33ff56f4d1082:.github/workflows/pr-269-visual-approval.yml:generic-api-key:37
 c4f374fd3e4437d7dc0602d005da6dff3999402a:.github/workflows/pr-269-visual-approval.yml:generic-api-key:38
 c4f374fd3e4437d7dc0602d005da6dff3999402a:.github/workflows/pr-269-visual-approval.yml:generic-api-key:39
+
+# Historical preview-only e2e confirmation helper embedded a Supabase publishable client key.
+# The route no longer exists; this exact reviewed fingerprint is public client configuration,
+# not a service-role credential. Any new occurrence remains blocked by the scanner.
+e09701ac6feca6cbe0a9901200e5dc170389cd92:apps/web/app/e2e-confirm/route.ts:generic-api-key:7
