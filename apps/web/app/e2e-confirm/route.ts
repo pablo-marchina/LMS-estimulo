@@ -1,7 +1,10 @@
+import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+const supabaseUrl = "https://cfpfeavjlgheqqiaqtzv.supabase.co";
+const publishableKey = "sb_publishable_knKAm6ycwAH8_Ha9SqnrQw_xenjHzRR";
 
 export async function GET(request: NextRequest) {
   if (process.env.VERCEL_ENV === "production") {
@@ -13,7 +16,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "missing_token" }, { status: 400 });
   }
 
-  const client = await createSessionClient();
+  const client = createClient(supabaseUrl, publishableKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
   const { error } = await client.auth.verifyOtp({
     token_hash: tokenHash,
     type: "signup",
