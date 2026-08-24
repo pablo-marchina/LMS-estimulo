@@ -68,9 +68,14 @@ async function openDiagnosticFromHome(page) {
   await destination;
 }
 
-async function answerAndWaitForPersistence(page, answer, nextAnswer) {
+async function answerIfPending(page, answer, nextAnswer) {
   const radio = page.getByRole("radio", { name: answer, exact: true });
-  await radio.waitFor({ state: "visible", timeout: 60_000 });
+  const visible = await radio.isVisible().catch(() => false);
+  if (!visible) return { skipped: true, reason: "not_current_question" };
+
+  if (await radio.isChecked()) {
+    return { skipped: true, reason: "already_checked" };
+  }
 
   const saveResponse = page.waitForResponse(
     (response) => {
@@ -89,6 +94,8 @@ async function answerAndWaitForPersistence(page, answer, nextAnswer) {
   if (nextAnswer) {
     await page.getByRole("radio", { name: nextAnswer, exact: true }).waitFor({ state: "visible", timeout: 60_000 });
   }
+
+  return { skipped: false, status: response.status() };
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -188,8 +195,11 @@ try {
   record("diagnostic_opened", { url: page.url() });
 
   for (let i = 0; i < answers.length; i += 1) {
-    await answerAndWaitForPersistence(page, answers[i], answers[i + 1]);
-    record(`answer_${i + 1}_persisted`, { answer: answers[i] });
+    const outcome = await answerIfPending(page, answers[i], answers[i + 1]);
+    record(outcome.skipped ? `answer_${i + 1}_already_persisted` : `answer_${i + 1}_persisted`, {
+      answer: answers[i],
+      ...outcome,
+    });
   }
 
   await page.screenshot({ path: `${artifactDir}/07-all-answers.png`, fullPage: true });
