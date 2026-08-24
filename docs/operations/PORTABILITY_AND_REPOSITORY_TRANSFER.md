@@ -62,6 +62,7 @@ TARGET_SUPABASE_PROJECT_REF=
 TARGET_SUPABASE_REGION=
 TARGET_VERCEL_TEAM=
 TARGET_VERCEL_PROJECT=
+TARGET_VERCEL_NODE_VERSION=
 TARGET_APP_ORIGIN=
 TARGET_CUSTOM_DOMAIN=
 ```
@@ -134,7 +135,7 @@ Issues, pull requests, project boards, Actions settings, environments e secrets 
 
 ### Banco
 
-1. crie/seleciona o projeto de destino na organização aprovada;
+1. crie/selecione o projeto de destino na organização aprovada;
 2. vincule a CLI local apenas ao destino escolhido;
 3. aplique o histórico versionado de migrations em um banco limpo;
 4. execute os gates de banco e equivalência;
@@ -190,7 +191,7 @@ Importe o novo repositório no projeto/time de destino.
 
 O build deve partir da **raiz do repositório**. Não configure `apps/web` como Root Directory: o workspace web usa scripts e contratos compartilhados existentes fora dessa pasta.
 
-O major de Node é definido por `package.json` como `22.x`; `.node-version` fixa a versão de desenvolvimento/CI. O projeto Vercel de destino deve respeitar esse contrato.
+`package.json` declara compatibilidade com Node `>=22.0.0`, enquanto `.node-version` fixa `22.23.1` para desenvolvimento e CI. A versão de Node usada pela Vercel é configuração do projeto e deve ser verificada explicitamente durante a transferência; não presuma que `.node-version` configure o runtime da Vercel. Registre a versão validada da origem e configure o destino de forma consciente antes do primeiro deploy.
 
 ### Variáveis mínimas
 
@@ -273,7 +274,7 @@ A troca só está concluída quando:
 - RLS/grants e advisors foram revisados;
 - Auth e OAuth funcionam com os novos callbacks;
 - buckets e objetos necessários foram reconciliados;
-- Vercel usa Node 22 e build a partir da raiz;
+- a versão de Node da Vercel foi explicitamente verificada e o build parte da raiz do repositório;
 - secrets foram configurados fora do Git;
 - liveness/readiness estão verdes;
 - fluxos críticos autenticados funcionam no destino;
