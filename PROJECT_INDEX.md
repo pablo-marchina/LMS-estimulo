@@ -116,6 +116,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 
 - [Matriz de acesso](docs/operations/ACCESS_MATRIX.md)
 - [Configuração de domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md)
+- [Portabilidade e transferência de repositório](docs/operations/PORTABILITY_AND_REPOSITORY_TRANSFER.md) — reconstrução de GitHub, Supabase e Vercel, cutover e rollback sem IDs de provedor no código.
 - [Baseline de qualidade](docs/operations/PRODUCTION_QUALITY_BASELINE.md)
 - [Captura visual reproduzível](docs/VISUAL_CAPTURE.md) — evidência Playwright full-page para referência, páginas públicas e áreas autenticadas em desktop/mobile.
 - [Runbook do release final](docs/operations/FINAL_RELEASE_RUNBOOK.md)
