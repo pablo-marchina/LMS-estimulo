@@ -6,6 +6,11 @@ on:
       - test/new-user-diagnostic-e2e-run-20260824-b
     paths:
       - .github/workflows/new-user-diagnostic-e2e.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/new-user-diagnostic-e2e.yml
 
 permissions:
   contents: read
@@ -148,10 +153,8 @@ jobs:
 
             const submit = page.getByRole('button', { name: 'Enviar respostas e concluir diagnóstico' });
             await submit.waitFor({ state: 'visible', timeout: 30000 });
-            await submit.waitFor({ state: 'attached' });
             await page.waitForFunction(() => {
-              const buttons = [...document.querySelectorAll('button')];
-              const button = buttons.find((item) => item.textContent?.includes('Enviar respostas e concluir diagnóstico'));
+              const button = [...document.querySelectorAll('button')].find((item) => item.textContent?.includes('Enviar respostas e concluir diagnóstico'));
               return button && !button.disabled;
             }, null, { timeout: 60000 });
             await submit.click();
