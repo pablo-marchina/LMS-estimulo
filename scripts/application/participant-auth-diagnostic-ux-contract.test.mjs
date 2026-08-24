@@ -17,8 +17,9 @@ test("diagnostic advances immediately after an answer while preserving back navi
   assert.match(diagnostic, /setCurrentIndex\(\(index\) => Math\.min\(items\.length - 1, index \+ 1\)\)/u);
   assert.match(diagnostic, /const isLast = currentIndex === items\.length - 1/u);
   assert.match(diagnostic, />\s*Anterior\s*</u);
-  assert.match(diagnostic, /Concluir diagnóstico/u);
-  assert.match(diagnostic, /items\.some\(\(item\) => item\.is_required && !answers\[item\.id\]\)/u);
+  assert.match(diagnostic, /Enviar respostas e concluir diagnóstico/u);
+  assert.match(diagnostic, /items\.every\(\(item\) => !item\.is_required \|\| Boolean\(answers\[item\.id\]\)\)/u);
+  assert.match(diagnostic, /disabled=\{isSaving \|\| !requiredComplete\}/u);
   assert.doesNotMatch(diagnostic, />\s*Continuar\s*</u);
 });
 
