@@ -6,13 +6,13 @@ on:
       - test/new-user-diagnostic-e2e-run-20260824-b
     paths:
       - .github/workflows/new-user-diagnostic-e2e.yml
-      - scripts/e2e/participant-critical-flow-visual.mjs
+      - scripts/e2e/new-user-diagnostic-e2e.mjs
   pull_request:
     branches:
       - main
     paths:
       - .github/workflows/new-user-diagnostic-e2e.yml
-      - scripts/e2e/participant-critical-flow-visual.mjs
+      - scripts/e2e/new-user-diagnostic-e2e.mjs
 
 permissions:
   contents: read
@@ -35,12 +35,12 @@ jobs:
           npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
           npx playwright install --with-deps chromium
       - name: Run real new-user diagnostic flow
-        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/participant-critical-flow-visual.mjs
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/new-user-diagnostic-e2e.mjs
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: new-user-diagnostic-e2e-${{ github.run_id }}
-          path: artifacts/e2e-critical-flow
+          path: artifacts/e2e-new-user
           if-no-files-found: error
           retention-days: 3
