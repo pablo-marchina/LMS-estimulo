@@ -11,6 +11,10 @@ export type ParticipantAuthContext = AuthenticatedContext & {
   identity: CurrentIdentityContext & { entrepreneur_id: string; access_mode: "participant" };
 };
 
+function isTransientIdentityFailure(reason: string): boolean {
+  return reason.startsWith("RPC_GATEWAY_");
+}
+
 export async function isParticipantInterfacePreviewRequest(): Promise<boolean> {
   const requestHeaders = await headers();
   return requestHeaders.get(INTERFACE_PREVIEW_REQUEST_HEADER) === "1";
@@ -32,7 +36,13 @@ export async function requireParticipantContext(): Promise<ParticipantAuthContex
   const auth = await getAuthContext();
 
   if (auth.status === "anonymous") redirect("/entrar");
-  if (auth.status === "identity_error") redirect("/entrar?erro=identidade_nao_vinculada");
+  if (auth.status === "identity_error") {
+    if (isTransientIdentityFailure(auth.reason)) {
+      console.error("PARTICIPANT_IDENTITY_TEMPORARILY_UNAVAILABLE", { reason: auth.reason });
+      throw new Error("PARTICIPANT_IDENTITY_TEMPORARILY_UNAVAILABLE");
+    }
+    redirect("/entrar?erro=identidade_nao_vinculada");
+  }
 
   if (auth.identity.access_mode === "administrative") {
     redirect(auth.identity.next_path || "/admin");
