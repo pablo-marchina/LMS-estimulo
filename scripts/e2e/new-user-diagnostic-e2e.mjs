@@ -60,11 +60,11 @@ page.setDefaultTimeout(30_000);
 
 try {
   await page.goto(`${base}/cadastro`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await page.getByLabel("Seu nome").fill("Teste E2E Diagnóstico");
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha", { exact: true }).fill(password);
-  await page.getByLabel("Confirmar senha").fill(password);
-  await page.getByRole("checkbox").check();
+  await page.locator('input[name="preferred_name"]').fill("Teste E2E Diagnóstico");
+  await page.locator('input[name="email"]').fill(email);
+  await page.locator('input[name="password"]').fill(password);
+  await page.locator('input[name="password_confirmation"]').fill(password);
+  await page.locator('input[name="terms"]').check();
   await page.getByRole("button", { name: "Criar minha conta" }).click();
   await page.waitForLoadState("domcontentloaded");
   await page.screenshot({ path: `${artifactDir}/01-signup-result.png`, fullPage: true });
@@ -78,8 +78,8 @@ try {
     let confirmed = false;
     for (let attempt = 1; attempt <= 180; attempt += 1) {
       await page.goto(`${base}/entrar`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await page.getByLabel("E-mail").fill(email);
-      await page.getByLabel("Senha").fill(password);
+      await page.locator('input[name="email"]').fill(email);
+      await page.locator('input[name="password"]').fill(password);
       await page.getByRole("button", { name: "Entrar", exact: true }).click();
       await page.waitForLoadState("domcontentloaded").catch(() => {});
       if (!page.url().includes("/entrar")) {
@@ -98,9 +98,9 @@ try {
   if (!page.url().includes("/cadastro/concluir")) {
     await page.goto(`${base}/cadastro/concluir`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   }
-  await page.getByLabel("Seu nome").fill("Teste E2E Diagnóstico");
-  await page.getByLabel("CPF").fill(cpf);
-  await page.getByLabel(/telefone/i).fill(phone);
+  await page.locator('input[name="preferred_name"]').fill("Teste E2E Diagnóstico");
+  await page.locator('input[name="cpf"]').fill(cpf);
+  await page.locator('input[name="telefone"]').fill(phone);
   await page.getByRole("button", { name: "Entrar na plataforma" }).click();
   await page.waitForURL(/\/empreendedor(?:\?|$)/, { timeout: 60_000 });
   await page.screenshot({ path: `${artifactDir}/02-participant-home.png`, fullPage: true });
