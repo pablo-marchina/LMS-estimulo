@@ -23,6 +23,7 @@ const [
   participantFlowMigration,
   credentialIssuanceMigration,
   certificateRuleMigration,
+  genericCertificateMigration,
   migrationBoundary,
   participantVisual,
   adminVisual,
@@ -47,6 +48,7 @@ const [
   readFile("supabase/migrations/20260823213943_fix_participant_diagnostic_and_quick_check_flows.sql", "utf8"),
   readFile("supabase/migrations/20260824025507_issue_path_and_journey_completion_credentials.sql", "utf8"),
   readFile("supabase/migrations/20260824030432_fix_certificate_credential_rule_language.sql", "utf8"),
+  readFile("supabase/migrations/20260824030855_enable_generic_certificates_for_participant_journeys.sql", "utf8"),
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
   readFile("scripts/e2e/participant-critical-flow-visual.mjs", "utf8"),
   readFile("scripts/e2e/admin-critical-flow-visual.mjs", "utf8"),
@@ -89,6 +91,10 @@ test("configured completion credentials are issued after final state and use com
   assert.match(certificateRuleMigration, /set language = 'credential-v1'/u);
   assert.match(certificateRuleMigration, /CERTIFICATE_REQUIREMENTS_RULE_LANGUAGE_INVALID/u);
   assert.match(certificateRuleMigration, /journey-certificate-rule-language-backfill-v1:/u);
+  assert.match(genericCertificateMigration, /certificado_geral_estimulo/u);
+  assert.match(genericCertificateMigration, /internal_test_only/u);
+  assert.match(genericCertificateMigration, /publishable_to_real_participants/u);
+  assert.match(genericCertificateMigration, /generic-journey-certificate-backfill-v1:/u);
   assert.match(credentialsPage, /credentialRuntime\.listParticipant/u);
   assert.match(credentialsPage, /credentials\?\.badges\.map/u);
   assert.match(credentialsPage, /credentials\?\.certificates\.map/u);
@@ -140,12 +146,13 @@ test("point-rule retirement RPC is restricted to the service gateway", () => {
 });
 
 test("release migration boundary includes participant and completion credential fixes", () => {
-  assert.match(migrationBoundary, /expectedLastMigration = '20260824030432_fix_certificate_credential_rule_language\.sql'/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260824030855_enable_generic_certificates_for_participant_journeys\.sql'/u);
   assert.match(migrationBoundary, /'20260823133000_admin_point_rule_retirement\.sql'/u);
   assert.match(migrationBoundary, /'20260823164000_harden_admin_point_rule_retirement_grants\.sql'/u);
   assert.match(migrationBoundary, /'20260823213943_fix_participant_diagnostic_and_quick_check_flows\.sql'/u);
   assert.match(migrationBoundary, /'20260824025507_issue_path_and_journey_completion_credentials\.sql'/u);
   assert.match(migrationBoundary, /'20260824030432_fix_certificate_credential_rule_language\.sql'/u);
+  assert.match(migrationBoundary, /'20260824030855_enable_generic_certificates_for_participant_journeys\.sql'/u);
   assert.match(participantFlowMigration, /create or replace function app_private\.e14_write_c4/u);
   assert.match(participantFlowMigration, /on conflict do nothing/u);
 });
