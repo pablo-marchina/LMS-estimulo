@@ -15,6 +15,7 @@ const report = {
   startedAt: new Date().toISOString(),
   baseUrl,
   login: null,
+  discovery: [],
   journey: null,
   activitiesVisited: [],
   submitted: null,
@@ -28,6 +29,11 @@ async function settle(page) {
   await page.waitForTimeout(500);
 }
 
+function relativeRoute(url) {
+  const parsed = new URL(url, baseUrl);
+  return `${parsed.pathname}${parsed.search}`;
+}
+
 async function signIn(page) {
   const response = await page.goto(`${baseUrl}/entrar`, { waitUntil: "domcontentloaded", timeout: 60_000 });
   if (!response || response.status() >= 500) throw new Error(`login page unavailable (${response?.status() ?? "no response"})`);
@@ -36,67 +42,11 @@ async function signIn(page) {
   await page.locator('button[type="submit"]').click();
   await page.waitForURL((url) => url.pathname.startsWith("/empreendedor"), { timeout: 30_000 });
   await settle(page);
-  report.login = { ok: true, landedOn: `${new URL(page.url()).pathname}${new URL(page.url()).search}` };
-}
-
-async function openEnrolledJourney(page) {
-  await page.goto(`${baseUrl}/empreendedor/jornadas`, { waitUntil: "domcontentloaded", timeout: 60_000 });
-  await settle(page);
-
-  const enrolledForms = page.locator('form:has(input[name="journey_instance_id"])');
-  if (await enrolledForms.count()) {
-    const button = enrolledForms.first().locator('button[type="submit"]');
-    if (await button.count() && !(await button.isDisabled())) {
-      await button.click();
-      await page.waitForURL((url) => /^\/empreendedor\/jornada\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
-      await settle(page);
-      report.journey = { route: `${new URL(page.url()).pathname}${new URL(page.url()).search}`, source: "enrolled-form" };
-      return;
-    }
-  }
-
-  const link = page.locator('a[href^="/empreendedor/jornada/"]').first();
-  if (await link.count()) {
-    await link.click();
-    await page.waitForURL((url) => /^\/empreendedor\/jornada\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
-    await settle(page);
-    report.journey = { route: `${new URL(page.url()).pathname}${new URL(page.url()).search}`, source: "journey-link" };
-    return;
-  }
-
-  const eligibleForms = page.locator('form:has(input[name="journey_version_id"])');
-  if (await eligibleForms.count()) {
-    const button = eligibleForms.first().locator('button[type="submit"]');
-    if (!(await button.count()) || await button.isDisabled()) throw new Error("eligible journey CTA is unavailable");
-    await button.click();
-    await page.waitForURL((url) => /^\/empreendedor\/jornada\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
-    await settle(page);
-    report.journey = { route: `${new URL(page.url()).pathname}${new URL(page.url()).search}`, source: "eligible-form" };
-    return;
-  }
-
-  throw new Error("no enrolled or eligible journey CTA found");
-}
-
-async function collectActivityCandidates(page) {
-  const journeyUrl = page.url();
-  const forms = page.locator('form:has(input[name="step_instance_id"]):has(input[name="step_status"])');
-  const count = await forms.count();
-  const candidates = [];
-  for (let index = 0; index < count; index += 1) {
-    const form = forms.nth(index);
-    const stepId = await form.locator('input[name="step_instance_id"]').inputValue().catch(() => "");
-    const status = await form.locator('input[name="step_status"]').inputValue().catch(() => "");
-    const button = form.locator('button[type="submit"]');
-    const buttonText = await button.innerText().catch(() => "");
-    const disabled = !(await button.count()) || await button.isDisabled().catch(() => true);
-    candidates.push({ index, stepId, status, buttonText, disabled });
-  }
-  return { journeyUrl, candidates };
+  report.login = { ok: true, landedOn: relativeRoute(page.url()) };
 }
 
 async function inspectQuickCheck(page) {
-  const route = `${new URL(page.url()).pathname}${new URL(page.url()).search}`;
+  const route = relativeRoute(page.url());
   const body = await page.locator("body").innerText().catch(() => "");
   const passedCard = page.locator('#verificacao:has-text("Aprendizado registrado")');
   const form = page.locator("form#verificacao");
@@ -160,99 +110,190 @@ async function answerVisibleQuestions(page) {
   return answers;
 }
 
-async function findAndSubmitQuickCheck(page) {
-  const { journeyUrl, candidates } = await collectActivityCandidates(page);
-  if (!candidates.length) throw new Error("journey page exposed no activity forms");
+async function submitCurrentQuickCheck(page, activityUrl) {
+  const quickCheck = await inspectQuickCheck(page);
+  report.activitiesVisited.push({ activityUrl, quickCheck });
+  if (!quickCheck.hasForm || !quickCheck.submitEnabled) return false;
 
-  for (const candidate of candidates) {
-    await page.goto(journeyUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await settle(page);
-    const forms = page.locator('form:has(input[name="step_instance_id"]):has(input[name="step_status"])');
-    if (candidate.index >= await forms.count()) continue;
-    const form = forms.nth(candidate.index);
-    const button = form.locator('button[type="submit"]');
-    if (!(await button.count()) || await button.isDisabled()) {
-      report.activitiesVisited.push({ ...candidate, skipped: "activity CTA disabled" });
-      continue;
-    }
+  const beforeScreenshot = path.join(outputDir, "before-submit.png");
+  await page.screenshot({ path: beforeScreenshot, fullPage: true, animations: "disabled", caret: "hide" });
+  const answers = await answerVisibleQuestions(page);
+  const submit = page.locator('form#verificacao button[type="submit"]');
+  if (await submit.isDisabled()) throw new Error("quick-check submit became disabled after answering");
 
-    await button.click();
-    await page.waitForURL((url) => /^\/empreendedor\/atividade\/[^/]+$/.test(url.pathname), { timeout: 30_000 });
-    await settle(page);
-    const activityUrl = page.url();
-    const quickCheck = await inspectQuickCheck(page);
-    report.activitiesVisited.push({ ...candidate, activityUrl, quickCheck });
+  const beforeRoute = relativeRoute(page.url());
+  await submit.click();
+  await page.waitForLoadState("domcontentloaded", { timeout: 20_000 }).catch(() => {});
+  await page.waitForTimeout(1800);
+  const afterRoute = relativeRoute(page.url());
+  const afterBody = await page.locator("body").innerText().catch(() => "");
+  const afterScreenshot = path.join(outputDir, "after-submit.png");
+  await page.screenshot({ path: afterScreenshot, fullPage: true, animations: "disabled", caret: "hide" }).catch(() => {});
 
-    if (!quickCheck.hasForm || !quickCheck.submitEnabled) continue;
+  let outcome = "unknown";
+  if (/Aprendizado registrado|Aula concluída/i.test(afterBody) || /[?&](?:avaliacao=aprovada|conclusao=ok)(?:&|$)/.test(afterRoute)) outcome = "passed";
+  else if (/Revise e tente novamente/i.test(afterBody) || /[?&]avaliacao=reprovada(?:&|$)/.test(afterRoute)) outcome = "failed";
+  else if (/Verificação preservada|avaliacao=erro/i.test(`${afterBody} ${afterRoute}`)) outcome = "error";
+  else if (/Responda todas as perguntas|avaliacao=resposta_pendente/i.test(`${afterBody} ${afterRoute}`)) outcome = "pending";
 
-    const beforeScreenshot = path.join(outputDir, "before-submit.png");
-    await page.screenshot({ path: beforeScreenshot, fullPage: true, animations: "disabled", caret: "hide" });
-    const answers = await answerVisibleQuestions(page);
-    const submit = page.locator('form#verificacao button[type="submit"]');
-    if (await submit.isDisabled()) throw new Error("quick-check submit became disabled after answering");
+  report.submitted = {
+    activityUrl,
+    beforeRoute,
+    afterRoute,
+    answers,
+    outcome,
+    beforeScreenshot: path.relative(process.cwd(), beforeScreenshot),
+    afterScreenshot: path.relative(process.cwd(), afterScreenshot),
+  };
 
-    const beforeRoute = `${new URL(page.url()).pathname}${new URL(page.url()).search}`;
-    await submit.click();
-    await page.waitForLoadState("domcontentloaded", { timeout: 20_000 }).catch(() => {});
-    await page.waitForTimeout(1800);
-    const afterUrl = page.url();
-    const afterRoute = `${new URL(afterUrl).pathname}${new URL(afterUrl).search}`;
-    const afterBody = await page.locator("body").innerText().catch(() => "");
-    const afterScreenshot = path.join(outputDir, "after-submit.png");
-    await page.screenshot({ path: afterScreenshot, fullPage: true, animations: "disabled", caret: "hide" }).catch(() => {});
-
-    let outcome = "unknown";
-    if (/Aprendizado registrado|Aula concluída/i.test(afterBody) || /[?&](?:avaliacao=aprovada|conclusao=ok)(?:&|$)/.test(afterRoute)) outcome = "passed";
-    else if (/Revise e tente novamente/i.test(afterBody) || /[?&]avaliacao=reprovada(?:&|$)/.test(afterRoute)) outcome = "failed";
-    else if (/Verificação preservada|avaliacao=erro/i.test(`${afterBody} ${afterRoute}`)) outcome = "error";
-    else if (/Responda todas as perguntas|avaliacao=resposta_pendente/i.test(`${afterBody} ${afterRoute}`)) outcome = "pending";
-
-    report.submitted = {
-      activityUrl,
-      beforeRoute,
-      afterRoute,
-      answers,
-      outcome,
-      beforeScreenshot: path.relative(process.cwd(), beforeScreenshot),
-      afterScreenshot: path.relative(process.cwd(), afterScreenshot),
-    };
-
-    if (outcome === "error" || outcome === "pending" || outcome === "unknown") {
-      throw new Error(`quick-check submission did not reach a valid result state: ${outcome} (${afterRoute})`);
-    }
-
-    const canonical = new URL(activityUrl);
-    canonical.searchParams.delete("avaliacao");
-    canonical.hash = "";
-    await page.goto(canonical.toString(), { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await settle(page);
-    await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
-    await settle(page);
-    const persistedBody = await page.locator("body").innerText().catch(() => "");
-    const persistedRoute = `${new URL(page.url()).pathname}${new URL(page.url()).search}`;
-    const persistenceScreenshot = path.join(outputDir, "after-reload.png");
-    await page.screenshot({ path: persistenceScreenshot, fullPage: true, animations: "disabled", caret: "hide" }).catch(() => {});
-
-    const passedPersisted = /Aprendizado registrado/i.test(persistedBody);
-    const failedPersisted = /Revise e tente novamente/i.test(persistedBody);
-    const attemptMetadataMatch = persistedBody.match(/tentativa\s+\d+\s+de\s+\d+/i)?.[0] ?? null;
-    const persistenceOk = outcome === "passed" ? passedPersisted : failedPersisted;
-
-    report.persistence = {
-      route: persistedRoute,
-      outcome,
-      passedPersisted,
-      failedPersisted,
-      attemptMetadata: attemptMetadataMatch,
-      ok: persistenceOk,
-      screenshot: path.relative(process.cwd(), persistenceScreenshot),
-    };
-
-    if (!persistenceOk) throw new Error(`submitted result did not persist after clean reload (outcome=${outcome})`);
-    return;
+  if (["error", "pending", "unknown"].includes(outcome)) {
+    throw new Error(`quick-check submission did not reach a valid result state: ${outcome} (${afterRoute})`);
   }
 
-  throw new Error("no activity exposed an enabled, unanswered quick-check form for this participant");
+  const canonical = new URL(activityUrl);
+  canonical.searchParams.delete("avaliacao");
+  canonical.hash = "";
+  await page.goto(canonical.toString(), { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await settle(page);
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 });
+  await settle(page);
+  const persistedBody = await page.locator("body").innerText().catch(() => "");
+  const persistedRoute = relativeRoute(page.url());
+  const persistenceScreenshot = path.join(outputDir, "after-reload.png");
+  await page.screenshot({ path: persistenceScreenshot, fullPage: true, animations: "disabled", caret: "hide" }).catch(() => {});
+
+  const passedPersisted = /Aprendizado registrado/i.test(persistedBody);
+  const failedPersisted = /Revise e tente novamente/i.test(persistedBody);
+  const attemptMetadata = persistedBody.match(/tentativa\s+\d+\s+de\s+\d+/i)?.[0] ?? null;
+  const persistenceOk = outcome === "passed" ? passedPersisted : failedPersisted;
+
+  report.persistence = {
+    route: persistedRoute,
+    outcome,
+    passedPersisted,
+    failedPersisted,
+    attemptMetadata,
+    ok: persistenceOk,
+    screenshot: path.relative(process.cwd(), persistenceScreenshot),
+  };
+
+  if (!persistenceOk) throw new Error(`submitted result did not persist after clean reload (outcome=${outcome})`);
+  return true;
+}
+
+async function tryActivityPage(page, url, source) {
+  await page.goto(new URL(url, baseUrl).toString(), { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await settle(page);
+  if (!/^\/empreendedor\/atividade\/[^/]+$/.test(new URL(page.url()).pathname)) return false;
+  const activityUrl = page.url();
+  const quick = await inspectQuickCheck(page);
+  report.discovery.push({ source, opened: relativeRoute(activityUrl), kind: "activity", quick });
+  if (quick.hasForm && quick.submitEnabled) return submitCurrentQuickCheck(page, activityUrl);
+  report.activitiesVisited.push({ source, activityUrl, quickCheck: quick });
+  return false;
+}
+
+async function tryJourneyPage(page, url, source) {
+  await page.goto(new URL(url, baseUrl).toString(), { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await settle(page);
+  const journeyPath = new URL(page.url()).pathname;
+  if (!/^\/empreendedor\/jornada\/[^/]+$/.test(journeyPath)) return false;
+  report.journey = { route: relativeRoute(page.url()), source };
+
+  const directLinks = await page.locator('a[href^="/empreendedor/atividade/"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")).filter(Boolean));
+  for (const href of directLinks) {
+    if (await tryActivityPage(page, href, `${journeyPath}:activity-link`)) return true;
+    await page.goto(new URL(url, baseUrl).toString(), { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await settle(page);
+  }
+
+  const forms = page.locator('form:has(input[name="step_instance_id"])');
+  const count = await forms.count();
+  for (let index = 0; index < count; index += 1) {
+    await page.goto(new URL(url, baseUrl).toString(), { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await settle(page);
+    const currentForms = page.locator('form:has(input[name="step_instance_id"])');
+    if (index >= await currentForms.count()) continue;
+    const form = currentForms.nth(index);
+    const button = form.locator('button[type="submit"]');
+    if (!(await button.count()) || await button.isDisabled()) continue;
+    const stepId = await form.locator('input[name="step_instance_id"]').inputValue().catch(() => null);
+    const stepStatus = await form.locator('input[name="step_status"]').inputValue().catch(() => null);
+    const buttonText = await button.innerText().catch(() => null);
+    await button.click();
+    await page.waitForURL((candidate) => candidate.pathname !== journeyPath, { timeout: 20_000 }).catch(() => {});
+    await settle(page);
+    report.discovery.push({ source: relativeRoute(url), kind: "activity-form", stepId, stepStatus, buttonText, landed: relativeRoute(page.url()) });
+    if (/^\/empreendedor\/atividade\/[^/]+$/.test(new URL(page.url()).pathname)) {
+      const activityUrl = page.url();
+      const quick = await inspectQuickCheck(page);
+      if (quick.hasForm && quick.submitEnabled) return submitCurrentQuickCheck(page, activityUrl);
+      report.activitiesVisited.push({ source: relativeRoute(url), activityUrl, quickCheck: quick });
+    }
+  }
+  return false;
+}
+
+async function discoverAndSubmit(page) {
+  const routes = [
+    "/empreendedor",
+    "/empreendedor/trilhas",
+    "/empreendedor/jornadas",
+    "/empreendedor/competencias",
+    "/empreendedor/resultado",
+    "/empreendedor/validacao",
+    "/empreendedor/pontuacao",
+    "/empreendedor/mais",
+  ];
+  const seenJourneys = new Set();
+  const seenActivities = new Set();
+
+  for (const route of routes) {
+    const response = await page.goto(`${baseUrl}${route}`, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => null);
+    await settle(page);
+    const final = relativeRoute(page.url());
+    const body = await page.locator("body").innerText().catch(() => "");
+    const journeyLinks = await page.locator('a[href^="/empreendedor/jornada/"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")).filter(Boolean));
+    const activityLinks = await page.locator('a[href^="/empreendedor/atividade/"]').evaluateAll((nodes) => nodes.map((node) => node.getAttribute("href")).filter(Boolean));
+    const enrollmentForms = await page.locator('form:has(input[name="journey_version_id"]), form:has(input[name="journey_instance_id"])').count();
+    report.discovery.push({ route, final, status: response?.status() ?? null, journeyLinks, activityLinks, enrollmentForms, bodyPreview: body.slice(0, 700) });
+
+    for (const href of activityLinks) {
+      if (seenActivities.has(href)) continue;
+      seenActivities.add(href);
+      if (await tryActivityPage(page, href, `${route}:activity-link`)) return true;
+    }
+
+    for (const href of journeyLinks) {
+      if (seenJourneys.has(href)) continue;
+      seenJourneys.add(href);
+      if (await tryJourneyPage(page, href, `${route}:journey-link`)) return true;
+    }
+
+    await page.goto(`${baseUrl}${route}`, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => null);
+    await settle(page);
+    const forms = page.locator('form:has(input[name="journey_version_id"]), form:has(input[name="journey_instance_id"])');
+    const formCount = await forms.count();
+    for (let index = 0; index < formCount; index += 1) {
+      await page.goto(`${baseUrl}${route}`, { waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => null);
+      await settle(page);
+      const currentForms = page.locator('form:has(input[name="journey_version_id"]), form:has(input[name="journey_instance_id"])');
+      if (index >= await currentForms.count()) continue;
+      const form = currentForms.nth(index);
+      const button = form.locator('button[type="submit"]');
+      if (!(await button.count()) || await button.isDisabled()) continue;
+      const buttonText = await button.innerText().catch(() => null);
+      await button.click();
+      await page.waitForURL((candidate) => candidate.pathname !== route, { timeout: 20_000 }).catch(() => {});
+      await settle(page);
+      report.discovery.push({ route, kind: "journey-form", buttonText, landed: relativeRoute(page.url()) });
+      if (/^\/empreendedor\/jornada\/[^/]+$/.test(new URL(page.url()).pathname)) {
+        if (await tryJourneyPage(page, page.url(), `${route}:journey-form`)) return true;
+      }
+    }
+  }
+
+  throw new Error("no user-visible participant route exposed an enabled quick-check scenario");
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -262,8 +303,7 @@ try {
   page.on("pageerror", (error) => report.failures.push(`pageerror: ${error.message}`));
   try {
     await signIn(page);
-    await openEnrolledJourney(page);
-    await findAndSubmitQuickCheck(page);
+    await discoverAndSubmit(page);
   } catch (error) {
     report.failures.push(error instanceof Error ? error.message : String(error));
   } finally {
@@ -276,5 +316,5 @@ try {
 report.finishedAt = new Date().toISOString();
 report.ok = Boolean(report.submitted && report.persistence?.ok && report.failures.length === 0);
 await writeFile(path.join(outputDir, "report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
-console.log(JSON.stringify({ ok: report.ok, submitted: report.submitted, persistence: report.persistence, failures: report.failures }, null, 2));
+console.log(JSON.stringify({ ok: report.ok, discovery: report.discovery, submitted: report.submitted, persistence: report.persistence, failures: report.failures }, null, 2));
 if (!report.ok) process.exitCode = 1;
