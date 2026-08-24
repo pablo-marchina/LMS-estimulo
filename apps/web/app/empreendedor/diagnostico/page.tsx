@@ -38,7 +38,7 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
   if (!effectiveJourney) {
     let entry;
     try {
-      entry = await participantDiagnosticRuntime.resolveEntry(actor);
+      entry = await participantDiagnosticRuntime.ensureEntry(actor);
     } catch {
       return (
         <div className="mx-auto max-w-[980px] px-5 py-8 lg:px-9 lg:py-10">
@@ -54,8 +54,6 @@ export default async function DiagnosisPage({ searchParams }: { searchParams: Pr
       const resolvedJourney = diagnosticJourneyFromPath(entry.next_path);
       if (resolvedJourney) effectiveJourney = resolvedJourney;
       else redirect(entry.next_path);
-    } else if (entry.status === "journey_required") {
-      redirect("/empreendedor/jornadas");
     } else if (entry.status === "profile_required") {
       redirect("/empreendedor/perfil");
     } else {

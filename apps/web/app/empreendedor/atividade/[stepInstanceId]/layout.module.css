@@ -47,6 +47,11 @@
   border-radius: 0.75rem;
 }
 
+/* O fallback técnico do player não deve aparecer como disclaimer na aula. */
+.activityLayout :global(.brand-media-card > div:last-child > p:last-child) {
+  display: none !important;
+}
+
 @media (max-width: 640px) {
   .activityPage > div {
     padding-inline: 1rem !important;

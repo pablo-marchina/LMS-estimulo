@@ -8,6 +8,13 @@ import { createSessionClient } from "@/lib/supabase/server";
 
 const otpTypes = new Set<EmailOtpType>(["signup", "email", "magiclink", "recovery", "invite", "email_change"]);
 const emailSchema = z.string().trim().email().max(320).transform((value: string) => value.toLowerCase());
+const recoverableSessionExchangeCodes = new Set([
+  "bad_code_verifier",
+  "flow_state_not_found",
+  "flow_state_expired",
+  "otp_expired",
+  "exchange_code_not_found",
+]);
 
 function authErrorCode(error: unknown): string {
   if (!error || typeof error !== "object" || !("code" in error)) return "";
@@ -23,6 +30,13 @@ function confirmationFailed(): never {
   redirect("/entrar?erro=confirmacao_invalida");
 }
 
+function recoverThroughPasswordLogin(error: unknown): boolean {
+  const code = authErrorCode(error);
+  if (recoverableSessionExchangeCodes.has(code)) return true;
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  return message.includes("code verifier") || message.includes("flow state") || message.includes("already been used");
+}
+
 export async function confirmEmailAction(formData: FormData) {
   const tokenHash = String(formData.get("token_hash") ?? "").trim();
   const typeValue = String(formData.get("type") ?? "").trim() as EmailOtpType;
@@ -35,11 +49,15 @@ export async function confirmEmailAction(formData: FormData) {
   } else if (code) {
     ({ error } = await client.auth.exchangeCodeForSession(code));
 
-    // The hosted confirmation endpoint verifies the email before redirecting
-    // with the PKCE code. If the email was opened in another browser or by an
-    // email scanner, the local verifier is unavailable even though the account
-    // is already confirmed. In that case the correct recovery is password login.
-    if (authErrorCode(error) === "bad_code_verifier") {
+    // The hosted confirmation endpoint may already have verified the account
+    // before the application receives the PKCE code. A different browser, an
+    // email scanner, or a consumed/expired flow state can then prevent a local
+    // session exchange even though the e-mail confirmation itself succeeded.
+    if (recoverThroughPasswordLogin(error)) {
+      console.info("EMAIL_CONFIRMATION_SESSION_RECOVERY_REQUIRED", {
+        errorCode: authErrorCode(error),
+        errorStatus: authErrorStatus(error),
+      });
       redirect("/entrar?cadastro=confirmado");
     }
   } else {
