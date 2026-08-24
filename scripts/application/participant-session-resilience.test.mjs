@@ -19,3 +19,12 @@ test("quick check reuses participant auth semantics instead of treating infrastr
   assert.match(quickCheckAction, /const auth = await requireParticipantContext\(\)/u);
   assert.doesNotMatch(quickCheckAction, /auth\.status !== "authenticated"[^\n]*redirect\("\/entrar"\)/u);
 });
+
+test("quick check retries transient state refresh failures before surfacing an error", () => {
+  assert.match(quickCheckAction, /RPC_GATEWAY_TIMEOUT/u);
+  assert.match(quickCheckAction, /RPC_GATEWAY_UNAVAILABLE/u);
+  assert.match(quickCheckAction, /RPC_GATEWAY_QUEUE_TIMEOUT/u);
+  assert.match(quickCheckAction, /QUICK_CHECK_REFRESH_RETRY/u);
+  assert.match(quickCheckAction, /attempt <= 2/u);
+  assert.match(quickCheckAction, /setTimeout\(resolve, 150\)/u);
+});
