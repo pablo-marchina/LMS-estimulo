@@ -146,13 +146,14 @@ test("point-rule retirement RPC is restricted to the service gateway", () => {
 });
 
 test("release migration boundary includes participant and completion credential fixes", () => {
-  assert.match(migrationBoundary, /expectedLastMigration = '20260824030855_enable_generic_certificates_for_participant_journeys\.sql'/u);
+  assert.match(migrationBoundary, /expectedLastMigration = '20260824115107_reduce_identity_resolution_lock_contention\.sql'/u);
   assert.match(migrationBoundary, /'20260823133000_admin_point_rule_retirement\.sql'/u);
   assert.match(migrationBoundary, /'20260823164000_harden_admin_point_rule_retirement_grants\.sql'/u);
   assert.match(migrationBoundary, /'20260823213943_fix_participant_diagnostic_and_quick_check_flows\.sql'/u);
   assert.match(migrationBoundary, /'20260824025507_issue_path_and_journey_completion_credentials\.sql'/u);
   assert.match(migrationBoundary, /'20260824030432_fix_certificate_credential_rule_language\.sql'/u);
   assert.match(migrationBoundary, /'20260824030855_enable_generic_certificates_for_participant_journeys\.sql'/u);
+  assert.match(migrationBoundary, /'20260824115107_reduce_identity_resolution_lock_contention\.sql'/u);
   assert.match(participantFlowMigration, /create or replace function app_private\.e14_write_c4/u);
   assert.match(participantFlowMigration, /on conflict do nothing/u);
 });
