@@ -10,6 +10,7 @@ Este runbook prepara a implantação web atual da Estímulo para ser recriada em
 - O repositório é a fonte para schema, funções e aplicação; credenciais e URLs de ambiente pertencem ao provedor de destino.
 - Schema e dados são migrações diferentes: migrations recriam a estrutura; usuários, dados operacionais e objetos de Storage precisam de migração explícita quando houver necessidade de preservá-los.
 - A infraestrutura antiga só deve ser desativada depois da validação completa do novo ambiente e de um período de rollback seguro.
+- Um deployment Vercel em estado `READY` prova que o build terminou, não que o runtime está pronto. Previews Supabase incompletos podem compilar em modo *fail-closed* e manter `/api/health/ready` em `503`.
 
 ## O que já é portátil no repositório
 
@@ -96,7 +97,7 @@ O repositório não depende de `vercel.json`; as configurações específicas da
 
 Cadastrar valores próprios do destino separadamente para Development, Preview e para qualquer implantação web operacional autorizada. Nunca copiar valores sem revisar o ambiente ao qual pertencem.
 
-Variáveis essenciais do runtime Supabase/Vercel:
+Variáveis obrigatórias para um runtime Supabase realmente pronto:
 
 ```dotenv
 APP_ENV=
@@ -105,14 +106,17 @@ NEXT_PUBLIC_APP_URL=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+CPF_ENCRYPTION_KEY=
+CPF_LOOKUP_HMAC_KEY=
 ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN=
 SOURCE_VERSION=
 ```
 
+As duas chaves de CPF devem ser valores Base64 independentes que decodificam para exatamente 32 bytes. Elas não podem ser reutilizadas entre si.
+
 Também revisar todas as demais variáveis declaradas em `.env.example`, em especial:
 
 - URLs das Edge Functions/RPCs;
-- chaves de proteção de CPF;
 - configuração de AI grading;
 - ETL;
 - nomes de buckets;
@@ -122,6 +126,10 @@ Também revisar todas as demais variáveis declaradas em `.env.example`, em espe
 `ADMIN_LOCAL_OAUTH_BRIDGE_ORIGIN` é opcional e deve ser preenchida somente no ambiente que realmente usar o bridge local, apontando para a origem do novo deploy. Nunca deve voltar a conter um hostname fixo no `.env.example`.
 
 Depois de alterar variáveis na Vercel, gerar um novo deployment; deployments já existentes não recebem retroativamente os novos valores.
+
+### Regra de aceite da configuração Vercel
+
+Não considerar o destino pronto apenas porque a Vercel mostra `READY`. O build de Preview permite configuração Supabase incompleta para permanecer *fail-closed*. Antes do handoff, o novo deployment deve ter todas as variáveis obrigatórias acima e `/api/health/ready` deve responder `200`.
 
 ## 5. Migrar Storage quando necessário
 
@@ -159,7 +167,7 @@ npm run verify:deployment
 A validação mínima de handoff deve cobrir:
 
 - `/api/health/live` e `/api/health/ready` em 200;
-- cadastro/confirmação quando aplicável;
+- cadastro/confirmação quando aplicável;
 - login e logout de participante;
 - dashboard, perfil, biblioteca e jornada;
 - login administrativo Google + RBAC;
@@ -203,6 +211,7 @@ A infraestrutura está pronta para ser transferida quando:
 - um Supabase vazio consegue receber o schema a partir das migrations versionadas;
 - todas as configurações não versionáveis estão inventariadas;
 - um novo projeto Vercel consegue fazer build do mesmo SHA;
+- `/api/health/ready` responde `200` no destino com configuração Supabase completa;
 - Auth, RLS/RPC, Storage e Edge Functions funcionam no destino;
 - `verify:infra-portability`, gates de release, build e E2E passam;
 - existe caminho de rollback antes do cutover.
