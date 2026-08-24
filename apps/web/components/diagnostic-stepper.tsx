@@ -98,6 +98,10 @@ export function DiagnosticStepper({
 
   const current = items[currentIndex];
   const completed = useMemo(() => items.filter((item) => Boolean(answers[item.id])).length, [answers, items]);
+  const requiredComplete = useMemo(
+    () => items.every((item) => !item.is_required || Boolean(answers[item.id])),
+    [answers, items],
+  );
   const progress = items.length ? Math.round((completed / items.length) * 100) : 0;
   const isLast = currentIndex === items.length - 1;
 
@@ -186,9 +190,9 @@ export function DiagnosticStepper({
             </Button>
           ) : null}
         </div>
-        {isLast ? (
-          <PendingSubmitButton pendingLabel="Salvando diagnóstico…" disabled={isSaving || items.some((item) => item.is_required && !answers[item.id])}>
-            {isSaving ? "Salvando resposta…" : "Concluir diagnóstico"}
+        {isLast || requiredComplete ? (
+          <PendingSubmitButton pendingLabel="Salvando diagnóstico…" disabled={isSaving || !requiredComplete}>
+            {isSaving ? "Salvando resposta…" : "Enviar respostas e concluir diagnóstico"}
           </PendingSubmitButton>
         ) : null}
       </div>
