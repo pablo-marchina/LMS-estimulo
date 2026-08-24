@@ -4,7 +4,7 @@ LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdos
 
 > **Ambientes:** o runtime Supabase/Vercel está ativo para desenvolvimento, demonstração e validação controlada. A AWS continua sendo o destino institucional planejado para produção definitiva, mas sua arquitetura ainda depende de decisão e implementação. O único artefato AWS aprovado é [`Dockerfile.lambda`](Dockerfile.lambda), e esse runtime permanece *fail-closed*.
 
-[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Fundação atual](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Preview e carregamento](docs/implementation/INTERFACE_PREVIEW_AND_LOADING.md)
+[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Fundação atual](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Portabilidade e transferência](docs/operations/PORTABILITY_AND_REPOSITORY_TRANSFER.md) · [Preview e carregamento](docs/implementation/INTERFACE_PREVIEW_AND_LOADING.md)
 
 ## Produto
 
@@ -51,7 +51,7 @@ A plataforma reúne a experiência dos participantes e as ferramentas administra
 - Vercel para build e implantação do frontend atual;
 - RLS, RBAC, idempotência, auditoria, eventos e outbox;
 - RPCs privilegiadas com `search_path` fechado e gateway autenticado;
-- contratos e gates de qualidade, segurança, integridade, arquitetura e reprodutibilidade.
+- contratos e gates de qualidade, segurança, integridade, arquitetura, reprodutibilidade e portabilidade.
 
 As rotas em `apps/web/app/` funcionam como adapters e composition roots. Regras e montagem de modelos ficam nos módulos de `apps/web/lib/`; componentes compartilhados ficam em `apps/web/components/`. As dependências permitidas entre essas camadas são verificadas automaticamente por [`config/module-boundaries.json`](config/module-boundaries.json).
 
@@ -68,7 +68,7 @@ A existência de uma tela, fluxo ou artefato não equivale à aprovação instit
 | `staging` institucional | AWS | bloqueado até definição da arquitetura |
 | `production` institucional | AWS | bloqueado até conclusão dos gates finais |
 
-Produção web atualmente publicada: `https://lms-estimulo-web.vercel.app/`.
+A origem pública da implantação Supabase/Vercel é configuração de ambiente (`NEXT_PUBLIC_APP_URL`) e não faz parte da identidade versionada do repositório. O contrato de transferência fica em [`config/platform/portable-runtime.json`](config/platform/portable-runtime.json).
 
 Consulte [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md) para a distinção entre implantação operacional atual e arquitetura institucional definitiva.
 
@@ -141,6 +141,7 @@ A rota `/interface-preview/participant` é interna, exige administrador autentic
 
 ```bash
 npm run validate:release-candidate
+npm run validate:portability
 npm run validate:module-boundaries
 npm run test:repository-tooling
 npm run test:application
@@ -153,7 +154,7 @@ npm run scan:secrets
 npm run test:secret-scanning
 ```
 
-`validate:repository` executa a política de higiene e o gate de dependências entre módulos. O banco deve ser reconstruível desde zero. Nenhum passo obrigatório pode estar ausente, cancelado, ignorado ou vermelho no SHA avaliado.
+`validate:repository` executa a política de higiene, o gate de dependências entre módulos e o contrato de portabilidade. O banco deve ser reconstruível desde zero. Nenhum passo obrigatório pode estar ausente, cancelado, ignorado ou vermelho no SHA avaliado.
 
 ## Estrutura
 
@@ -166,11 +167,11 @@ apps/web/lib/platform/          contratos e seleção do provider
 apps/web/lib/supabase/          adapter Supabase
 config/module-boundaries.json   dependências permitidas entre módulos
 config/repository-hygiene-policy.json política declarativa de limpeza do repo
-config/platform/                fronteira legível por máquina
+config/platform/                fronteira e contrato de portabilidade legíveis por máquina
 docs/                           documentação canônica
 scripts/                        validação, testes, segurança e operação
 supabase/migrations/            histórico PostgreSQL executável
-supabase/functions/             Edge Functions
+supabase/functions/             Edge Functions canônicas transferíveis
 docs/journeys/JOURNEY_LIFECYCLE.md
 Dockerfile.lambda               artefato AWS aprovado
 ```
