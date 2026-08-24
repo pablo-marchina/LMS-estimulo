@@ -10,6 +10,7 @@ const [
   diagnosticRuntime,
   diagnosticProfilePage,
   profileTabs,
+  credentialsPage,
   carousel,
   globals,
   passwordField,
@@ -20,6 +21,7 @@ const [
   pointRuleMigration,
   pointRuleGrantMigration,
   participantFlowMigration,
+  credentialIssuanceMigration,
   migrationBoundary,
   participantVisual,
   adminVisual,
@@ -31,6 +33,7 @@ const [
   readFile("apps/web/lib/diagnostics/participant-runtime.ts", "utf8"),
   readFile("apps/web/app/empreendedor/perfil/diagnostico/page.tsx", "utf8"),
   readFile("apps/web/components/participant-profile-tabs.tsx", "utf8"),
+  readFile("apps/web/app/empreendedor/perfil/conquistas/page.tsx", "utf8"),
   readFile("apps/web/components/announcement-carousel.tsx", "utf8"),
   readFile("apps/web/app/globals.css", "utf8"),
   readFile("apps/web/components/password-field.tsx", "utf8"),
@@ -41,6 +44,7 @@ const [
   readFile("supabase/migrations/20260823133000_admin_point_rule_retirement.sql", "utf8"),
   readFile("supabase/migrations/20260823164000_harden_admin_point_rule_retirement_grants.sql", "utf8"),
   readFile("supabase/migrations/20260823213943_fix_participant_diagnostic_and_quick_check_flows.sql", "utf8"),
+  readFile("supabase/migrations/20260824025507_issue_path_and_journey_completion_credentials.sql", "utf8"),
   readFile("scripts/database/migration-history/active-release-boundary.mjs", "utf8"),
   readFile("scripts/e2e/participant-critical-flow-visual.mjs", "utf8"),
   readFile("scripts/e2e/admin-critical-flow-visual.mjs", "utf8"),
@@ -70,6 +74,19 @@ test("diagnostic entry is resolvable directly without starting the journey", () 
   assert.doesNotMatch(diagnosticPage, /redirect\("\/empreendedor\/jornadas"\)/u);
   assert.match(diagnosticProfilePage, /startProfileDiagnosticAction/u);
   assert.match(profileTabs, /\/empreendedor\/perfil\/diagnostico/u);
+});
+
+test("configured completion credentials are issued after the final path state and rendered in the profile", () => {
+  assert.match(credentialIssuanceMigration, /create or replace function app_private\.issue_credentials_from_path_completed_state/u);
+  assert.match(credentialIssuanceMigration, /after update of status on orchestration\.path_assignments/u);
+  assert.match(credentialIssuanceMigration, /new\.status = 'completed'/u);
+  assert.match(credentialIssuanceMigration, /perform public\.issue_learning_credentials/u);
+  assert.match(credentialIssuanceMigration, /path-completed-state-v1:/u);
+  assert.match(credentialIssuanceMigration, /path-completion-backfill-v1:/u);
+  assert.match(credentialIssuanceMigration, /journey-completion-backfill-v1:/u);
+  assert.match(credentialsPage, /credentialRuntime\.listParticipant/u);
+  assert.match(credentialsPage, /credentials\?\.badges\.map/u);
+  assert.match(credentialsPage, /credentials\?\.certificates\.map/u);
 });
 
 test("announcement artwork keeps the intended desktop and mobile aspect contracts", () => {
@@ -117,11 +134,12 @@ test("point-rule retirement RPC is restricted to the service gateway", () => {
   assert.match(pointRuleGrantMigration, /grant execute on function public\.retire_admin_point_rule\(uuid, uuid, uuid, text\) to service_role/u);
 });
 
-test("release migration boundary includes participant flow fixes after retirement hardening", () => {
-  assert.match(migrationBoundary, /expectedLastMigration = '20260823213943_fix_participant_diagnostic_and_quick_check_flows\.sql'/u);
+test("release migration boundary includes participant and completion credential fixes", () => {
+  assert.match(migrationBoundary, /expectedLastMigration = '20260824025507_issue_path_and_journey_completion_credentials\.sql'/u);
   assert.match(migrationBoundary, /'20260823133000_admin_point_rule_retirement\.sql'/u);
   assert.match(migrationBoundary, /'20260823164000_harden_admin_point_rule_retirement_grants\.sql'/u);
   assert.match(migrationBoundary, /'20260823213943_fix_participant_diagnostic_and_quick_check_flows\.sql'/u);
+  assert.match(migrationBoundary, /'20260824025507_issue_path_and_journey_completion_credentials\.sql'/u);
   assert.match(participantFlowMigration, /create or replace function app_private\.e14_write_c4/u);
   assert.match(participantFlowMigration, /on conflict do nothing/u);
 });
