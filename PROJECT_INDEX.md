@@ -119,6 +119,7 @@ Este índice aponta para a documentação permanente. Resultados transitórios d
 - [Baseline de qualidade](docs/operations/PRODUCTION_QUALITY_BASELINE.md)
 - [Captura visual reproduzível](docs/VISUAL_CAPTURE.md) — evidência Playwright full-page para referência, páginas públicas e áreas autenticadas em desktop/mobile.
 - [Runbook do release final](docs/operations/FINAL_RELEASE_RUNBOOK.md)
+- [Handoff Supabase/Vercel](docs/deployments/SUPABASE_VERCEL_HANDOFF.md)
 - [Rotação da service role do Supabase](docs/deployments/SUPABASE_SERVICE_ROLE_ROTATION_2026_07_27.md)
 - [Backlog dos advisors do banco](docs/operations/DATABASE_ADVISOR_BACKLOG.md)
 - [Arquitetura de segurança e privacidade](docs/security/SECURITY_PRIVACY_ARCHITECTURE.md)
