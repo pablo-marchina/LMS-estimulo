@@ -3,11 +3,11 @@ project_id = "lms-estimulo"
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
+# Keep committed Auth redirects portable. Hosted deployment origins are target-specific
+# and must be configured operationally in the destination Supabase project.
 additional_redirect_urls = [
   "http://localhost:3000/**",
-  "http://127.0.0.1:3000/**",
-  "https://lms-estimulo-web.vercel.app/**",
-  "https://*-pablo-marchinas-projects.vercel.app/**"
+  "http://127.0.0.1:3000/**"
 ]
 
 [auth.email.template.confirmation]
