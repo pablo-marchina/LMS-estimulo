@@ -82,7 +82,7 @@ begin
     id,rule_definition_id,version_number,status,language,expression,input_schema,
     output_schema,published_at,content_hash,created_at
   ) values (
-    v_certificate_rule_version_id,v_certificate_rule_definition_id,1,'published','json-logic',
+    v_certificate_rule_version_id,v_certificate_rule_definition_id,1,'published','credential-v1',
     v_certificate_rule_expression,'{}'::jsonb,'{}'::jsonb,now(),
     app_private.e14_request_hash(jsonb_build_object(
       'expression',v_certificate_rule_expression,
