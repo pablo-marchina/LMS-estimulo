@@ -68,6 +68,29 @@ async function openDiagnosticFromHome(page) {
   await destination;
 }
 
+async function answerAndWaitForPersistence(page, answer, nextAnswer) {
+  const radio = page.getByRole("radio", { name: answer, exact: true });
+  await radio.waitFor({ state: "visible", timeout: 60_000 });
+
+  const saveResponse = page.waitForResponse(
+    (response) => {
+      const url = new URL(response.url());
+      return response.request().method() === "POST" && url.pathname === "/empreendedor/diagnostico";
+    },
+    { timeout: 120_000 },
+  );
+
+  await radio.check();
+  const response = await saveResponse;
+  if (!response.ok()) {
+    throw new Error(`Per-answer diagnostic save failed with HTTP ${response.status()}`);
+  }
+
+  if (nextAnswer) {
+    await page.getByRole("radio", { name: nextAnswer, exact: true }).waitFor({ state: "visible", timeout: 60_000 });
+  }
+}
+
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
 const page = await context.newPage();
@@ -165,14 +188,8 @@ try {
   record("diagnostic_opened", { url: page.url() });
 
   for (let i = 0; i < answers.length; i += 1) {
-    const answer = answers[i];
-    const radio = page.getByRole("radio", { name: answer, exact: true });
-    await radio.waitFor({ state: "visible", timeout: 60_000 });
-    await radio.check();
-    record(`answer_${i + 1}`, { answer });
-    if (i < answers.length - 1) {
-      await page.getByText(`Pergunta ${i + 2} de ${answers.length}`).waitFor({ state: "visible", timeout: 60_000 });
-    }
+    await answerAndWaitForPersistence(page, answers[i], answers[i + 1]);
+    record(`answer_${i + 1}_persisted`, { answer: answers[i] });
   }
 
   await page.screenshot({ path: `${artifactDir}/07-all-answers.png`, fullPage: true });
