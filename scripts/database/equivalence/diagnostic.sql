@@ -158,6 +158,19 @@ select jsonb_build_object(
       group by schemaname
     ) grouped
   ),
+  'app_private_routine_inventory', (
+    select jsonb_agg(
+      jsonb_build_object(
+        'routine', routine_key,
+        'metadata_sha256', encode(digest(metadata::text, 'sha256'), 'hex'),
+        'config_sha256', encode(digest(config::text, 'sha256'), 'hex'),
+        'source_sha256', encode(digest(source, 'sha256'), 'hex')
+      )
+      order by routine_key
+    )
+    from routine_rows
+    where schemaname = 'app_private'
+  ),
   'audited_routine_sources', (
     select jsonb_agg(
       jsonb_build_object(
