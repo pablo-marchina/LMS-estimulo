@@ -37,7 +37,7 @@ async function actorId() {
   return auth.identity.user_account_id;
 }
 
-function transientRefreshError(error: unknown): boolean {
+function transientRefreshError(error: unknown): error is JourneyRpcError {
   return error instanceof JourneyRpcError && transientRefreshCodes.has(error.code);
 }
 
