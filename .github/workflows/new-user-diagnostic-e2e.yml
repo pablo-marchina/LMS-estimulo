@@ -1,9 +1,9 @@
 name: One-off new user diagnostic E2E
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
+      - test/new-user-diagnostic-e2e-run-20260824-b
     paths:
       - .github/workflows/new-user-diagnostic-e2e.yml
       - scripts/e2e/new-user-diagnostic-resume.mjs
