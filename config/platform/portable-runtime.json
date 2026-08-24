@@ -4,12 +4,14 @@
   "repository": {
     "buildFromRepositoryRoot": true,
     "defaultBranch": "main",
-    "nodeVersionFile": ".node-version"
+    "nodeVersionFile": ".node-version",
+    "ciNodeVersion": "22.23.1"
   },
   "vercel": {
     "framework": "nextjs",
-    "nodeEngine": "22.x",
-    "rootDirectory": "."
+    "nodeEngine": ">=22.0.0",
+    "rootDirectory": ".",
+    "nodeProjectSettingMustBeExplicitlyVerified": true
   },
   "environment": {
     "requiredForSupabaseRuntime": [
