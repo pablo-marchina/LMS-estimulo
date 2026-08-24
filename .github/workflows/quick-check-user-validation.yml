@@ -1,0 +1,62 @@
+name: Quick-check real user validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/quick-check-user-validation.yml
+      - scripts/e2e/quick-check-user-validation.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Submit and verify quick check as participant
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      E2E_TARGET_URL: https://lms-estimulo-web.vercel.app
+      E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
+      E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+
+    steps:
+      - name: Checkout validation branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Playwright without modifying the lockfile
+        run: npm install --no-save --package-lock=false --ignore-scripts playwright@1.57.0
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify participant credentials are configured
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in E2E_TARGET_URL E2E_PARTICIPANT_EMAIL E2E_PARTICIPANT_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "Missing required E2E input: $name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Submit lesson quick check through the real UI
+        run: node --import ./scripts/e2e/vercel-protection-bypass.mjs scripts/e2e/quick-check-user-validation.mjs
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: quick-check-user-validation-${{ github.run_id }}
+          path: artifacts/quick-check-user-validation
+          if-no-files-found: error
+          retention-days: 7
