@@ -73,7 +73,7 @@ try {
   await page.locator('input[name="password_confirmation"]').fill(password);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Criar minha conta" }).click();
-  await page.waitForLoadState("domcontentloaded").catch(() => {});
+  await page.waitForURL(/\/(?:entrar|cadastro\/concluir)(?:\?|$)/, { timeout: 90_000 });
   await page.screenshot({ path: path.join(outputDir, "01-signup-result.png"), fullPage: true });
   await record("signup_submitted", { url: page.url() });
 
@@ -88,8 +88,11 @@ try {
       await page.getByLabel("E-mail").fill(email);
       await page.locator('input[name="password"]').fill(password);
       await page.getByRole("button", { name: "Entrar", exact: true }).click();
-      await page.waitForLoadState("domcontentloaded").catch(() => {});
-      if (!page.url().includes("/entrar")) {
+      await Promise.race([
+        page.waitForURL((url) => !url.pathname.endsWith("/entrar"), { timeout: 15_000 }),
+        page.waitForURL(/\/entrar\?/, { timeout: 15_000 }),
+      ]).catch(() => {});
+      if (!new URL(page.url()).pathname.endsWith("/entrar")) {
         confirmed = true;
         await record("email_confirmed_login_succeeded", { attempt, url: page.url() });
         break;
