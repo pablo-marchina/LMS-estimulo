@@ -34,10 +34,12 @@ if (packageJson.engines?.node !== manifest.vercel.nodeEngine) {
   fail(`package.json engines.node must equal ${manifest.vercel.nodeEngine}`);
 }
 
-const expectedMajor = Number(String(manifest.vercel.nodeEngine).match(/^([0-9]+)/u)?.[1]);
-const actualMajor = Number(nodeVersion.split(".")[0]);
-if (!Number.isInteger(expectedMajor) || actualMajor !== expectedMajor) {
-  fail(`.node-version major (${actualMajor}) does not match ${manifest.vercel.nodeEngine}`);
+if (nodeVersion !== manifest.repository.ciNodeVersion) {
+  fail(`.node-version must equal ${manifest.repository.ciNodeVersion}, received ${nodeVersion}`);
+}
+
+if (manifest.vercel.nodeProjectSettingMustBeExplicitlyVerified !== true) {
+  fail("Vercel Node project setting must remain an explicit transfer verification item");
 }
 
 const requiredEnv = manifest.environment.requiredForSupabaseRuntime ?? [];
@@ -156,5 +158,5 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `[portability] contract valid: ${manifestFunctionSlugs.length} canonical Supabase Edge Functions; Node ${manifest.vercel.nodeEngine}; provider-bound deployment identifiers absent\n`,
+  `[portability] contract valid: ${manifestFunctionSlugs.length} canonical Supabase Edge Functions; Node engine ${manifest.vercel.nodeEngine}; provider-bound deployment identifiers absent\n`,
 );
