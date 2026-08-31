@@ -141,11 +141,23 @@ function JourneyCard({ journey, index }: { journey: CatalogJourney; index: numbe
 }
 
 function JourneyCardClickTarget({ journey }: { journey: CatalogJourney }) {
-  if (journey.enrolled) {
+  if (journey.enrolled?.journey_status === "completed") {
     return (
-      <Link href={participantNextHref(journey.enrolled)} aria-label={`Abrir jornada ${journey.title}`} className="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+      <Link href={participantNextHref(journey.enrolled)} aria-label={`Abrir jornada ${journey.title}`} className="absolute inset-0 z-10 rounded-[1.25rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
         <span className="sr-only">Abrir jornada {journey.title}</span>
       </Link>
+    );
+  }
+  if (journey.enrolled) {
+    return (
+      <form action={openJourneyAction} className="absolute inset-0 z-10">
+        <input type="hidden" name="journey_instance_id" value={journey.enrolled.journey_instance_id} />
+        <input type="hidden" name="aggregate_version" value={journey.enrolled.journey_aggregate_version} />
+        <input type="hidden" name="idempotency_key" value={randomUUID()} />
+        <button type="submit" aria-label={`Abrir jornada ${journey.title}`} className="size-full cursor-pointer rounded-[1.25rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+          <span className="sr-only">Abrir jornada {journey.title}</span>
+        </button>
+      </form>
     );
   }
   if (journey.eligible) {
@@ -153,7 +165,7 @@ function JourneyCardClickTarget({ journey }: { journey: CatalogJourney }) {
       <form action={selfEnrollAction} className="absolute inset-0 z-10">
         <input type="hidden" name="journey_version_id" value={journey.eligible.journey_version_id} />
         <input type="hidden" name="idempotency_key" value={randomUUID()} />
-        <button type="submit" aria-label={`Entrar na jornada ${journey.title}`} className="size-full cursor-pointer rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+        <button type="submit" aria-label={`Entrar na jornada ${journey.title}`} className="size-full cursor-pointer rounded-[1.25rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
           <span className="sr-only">Entrar na jornada {journey.title}</span>
         </button>
       </form>
