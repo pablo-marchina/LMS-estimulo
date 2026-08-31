@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import Link from "next/link";
 import { BookOpen, CheckCircle2, Compass, Lightbulb, Play, Rocket, Sparkles } from "lucide-react";
 import { selfEnrollAction } from "@/app/actions/enrollment";
 import { openJourneyAction } from "@/app/actions/open-journey";
@@ -132,7 +133,33 @@ function JourneyCard({ journey, index }: { journey: CatalogJourney; index: numbe
   const tones = ["journey-card-cyan", "journey-card-green", "journey-card-magenta"];
   const presentation = journey.presentation;
   const cover = coverHref(journey, "card");
-  return <Card className={`brand-journey-card ${tones[index % tones.length]} flex h-full flex-col overflow-hidden p-0 after:!hidden`}><div className="relative aspect-[1/1] w-full shrink-0 overflow-hidden bg-primary-soft">{cover ? <img src={cover} alt={typeof presentation.card_background_alt === "string" ? presentation.card_background_alt : ""} loading="lazy" decoding="async" className="size-full object-cover transition duration-700 hover:scale-105" /> : <div className="grid size-full place-items-center"><span className="grid size-16 place-items-center rounded-3xl bg-white text-primary shadow-md">{iconFor(presentation.icon, 28)}</span></div>}<div className="absolute left-4 top-4"><StatusPill tone={journey.enrolled?.journey_status === "completed" ? "success" : journey.enrolled ? "info" : journey.eligible?.open_to_all ? "neutral" : "expressive"}>{journey.enrolled ? statusLabel(journey.enrolled.journey_status) : journey.eligible?.open_to_all ? participantCopy.journeys.openBadge : "Indicada para você"}</StatusPill></div></div><div className="flex flex-1 flex-col p-5"><p className="text-xs font-bold uppercase tracking-[.12em] text-primary/70">{typeof presentation.badge === "string" ? presentation.badge : "Jornada Estímulo"}</p><h3 className="mt-1 font-black text-secondary">{journey.title}</h3>{journey.description ? <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">{journey.description}</p> : null}{journey.enrolled ? <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/80"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.round(journey.enrolled.progress * 100)}%` }} /></div> : null}<div className="mt-auto pt-5"><JourneyAction journey={journey} /></div></div></Card>;
+  return <Card className={`brand-journey-card group relative ${tones[index % tones.length]} flex h-full flex-col overflow-hidden p-0 after:!hidden`}>
+    <JourneyCardClickTarget journey={journey} />
+    <div className="relative aspect-[1/1] w-full shrink-0 overflow-hidden bg-primary-soft">{cover ? <img src={cover} alt={typeof presentation.card_background_alt === "string" ? presentation.card_background_alt : ""} loading="lazy" decoding="async" className="size-full object-cover transition duration-700 group-hover:scale-105" /> : <div className="grid size-full place-items-center"><span className="grid size-16 place-items-center rounded-3xl bg-white text-primary shadow-md">{iconFor(presentation.icon, 28)}</span></div>}<div className="absolute left-4 top-4"><StatusPill tone={journey.enrolled?.journey_status === "completed" ? "success" : journey.enrolled ? "info" : journey.eligible?.open_to_all ? "neutral" : "expressive"}>{journey.enrolled ? statusLabel(journey.enrolled.journey_status) : journey.eligible?.open_to_all ? participantCopy.journeys.openBadge : "Indicada para você"}</StatusPill></div></div>
+    <div className="flex flex-1 flex-col p-5"><p className="text-xs font-bold uppercase tracking-[.12em] text-primary/70">{typeof presentation.badge === "string" ? presentation.badge : "Jornada Estímulo"}</p><h3 className="mt-1 font-black text-secondary">{journey.title}</h3>{journey.description ? <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">{journey.description}</p> : null}{journey.enrolled ? <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/80"><div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${Math.round(journey.enrolled.progress * 100)}%` }} /></div> : null}<div className="relative z-20 mt-auto pt-5"><JourneyAction journey={journey} /></div></div>
+  </Card>;
+}
+
+function JourneyCardClickTarget({ journey }: { journey: CatalogJourney }) {
+  if (journey.enrolled) {
+    return (
+      <Link href={participantNextHref(journey.enrolled)} aria-label={`Abrir jornada ${journey.title}`} className="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+        <span className="sr-only">Abrir jornada {journey.title}</span>
+      </Link>
+    );
+  }
+  if (journey.eligible) {
+    return (
+      <form action={selfEnrollAction} className="absolute inset-0 z-10">
+        <input type="hidden" name="journey_version_id" value={journey.eligible.journey_version_id} />
+        <input type="hidden" name="idempotency_key" value={randomUUID()} />
+        <button type="submit" aria-label={`Entrar na jornada ${journey.title}`} className="size-full cursor-pointer rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+          <span className="sr-only">Entrar na jornada {journey.title}</span>
+        </button>
+      </form>
+    );
+  }
+  return null;
 }
 
 function JourneyAction({ journey, large = false }: { journey: CatalogJourney; large?: boolean }) {
