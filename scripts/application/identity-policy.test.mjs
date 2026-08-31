@@ -20,8 +20,9 @@ test("administrative entry requires Google, verified claims and active Estimulo 
   assert.match(adminStart, /provider:\s*"google"/u);
   assert.doesNotMatch(adminStart, /hd:\s*"estimulo\.org"/u);
   assert.match(adminCallback, /auth\.getClaims\(\)/u);
-  assert.match(adminCallback, /isGoogleAuthProvider/u);
-  assert.doesNotMatch(adminCallback, /isEstimuloAdministrativeEmail/u);
+  assert.match(adminCallback, /identity\.provider === "google"/u);
+  assert.match(adminCallback, /hasGoogleIdentity/u);
+  assert.doesNotMatch(adminCallback, /isGoogleAuthProvider|isEstimuloAdministrativeEmail/u);
   assert.match(adminCallback, /administrativeOrganization/u);
   assert.match(adminCallback, /vinculo_estimulo_necessario/u);
   assert.match(adminCallback, /client\.auth\.signOut/u);
