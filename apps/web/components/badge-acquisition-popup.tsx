@@ -42,21 +42,24 @@ export function BadgeAcquisitionPopup({ badges }: BadgeAcquisitionPopupProps) {
   const [queue, setQueue] = useState<BadgeAward[]>([]);
 
   useEffect(() => {
-    if (!orderedBadges.length) return;
-
     const seen = readSeenAwards();
     if (seen === null) {
-      // A missing browser baseline does not mean an award was just granted. Mark
-      // the currently known history as seen so a new browser/device cannot replay
-      // an old badge as a fresh acquisition. Future awards will still be detected
-      // when their award_id first appears after this baseline is established.
+      // Establish a browser baseline even when the participant has no badges yet.
+      // This prevents historical awards from being celebrated on a new device while
+      // still allowing the first award earned after an empty baseline to be detected.
       persistSeenAwards(new Set(orderedBadges.map((badge) => badge.award_id)));
       setQueue([]);
       return;
     }
 
     const unseen = orderedBadges.filter((badge) => !seen.has(badge.award_id));
-    if (unseen.length) setQueue(unseen);
+    if (!unseen.length) return;
+
+    setQueue((currentQueue) => {
+      const queuedIds = new Set(currentQueue.map((badge) => badge.award_id));
+      const newlyQueued = unseen.filter((badge) => !queuedIds.has(badge.award_id));
+      return newlyQueued.length ? [...currentQueue, ...newlyQueued] : currentQueue;
+    });
   }, [orderedBadges]);
 
   const current = queue[0] ?? null;
