@@ -40,7 +40,7 @@ export default async function ParticipantHome() {
   const eligibleJourneys = fulfilled(results[1]) ?? [];
   const diagnosticEntry = fulfilled(results[2]);
   const engagement = fulfilled(results[3]);
-  const coreDataUnavailable = results[0].status === "rejected" || results[1].status === "rejected" || results[3].status === "rejected";
+  const coreDataUnavailable = results[0].status === "rejected" || results[3].status === "rejected";
   const journeys = [...(participantJourneys?.journeys ?? [])]
     .sort((a, b) => participantJourneyPriority(a) - participantJourneyPriority(b));
   const featuredEnrolled = journeys
