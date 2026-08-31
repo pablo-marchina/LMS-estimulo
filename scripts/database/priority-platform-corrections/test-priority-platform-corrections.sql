@@ -51,25 +51,35 @@ $diagnostic_regression$;
 
 do $quick_check_regression$
 declare
-  v_verified_definition text;
-  v_wrapper_definition text;
+  v_definition text;
   v_normalized text;
+  v_public_overload_count integer;
 begin
+  select count(*)::integer
+  into v_public_overload_count
+  from pg_proc routine
+  join pg_namespace namespace on namespace.oid = routine.pronamespace
+  where namespace.nspname = 'public'
+    and routine.proname = 'e14_record_quick_check_answer';
+
+  if v_public_overload_count <> 1 then
+    raise exception 'QUICK_CHECK_PUBLIC_RPC_OVERLOAD_COUNT_UNEXPECTED: %', v_public_overload_count;
+  end if;
+
   select pg_get_functiondef(routine.oid)
-  into v_verified_definition
+  into v_definition
   from pg_proc routine
   join pg_namespace namespace on namespace.oid = routine.pronamespace
   where namespace.nspname = 'public'
     and routine.proname = 'e14_record_quick_check_answer'
-    and pg_get_function_identity_arguments(routine.oid) = 'p_actor_user_account_id uuid, p_attempt_id uuid, p_question_id uuid, p_option_code text, p_response_id uuid, p_expected_aggregate_version bigint, p_idempotency_key text';
+    and pg_get_function_identity_arguments(routine.oid) = 'a uuid, b uuid, c uuid, d text, e text';
 
-  if v_verified_definition is null then
-    raise exception 'VERIFIED_QUICK_CHECK_COMMAND_NOT_FOUND';
+  if v_definition is null then
+    raise exception 'FROZEN_FIVE_ARGUMENT_QUICK_CHECK_RPC_NOT_FOUND';
   end if;
 
-  v_normalized := lower(v_verified_definition);
+  v_normalized := lower(v_definition);
   if position('string_to_array' in v_normalized) = 0
-     or position('p_option_code' in v_normalized) = 0
      or position('unnest' in v_normalized) = 0 then
     raise exception 'MULTIPLE_CHOICE_SELECTION_IS_NOT_PARSED_AS_A_SET';
   end if;
@@ -86,22 +96,9 @@ begin
     raise exception 'MULTIPLE_CHOICE_CANONICALIZATION_MISSING';
   end if;
 
-  select pg_get_functiondef(routine.oid)
-  into v_wrapper_definition
-  from pg_proc routine
-  join pg_namespace namespace on namespace.oid = routine.pronamespace
-  where namespace.nspname = 'public'
-    and routine.proname = 'e14_record_quick_check_answer'
-    and pg_get_function_identity_arguments(routine.oid) = 'a uuid, b uuid, c uuid, d text, e text';
-
-  if v_wrapper_definition is null then
-    raise exception 'LEGACY_QUICK_CHECK_WRAPPER_NOT_FOUND';
-  end if;
-
-  if v_wrapper_definition !~* 'return[[:space:]]+public[.]e14_record_quick_check_answer[[:space:]]*[(]'
-     or position('v_expected_aggregate_version' in lower(v_wrapper_definition)) = 0
-     or position('v_response_id' in lower(v_wrapper_definition)) = 0 then
-    raise exception 'LEGACY_QUICK_CHECK_WRAPPER_DOES_NOT_ROUTE_TO_VERIFIED_COMMAND';
+  if position('v_expected_aggregate_version' in v_normalized) = 0
+     or position('v_response_id' in v_normalized) = 0 then
+    raise exception 'FROZEN_QUICK_CHECK_RPC_DOES_NOT_DERIVE_INTERNAL_COMMAND_STATE';
   end if;
 end;
 $quick_check_regression$;
