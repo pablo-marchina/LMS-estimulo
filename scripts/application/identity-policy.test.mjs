@@ -14,15 +14,17 @@ const [adminAccessPolicy, adminLayout, participantSignIn, adminStart, adminCallb
   readFile("supabase/migrations/20260720190000_protected_cpf_signup.sql", "utf8"),
 ]);
 
-test("administrative entry requires Google, verified claims and active Estimulo membership", () => {
+test("administrative entry requires a validated Google user and active Estimulo membership", () => {
   assert.match(adminAccessPolicy, /ESTIMULO_ORGANIZATION_SLUG = "estimulo"/u);
   assert.match(adminAccessPolicy, /organization\.slug/u);
   assert.match(adminStart, /provider:\s*"google"/u);
   assert.doesNotMatch(adminStart, /hd:\s*"estimulo\.org"/u);
-  assert.match(adminCallback, /auth\.getClaims\(\)/u);
-  assert.match(adminCallback, /identity\.provider === "google"/u);
-  assert.match(adminCallback, /hasGoogleIdentity/u);
-  assert.doesNotMatch(adminCallback, /isGoogleAuthProvider|isEstimuloAdministrativeEmail/u);
+  assert.match(adminCallback, /auth\.getUser\(\)/u);
+  assert.match(adminCallback, /function hasGoogleIdentity/u);
+  assert.match(adminCallback, /identity\.provider\?\.trim\(\)\.toLowerCase\(\) === "google"/u);
+  assert.match(adminCallback, /user\.app_metadata\?\.provider/u);
+  assert.match(adminCallback, /user\.app_metadata\?\.providers/u);
+  assert.doesNotMatch(adminCallback, /auth\.getClaims\(\)|isGoogleAuthProvider|isEstimuloAdministrativeEmail/u);
   assert.match(adminCallback, /administrativeOrganization/u);
   assert.match(adminCallback, /vinculo_estimulo_necessario/u);
   assert.match(adminCallback, /client\.auth\.signOut/u);
