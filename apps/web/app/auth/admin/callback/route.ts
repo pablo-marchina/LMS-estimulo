@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { CurrentIdentityError, resolveCurrentIdentity } from "@/lib/auth/current-identity";
-import { isGoogleAuthProvider } from "@/lib/auth/provider";
 import { createSessionClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
@@ -22,6 +21,7 @@ export async function GET(request: NextRequest) {
     client.auth.getClaims(),
   ]);
   const user = data.user;
+  const hasGoogleIdentity = user?.identities?.some((identity) => identity.provider === "google") ?? false;
   if (
     userError
     || claimsError
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     || !claimsData?.claims
     || !user.email
     || !user.email_confirmed_at
-    || !isGoogleAuthProvider(user, claimsData.claims.amr)
+    || !hasGoogleIdentity
   ) {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=conta_google_necessaria");
