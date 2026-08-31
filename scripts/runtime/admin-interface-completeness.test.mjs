@@ -23,9 +23,10 @@ test("admin point screen does not depend on optional badge highlights", () => {
   assert.doesNotMatch(gamification, /Promise\.all\(\[[\s\S]*adminHomeBadgeHighlights/u);
 });
 
-test("participant home only raises the global warning for core data", () => {
+test("participant home raises the global warning only when journey discovery, eligibility or engagement core data fails", () => {
   assert.match(home, /coreDataUnavailable/u);
-  assert.match(home, /results\[0\]\.status === "rejected" \|\| results\[2\]\.status === "rejected"/u);
+  assert.match(home, /\[0, 1, 3\]\.includes\(index\) && result\.status === "rejected"/u);
+  assert.doesNotMatch(home, /\[0, 1, 2, 3\]\.includes\(index\)/u);
   assert.doesNotMatch(home, /Algumas informações não puderam ser atualizadas/u);
 });
 
