@@ -18,9 +18,10 @@ test("administrative Google login starts in one click and validates Estimulo mem
   assert.doesNotMatch(adminStart, /client\.auth\.signOut/u);
   assert.doesNotMatch(adminStart, /requestedEmail/u);
   assert.doesNotMatch(adminStart, /login_hint/u);
-  assert.match(adminCallback, /isGoogleAuthProvider/u);
+  assert.match(adminCallback, /identity\.provider === "google"/u);
+  assert.match(adminCallback, /hasGoogleIdentity/u);
   assert.match(adminCallback, /administrativeOrganization\(identity\)/u);
-  assert.doesNotMatch(adminCallback, /isEstimuloAdministrativeEmail/u);
+  assert.doesNotMatch(adminCallback, /isGoogleAuthProvider|isEstimuloAdministrativeEmail/u);
   assert.match(adminPage, /href="\/auth\/admin\/start"/u);
   assert.match(adminPage, /ButtonLink/u);
   assert.match(adminPage, /Continuar com Google/u);
@@ -31,15 +32,13 @@ test("administrative Google login starts in one click and validates Estimulo mem
   assert.doesNotMatch(adminPage, /name="email"/u);
 });
 
-test("participant login keeps signup visible and team access discreet in the footer", () => {
+test("participant login keeps signup visible without advertising administrative access", () => {
   assert.match(participantLogin, /Não tem conta\?/u);
   assert.match(participantLogin, /Criar minha conta/u);
-  assert.match(participantLogin, /Sou da equipe Estímulo/u);
-  assert.match(participantLogin, /Contas da equipe Estímulo entram exclusivamente pela área administrativa\./u);
-  assert.match(participantLogin, /text-xs/u);
-  assert.match(participantLogin, /border-t border-border\/70/u);
-  assert.doesNotMatch(participantLogin, /sm:grid-cols-2/u);
+  assert.doesNotMatch(participantLogin, /Sou da equipe Estímulo/u);
+  assert.doesNotMatch(participantLogin, /href="\/entrar\/administracao"/u);
   assert.doesNotMatch(participantLogin, /Acessar área administrativa/u);
+  assert.doesNotMatch(participantLogin, /sm:grid-cols-2/u);
   assert.doesNotMatch(participantLogin, /bg-primary-soft\/55/u);
 });
 
