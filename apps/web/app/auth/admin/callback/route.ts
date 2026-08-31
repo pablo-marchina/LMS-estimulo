@@ -7,6 +7,20 @@ function redirectTo(request: NextRequest, path: string) {
   return NextResponse.redirect(new URL(path, request.nextUrl.origin));
 }
 
+function hasGoogleIdentity(user: {
+  identities?: Array<{ provider?: string | null }> | null;
+  app_metadata?: Record<string, unknown> | null;
+}) {
+  if (user.identities?.some((identity) => identity.provider?.trim().toLowerCase() === "google")) return true;
+
+  const primaryProvider = user.app_metadata?.provider;
+  if (typeof primaryProvider === "string" && primaryProvider.trim().toLowerCase() === "google") return true;
+
+  const providers = user.app_metadata?.providers;
+  return Array.isArray(providers)
+    && providers.some((provider) => typeof provider === "string" && provider.trim().toLowerCase() === "google");
+}
+
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const providerError = request.nextUrl.searchParams.get("error");
@@ -16,20 +30,14 @@ export async function GET(request: NextRequest) {
   const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
   if (exchangeError) return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
 
-  const [{ data, error: userError }, { data: claimsData, error: claimsError }] = await Promise.all([
-    client.auth.getUser(),
-    client.auth.getClaims(),
-  ]);
+  const { data, error: userError } = await client.auth.getUser();
   const user = data.user;
-  const hasGoogleIdentity = user?.identities?.some((identity) => identity.provider === "google") ?? false;
   if (
     userError
-    || claimsError
     || !user
-    || !claimsData?.claims
     || !user.email
     || !user.email_confirmed_at
-    || !hasGoogleIdentity
+    || !hasGoogleIdentity(user)
   ) {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=conta_google_necessaria");
