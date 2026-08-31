@@ -61,7 +61,7 @@ test("administration has a separate Google-only GET entrypoint and validates Est
     read("apps/web/lib/auth/administrative-access.ts"),
   ]);
 
-  assert.match(participantPage, /href="\/entrar\/administracao"/u);
+  assert.doesNotMatch(participantPage, /href="\/entrar\/administracao"/u);
   assert.match(adminPage, /ButtonLink href="\/auth\/admin\/start"/u);
   assert.match(adminPage, /Continuar com Google/u);
   assert.doesNotMatch(adminPage, /<form action="\/auth\/admin\/start"|type="password"|signInWithPassword/u);
@@ -70,8 +70,9 @@ test("administration has a separate Google-only GET entrypoint and validates Est
   assert.match(startRoute, /skipBrowserRedirect:\s*true/u);
   assert.match(callback, /exchangeCodeForSession/u);
   assert.match(callback, /auth\.getClaims\(\)/u);
-  assert.match(callback, /isGoogleAuthProvider/u);
-  assert.doesNotMatch(callback, /isEstimuloAdministrativeEmail/u);
+  assert.match(callback, /identity\.provider === "google"/u);
+  assert.match(callback, /hasGoogleIdentity/u);
+  assert.doesNotMatch(callback, /isGoogleAuthProvider|isEstimuloAdministrativeEmail/u);
   assert.match(callback, /administrativeOrganization/u);
   assert.match(callback, /vinculo_estimulo_necessario/u);
   assert.match(callback, /client\.auth\.signOut/u);
