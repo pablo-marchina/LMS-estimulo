@@ -8,6 +8,7 @@ export const requiredFinalReleaseMigrations = Object.freeze([
   '20260729190547_generic_journey_path_badge_editor.sql',
   '20260729191801_generic_journey_editor_event_schemas.sql',
   '20260729192423_generic_journey_path_badge_removal.sql',
+  '20260729193313_generic_journey_path_presentation_event_schema.sql',
   '20260729201729_general_interface_content_cms.sql',
   '20260729202723_draft_published_track_lifecycle.sql',
   '20260729203000_m17_runtime_hardening.sql',
