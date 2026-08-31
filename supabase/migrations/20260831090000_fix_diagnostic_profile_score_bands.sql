@@ -97,7 +97,10 @@ begin
     select rule_entry.value
     from jsonb_array_elements(coalesce(v_rules, '[]'::jsonb)) as rule_entry(value)
     where jsonb_typeof(rule_entry.value -> 'thresholds') = 'object'
-      and jsonb_object_length(rule_entry.value -> 'thresholds') > 0
+      and exists (
+        select 1
+        from jsonb_object_keys(rule_entry.value -> 'thresholds') as threshold_key
+      )
     order by
       (
         select max(threshold_entry.value::numeric)
