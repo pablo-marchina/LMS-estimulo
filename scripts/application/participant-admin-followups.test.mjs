@@ -145,14 +145,22 @@ test("point-rule retirement RPC is restricted to the service gateway", () => {
   assert.match(pointRuleGrantMigration, /grant execute on function public\.retire_admin_point_rule\(uuid, uuid, uuid, text\) to service_role/u);
 });
 
-test("release migration boundary includes participant and completion credential fixes", () => {
-  assert.match(migrationBoundary, /expectedLastMigration = '20260824030855_enable_generic_certificates_for_participant_journeys\.sql'/u);
-  assert.match(migrationBoundary, /'20260823133000_admin_point_rule_retirement\.sql'/u);
-  assert.match(migrationBoundary, /'20260823164000_harden_admin_point_rule_retirement_grants\.sql'/u);
-  assert.match(migrationBoundary, /'20260823213943_fix_participant_diagnostic_and_quick_check_flows\.sql'/u);
-  assert.match(migrationBoundary, /'20260824025507_issue_path_and_journey_completion_credentials\.sql'/u);
-  assert.match(migrationBoundary, /'20260824030432_fix_certificate_credential_rule_language\.sql'/u);
-  assert.match(migrationBoundary, /'20260824030855_enable_generic_certificates_for_participant_journeys\.sql'/u);
+test("release migration boundary includes participant, credential and priority platform fixes", () => {
+  assert.match(migrationBoundary, /expectedLastMigration = '20260831092000_mask_emails_in_participant_ranking\.sql'/u);
+  for (const migration of [
+    "20260823133000_admin_point_rule_retirement.sql",
+    "20260823164000_harden_admin_point_rule_retirement_grants.sql",
+    "20260823213943_fix_participant_diagnostic_and_quick_check_flows.sql",
+    "20260824025507_issue_path_and_journey_completion_credentials.sql",
+    "20260824030432_fix_certificate_credential_rule_language.sql",
+    "20260824030855_enable_generic_certificates_for_participant_journeys.sql",
+    "20260831090000_fix_diagnostic_profile_score_bands.sql",
+    "20260831091000_fix_multiple_choice_quick_check_verification.sql",
+    "20260831091100_route_legacy_quick_check_to_verified_command.sql",
+    "20260831092000_mask_emails_in_participant_ranking.sql",
+  ]) {
+    assert.match(migrationBoundary, new RegExp(`'${migration.replaceAll(".", "\\.")}'`, "u"));
+  }
   assert.match(participantFlowMigration, /create or replace function app_private\.e14_write_c4/u);
   assert.match(participantFlowMigration, /on conflict do nothing/u);
 });
