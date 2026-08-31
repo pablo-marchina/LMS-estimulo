@@ -46,13 +46,12 @@ export function BadgeAcquisitionPopup({ badges }: BadgeAcquisitionPopupProps) {
 
     const seen = readSeenAwards();
     if (seen === null) {
-      // Do not flood an established participant with every historical award on the
-      // first browser visit. Celebrate the most recent active award and establish
-      // the remaining history as the baseline.
-      const latest = orderedBadges.at(-1);
-      const historical = new Set(orderedBadges.slice(0, -1).map((badge) => badge.award_id));
-      persistSeenAwards(historical);
-      if (latest) setQueue([latest]);
+      // A missing browser baseline does not mean an award was just granted. Mark
+      // the currently known history as seen so a new browser/device cannot replay
+      // an old badge as a fresh acquisition. Future awards will still be detected
+      // when their award_id first appears after this baseline is established.
+      persistSeenAwards(new Set(orderedBadges.map((badge) => badge.award_id)));
+      setQueue([]);
       return;
     }
 
