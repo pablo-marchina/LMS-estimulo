@@ -25,8 +25,8 @@ test("admin point screen does not depend on optional badge highlights", () => {
 
 test("participant home raises the global warning only when journey discovery, eligibility or engagement core data fails", () => {
   assert.match(home, /coreDataUnavailable/u);
-  assert.match(home, /\[0, 1, 3\]\.includes\(index\) && result\.status === "rejected"/u);
-  assert.doesNotMatch(home, /\[0, 1, 2, 3\]\.includes\(index\)/u);
+  assert.match(home, /results\[0\]\.status === "rejected" \|\| results\[1\]\.status === "rejected" \|\| results\[3\]\.status === "rejected"/u);
+  assert.doesNotMatch(home, /results\[2\]\.status === "rejected"/u);
   assert.doesNotMatch(home, /Algumas informações não puderam ser atualizadas/u);
 });
 
