@@ -7,6 +7,12 @@
       "reason": "Replace the legacy completion helper with the FK-correct implementation that stores orchestration.path_steps.id in progress_projections.current_step_id.",
       "from_definition_path": "supabase/migrations/20260709055422_m13j8e_e14_complete_progress.sql",
       "to_definition_path": "supabase/migrations/20260816012704_fix_completion_progress_current_step_reference.sql"
+    },
+    {
+      "key": "app_private.e14_context_g(uuid,uuid,uuid,text)",
+      "reason": "Replace only the legacy quick-check option validator so multiple-choice responses are checked as exact option sets while preserving the frozen RPC and helper inventories.",
+      "from_definition_path": "supabase/migrations/20260709054556_m13i2_e14_context_g.sql",
+      "to_definition_path": "supabase/migrations/20260831091000_fix_multiple_choice_quick_check_verification.sql"
     }
   ]
 }

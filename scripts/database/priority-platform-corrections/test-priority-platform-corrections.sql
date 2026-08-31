@@ -51,7 +51,8 @@ $diagnostic_regression$;
 
 do $quick_check_regression$
 declare
-  v_definition text;
+  v_public_definition text;
+  v_context_definition text;
   v_normalized text;
   v_public_overload_count integer;
 begin
@@ -67,19 +68,54 @@ begin
   end if;
 
   select pg_get_functiondef(routine.oid)
-  into v_definition
+  into v_public_definition
   from pg_proc routine
   join pg_namespace namespace on namespace.oid = routine.pronamespace
   where namespace.nspname = 'public'
     and routine.proname = 'e14_record_quick_check_answer'
     and pg_get_function_identity_arguments(routine.oid) = 'a uuid, b uuid, c uuid, d text, e text';
 
-  if v_definition is null then
+  if v_public_definition is null then
     raise exception 'FROZEN_FIVE_ARGUMENT_QUICK_CHECK_RPC_NOT_FOUND';
   end if;
 
-  v_normalized := lower(v_definition);
-  if position('string_to_array' in v_normalized) = 0
+  v_normalized := lower(v_public_definition);
+  if position('app_private.e14_exec_h' in v_normalized) = 0 then
+    raise exception 'FROZEN_QUICK_CHECK_RPC_FACADE_CHANGED';
+  end if;
+  if position('string_to_array' in v_normalized) > 0
+     or position('assessment.answer_options' in v_normalized) > 0 then
+    raise exception 'FROZEN_QUICK_CHECK_RPC_CONTAINS_IMPLEMENTATION_LOGIC';
+  end if;
+
+  if has_function_privilege('authenticated', 'public.e14_record_quick_check_answer(uuid,uuid,uuid,text,text)', 'EXECUTE') then
+    raise exception 'FROZEN_QUICK_CHECK_RPC_EXPOSED_TO_AUTHENTICATED';
+  end if;
+  if has_function_privilege('anon', 'public.e14_record_quick_check_answer(uuid,uuid,uuid,text,text)', 'EXECUTE') then
+    raise exception 'FROZEN_QUICK_CHECK_RPC_EXPOSED_TO_ANON';
+  end if;
+  if not has_function_privilege('service_role', 'public.e14_record_quick_check_answer(uuid,uuid,uuid,text,text)', 'EXECUTE') then
+    raise exception 'FROZEN_QUICK_CHECK_RPC_MISSING_SERVICE_ROLE_GRANT';
+  end if;
+  if not has_function_privilege('app_worker', 'public.e14_record_quick_check_answer(uuid,uuid,uuid,text,text)', 'EXECUTE') then
+    raise exception 'FROZEN_QUICK_CHECK_RPC_MISSING_APP_WORKER_GRANT';
+  end if;
+
+  select pg_get_functiondef(routine.oid)
+  into v_context_definition
+  from pg_proc routine
+  join pg_namespace namespace on namespace.oid = routine.pronamespace
+  where namespace.nspname = 'app_private'
+    and routine.proname = 'e14_context_g'
+    and pg_get_function_identity_arguments(routine.oid) = 'a uuid, b uuid, c uuid, d text';
+
+  if v_context_definition is null then
+    raise exception 'QUICK_CHECK_CONTEXT_HELPER_NOT_FOUND';
+  end if;
+
+  v_normalized := lower(v_context_definition);
+  if position('multiple_choice' in v_normalized) = 0
+     or position('string_to_array' in v_normalized) = 0
      or position('unnest' in v_normalized) = 0 then
     raise exception 'MULTIPLE_CHOICE_SELECTION_IS_NOT_PARSED_AS_A_SET';
   end if;
@@ -90,15 +126,9 @@ begin
     raise exception 'MULTIPLE_CHOICE_EXACT_SET_VERIFICATION_MISSING';
   end if;
 
-  if position('array_agg' in v_normalized) = 0
-     or position('order by' in v_normalized) = 0
-     or position('array_to_string' in v_normalized) = 0 then
+  if position('array_agg(code order by code)' in v_normalized) = 0
+     or position('selected_codes' in v_normalized) = 0 then
     raise exception 'MULTIPLE_CHOICE_CANONICALIZATION_MISSING';
-  end if;
-
-  if position('v_expected_aggregate_version' in v_normalized) = 0
-     or position('v_response_id' in v_normalized) = 0 then
-    raise exception 'FROZEN_QUICK_CHECK_RPC_DOES_NOT_DERIVE_INTERNAL_COMMAND_STATE';
   end if;
 end;
 $quick_check_regression$;

@@ -23,7 +23,7 @@ function activityHref(journey: string, step: string, query = "", hash = "") {
 function quickCheckAnswer(formData: FormData, question: AssessmentQuestion) {
   const field = `answer_${question.id}`;
   return question.question_type === "multiple_choice"
-    ? formData.getAll(field).map(String).map((value) => value.trim()).filter(Boolean).join(",")
+    ? formData.getAll(field).map(String).map((value) => value.trim()).filter(Boolean).sort((left, right) => left.localeCompare(right)).join(",")
     : String(formData.get(field) ?? "").trim();
 }
 
