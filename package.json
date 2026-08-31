@@ -39,7 +39,8 @@
     "build:release-manifest": "node scripts/repository/generate-release-manifest.mjs",
     "scan:secrets": "node scripts/security/run-gitleaks.mjs",
     "test:secret-scanning": "node scripts/security/test-gitleaks.mjs",
-    "bootstrap:role-manager": "node scripts/operations/bootstrap-role-manager.mjs"
+    "bootstrap:role-manager": "node scripts/operations/bootstrap-role-manager.mjs",
+    "sync:supabase-confirmation-email": "node scripts/operations/sync-supabase-confirmation-email.mjs"
   },
   "engines": {
     "node": ">=22.0.0"
