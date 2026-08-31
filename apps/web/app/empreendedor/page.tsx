@@ -43,12 +43,38 @@ export default async function ParticipantHome() {
   const coreDataUnavailable = results[0].status === "rejected" || results[1].status === "rejected" || results[3].status === "rejected";
   const journeys = [...(participantJourneys?.journeys ?? [])]
     .sort((a, b) => participantJourneyPriority(a) - participantJourneyPriority(b));
-  const activeJourneys = journeys.filter((journey) => journey.journey_status !== "completed").slice(0, 3);
+  const featuredEnrolled = journeys
+    .filter((journey) => journey.journey_presentation?.featured === true)
+    .sort((a, b) => featuredRank(a.journey_presentation ?? {}) - featuredRank(b.journey_presentation ?? {}))[0] ?? null;
   const featuredEligible = [...eligibleJourneys]
-    .sort((a, b) => {
+    .filter((journey) => journey.presentation?.featured === true)
+    .sort((a, b) => featuredRank(a.presentation ?? {}) - featuredRank(b.presentation ?? {}))[0]
+    ?? [...eligibleJourneys].sort((a, b) => {
       const featuredDifference = Number(b.presentation?.featured === true) - Number(a.presentation?.featured === true);
       return featuredDifference || featuredRank(a.presentation ?? {}) - featuredRank(b.presentation ?? {});
-    })[0] ?? null;
+    })[0]
+    ?? null;
+  const featuredJourney = featuredEnrolled
+    ? {
+        kind: "enrolled" as const,
+        title: featuredEnrolled.journey_title ?? featuredEnrolled.journey_code,
+        description: featuredEnrolled.journey_description ?? null,
+        presentation: featuredEnrolled.journey_presentation ?? {},
+        journey: featuredEnrolled,
+      }
+    : featuredEligible
+      ? {
+          kind: "eligible" as const,
+          title: featuredEligible.title,
+          description: featuredEligible.description,
+          presentation: featuredEligible.presentation ?? {},
+          journey: featuredEligible,
+        }
+      : null;
+  const activeJourneys = journeys
+    .filter((journey) => journey.journey_status !== "completed")
+    .filter((journey) => journey.journey_instance_id !== featuredEnrolled?.journey_instance_id)
+    .slice(0, 3);
   const firstName = (engagement?.preferred_name ?? "").trim().split(/\s+/)[0] || "Empreendedor";
   const diagnosticPending = !engagement?.archetype && diagnosticEntry?.status !== "completed";
   const diagnosticUnavailable = diagnosticEntry?.status === "not_configured";
@@ -77,7 +103,7 @@ export default async function ParticipantHome() {
         <AnnouncementCarousel announcements={engagement?.announcements ?? []} />
       </section>
 
-      {featuredEligible ? (
+      {featuredJourney ? (
         <section className="mt-14" aria-labelledby="jornada-destaque-titulo">
           <div className="mb-5">
             <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Comece por aqui</p>
@@ -86,16 +112,31 @@ export default async function ParticipantHome() {
           <Card className="relative overflow-hidden border-primary/20 bg-primary-soft/40 p-6 sm:p-7">
             <div className="pointer-events-none absolute -right-8 -top-10 text-primary/10" aria-hidden="true"><Sparkles size={144} strokeWidth={1.25} /></div>
             <div className="relative max-w-3xl">
-              <p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{typeof featuredEligible.presentation?.badge === "string" ? featuredEligible.presentation.badge : "Capacitação Estímulo"}</p>
-              <h3 className="mt-2 text-xl font-black text-secondary sm:text-2xl">{featuredEligible.title}</h3>
-              {featuredEligible.description ? <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">{featuredEligible.description}</p> : null}
-              <form action={selfEnrollAction} className="mt-5">
-                <input type="hidden" name="journey_version_id" value={featuredEligible.journey_version_id} />
-                <input type="hidden" name="idempotency_key" value={randomUUID()} />
-                <PendingSubmitButton pendingLabel="Entrando na jornada…" icon={<Play size={16} fill="currentColor" />}>
-                  {typeof featuredEligible.presentation?.cta === "string" ? featuredEligible.presentation.cta : "Entrar nesta jornada"}
-                </PendingSubmitButton>
-              </form>
+              <p className="text-xs font-bold uppercase tracking-[.12em] text-primary">{typeof featuredJourney.presentation.badge === "string" ? featuredJourney.presentation.badge : "Capacitação Estímulo"}</p>
+              <h3 className="mt-2 text-xl font-black text-secondary sm:text-2xl">{featuredJourney.title}</h3>
+              {featuredJourney.description ? <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">{featuredJourney.description}</p> : null}
+              {featuredJourney.kind === "enrolled" ? (
+                featuredJourney.journey.journey_status === "completed" ? (
+                  <ButtonLink href={participantNextHref(featuredJourney.journey)} className="mt-5" icon={<ArrowRight size={16} />}>Rever jornada</ButtonLink>
+                ) : (
+                  <form action={continueJourneyAction} className="mt-5">
+                    <input type="hidden" name="journey_instance_id" value={featuredJourney.journey.journey_instance_id} />
+                    <input type="hidden" name="aggregate_version" value={featuredJourney.journey.journey_aggregate_version} />
+                    <input type="hidden" name="idempotency_key" value={randomUUID()} />
+                    <PendingSubmitButton pendingLabel="Abrindo jornada…" icon={<Play size={16} fill="currentColor" />}>
+                      {participantNextActionLabel(featuredJourney.journey)}
+                    </PendingSubmitButton>
+                  </form>
+                )
+              ) : (
+                <form action={selfEnrollAction} className="mt-5">
+                  <input type="hidden" name="journey_version_id" value={featuredJourney.journey.journey_version_id} />
+                  <input type="hidden" name="idempotency_key" value={randomUUID()} />
+                  <PendingSubmitButton pendingLabel="Entrando na jornada…" icon={<Play size={16} fill="currentColor" />}>
+                    {typeof featuredJourney.presentation.cta === "string" ? featuredJourney.presentation.cta : "Entrar nesta jornada"}
+                  </PendingSubmitButton>
+                </form>
+              )}
             </div>
           </Card>
         </section>
