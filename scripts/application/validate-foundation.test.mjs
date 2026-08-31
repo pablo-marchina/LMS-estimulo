@@ -94,13 +94,15 @@ test("participant and administrative authentication remain separate", async () =
     read("apps/web/lib/auth/administrative-access.ts"),
   ]);
   assert.match(login, /href="\/cadastro"/u);
-  assert.match(login, /href="\/entrar\/administracao"/u);
+  assert.doesNotMatch(login, /href="\/entrar\/administracao"|Sou da equipe Estímulo/u);
   assert.match(signup, /createPublicAccountAction/u);
   assert.match(adminLogin, /ButtonLink href="\/auth\/admin\/start"/u);
   assert.doesNotMatch(adminLogin, /<form action="\/auth\/admin\/start"|type="password"/u);
   assert.match(adminStart, /provider:\s*"google"/u);
   assert.doesNotMatch(adminStart, /hd:\s*"estimulo\.org"/u);
-  assert.match(adminCallback, /isGoogleAuthProvider/u);
+  assert.match(adminCallback, /identity\.provider === "google"/u);
+  assert.match(adminCallback, /hasGoogleIdentity/u);
+  assert.doesNotMatch(adminCallback, /isGoogleAuthProvider/u);
   assert.match(adminCallback, /administrativeOrganization/u);
   assert.match(adminCallback, /vinculo_estimulo_necessario/u);
   assert.match(adminAccess, /ESTIMULO_ORGANIZATION_SLUG = "estimulo"/u);
