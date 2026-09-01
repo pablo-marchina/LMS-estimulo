@@ -29,7 +29,8 @@ on:
       - "scripts/runtime/**"
       - "scripts/security/**"
       - "scripts/verification/**"
-      - "supabase/functions/authenticated-rpc/**"
+      - "supabase/config.toml"
+      - "supabase/functions/**"
       - "supabase/migrations/**"
   push:
     branches: [main]
@@ -53,7 +54,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - "scripts/**"
-      - "supabase/functions/authenticated-rpc/**"
+      - "supabase/config.toml"
+      - "supabase/functions/**"
       - "supabase/migrations/**"
   workflow_dispatch:
 

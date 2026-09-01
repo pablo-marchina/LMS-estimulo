@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - fix/remaining-functional-audit-20260812
+      - main
     paths:
       - .github/workflows/production-authenticated-audit.yml
       - scripts/e2e/production-authenticated-audit.mjs
@@ -26,17 +26,17 @@ jobs:
       E2E_PRODUCTION_URL: ${{ secrets.E2E_PRODUCTION_URL }}
       E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
       E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
-      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
 
     steps:
-      - name: Checkout audit branch
+      - name: Checkout audit tooling
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Node.js
+      - name: Set up repository Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
       - name: Install Playwright without modifying the lockfile

@@ -45,10 +45,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up Node.js
+      - name: Set up repository Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
       - name: Validate visual auditor syntax
@@ -75,17 +75,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      # Production deployment events use the canonical public alias. Preview
-      # pull requests resolve the exact successful deployment for their head SHA
-      # in a dedicated step below, so Chromium audits the code being reviewed.
-      E2E_TARGET_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment.environment == 'Production' && 'https://lms-estimulo-web.vercel.app' || github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || inputs.target_url || secrets.E2E_PRODUCTION_URL }}
+      # Production aliases and audit identities are target-specific secrets. Preview
+      # pull requests resolve the exact successful deployment for their head SHA below.
+      E2E_TARGET_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment.environment == 'Production' && secrets.E2E_PRODUCTION_URL || github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || inputs.target_url || secrets.E2E_PRODUCTION_URL }}
       E2E_SOURCE_DEPLOYMENT_URL: ${{ github.event_name == 'deployment_status' && github.event.deployment_status.environment_url || '' }}
       E2E_TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'deployment_status' && github.event.deployment.sha || github.sha }}
       E2E_TARGET_ENVIRONMENT: ${{ github.event_name == 'pull_request' && 'preview' || github.event_name == 'deployment_status' && github.event.deployment.environment || 'manual' }}
       E2E_REFERENCE_URL: ${{ inputs.reference_url || 'https://estimulo-polish-studio.lovable.app/' }}
       E2E_PARTICIPANT_EMAIL: ${{ secrets.E2E_PARTICIPANT_EMAIL }}
       E2E_PARTICIPANT_PASSWORD: ${{ secrets.E2E_PARTICIPANT_PASSWORD }}
-      E2E_ADMIN_EMAIL: audit-admin-20260813@estimulo.org
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
       E2E_VISUAL_MAX_PAGES: '80'
@@ -96,10 +95,10 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || 'main' }}
 
-      - name: Set up Node.js
+      - name: Set up repository Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24
+          node-version-file: .node-version
           cache: npm
 
       - name: Install Playwright without modifying the lockfile

@@ -31,6 +31,8 @@
     "test:product": "node --test scripts/product/official-diagnostic/*.test.mjs",
     "test:repository-tooling": "node --test scripts/database/migration-history/*.test.mjs && node --test scripts/database/public-rpc-contracts/*.test.mjs && node --test scripts/database/legacy-rpc/*.test.mjs && node --test scripts/runtime/*.test.mjs",
     "test:capacity": "node scripts/performance/load-test.mjs",
+    "test:e2e:image-health": "node scripts/e2e/critical-image-health-visual.mjs",
+    "test:e2e:functional": "node scripts/e2e/participant-admin-functional.mjs",
     "verify:supabase": "node scripts/verification/verify-supabase.mjs",
     "verify:deployment": "node scripts/verification/verify-deployment.mjs",
     "verify:infra-portability": "node scripts/verification/verify-infra-portability.mjs",
