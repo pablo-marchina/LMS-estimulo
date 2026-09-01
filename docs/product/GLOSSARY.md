@@ -1,47 +1,41 @@
 # Glossário do domínio
 
-**Versão:** 0.2  
-**Data:** 2026-07-08  
-**Status:** Proposta técnica — refinada no E05
+**Versão:** 1.0  
+**Revisado em:** 2026-09-01  
+**Status:** vocabulário vigente
 
 | Termo | Definição |
 |---|---|
-| Conta de acesso | Identidade autenticável. Não é sinônimo de empreendedor, empresa ou participação. |
-| Empreendedor | Pessoa participante das iniciativas da Estímulo. Pode existir antes de possuir conta e pode estar ligada a mais de um negócio. |
-| Negócio / empresa beneficiária | Unidade econômica atendida pela Estímulo. É distinta das organizações que operam ou fornecem conteúdo. |
-| Organização | Estímulo, parceiro, produtor de conteúdo ou outra entidade operadora da plataforma. |
-| Vínculo com negócio | Relação temporal e verificável entre empreendedor e negócio, como sócio ou representante. |
-| Programa | Estrutura institucional de nível superior que agrupa jornadas e objetivos relacionados. |
-| Definição | Identidade estável de um conceito ao longo do tempo, como uma jornada ou diagnóstico. |
-| Versão | Snapshot de regras e conteúdo. Depois de publicada, é imutável. |
-| Instância | Execução de uma definição/versionamento para um participante, como participação, sessão ou tentativa. |
-| Jornada | Experiência longitudinal versionada, orientada a um objetivo e capaz de orquestrar trilhas, atividades e intervenções. |
-| Trilha / modelo de trilha | Caminho possível dentro de uma versão de jornada, com etapas, transições e regras. |
-| Curso | Unidade editorial reutilizável por uma ou mais jornadas. Não controla sozinho a experiência longitudinal. |
-| Módulo | Agrupamento editorial dentro de uma versão de curso. |
-| Atividade | Unidade executável genérica: conteúdo, avaliação, prática, pesquisa, reflexão, sessão ao vivo ou recurso externo. |
-| Conteúdo | Atividade ou ativo voltado principalmente ao consumo de informação, como vídeo ou texto. |
-| Ativo | Arquivo ou recurso ligado a uma versão de atividade, como vídeo, slide, prompt ou checklist. |
-| Avaliação | Atividade versionada que mede compreensão ou desempenho segundo política de tentativas e correção. |
-| Atividade prática | Atividade de aplicação ao negócio, distinta do consumo e da prova teórica. |
-| Participação | Instância que relaciona empreendedor, negócio/contexto e versão da jornada. |
-| Atribuição de trilha | Registro versionado e explicável do caminho atribuído a uma participação. |
-| Instância de atividade | Execução de uma etapa por uma participação. |
-| Progressão | Estado derivado do avanço válido segundo critérios da versão da jornada. |
-| Coorte | Agrupamento operacional ou experimental de participações. Não é jornada nem arquétipo. |
-| Gamificação | Regras versionadas de pontos, selos, níveis ou sequências associadas a fatos verificáveis. |
-| Ledger de pontos | Histórico imutável de créditos e débitos de pontos. O saldo é uma projeção. |
-| Diagnóstico | Instrumento versionado que coleta respostas e calcula dimensões/resultados para personalização. |
-| Dimensão | Construto específico medido pelo diagnóstico, com definição e finalidade. |
-| Arquétipo | Classificação comportamental temporal e acionável, ainda a pesquisar e validar. Não é atributo fixo da pessoa. |
-| Segmento | Grupo operacional ou de pesquisa, como quase aprovados ou mulheres empreendedoras. Não é jornada nem arquétipo. |
-| Momento de crédito | Estado externo da relação de crédito que pode contextualizar uma atribuição ou intervenção. |
-| Intervenção | Ação versionada acionada por contexto, comportamento ou tempo, com objetivo e resultado mensurável. |
-| Evento canônico | Fato imutável e versionado sobre algo que ocorreu. |
-| Projeção | Visão derivada para leitura rápida, reconstruível a partir de fontes históricas. |
-| Feature comportamental | Característica derivada de eventos segundo fórmula, janela e finalidade versionadas. |
-| Score comportamental experimental | Combinação versionada de features para pesquisa ou personalização; não é score de crédito produtivo. |
-| Fonte da verdade | Sistema autorizado a criar ou corrigir determinado dado. |
-| Idempotência | Garantia de que repetir uma operação ou evento não duplica seu efeito. |
-| Outbox | Registro transacional usado para publicar eventos sem perder consistência com a alteração de negócio. |
-| Contexto delimitado | Fronteira lógica que possui seu modelo, casos de uso e dados sob responsabilidade definida. |
+| Conta de acesso | Identidade autenticável. Não é sinônimo de empreendedor, negócio ou participação. |
+| Empreendedor | Pessoa participante das iniciativas da Estímulo, separada da credencial de autenticação. |
+| Negócio | Unidade econômica beneficiária. É distinta das organizações que operam a plataforma. |
+| Organização | Estímulo, parceiro ou outra entidade operadora. Membership organizacional determina escopo de operação. |
+| Programa | Estrutura de nível superior que agrupa jornadas. |
+| Jornada | Experiência longitudinal representada no produto por um único registro operacional `draft` ou `published`; pode ser editada ao vivo quando publicada. |
+| Identificador legado de versão de jornada | Campo/tabela física com nome `journey_version*` preservado por compatibilidade. No lifecycle vigente não representa snapshot editorial navegável. |
+| Trilha | Caminho dentro da jornada com etapas e critérios de progressão. |
+| Curso | Unidade editorial reutilizável. |
+| Módulo | Agrupamento editorial de conteúdo/atividade. |
+| Atividade | Unidade executável, como conteúdo, avaliação, prática ou recurso externo. |
+| Conteúdo | Informação consumível, como vídeo, texto, slide, prompt ou arquivo. |
+| Definição | Identidade estável usada por capacidades que realmente possuem versionamento. |
+| Versão | Snapshot de configuração/regra em capacidades versionadas, como diagnóstico ou documento legal. Não deve ser generalizado automaticamente para jornada. |
+| Instância | Execução de uma capacidade por um ator, como sessão diagnóstica, tentativa ou matrícula. |
+| Participação / matrícula | Relação de um empreendedor com uma jornada operacional. |
+| Diagnóstico | Instrumento configurável e versionado que coleta respostas e calcula resultado. |
+| Dimensão | Construto/configuração calculada no diagnóstico. |
+| Arquétipo | Classificação temporal produzida pelo diagnóstico principal; não é atributo fixo nem score de crédito. |
+| Quick check | Avaliação curta vinculada à experiência de aprendizagem. |
+| Múltipla escolha | Quick check em que a resposta correta é o conjunto exato das alternativas marcadas como corretas. |
+| Gamificação | Pontos, badges, conquistas e credenciais derivados de fatos verificáveis. |
+| Badge award | Concessão identificada de um selo. A UI anuncia apenas awards novos, nunca o histórico apenas porque o browser é novo. |
+| Ledger de pontos | Histórico imutável de créditos/débitos; saldo e ranking são projeções. |
+| Ranking | Projeção ordenada por pontos; identificação pública usa dado mascarado, não e-mail completo. |
+| Evento | Fato estruturado e idempotente sobre algo que ocorreu. |
+| Outbox | Registro transacional para efeitos externos assíncronos sem acoplar o domínio ao destino. |
+| Feature comportamental | Valor derivado de eventos para análise. |
+| Score comportamental | Resultado analítico configurável que não altera acesso, recomendação, recompensa ou crédito. |
+| RLS | Row-Level Security usada como defesa em profundidade no PostgreSQL. |
+| RBAC | Autorização por papéis/capacidades e escopo organizacional. |
+| Preview | Deployment ou modo isolado usado para revisão; não equivale à produção institucional. |
+| Fonte de verdade | Artefato autorizado a definir determinado estado. Para schema físico, são as migrations versionadas. |

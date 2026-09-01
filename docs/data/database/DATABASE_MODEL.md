@@ -1,182 +1,83 @@
 # Modelo do banco — Plataforma Estímulo
 
-**Revisado em:** 2026-07-31  
+**Revisado em:** 2026-09-01  
 **Status:** modelo PostgreSQL executável e reproduzível por migrations  
 **Ambiente implementado:** Supabase para desenvolvimento, teste e preview
 
-## 1. Organização
+## Fonte de verdade
 
-O banco é um monólito modular dividido por contexto:
+`supabase/migrations/` é a fonte física do banco. Este documento explica os padrões vigentes sem duplicar todas as colunas, contagens ou hashes do catálogo, que são verificados por replay e equivalência.
+
+## Schemas
 
 ```text
 iam             identidade, organizações, papéis e permissões
 core            empreendedores, negócios, arquivos e aquisição
-catalog         jornadas, atividades, biblioteca, temas e versões
-orchestration   inscrições, instâncias, passos e progressão
+catalog         jornadas, atividades, biblioteca e temas
+orchestration   matrículas, instâncias e progressão
 diagnostics     diagnósticos principal e opcionais
-assessment      avaliações, entregas, rubricas e revisões
-engagement      pontos, carteira, recompensas, certificados e ledgers
-experience      CMS, configurações gerais, páginas B2B e comandos
-intervention    intervenções e segmentos
-behavior        eventos comportamentais e modelos de score
+assessment      avaliações, quick checks, entregas e revisões
+engagement      pontos, ranking, recompensas, badges e certificados
+experience      CMS, configurações e B2B
+behavior        eventos comportamentais e score analítico
 eventing        eventos, outbox e inbox
-integration     mapeamentos e estado de integrações genéricas
+integration     estado/mapeamentos de integrações desacopladas
 governance      documentos legais, aceites, auditoria e retenção
-reporting       projeções e superfícies analíticas
-app_private     helpers internos não expostos à Data API
-public          RPCs autenticadas e fronteiras estáveis
+reporting       projeções analíticas
+app_private     helpers internos
+public          facades/RPCs autorizadas
 ```
 
-A separação é lógica e de segurança; não implica microserviços ou bancos separados.
+## Ciclos de vida
 
-## 2. Padrões estruturais
+### Jornada
 
-### Definição → versão → execução
+A implementação vigente preserva tabelas `catalog.journey_definitions` e `catalog.journey_versions`, mas opera uma relação 1:1 para o produto. A linha física de `journey_versions` é o registro operacional da jornada e alterna entre `draft` e `published`. `version_number=1` e `schema_version='single'` existem como compatibilidade.
 
-Jornadas, atividades, conteúdos, diagnósticos, certificados, páginas B2B e regras editoriais usam definição estável, versões em rascunho/publicadas/retiradas e instâncias históricas. Publicar uma versão não reescreve execuções anteriores.
+- publicação não clona a jornada;
+- edição de `published` é permitida pelo comando administrativo controlado;
+- despublicação retorna a mesma linha a `draft` e interrompe acessos ativos conforme a migration;
+- exclusão de draft faz hard delete apenas quando não há dependências; caso contrário o legado pode ser retirado/retired sem apagar fatos.
 
-### Ledgers e compensação
+### Capacidades versionadas
 
-Pontos de engajamento e pontos de recompensa são movimentações imutáveis. Correções e cancelamentos criam compensações; o histórico não é sobrescrito.
+Diagnósticos, documentos legais, configurações de avaliação/credencial e outras capacidades que precisam reproduzir a regra utilizada continuam usando snapshots/versionamento conforme suas migrations.
 
-### Comandos idempotentes
+## Identidade
 
-`experience.extension_commands` registra ator, escopo, idempotency key, hash da requisição e resultado. Repetir a mesma chave com payload divergente é recusado.
+`iam.user_accounts`, `core.entrepreneurs`, `core.businesses` e memberships permanecem separados. IDs externos não são PKs internas. Administração resolve identidade autenticada e membership antes de executar casos de uso privilegiados.
 
-### Eventos e outbox
+## Diagnóstico
 
-A transação de domínio grava estado, evento, outbox e auditoria juntos. Consumidores deduplicam por evento/idempotency key e usam checkpoint próprio.
+O diagnóstico principal possui definição, versões, dimensões, itens, opções, sessões, respostas, resultados e atribuições. A classificação executa a configuração publicada; a correção de 31/08 garante média de scores e interpretação consistente dos thresholds configurados como limites superiores inclusivos ordenados do menor para o maior. Isso não cria metodologia oficial ausente.
 
-## 3. Identidade e escopo
+Diagnósticos opcionais não atualizam arquétipo principal nem elegibilidade de jornada.
 
-- `iam.user_accounts`: conta autenticável;
-- `core.entrepreneurs`: pessoa participante;
-- `core.businesses`: negócio atendido;
-- `core.business_memberships`: relação pessoa–negócio;
-- `iam.organizations`: Estímulo e organizações operadoras;
-- `iam.organization_memberships`: conta–organização;
-- papéis e permissões: RBAC com validade e auditoria.
+## Quick checks e avaliação
 
-IDs externos nunca são chaves primárias do domínio. Mapeamentos futuros permanecem na camada de integração.
+Respostas de múltipla escolha são validadas como conjunto exato. A correção reutiliza o helper legado já inventariado e preserva a facade pública congelada; não existe RPC pública paralela para esse comportamento.
 
-## 4. Configurações e documentos legais
+## Gamificação e privacidade
 
-- `experience.platform_settings`: identidade, contatos, links e rodapé por organização;
-- `governance.legal_document_versions`: Termos e Política versionados;
-- `governance.legal_acceptances`: versão aceita, usuário, data, origem e metadados.
+- pontos e recompensas usam ledgers/idempotência;
+- badge awards possuem identidade própria;
+- ranking deriva de pontos e mascara e-mail antes de expor a identificação de outro participante;
+- certificados preservam emissão/revogação sem apagar o fato.
 
-A unicidade parcial garante no máximo uma versão publicada por tipo e organização.
+## Eventos e integração
 
-## 5. Temas, biblioteca e jornadas
+Estado, evento, outbox e auditoria são persistidos juntos quando fazem parte do mesmo comando. Produtores não conhecem HubSpot ou outro destino. Exportação externa permanece desabilitada por padrão e exige consumidor/reconciliação próprios.
 
-- `catalog.themes`: taxonomia administrada;
-- `catalog.library_item_theme_links`: relação N:N com conteúdos;
-- `catalog.journey_theme_links`: relação N:N com jornadas;
-- definições e versões de biblioteca, jornada, curso e atividade preservam publicação e histórico.
+## Segurança
 
-A FK com `ON DELETE RESTRICT` impede excluir tema em uso.
+- RLS habilitada nas tabelas aplicáveis;
+- RPCs sensíveis usam `SECURITY DEFINER` e `search_path` fechado;
+- `public`, `anon` e `authenticated` não recebem execução direta de facades privilegiadas;
+- gateway valida sessão, identidade, ator, payload, timeout e allowlist;
+- helpers privados não são superfície da Data API.
 
-## 6. Templates de certificados
+## Reprodutibilidade
 
-- `engagement.certificate_template_assets`: imagem/PDF e metadados do objeto;
-- `engagement.certificate_template_assignments`: escopo `global`, `program` ou `journey`, período e estado.
+O CI inicia banco vazio, aplica o histórico, valida migrations ativas, compara schema canônico, verifica contratos públicos e contenção de legado e executa regressões transacionais. Baselines legíveis por máquina são alterados somente quando o replay prova a mudança intencional.
 
-Índice parcial garante uma atribuição ativa por escopo. A resolução segue jornada → programa → global.
-
-## 7. Aquisição e UTM
-
-- `core.tracking_links`: slug, destino, público, UTMs, parâmetros, validade, limite e etapas ignoráveis;
-- `core.tracking_visits`: visita, token com hash, sessão, dispositivo, referenciador e associação posterior;
-- `core.acquisition_touchpoints`: first touch, last touch, signup e conversion.
-
-O token bruto não é persistido; a associação pós-login usa hash e idempotência.
-
-## 8. B2B
-
-- `experience.b2b_pages` e `b2b_page_versions`: página e conteúdo por blocos;
-- `experience.b2b_access_groups` e `b2b_group_members`: grupos administrados;
-- `experience.b2b_page_user_access`: concessão direta;
-- `experience.b2b_page_group_access`: concessão por grupo.
-
-A leitura participante aplica a autorização no banco antes de devolver a página.
-
-## 9. Recompensas
-
-- `engagement.reward_settings`: taxa de conversão;
-- `engagement.reward_wallets`: saldo materializado e bloqueado transacionalmente;
-- `engagement.reward_ledger`: origem, débito, crédito e compensação;
-- `engagement.rewards`: catálogo, tipo, custo, estoque, período e regulamento;
-- `engagement.reward_redemptions`: solicitação, estado, entrega e cancelamento.
-
-Saldo e estoque são alterados na mesma transação. Cancelamento restaura ambos e registra motivo.
-
-## 10. Entregas e IA
-
-- `assessment.delivery_configurations`: alvo biblioteca/atividade, formatos, prazo, tentativas, estratégia e modo de correção;
-- `assessment.delivery_submissions`: tentativa e estado;
-- `assessment.delivery_submission_files`: evidências em `core.file_objects`;
-- rubricas e critérios: pesos, escala, aprovação e referências;
-- `assessment.delivery_reviews`: avaliação da IA ou humana, confiança, modelo, versão e feedback.
-
-A entrega original permanece imutável. Reenvios criam nova tentativa. Código e ZIP são apenas analisados estaticamente.
-
-## 11. Diagnósticos
-
-O diagnóstico principal usa definições, versões, dimensões, itens, opções, sessões, respostas, resultados e atribuições de arquétipo. A publicação principal pode mapear perfis antigos para novos e atualizar elegibilidade transacionalmente.
-
-Diagnósticos opcionais acrescentam:
-
-- disponibilidade por público e período;
-- sessões e tentativas próprias;
-- resultados exibíveis conforme configuração.
-
-Não existe FK ou comando opcional que atualize arquétipo principal ou acesso a jornadas.
-
-## 12. Eventos e score comportamental
-
-- eventos estruturados guardam ID idempotente, versão de schema, usuário, sessão, entidade, horário e propriedades;
-- definições de dimensão e modelo são versionadas;
-- snapshots de score guardam inputs, hash, cobertura, confiança, dimensões e explicação.
-
-O score permanece em tabelas analíticas e não é referenciado por políticas de acesso, jornadas, recompensas ou navegação.
-
-## 13. Integração e ETL
-
-Produtores não armazenam contratos de um destino específico. A saída é preparada por eventos e outbox com:
-
-- rota lógica;
-- schema/versionamento;
-- cursor e checkpoint;
-- payload hash;
-- idempotency key;
-- tentativa, retry e dead letter;
-- reconciliação.
-
-A exportação externa permanece desligada por padrão.
-
-## 14. Segurança
-
-- RLS e privilégios seguem menor privilégio;
-- comandos sensíveis usam RPCs `SECURITY DEFINER` com `search_path` fechado;
-- `anon` e `authenticated` não executam diretamente as RPCs administrativas;
-- o gateway valida o usuário autenticado e impede `actor` divergente;
-- tabelas privadas e helpers internos não são superfícies da Data API;
-- arquivos usam objetos opacos e buckets privados;
-- auditoria registra alterações administrativas e revisões humanas.
-
-## 15. Reprodutibilidade
-
-`supabase/migrations` é a fonte executável. O CI:
-
-1. inicia PostgreSQL limpo;
-2. aplica todo o histórico na ordem;
-3. valida fronteira e imutabilidade das migrations;
-4. compara o inventário com `REMOTE_SCHEMA_BASELINE.json`;
-5. executa contratos públicos e contenção de RPCs legadas;
-6. repete a reconstrução no gate de reprodutibilidade.
-
-Contagens transitórias de tabelas, colunas ou funções pertencem aos artefatos de CI e não são congeladas neste documento.
-
-## 16. Limites de produção
-
-O modelo lógico e o runtime Supabase estão implementados para desenvolvimento, teste e preview. Escolha do banco gerenciado AWS, estratégia de backup, DR, storage, filas, workers, observabilidade e capacidade de produção depende de ADR e Gate B.
+Consulte [`DATABASE_ERD.md`](DATABASE_ERD.md), [`DATABASE_CONSTRAINTS_AND_INTEGRITY.md`](DATABASE_CONSTRAINTS_AND_INTEGRITY.md) e [`../../implementation/PUBLIC_RPC_CONTRACTS.md`](../../implementation/PUBLIC_RPC_CONTRACTS.md).

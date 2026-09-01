@@ -1,11 +1,13 @@
 # Inventário inicial da Jornada OpenAI
 
-**Fonte:** PDF final de referência e `modules/journey/journey-data.ts`  
-**Versão do documento de origem:** rascunho v0.3, informado como versão final de referência para o projeto
+**Status:** documento histórico de descoberta; não descreve sozinho o runtime atual  
+**Fonte original:** PDF de referência e o estado de código existente à época do inventário
 
-## Estrutura identificada
+> Este arquivo preserva o que foi identificado no levantamento inicial. Lacunas listadas abaixo são **lacunas observadas naquele momento**, não uma lista automática de bloqueadores atuais. Para estado vigente use [`../journeys/OPENAI_JOURNEY_SPEC.md`](../journeys/OPENAI_JOURNEY_SPEC.md), [`../journeys/JOURNEY_LIFECYCLE.md`](../journeys/JOURNEY_LIFECYCLE.md) e [`../implementation/APPLICATION_FOUNDATION.md`](../implementation/APPLICATION_FOUNDATION.md).
 
-| Bloco | Status | Duração declarada | Resultado/reconhecimento |
+## Estrutura identificada na fonte
+
+| Bloco | Status na referência | Duração declarada | Reconhecimento citado |
 |---|---|---:|---|
 | Boas-vindas e potencial da IA | Obrigatório | 15 min | Selo Potencial da IA |
 | Bloco base opcional | Opcional | 20 min | Selo Base IA |
@@ -13,51 +15,17 @@
 | Gestão com IA | Trilha base | 30 min + prova | Selo Gestão com IA |
 | Bônus avançado Codex | Avançado/bloqueado | 30 min + prova final | Selo Desenvolvimento + Certificado Avançado |
 
-## Avaliações previstas
+## Avaliações e práticas citadas
 
-- avaliação rápida ao final de cada aula;
-- estrelas da aula;
-- avaliação de percepção da trilha;
-- prova da trilha;
-- prova final base;
-- prova final avançada.
+A referência mencionava quick checks, avaliações de aula/trilha, provas e atividades práticas como campanha de marketing, script de vendas, assistente financeiro, análise de contrato, checklist operacional e projeto Codex.
 
-## Atividades práticas previstas
+## Observações históricas
 
-- mini campanha de marketing;
-- script de vendas/proposta;
-- assistente financeiro;
-- análise de contrato;
-- checklist operacional;
-- projeto avançado em Codex.
+No momento do inventário foram encontrados, entre outros pontos, durações inconsistentes, numeração de aulas não contínua, critérios de avaliação incompletos e materiais sem metadata final de acessibilidade/licença. O runtime posterior evoluiu para jornada administrável e não deve ser inferido a partir das limitações do arquivo/código inicial citado neste levantamento.
 
-## Gamificação de referência
+## Regra de uso
 
-O documento propõe pontos para conclusão, avaliações, envio de prática, seleção de caso, provas e bônus. Esses valores devem ser tratados como hipótese de engajamento, não como regra final nem feature de crédito.
-
-## Inconsistências e lacunas encontradas
-
-- O PDF chama a trilha de Marketing de 30 min + prova, mas as durações listadas somam 31 min antes da prova.
-- A trilha Gestão também lista 31 min antes da prova.
-- A numeração pula B2, 1.3 e possivelmente outras aulas; é necessário confirmar se são omissões intencionais.
-- O código define duração total de 145 min, mas o total do documento depende de provas e do bônus e precisa ser recalculado por regra clara.
-- `journey-data.ts` codifica a jornada diretamente; não há versão editorial persistida.
-- Não existem perguntas, alternativas, critérios de correção, quantidade de tentativas ou rubricas completas.
-- “Pausa prática” aparece como princípio, mas não está modelada como entidade/atividade distinta.
-- O envio prático é opcional, porém os critérios de validação, revisão e follow-up ainda não estão especificados.
-- O Certificado Base depende de dois selos e prova final, mas não está formalizada a política de notas, expiração ou reavaliação.
-- O bônus Codex depende do Certificado Base, mas a regra de desbloqueio ainda é texto livre.
-- Os materiais ainda não possuem URLs, arquivos finais, acessibilidade, licença e status editorial completos.
-
-## Próximo passo
-
-Converter a jornada para uma especificação versionada com:
-
-- objetivos e competências por bloco;
-- conteúdos e ativos;
-- regras executáveis de entrada/progressão/conclusão;
-- avaliações e tentativas;
-- atividades práticas e evidências;
-- eventos produzidos por etapa;
-- pontos/selos/certificados configuráveis;
-- política de atualização de participantes já inscritos.
+- não usar este documento para afirmar que uma capacidade continua ausente;
+- não usar durações/pontuação aqui como configuração oficial sem validar o conteúdo publicado;
+- não tratar o modelo antigo de `journey-data.ts` como fonte atual;
+- para comportamento executável, prevalecem migrations, código vigente e documentação de implementação.

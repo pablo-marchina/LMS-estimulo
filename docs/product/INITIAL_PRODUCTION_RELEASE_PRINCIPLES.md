@@ -1,148 +1,54 @@
 # Princípios da release inicial de produção
 
-**Versão:** 1.2  
-**Data:** 2026-07-29  
-**Status:** especificação vigente de release
+**Versão:** 2.0  
+**Revisado em:** 2026-09-01  
+**Status:** especificação vigente; produção institucional continua condicionada ao Gate B AWS
 
 ## Definição
 
-A primeira release de produção deve entregar a plataforma web LMS solicitada pela Estímulo, com a Jornada OpenAI operando para usuários reais na AWS.
-
-Uma segunda jornada publicada não é requisito da primeira release sem decisão formal posterior.
-
-Capacidades genéricas, fixtures e testes estruturais não substituem requisitos aprovados nem prova no ambiente-alvo.
+A primeira release deve entregar a plataforma LMS da Estímulo com Jornada OpenAI, autenticação real, administração, diagnóstico, aprendizagem, engajamento e governança. Supabase/Vercel podem demonstrar e validar o software; produção institucional depende da arquitetura AWS aprovada.
 
 ## Capacidades mínimas
 
-- autenticação e autorização reais;
-- entrada integrada ao site Estímulo;
-- coleta ou resolução de nome, e-mail, CPF, telefone, CNPJ opcional e UTMs;
-- identidade única reconciliada com HubSpot;
-- diagnóstico oficial e quatro arquétipos;
-- personalização por arquétipo e contexto autorizado;
-- Jornada OpenAI completa;
-- aulas, materiais, vídeos, quick checks, provas e práticas;
-- comentários e avaliação de utilidade em cinco estrelas;
-- uploads previstos;
-- progresso, pontos, conquistas, ranking, recompensas, selos e certificados;
-- home, trilhas, atividades, perfil e engajamento;
-- administração de usuários, trilhas, conteúdo, diagnóstico, avaliações e credenciais;
-- biblioteca com labels e taxonomia;
-- eventos estruturados para ações relevantes;
-- integração real com HubSpot no escopo da DEC-070;
-- AWS staging e produção;
-- logs, backup, restauração e rollback;
-- responsividade e acessibilidade;
-- segurança e privacidade para usuários reais.
+- cadastro, confirmação, login, recuperação e termos;
+- entrada administrativa separada por Google + identidade interna + membership Estímulo + RBAC;
+- diagnóstico principal configurável e quatro arquétipos;
+- Jornada OpenAI com trilhas, aulas, quick checks, práticas e avaliações;
+- home, jornadas, biblioteca, perfil, ajuda e engajamento;
+- pontos, ranking com identificação mascarada, recompensas, badges e certificados;
+- administração de produto, diagnóstico, usuários, conteúdo e credenciais;
+- eventos estruturados e outbox;
+- responsividade, acessibilidade, segurança e privacidade;
+- replay/reprodutibilidade e observabilidade compatível com o gate do ambiente.
 
-## Diagnóstico e arquétipos
+## Diagnóstico
 
-Os quatro arquétipos podem ser usados para personalização quando:
-
-- finalidade, perguntas, alternativas e regra estiverem aprovadas;
-- empate e resultado insuficiente seguirem decisão metodológica;
-- a linguagem não for estigmatizante;
-- o resultado não alterar crédito automaticamente;
-- recálculos e overrides forem auditáveis;
-- histórico e versões forem preservados.
-
-O diagnóstico é opcional. Usuários sem diagnóstico recebem conteúdos sem restrição por arquétipo.
+Os arquétipos podem personalizar a experiência apenas a partir de configuração/metodologia aprovada. A implementação não inventa cutoff ausente. O runtime deve calcular a configuração publicada de forma determinística e auditável; uso em crédito permanece proibido.
 
 ## Jornada OpenAI
 
-A jornada deve ser carregada a partir dos materiais editoriais aprovados, não de fixtures.
+A publicação depende de materiais editoriais aprovados, critérios de conclusão, avaliações, regras de gamificação, acessibilidade e revisão aplicável. O lifecycle é uma jornada operacional única `draft ↔ published`, com edição ao vivo de publicada.
 
-A publicação exige:
+## Integrações externas
 
-- vídeos, slides, prompts, templates e materiais finais;
-- durações reconciliadas;
-- progressão e avaliações aprovadas;
-- critérios de conclusão;
-- regras de pontos, selos e certificados;
-- termos de upload e autorização;
-- legendas, transcrições e equivalências acessíveis;
-- revisão de finanças, contratos, segurança e privacidade.
+PostgreSQL é a fonte operacional. Nenhum CRM é precondição síncrona do produto. Eventos/outbox preparam exportação futura e `ETL_EXPORT_ENABLED=false` é o padrão. Se HubSpot for habilitado, `DEC-070` restringe as categorias exportáveis e exige consumidor, retry, deduplicação e reconciliação.
 
-## HubSpot
-
-O HubSpot recebe somente:
-
-1. identificadores mínimos para vinculação;
-2. sinais de engajamento na plataforma;
-3. entradas, features e resultados úteis para cálculos aprovados.
-
-O PostgreSQL mantém o estado operacional e o detalhe.
-
-Antes da produção, devem estar aprovados:
-
-- inventário real da conta;
-- matriz de sincronização;
-- regras de identidade e deduplicação;
-- catálogo de sinais de engajamento;
-- catálogo de variáveis e resultados de cálculo;
-- catálogo de dados não sincronizados;
-- retry, rate limiting, readback e reconciliação;
-- controles de acesso e privacidade.
-
-Não devem ser sincronizados por padrão:
-
-- conteúdo e configuração editorial;
-- estado transacional completo;
-- payloads brutos sem utilidade aprovada;
-- binários, URLs assinadas, logs e segredos.
-
-## Desenvolvimento interno
-
-A plataforma, o código, a arquitetura, os dados e a manutenção permanecem internos. Não é permitido comprar ou terceirizar um LMS como substituto. Serviços de infraestrutura e integração são permitidos.
-
-## Rollout
-
-O primeiro uso real pode ocorrer com coorte controlada somente após o encerramento dos gates P0.
-
-É necessário:
-
-- participantes definidos;
-- suporte;
-- monitoramento de erros, filas e sincronizações;
-- capacidade de pausar entradas;
-- runbooks de incidente;
-- rollback;
-- tratamento de dados aprovado;
-- critérios de expansão.
+Portanto, **integração HubSpot direta não é Gate A do software**. O ambiente que decidir habilitar um consumidor externo precisa provar o destino correspondente no Gate B/escopo operacional aprovado.
 
 ## Proibições
 
-Não será permitido em produção:
-
 - dados fictícios apresentados como reais;
-- conteúdo ou diagnóstico sintético apresentado como oficial;
-- autenticação apenas visual ou bypass de teste no runtime;
-- cadastro de teste habilitado;
-- segredos em código, documentos ou logs;
-- alteração manual de banco sem migration;
-- evento duplicável ou sem rastreabilidade;
-- dado sincronizado ao HubSpot sem classificação e finalidade;
-- sinal educacional influenciando crédito sem validação;
-- upload liberado sem verificação de segurança;
-- deploy sem backup, restauração e rollback;
-- teste estrutural como única prova full-stack;
-- promoção direta do Supabase para produção.
+- diagnóstico sintético apresentado como metodologia oficial;
+- autenticação apenas visual ou bypass de teste em runtime;
+- segredos em código/docs/logs;
+- alteração manual de schema fora de migration;
+- ranking expondo e-mail completo de outro participante;
+- popup de badge tratando histórico como nova conquista;
+- evento duplicável sem idempotência;
+- sinal educacional influenciando crédito sem governança;
+- dependência síncrona de integração externa para confirmar escrita de domínio;
+- Supabase/Vercel tratados como produção institucional.
 
-## Gate de produção
+## Gate
 
-A publicação exige evidência de:
-
-1. fluxo oficial ponta a ponta;
-2. identidade e permissões reais;
-3. Jornada OpenAI oficial;
-4. diagnóstico oficial;
-5. interfaces de participante e administração;
-6. eventos para ações relevantes;
-7. sincronização HubSpot da DEC-070 e reconciliação;
-8. segurança, privacidade e tratamento de arquivos;
-9. verificação autenticada em navegador e acessibilidade;
-10. AWS staging, backup, restore e rollback;
-11. observabilidade e operação;
-12. requisitos obrigatórios ainda aplicáveis.
-
-Dívida técnica contida pode permanecer somente quando não afeta esses critérios.
+Gate A comprova o software por SHA. Gate B comprova o ambiente AWS definitivo, incluindo E2E, identidade, capacidade, isolamento, continuidade, segurança, privacidade, conteúdo e acessibilidade. Consulte [`../operations/FINAL_RELEASE_RUNBOOK.md`](../operations/FINAL_RELEASE_RUNBOOK.md).

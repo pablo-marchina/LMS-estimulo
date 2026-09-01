@@ -1,103 +1,60 @@
 # ERD lógico — Plataforma Estímulo
 
-**Versão:** 0.1  
-**Status:** visão resumida; o dicionário contém as 121 tabelas.
+**Revisado em:** 2026-09-01  
+**Status:** visão conceitual vigente; migrations são a fonte física
 
-## 1. Identidade e participação
+## Identidade e participação
 
 ```mermaid
 erDiagram
-  USER_ACCOUNTS ||--o| ENTREPRENEURS : authenticates
+  USER_ACCOUNTS ||--o| ENTREPRENEURS : resolves
   ORGANIZATIONS ||--o{ ORGANIZATION_MEMBERSHIPS : has
   USER_ACCOUNTS ||--o{ ORGANIZATION_MEMBERSHIPS : belongs
   ENTREPRENEURS ||--o{ BUSINESS_MEMBERSHIPS : relates
   BUSINESSES ||--o{ BUSINESS_MEMBERSHIPS : has
   ENTREPRENEURS ||--o{ ENROLLMENTS : receives
-  BUSINESSES ||--o{ ENROLLMENTS : contextualizes
-  JOURNEY_VERSIONS ||--o{ ENROLLMENTS : fixes_version
+  JOURNEYS ||--o{ ENROLLMENTS : enrolls
   ENROLLMENTS ||--|| JOURNEY_INSTANCES : executes
 ```
 
-## 2. Catálogo e orquestração
+`JOURNEYS` representa conceitualmente a linha operacional atualmente armazenada em `catalog.journey_versions`, ligada 1:1 à definição. O nome físico legado não implica snapshots editoriais.
+
+## Jornada e aprendizagem
 
 ```mermaid
 erDiagram
-  PROGRAMS ||--o{ JOURNEY_DEFINITIONS : groups
-  JOURNEY_DEFINITIONS ||--o{ JOURNEY_VERSIONS : versions
-  JOURNEY_VERSIONS ||--o{ PATH_TEMPLATES : offers
+  PROGRAMS ||--o{ JOURNEYS : groups
+  JOURNEYS ||--o{ PATH_TEMPLATES : offers
   PATH_TEMPLATES ||--o{ PATH_STEPS : contains
-  PATH_STEPS ||--o{ PATH_TRANSITIONS : origin
-  PATH_STEPS ||--o{ PATH_TRANSITIONS : destination
-  ACTIVITY_DEFINITIONS ||--o{ ACTIVITY_VERSIONS : versions
   ACTIVITY_VERSIONS ||--o{ PATH_STEPS : executes
-  COURSE_DEFINITIONS ||--o{ COURSE_VERSIONS : versions
-  COURSE_VERSIONS ||--o{ MODULES : contains
-  MODULES ||--o{ MODULE_ACTIVITIES : orders
-  ACTIVITY_VERSIONS ||--o{ MODULE_ACTIVITIES : reuses
-```
-
-## 3. Execução da jornada
-
-```mermaid
-erDiagram
   JOURNEY_INSTANCES ||--o{ PATH_ASSIGNMENTS : receives
-  PATH_TEMPLATES ||--o{ PATH_ASSIGNMENTS : instantiates
   PATH_ASSIGNMENTS ||--o{ STEP_INSTANCES : materializes
-  PATH_STEPS ||--o{ STEP_INSTANCES : defines
-  STEP_INSTANCES ||--o{ ACTIVITY_SESSIONS : observes
-  STEP_INSTANCES ||--o{ ATTEMPTS : evaluates
+  STEP_INSTANCES ||--o{ ASSESSMENT_ATTEMPTS : evaluates
   STEP_INSTANCES ||--o{ SUBMISSIONS : practices
-  JOURNEY_INSTANCES ||--|| PROGRESS_PROJECTIONS : summarizes
 ```
 
-## 4. Diagnóstico e personalização
+## Diagnóstico
 
 ```mermaid
 erDiagram
   DIAGNOSTIC_DEFINITIONS ||--o{ DIAGNOSTIC_VERSIONS : versions
-  DIAGNOSTIC_VERSIONS ||--o{ DIMENSIONS : defines
-  DIAGNOSTIC_VERSIONS ||--o{ ITEMS : contains
-  ITEMS ||--o{ ITEM_OPTIONS : offers
-  DIAGNOSTIC_VERSIONS ||--o{ SESSIONS : executes
-  SESSIONS ||--o{ RESPONSES : records
-  SESSIONS ||--o{ RESULTS : calculates
-  RESULTS ||--o{ DIMENSION_RESULTS : decomposes
-  SEGMENT_DEFINITIONS ||--o{ SEGMENT_VERSIONS : versions
-  SEGMENT_VERSIONS ||--o{ SEGMENT_ASSIGNMENTS : assigns
-  ENTREPRENEURS ||--o{ SEGMENT_ASSIGNMENTS : receives
+  DIAGNOSTIC_VERSIONS ||--o{ DIAGNOSTIC_DIMENSIONS : defines
+  DIAGNOSTIC_VERSIONS ||--o{ DIAGNOSTIC_ITEMS : contains
+  DIAGNOSTIC_ITEMS ||--o{ DIAGNOSTIC_OPTIONS : offers
+  DIAGNOSTIC_VERSIONS ||--o{ DIAGNOSTIC_SESSIONS : executes
+  DIAGNOSTIC_SESSIONS ||--o{ DIAGNOSTIC_RESPONSES : records
+  DIAGNOSTIC_SESSIONS ||--o{ DIAGNOSTIC_RESULTS : calculates
+  DIAGNOSTIC_RESULTS ||--o{ ARCHETYPE_ASSIGNMENTS : assigns
 ```
 
-## 5. Eventos e integrações
+## Engajamento e integração
 
 ```mermaid
 erDiagram
-  EVENT_SCHEMAS ||--o{ EVENTS : validates
+  POINT_LEDGER ||--o{ RANKING_PROJECTION : projects
+  BADGE_DEFINITIONS ||--o{ BADGE_AWARDS : awards
   EVENTS ||--o{ OUTBOX : routes
-  CONSUMER_DEFINITIONS ||--o{ CONSUMER_INBOX : consumes
-  EVENTS ||--o{ CONSUMER_INBOX : deduplicates
   OUTBOX ||--o{ DELIVERY_ATTEMPTS : attempts
-  EVENTS ||--o{ SYNC_JOBS : triggers
-  CONNECTIONS ||--o{ SYNC_JOBS : executes
-  SYNC_JOBS ||--o{ SYNC_ATTEMPTS : retries
-  CONNECTIONS ||--o{ EXTERNAL_OBJECT_MAPPINGS : maps
-  CONNECTIONS ||--o{ WEBHOOK_RECEIPTS : receives
 ```
 
-## 6. Inteligência comportamental
-
-```mermaid
-erDiagram
-  FEATURE_DEFINITIONS ||--o{ FEATURE_VERSIONS : versions
-  FEATURE_VERSIONS ||--o{ FEATURE_DEPENDENCIES : depends
-  FEATURE_VERSIONS ||--o{ FEATURE_COMPUTATION_RUNS : computes
-  FEATURE_COMPUTATION_RUNS ||--o{ FEATURE_VALUES : produces
-  SCORE_DEFINITIONS ||--o{ SCORE_VERSIONS : versions
-  SCORE_VERSIONS ||--o{ SCORE_RUNS : executes
-  SCORE_RUNS ||--o{ SCORE_RESULTS : produces
-  SCORE_RESULTS ||--o{ SCORE_CONTRIBUTIONS : explains
-  FEATURE_VERSIONS ||--o{ SCORE_CONTRIBUTIONS : contributes
-```
-
-## 7. Regra de leitura
-
-Diagramas resumidos omitem relações auxiliares, auditoria e FKs de eventos para preservar legibilidade. A fonte completa é `database-model-v0.1.yaml`.
+Diagramas omitem relações auxiliares para legibilidade. Para nomes/colunas/FKs exatos, consulte `supabase/migrations/` e o catálogo reconstruído nos database gates.

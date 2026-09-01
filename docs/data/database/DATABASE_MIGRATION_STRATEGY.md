@@ -1,132 +1,45 @@
-# Estratégia de migrations e transição da fundação atual
+# Estratégia de migrations
 
-**Versão:** 0.1
+**Revisado em:** 2026-09-01  
+**Status:** histórico executável consolidado
 
-## 1. Decisão
+A descrição antiga de “ondas M00–M08 futuras” foi superada pelo histórico real. A política vigente é simples: `supabase/migrations/` é o único caminho para evoluir o schema autorizado.
 
-Não aplicar remendos no schema antigo. O modelo novo será criado lado a lado e os dados aproveitáveis serão migrados explicitamente.
+## Regras
 
-## 2. Ondas de migration
+- migration aplicada não é editada; correção posterior é aditiva;
+- replay deve funcionar desde banco vazio;
+- migrations ativas são validadas contra manifests/boundaries do histórico recuperado;
+- alteração de rotina/grant exige teste de contrato proporcional;
+- baseline de equivalência só muda após replay provar a alteração intencional;
+- não importar estado remoto para “fazer o Git combinar”;
+- não aumentar inventário legado para corrigir comportamento quando uma substituição semântica segura do helper existente resolve;
+- backfills são idempotentes e observáveis;
+- mudanças destrutivas exigem retenção/integridade e caminho de forward-fix ou rollback aplicável.
 
-### M00 — infraestrutura de banco
+## Contratos congelados e substituições
 
-- extensões;
-- schemas;
-- roles;
-- funções auxiliares;
-- tabela de controle de migrations.
+A superfície pública e o inventário de helpers opacos possuem baselines legíveis por máquina. Uma correção que precise alterar a semântica de um helper já inventariado deve:
 
-### M01 — identidade e governança básica
+1. preservar assinatura/facade quando possível;
+2. registrar a substituição semântica autorizada;
+3. manter grants compatíveis com o contrato público;
+4. executar replay, equivalência, contratos e regressão funcional;
+5. não alterar baseline apenas para silenciar o CI.
 
-- contas;
-- organizações;
-- empreendedores;
-- negócios e vínculos;
-- permissões;
-- finalidades/consentimento;
-- arquivos.
+O quick-check de múltipla escolha de 31/08 segue exatamente esse padrão.
 
-### M02 — catálogo e versionamento
+## Execução
 
-- programas;
-- jornadas;
-- cursos;
-- atividades;
-- competências;
-- regras;
-- assets.
+```bash
+npm run validate:migration-history
+npm run replay:database-clean
+npm run validate:schema-equivalence
+npm run validate:public-rpc-contracts
+npm run validate:legacy-rpc-containment
+npm run test:database
+```
 
-### M03 — orquestração e diagnóstico
+## Ambiente remoto
 
-- trilhas/passos/transições;
-- inscrições e instâncias;
-- diagnóstico, segmentos e personalização.
-
-### M04 — avaliação, prática e gamificação
-
-- avaliações;
-- submissões/rubricas;
-- pontos;
-- selos;
-- certificados.
-
-### M05 — eventos e processamento
-
-- schemas de eventos;
-- events/outbox/inbox;
-- deliveries/dead letters;
-- checkpoints.
-
-### M06 — integração
-
-- connections;
-- mappings;
-- jobs;
-- webhooks;
-- conflitos/reconciliação.
-
-### M07 — inteligência
-
-- feature store;
-- score store;
-- validações/aprovações.
-
-### M08 — views, RLS e grants
-
-- API views/functions;
-- policies;
-- privilégios;
-- testes de isolamento.
-
-## 3. Mapeamento do schema antigo
-
-| Antigo | Novo | Política |
-|---|---|---|
-| `users` | `iam.user_accounts` + `core.entrepreneurs` | migrar somente perfis reais e reconciliar auth |
-| `partners` | `iam.organizations` | migrar como organização tipo partner |
-| `teachers` | conta/membership/contributor | evitar entidade paralela sem identidade |
-| `courses` | definition + version | criar snapshot v1 |
-| `tracks` | path templates/steps | converter regras textuais manualmente |
-| `modules` | catalog.modules | migrar estrutura editorial |
-| `lessons` | activity definition/version | converter mídia e metadados |
-| `lesson_assets` | content_assets/file_objects | validar URLs e segurança |
-| `lesson_progress` | projeção/import legado | não fabricar histórico de eventos |
-| `assessments/questions` | assessment specs/questions | publicar versão explícita |
-| `quiz_attempts/answers` | attempts/responses/results | migrar apenas se dados reais e íntegros |
-| `submissions/reviews` | submissions/evidence/reviews | validar consentimento e arquivos |
-| `points` | point_ledger | importar com regra `legacy_import` e idempotência |
-| `badges/user_badges` | definitions/versions/awards | guardar evidência legada |
-| `certificates` | definitions/versions/issuances | manter código e snapshot |
-| `notifications` | intervenção/notificação | migrar somente se operacionalmente necessário |
-
-## 4. Dados legados sem eventos
-
-Nunca gerar eventos comportamentais detalhados retroativamente a partir de um estado agregado. Exemplo:
-
-- `lesson_progress.completed_at` pode gerar um registro de importação/snapshot;
-- não pode gerar sessões, revisitas ou sequência inexistentes;
-- features que exigem comportamento granular devem marcar `insufficient_evidence` para dados legados.
-
-## 5. Estratégia de rollout
-
-1. criar schema novo;
-2. carregar conteúdo OpenAI validado;
-3. criar segunda jornada sintética para teste multi-jornada;
-4. validar integrações em sandbox;
-5. executar dual-read apenas em staging, se necessário;
-6. migrar usuários/conteúdo elegível;
-7. congelar escrita no schema antigo;
-8. cutover;
-9. reconciliar contagens e hashes;
-10. manter rollback de aplicação e backup do schema anterior.
-
-## 6. Regras de migration produtiva
-
-- uma migration por mudança coerente;
-- sem edição de migrations já aplicadas;
-- expansão antes de contração;
-- mudanças destrutivas em múltiplos deploys;
-- migrations testadas do zero e sobre snapshot anterior;
-- índices grandes de forma concorrente quando aplicável;
-- backfills idempotentes e observáveis;
-- cada migration com plano de rollback ou forward-fix.
+Supabase remoto é destino de desenvolvimento/teste/preview, não fonte do schema. Migrations ausentes são aplicadas na ordem somente após os gates locais. Divergência remota é corrigida por migration/recriação controlada, nunca por edição manual incorporada retroativamente ao histórico.
