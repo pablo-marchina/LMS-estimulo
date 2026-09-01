@@ -1,28 +1,38 @@
 # Domínio e autenticação por ambiente
 
-**Revisado em:** 2026-09-01  
-**Status:** Supabase configurável para desenvolvimento/teste/preview; identidade AWS pendente
+## Superfícies de autenticação
 
-## Rotas Supabase atuais
+No adapter Supabase, as rotas de autenticação incluem:
 
 - `/entrar` — participante;
-- `/entrar/administracao` — entrada administrativa explícita;
-- `/auth/admin/start` — inicia Google OAuth;
-- `/auth/admin/callback` — troca código e valida acesso administrativo;
-- `/confirm` — confirmação canônica de e-mail;
-- `/auth/confirm` — compatibilidade.
+- `/entrar/administracao` — entrada administrativa;
+- `/auth/admin/start` — início do OAuth administrativo;
+- `/auth/admin/callback` — callback e resolução de acesso;
+- `/confirm` — confirmação de e-mail;
+- `/auth/confirm` — compatibilidade de confirmação.
 
-## Callback administrativo
+## Participante
 
-Após `exchangeCodeForSession`, o callback usa `auth.getUser()` e exige usuário válido, e-mail confirmado e evidência de provider Google em `user.identities` ou `app_metadata.provider/providers`. Em seguida resolve a identidade interna e exige membership na organização Estímulo.
+Cadastro e login usam o provider público autorizado. Dados protegidos de perfil são persistidos apenas no fluxo autenticado correspondente. Recuperação e confirmação preservam as regras do provider sem introduzir credenciais privilegiadas no browser.
 
-`getClaims()` pode continuar sendo útil em outras camadas, como proxy/sessão, mas **não é requisito do callback para identificar o provider Google**. Isso evita rejeitar conta Google válida por ausência/formato de AMR.
+## Administração
 
-O domínio `estimulo.org` continua classificando conta corporativa em alguns fluxos administrativos de gestão/recuperação, mas não concede acesso sozinho. RBAC determina capabilities.
+O fluxo administrativo exige:
 
-## Confirmação de e-mail
+1. sessão válida obtida pelo provider federado aprovado;
+2. usuário e e-mail verificados conforme o contrato do provider;
+3. identidade externa compatível com o mecanismo administrativo;
+4. resolução da identidade interna;
+5. membership ativa na organização Estímulo;
+6. capabilities verificadas por RBAC.
 
-Template versionado: `supabase/templates/confirmation.html`.
+Domínio de e-mail pode classificar uma conta corporativa, mas não substitui identidade, membership ou permissão.
+
+## Confirmação de e-mail no Supabase
+
+O template versionado é `supabase/templates/confirmation.html`. O fluxo usa token hash e redirect controlado para a rota de confirmação da aplicação.
+
+A configuração hospedada pode ser sincronizada por:
 
 ```bash
 SUPABASE_ACCESS_TOKEN=... \
@@ -30,12 +40,12 @@ SUPABASE_PROJECT_REF=... \
 npm run sync:supabase-confirmation-email
 ```
 
-O comando valida placeholders SSR, faz PATCH da configuração Auth e GET de confirmação. Não versionar token/project ref.
+Credenciais e identificadores de projeto pertencem ao ambiente e não ao Git.
 
-## Redirects e preview
+## Redirects e origens
 
-Localhost e previews autorizados devem estar configurados no Supabase de destino. Em staging/produção institucional, origem, identidade e callbacks dependem da arquitetura AWS; não existe fallback silencioso para URLs de teste.
+Cada ambiente deve declarar explicitamente suas origens e redirects autorizados. Localhost e previews não são usados como fallback de um ambiente institucional.
 
-## AWS
+## Fronteira de provider
 
-Enquanto identidade AWS estiver pendente, o provider permanece *fail-closed*. O futuro ADR deve definir sessão, MFA, linking, callbacks, cookies, CSRF/CORS, revogação e operação de credenciais.
+Identidade de produção é definida pela estratégia de cloud e pelos ADRs aplicáveis. Enquanto um adapter de produção não satisfizer seu contrato, ele deve falhar fechado em vez de reutilizar silenciosamente credenciais ou endpoints de desenvolvimento.

@@ -1,75 +1,61 @@
-# Fundação atual da aplicação
-
-**Revisado em:** 2026-09-01  
-**Status:** implementação atual documentada; arquitetura AWS institucional ainda pendente
+# Fundação da aplicação
 
 ## Forma do sistema
 
-Monorepo npm com `apps/web/`, monólito modular Next.js 16/React 19/TypeScript. `app/` contém entradas/composição, `components/` UI compartilhada e `lib/` regras, modelos e adapters. `config/module-boundaries.json` verifica dependências permitidas.
+O repositório é um monorepo npm. A aplicação web é um monólito modular Next.js/React/TypeScript:
 
-## Runtime ativo
+- `apps/web/app/`: rotas, layouts e composition roots;
+- `apps/web/components/`: UI compartilhada;
+- `apps/web/lib/`: domínio de aplicação, modelos, casos de uso e adapters;
+- `config/`: contratos e políticas legíveis por máquina;
+- `supabase/`: migrations, functions, templates e configuração do provider de desenvolvimento/teste;
+- `scripts/`: validação, operação e testes.
 
-- Supabase Auth/cookies SSR;
-- Supabase PostgreSQL, Storage e Edge Functions;
-- gateway autenticado para RPCs;
-- Vercel para build/deploy web autorizado;
-- PostgreSQL como estado operacional, histórico, auditoria e outbox.
+`config/module-boundaries.json` protege as dependências entre módulos.
 
-Integrações externas não são dependência síncrona do domínio.
+## Persistência
 
-## Autenticação
+PostgreSQL é a fonte operacional. O schema é reproduzido exclusivamente pelas migrations versionadas. Dados históricos que precisam de auditabilidade usam stores próprios, como tentativas, submissões, ledgers, eventos e auditoria.
 
-Participante usa `/entrar`; administração usa `/entrar/administracao`. O callback administrativo valida Google pelo registro verificado de `getUser()`, resolve a identidade interna e exige membership Estímulo. Capabilities são RBAC. A detecção do provider não depende de `getClaims()`/AMR.
+## Providers
 
-## Jornada
+Supabase fornece Auth, PostgreSQL, Storage e Edge Functions no ambiente autorizado de desenvolvimento, teste e preview. Vercel fornece build e preview web. O domínio permanece desacoplado por ports/adapters para permitir a fronteira institucional definida pela estratégia de cloud.
 
-Jornada é entidade operacional única `draft ↔ published`. Publicada pode ser editada ao vivo; publicação não cria clone. Nomenclatura física `journey_version*` permanece como compatibilidade.
+Integrações externas não participam da transação síncrona do domínio; efeitos de borda são derivados de eventos/outbox.
 
-## Experiência participante
+## Identidade e autorização
 
-- home mantém destaque elegível sem tornar a consulta opcional de elegibilidade um requisito para renderizar a página;
-- cards de jornada e áreas principais de aula possuem alvo de abertura previsível;
-- ajuda preserva shell/header participante;
-- ranking expõe identificação mascarada;
-- popup de badge anuncia somente awards novos por `award_id`.
+Participante e administração têm entradas separadas. A administração exige identidade federada válida, resolução da identidade interna, membership Estímulo e RBAC. A autorização é verificada no servidor e, quando aplicável, reforçada por RLS e grants de banco.
+
+## Catálogo e jornada
+
+Cada jornada é uma entidade operacional única `draft ↔ published`. Nomes físicos legados `journey_version*` existem por compatibilidade de schema e não representam snapshots editoriais navegáveis.
+
+Trilhas, aulas, atividades, avaliações, credenciais e outros subdomínios mantêm seu próprio modelo de histórico quando necessário para reproduzir uma tentativa, regra ou emissão.
 
 ## Diagnóstico
 
-O motor é configurável. O runtime usa média dos scores das respostas por dimensão e thresholds configurados como limites superiores inclusivos, avaliados da faixa menor para a maior. Essa semântica é execução da configuração, não definição de metodologia oficial.
+O motor de diagnóstico é configurável e versionado. Perguntas, opções, dimensões, perfis, thresholds, sessões, respostas e resultados permanecem auditáveis. O runtime executa apenas a configuração publicada; não cria metodologia, pesos ou cortes ausentes.
 
-## Quick check
+## Avaliação e prática
 
-`multiple_choice` usa igualdade exata do conjunto selecionado com o conjunto correto. O web canonicaliza a ordem para idempotência e o banco valida existência/deduplicação.
+Quick checks, avaliações e entregas passam por validação server-side e mantêm idempotência. Múltipla escolha usa igualdade entre o conjunto selecionado e o conjunto configurado como correto, independentemente da ordem de seleção.
 
-## Banco e legado
+## Gamificação
 
-- migrations são fonte executável;
-- baselines de RPC pública/helpers opacos/equivalência são machine-readable;
-- correções de legado não podem criar nova superfície opaca quando substituição semântica segura do helper existente resolve;
-- grants de facades privilegiadas permanecem fechados para browser roles;
-- replay e regressões fazem parte do gate.
+Pontos derivam de ledger idempotente. Ranking, saldo e demais projeções derivam de fatos persistidos. Badges são awards identificáveis e certificados preservam critérios e evidência de emissão. Identificação exibida a outros participantes deve respeitar minimização e privacidade.
 
-## E-mail de confirmação
+## Segurança
 
-`supabase/templates/confirmation.html` é versionado. `npm run sync:supabase-confirmation-email` aplica assunto/HTML ao Supabase hospedado e lê a configuração de volta para verificar igualdade. Credenciais pertencem ao ambiente.
+- browser não recebe service role;
+- funções privilegiadas validam ator, organização e permissão;
+- facades server-only não são concedidas a browser roles;
+- arquivos permanecem privados e URLs assinadas são temporárias;
+- segredos pertencem ao ambiente;
+- logging e eventos aplicam minimização/redaction.
 
-## AWS
+## Reprodutibilidade
 
-AWS continua destino institucional planejado. `Dockerfile.lambda` é o único artefato aprovado; identidade, banco, storage, rede, segredos, observabilidade e continuidade ainda exigem decisão/implementação. Não existe fallback automático para Supabase.
+O gate da aplicação valida dependências, arquitetura, testes, build, banco, contratos e secret scanning. Baselines de schema ou compatibilidade só mudam com alteração executável comprovada por replay.
 
-## Validação
-
-```bash
-npm run validate:release-candidate
-npm run test:repository-tooling
-npm run test:application
-npm run test:product
-npm run test:integrations
-npm run test:database
-npm run typecheck:web
-npm run build:web
-npm run scan:secrets
-npm run test:secret-scanning
-```
-
-Veja [`CURRENT_PLATFORM_BEHAVIOR.md`](CURRENT_PLATFORM_BEHAVIOR.md) para invariantes observáveis recentes.
+Consulte os documentos especializados no [`PROJECT_INDEX.md`](../../PROJECT_INDEX.md).

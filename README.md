@@ -1,67 +1,52 @@
 # Plataforma Estímulo
 
-LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdos e atividades e produzir dados educacionais e operacionais com governança.
+LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdo e atividades e produzir evidências educacionais e operacionais com governança.
 
-> **Ambientes:** Supabase/Vercel são o runtime ativo para desenvolvimento, teste, preview, demonstração e validação controlada. AWS continua sendo o destino institucional planejado para produção definitiva; sua arquitetura ainda depende de decisão/implementação. `Dockerfile.lambda` permanece o único artefato AWS aprovado e o provider AWS é *fail-closed*.
-
-[Índice da documentação](PROJECT_INDEX.md) · [Fundação atual](docs/implementation/APPLICATION_FOUNDATION.md) · [Contratos atuais](docs/implementation/CURRENT_PLATFORM_BEHAVIOR.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Handoff Supabase/Vercel](docs/deployments/SUPABASE_VERCEL_HANDOFF.md)
+[Índice da documentação](PROJECT_INDEX.md) · [Fundação da aplicação](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Princípios de produto](docs/product/PRODUCT_PRINCIPLES.md) · [Runbook de releases](docs/operations/RELEASE_RUNBOOK.md)
 
 ## Produto
 
-A plataforma reúne experiência participante e ferramentas administrativas. Jornada possui um único registro operacional e estados visíveis `draft`/`published`; publicar/despublicar altera o mesmo registro e uma jornada publicada pode ser editada ao vivo. Nomes físicos legados `journey_version*` são compatibilidade do schema, não snapshots editoriais do produto.
+A plataforma reúne experiência participante e ferramentas administrativas sobre o mesmo domínio. **Cada jornada é única** e possui os estados visíveis `draft` e `published`; publicar ou despublicar altera o mesmo registro operacional. Uma jornada publicada pode ser editada conforme as regras de autorização e integridade, enquanto fatos históricos de execução permanecem preservados em seus próprios registros.
 
 ### Participante
 
-- cadastro, confirmação, login e recuperação;
-- Termos/Privacidade e nova aceitação obrigatória;
-- home, jornadas, aulas, biblioteca, perfil, diagnóstico e ajuda;
-- perguntas rápidas, avaliações, práticas, entregas, comentários e arquivos;
-- pontos, ranking com identificação mascarada, recompensas, badges e certificados;
-- cards de jornada e áreas principais de aula acionáveis;
-- shell/header participante preservado em `/ajuda`.
+A experiência participante cobre:
 
-A home pode usar jornadas elegíveis para escolher o destaque (incluindo OpenAI), mas falha nessa consulta opcional não derruba os dados centrais da página.
+- cadastro, confirmação, login, recuperação e aceite de documentos legais;
+- home, jornadas, aulas, biblioteca, perfil, diagnóstico e ajuda;
+- conteúdo, quick checks, avaliações, práticas, entregas, comentários e arquivos;
+- pontos, ranking com identificação protegida, recompensas, badges e certificados;
+- navegação responsiva, estados de carregamento, erro e retomada.
 
 ### Administração
 
-- entrada separada em `/entrar/administracao` por Google OAuth;
-- callback valida usuário/e-mail confirmado, identidade Google, vínculo interno e membership Estímulo; RBAC decide capabilities;
-- domínio de e-mail isolado não concede acesso e o callback não depende de `getClaims()`/AMR para identificar Google;
-- edição ao vivo de jornadas publicadas, trilhas, aulas e conteúdos;
-- diagnóstico, CMS, biblioteca, campanhas, B2B, recompensas, certificados, usuários e auditoria;
-- preview isolado sem matrícula/progresso/analytics.
+A administração cobre:
 
-## Contratos recentes importantes
+- entrada separada por identidade federada e autorização organizacional;
+- gestão de jornadas, trilhas, aulas, conteúdos, biblioteca e temas;
+- diagnóstico e instrumentos configuráveis;
+- campanhas, B2B, recompensas, certificados, usuários e permissões;
+- preview participante isolado de mutações, progresso e analytics;
+- auditoria das operações administrativas relevantes.
 
-- diagnóstico: média de scores configurados + thresholds como limites superiores inclusivos, ordenados da faixa menor para a maior;
-- `multiple_choice`: conjunto selecionado precisa ser exatamente igual ao conjunto correto;
-- popup de badge: somente award realmente novo é anunciado; histórico vira baseline;
-- ranking: e-mail é mascarado no banco, sem código fictício;
-- e-mail de confirmação Supabase: template versionado + sincronização/verificação remota.
-
-Detalhes em [`CURRENT_PLATFORM_BEHAVIOR.md`](docs/implementation/CURRENT_PLATFORM_BEHAVIOR.md).
+A autenticação administrativa combina identidade externa validada, identidade interna, membership da organização Estímulo e RBAC. Domínio de e-mail, isoladamente, não concede acesso.
 
 ## Fundação técnica
 
-- monólito modular Next.js 16, React 19 e TypeScript;
-- PostgreSQL reproduzível por migrations;
-- Supabase Auth, Storage, PostgreSQL e Edge Functions no runtime autorizado atual;
-- Vercel para build/deploy web de preview/validação;
-- RLS, RBAC, idempotência, eventos, auditoria e outbox;
-- gateway autenticado para RPCs privilegiadas;
-- integrações externas desacopladas por outbox; nenhum CRM é dependência síncrona do domínio;
-- contratos e gates de qualidade, segurança, integridade e reprodutibilidade.
+- monorepo npm com aplicação Next.js/React/TypeScript;
+- PostgreSQL reconstruível por migrations como fonte operacional;
+- Supabase como provider autorizado de desenvolvimento, teste e preview;
+- Vercel para build e preview web;
+- adapters para manter o domínio desacoplado dos providers;
+- RLS, RBAC, idempotência, auditoria, eventos e outbox transacional;
+- integração externa assíncrona e destination-neutral;
+- contratos automatizados de arquitetura, banco, segurança e reprodutibilidade.
+
+A estratégia de ambientes e a fronteira de produção são descritas em [`ENVIRONMENT_AND_CLOUD_STRATEGY.md`](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md) e [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md).
 
 ## Desenvolvimento local
 
-### Pré-requisitos
-
-- Git;
-- Node.js `22.23.1` para a toolchain local/reprodutível documentada;
-- npm `10.9.8`;
-- projeto Supabase autorizado para teste;
-- Google OAuth configurado para administração;
-- duas chaves Base64 independentes de 32 bytes para CPF.
+As versões da toolchain são definidas pelos arquivos versionados do repositório (`.node-version`, `.nvmrc`, `package.json` e lockfile).
 
 ```bash
 npm ci --ignore-scripts --no-audit --no-fund
@@ -79,16 +64,7 @@ npm run validate:release-candidate
 npm run dev:web
 ```
 
-Configuração mínima:
-
-```dotenv
-APP_ENV=development
-PLATFORM_RUNTIME_PROVIDER=supabase
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-ETL_EXPORT_ENABLED=false
-```
-
-Nunca coloque segredos em `NEXT_PUBLIC_*`.
+Configuração e segredos pertencem ao ambiente. Nunca coloque segredo em `NEXT_PUBLIC_*`, no Git ou na documentação.
 
 ## Superfícies principais
 
@@ -104,7 +80,9 @@ Nunca coloque segredos em `NEXT_PUBLIC_*`.
 | `/empreendedor/perfil` | `/admin/configuracoes` |
 | `/ajuda` | |
 
-## Gates do software
+## Qualidade
+
+O candidato a release deve ser validado pelo SHA exato. Os comandos canônicos incluem:
 
 ```bash
 npm run validate:release-candidate
@@ -119,23 +97,23 @@ npm run scan:secrets
 npm run test:secret-scanning
 ```
 
-O banco deve ser reconstruível desde zero e baselines legíveis por máquina não podem ser alterados para mascarar divergência. A evidência de um SHA pertence aos workflows/artefatos desse SHA.
+O banco deve ser reconstruível desde zero. Baselines legíveis por máquina só mudam quando a alteração executável correspondente é comprovada; nunca são ajustados para ocultar divergência.
 
 ## Estrutura
 
 ```text
 apps/web/app/                   rotas e composition roots
 apps/web/components/            UI compartilhada
-apps/web/lib/                   módulos/casos de uso/adapters
-config/                         políticas e contratos de arquitetura
+apps/web/lib/                   módulos, casos de uso e adapters
+config/                         políticas e contratos legíveis por máquina
 supabase/migrations/            histórico PostgreSQL executável
 supabase/templates/             templates Auth versionados
 supabase/functions/             Edge Functions
 scripts/                        validação, testes e operação
-docs/                           documentação canônica
-Dockerfile.lambda               artefato AWS aprovado
+docs/                           documentação canônica permanente
+Dockerfile.lambda               empacotamento web para a fronteira AWS
 ```
 
-## Contribuição
+## Documentação
 
-Mudanças seguem branch + pull request com código, migrations, testes e documentação sincronizados. `main` só muda por fluxo autorizado e pelos mesmos gates.
+`docs/` contém apenas documentação permanente da plataforma. Releases, incidentes, correções pontuais, rotações de credencial, resultados de CI e evidências de um SHA pertencem ao histórico do GitHub, aos artifacts ou aos sistemas operacionais apropriados. Consulte [`REPOSITORY_MAINTENANCE.md`](docs/REPOSITORY_MAINTENANCE.md).

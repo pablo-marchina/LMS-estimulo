@@ -1,37 +1,50 @@
-# Baseline de qualidade para produção
+# Baseline de qualidade
 
-**Revisado em:** 2026-09-01
+Este documento define propriedades permanentes que um release da Plataforma Estímulo deve preservar.
 
-## Software reproduzível
+## Reprodutibilidade
 
-- instalação por lockfile e toolchain definida;
-- Linux/Windows validam instalação/typecheck/build;
-- PostgreSQL é reconstruído desde vazio;
-- schema, contratos públicos e contenção de legado são comparados com baselines machine-readable;
-- mudança de baseline exige evidência de replay, nunca ajuste para silenciar CI.
-
-## Segurança e privacidade
-
-- sessão/identidade/actor são validados antes de RPC privilegiada;
-- browser roles não executam facades server-only;
-- administração combina identidade Google, vínculo interno, membership e RBAC;
-- domínio de e-mail sozinho não concede acesso;
-- ranking não expõe e-mail completo;
-- arquivos permanecem privados e URL assinada não vira fato persistente;
-- secrets não entram em cliente, Git ou artifacts.
+- instalação determinística por lockfile e toolchain versionada;
+- source tree não é modificado pelo processo de instalação/build;
+- PostgreSQL é reconstruível desde banco vazio;
+- schema e contratos são comparados com baselines legíveis por máquina;
+- mudança de baseline exige mudança executável intencional comprovada por replay.
 
 ## Correção funcional
 
-- diagnóstico executa configuração de forma determinística sem inventar metodologia;
-- múltipla escolha usa conjunto exato;
-- aquisição de badge é dirigida por novo `award_id`, não por primeiro browser;
-- enriquecimento opcional da home degrada sem apagar dados centrais;
-- journey lifecycle segue `draft ↔ published` com edição ao vivo autorizada.
+- regras críticas são validadas no servidor ou banco, não apenas na UI;
+- mutações são idempotentes quando podem sofrer retry;
+- histórico necessário para reproduzir resultados não é reescrito;
+- estados vazios, indisponibilidade e erro são distinguíveis;
+- dados fictícios não aparecem como reais;
+- integrações opcionais degradam sem corromper o estado central.
 
-## Evidência visual
+## Segurança e privacidade
 
-Captura deve apontar para o SHA efetivamente revisado. Em PR, ausência de GitHub Deployment com `environment_url` para o head é blocker de evidência, não autorização para usar outro deployment.
+- identidade e autorização antecedem acesso privilegiado;
+- browser roles não executam facades server-only;
+- administração exige identidade, membership e RBAC válidos;
+- RLS/grants reforçam isolamento quando aplicável;
+- PII é minimizada em eventos, ranking, logs e integrações;
+- arquivos são privados e URLs assinadas não são persistidas como credencial;
+- segredos não entram no cliente, Git ou artifacts.
 
-## Gate B
+## Experiência e acessibilidade
 
-Produção institucional ainda exige AWS definida, E2E real, capacidade, isolamento, observabilidade, continuidade, segurança/privacidade, conteúdo e acessibilidade. Valores numéricos de um candidato ficam nos artifacts, não neste baseline.
+- fluxos centrais funcionam em viewports suportadas;
+- conteúdo principal não depende de hover ou de alvo de clique ambíguo;
+- foco, teclado, contraste e semântica são tratados como requisitos;
+- carregamento, erro, bloqueio e retomada possuem feedback compreensível;
+- preview administrativo não produz efeitos de participante.
+
+## Observabilidade e confiabilidade
+
+- liveness e readiness possuem significados distintos;
+- logs e métricas evitam dados sensíveis desnecessários;
+- filas e consumidores expõem backlog/falha suficientes para operação;
+- backup, restore e rollback seguem os requisitos do ambiente;
+- evidência visual e de deployment corresponde ao SHA avaliado.
+
+## Produção
+
+A qualidade do software não substitui a prontidão do ambiente. Produção exige os controles de [`../security/PRODUCTION_READINESS_GATE.md`](../security/PRODUCTION_READINESS_GATE.md).

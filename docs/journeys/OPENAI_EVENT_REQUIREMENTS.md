@@ -1,104 +1,33 @@
-# Requisitos de eventos - Jornada OpenAI
+# Requisitos de eventos — Jornada OpenAI
 
-**Versão:** 0.1  
-**Status:** Requisitos semânticos para alimentar o E08; nomes canônicos finais ainda serão definidos
+A Jornada OpenAI usa o catálogo e envelope canônicos da plataforma. Este documento identifica fatos de domínio relevantes à configuração da jornada sem criar uma taxonomia paralela.
 
-## 1. Objetivo
+## Participação e navegação
 
-Identificar os fatos que a Jornada OpenAI precisa produzir. Este documento não define o envelope, armazenamento ou schema final dos eventos.
+Eventos podem representar atribuição, disponibilidade, início, seleção de trilha, desbloqueio e conclusão quando esses fatos forem materialmente necessários.
 
-## 2. Entrada e navegação
+## Conteúdo
 
-- participação atribuída;
-- jornada disponibilizada;
-- jornada iniciada;
-- hub visualizado;
-- trilha selecionada;
-- trilha iniciada;
-- bloco opcional iniciado ou ignorado;
-- bônus desbloqueado.
+Eventos podem representar início, progresso de mídia consolidado, consumo, abertura de material, revisita e conclusão. Telemetria de alta frequência não vira automaticamente evento de negócio.
 
-## 3. Conteúdo
+## Avaliação
 
-- unidade disponibilizada;
-- unidade iniciada;
-- progresso de mídia registrado;
-- conteúdo consumido;
-- material complementar aberto/baixado;
-- pausa prática iniciada;
-- unidade concluída;
-- unidade revisitada.
+Quick checks, provas e demais avaliações podem produzir fatos de início, resposta, submissão, avaliação e resultado. Tentativas preservam relação causal com a versão do instrumento utilizada.
 
-## 4. Avaliações
+## Prática
 
-- quick check iniciado, respondido e submetido;
-- resposta avaliada;
-- avaliação de unidade enviada;
-- avaliação de trilha enviada;
-- prova iniciada, retomada e submetida;
-- tentativa avaliada;
-- prova aprovada/reprovada;
-- nova tentativa disponibilizada.
+Submissão, arquivo associado, revisão, aceitação, pedido de revisão e consentimentos relacionados são fatos separados quando a capacidade estiver habilitada.
 
-## 5. Prática
+## Progressão e reconhecimento
 
-- prática sugerida;
-- prática iniciada;
-- submissão criada;
-- arquivo anexado;
-- submissão enviada;
-- revisão iniciada;
-- submissão aceita, recusada ou devolvida para revisão;
-- autorização de uso concedida/retirada;
-- caso selecionado e publicado.
+Desbloqueio, requisito satisfeito, conclusão, lançamento de pontos, badge e certificado são eventos/fatos próprios; projeções não substituem seus eventos de origem.
 
-## 6. Progressão e reconhecimento
+## Contexto
 
-- etapa desbloqueada;
-- requisito satisfeito;
-- trilha concluída;
-- pontos concedidos/revertidos;
-- selo emitido/revogado;
-- certificado emitido/revogado;
-- nível base concluído;
-- jornada avançada concluída.
+O envelope canônico inclui IDs internos necessários ao domínio, versão de schema, ator, organização, timestamps e causalidade. PII e conteúdo livre só entram quando a finalidade e o schema autorizarem.
 
-## 7. Propriedades de contexto necessárias
+## Não-fatos
 
-Conforme o tipo de evento:
+Termos como “engajado”, “persistente”, “pronto para crédito” ou “baixo risco” são inferências e não devem ser emitidos como atalho para fatos brutos. Features derivadas possuem contrato e governança próprios.
 
-- participação;
-- definição e versão da jornada;
-- trilha e etapa;
-- atividade e versão;
-- avaliação, questão e tentativa;
-- regra de progressão;
-- regra de pontos;
-- dispositivo/canal sem fingerprinting excessivo;
-- origem da ação;
-- duração ativa quando mensurável de forma confiável;
-- estado anterior e posterior;
-- causa da transição.
-
-## 8. Eventos que não devem existir como atalhos sem fatos de origem
-
-- `entrepreneur_engaged`;
-- `entrepreneur_persistent`;
-- `credit_ready`;
-- `low_risk`;
-- `applied_learning` sem evidência definida.
-
-Esses conceitos são interpretações ou features derivadas, não fatos brutos.
-
-## 9. Relação preliminar com features futuras
-
-| Evidência | Eventos de origem possíveis | Interpretação ainda não autorizada |
-|---|---|---|
-| conclusão de unidades | início, progresso, quick check, conclusão | disciplina/persistência |
-| retomada | inatividade, retorno, nova ação | resiliência |
-| revisão de artefato | submissão, feedback, reenvio | abertura a feedback |
-| prova | tentativa, resposta, nota | capacidade de aprendizagem |
-| prática | submissão e validação | aplicação no negócio |
-| resposta a nudge | envio, entrega, abertura, ação | responsividade |
-
-O E08 definirá nomes, schemas, idempotência, ordenação, retenção e consumidores.
+Consulte [`../events/EVENT_ARCHITECTURE.md`](../events/EVENT_ARCHITECTURE.md) e [`../events/CANONICAL_EVENT_ENVELOPE.md`](../events/CANONICAL_EVENT_ENVELOPE.md).

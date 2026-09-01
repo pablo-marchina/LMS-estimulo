@@ -1,54 +1,36 @@
-# Estado da arquitetura AWS
+# Fronteira da arquitetura AWS
 
-**Revisado em:** 2026-07-29  
-**Estado:** decisões de arquitetura de produção pendentes
+Este documento define a fronteira arquitetural que deve permanecer verdadeira enquanto a produção institucional da Plataforma Estímulo utilizar a estratégia AWS.
 
-## Decisões vigentes
+## Decisões aprovadas
 
-Somente três decisões estão aprovadas:
+- AWS é o provider institucional destinado à produção;
+- a aplicação web possui empacotamento definido por [`../../Dockerfile.lambda`](../../Dockerfile.lambda);
+- Supabase e Vercel pertencem aos ambientes de desenvolvimento, teste e preview e não são fallback implícito de produção.
 
-1. a AWS será o ambiente definitivo de produção;
-2. a aplicação web será empacotada pela imagem definida em [`../../Dockerfile.lambda`](../../Dockerfile.lambda);
-3. Supabase e Vercel são ambientes de desenvolvimento, teste e preview e não podem receber tráfego oficial de produção.
+Escolhas adicionais de serviço ou topologia só se tornam contrato depois de decisão arquitetural explícita e atualização dos contratos legíveis por máquina.
 
-Nenhuma outra escolha de serviço, topologia ou operação AWS está aprovada neste momento.
+## Fronteiras que exigem definição
 
-## Decisões explicitamente pendentes
+A arquitetura de produção precisa especificar, antes da ativação da capacidade correspondente:
 
-Devem ser decididos por ADR próprio, com requisitos, alternativas, trade-offs, custos, riscos, limites e plano de operação:
+- entrada pública, DNS, TLS, CDN e proteção de borda;
+- identidade, sessão, federação, recuperação e linking;
+- banco, conexões, disponibilidade e migrations;
+- armazenamento privado e ciclo de vida de objetos;
+- processamento assíncrono, retry, dead letter e reconciliação;
+- rede, contas e isolamento de ambientes;
+- segredos, criptografia e rotação;
+- logs, métricas, tracing, alertas e on-call;
+- deploy, promoção, rollback e disaster recovery;
+- capacidade, limites, custos e SLOs.
 
-- entrada pública, DNS, TLS, CDN, proteção de borda e rate limiting distribuído;
-- identidade, sessão, federação, recuperação e vínculo com as identidades internas;
-- banco transacional, conexão, alta disponibilidade, migrations e isolamento;
-- armazenamento privado, uploads, downloads, verificação e ciclo de vida;
-- processamento assíncrono, retries, idempotência, dead-letter e reconciliação;
-- rede, contas, ambientes, isolamento e conectividade;
-- segredos, criptografia, rotação e recuperação de chaves;
-- logs, métricas, tracing, alertas, on-call e resposta a incidentes;
-- deploy, promoção, canary, rollback e disaster recovery;
-- perfil de capacidade, limites, custos e SLOs.
+## Fail-closed
 
-## Política fail-closed
+Uma fronteira de produção ainda não implementada não reutiliza silenciosamente o adapter Supabase/Vercel. Readiness deve falhar quando o provider selecionado não possui as dependências obrigatórias.
 
-Enquanto as decisões permanecerem pendentes:
+A existência do `Dockerfile.lambda` comprova apenas o contrato de empacotamento, não toda a infraestrutura.
 
-- `APP_ENV=production` e `PLATFORM_RUNTIME_PROVIDER=aws` são aceitos como seleção de ambiente, mas `/api/health/ready` deve responder `503` com `aws_architecture_pending`;
-- autenticação, banco, armazenamento e integrações de produção não podem usar Supabase como fallback;
-- a existência do `Dockerfile.lambda` não equivale a uma arquitetura implantável;
-- nenhum preview Vercel pode ser promovido ou descrito como produção;
-- nenhuma documentação pode declarar serviços AWS específicos como decisão vigente.
+## Critério arquitetural
 
-## Gate para encerrar esta pendência
-
-A arquitetura somente poderá ser marcada como decidida quando houver:
-
-1. requisitos funcionais e não funcionais aprovados;
-2. ADRs das fronteiras acima;
-3. modelo de ameaças e avaliação LGPD;
-4. diagrama de contexto, containers, rede e fluxos de dados;
-5. estimativa de capacidade e custo;
-6. estratégia de observabilidade, backup, restore e rollback;
-7. plano de migração dos adapters de teste para os adapters de produção;
-8. aprovação técnica e institucional registrada.
-
-Depois dessa decisão, o contrato legível por máquina em [`../../config/platform/aws-production.json`](../../config/platform/aws-production.json) deve ser atualizado antes de qualquer implementação de infraestrutura.
+Novas decisões AWS devem incluir requisitos, alternativas, trade-offs, threat model, privacidade, capacidade, custo, observabilidade, continuidade e plano de migração dos adapters. O contrato em [`../../config/platform/aws-production.json`](../../config/platform/aws-production.json) deve acompanhar as decisões executáveis.

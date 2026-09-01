@@ -1,43 +1,36 @@
-# Escopo de jornadas da Plataforma Estímulo
-
-**Versão:** 2.0  
-**Revisado em:** 2026-09-01  
-**Status:** especificação vigente
+# Escopo multi-jornada da Plataforma Estímulo
 
 ## Regra central
 
-A Jornada OpenAI é a jornada oficial prioritária e o primeiro fluxo real para validar a plataforma ponta a ponta. Uma segunda jornada produtiva não é requisito da primeira entrega, mas o núcleo não pode ser específico da OpenAI.
+A plataforma suporta múltiplas jornadas sem especializar o núcleo para uma instância editorial. Jornadas como a OpenAI são configurações do produto e não definem exceções arquiteturais.
 
-## Lifecycle vigente
+## Lifecycle
 
-Uma jornada é um único registro operacional:
+Uma jornada é um registro operacional único:
 
 ```text
 draft <-> published
 ```
 
-Publicar não cria snapshot editorial paralelo. Jornada publicada pode ser editada ao vivo; fatos de execução já registrados continuam preservados pelos stores correspondentes.
+Publicar não cria snapshot editorial paralelo. Uma jornada publicada pode receber edição autorizada; fatos já produzidos por participantes continuam preservados por tentativas, submissões, ledgers, eventos, auditoria e demais stores históricos.
 
-## Capacidades da jornada
+## Capacidades reutilizáveis
 
-- programa/temas e elegibilidade;
+- programa e organização temática;
+- elegibilidade e matrícula;
 - trilhas, aulas, atividades e conteúdos;
 - quick checks, avaliações e entregas;
-- progressão/conclusão;
-- pontos, conquistas, ranking, recompensas, badges e certificados;
-- eventos e administração;
-- personalização por diagnóstico quando autorizada.
+- progressão e conclusão;
+- diagnóstico e personalização quando autorizados;
+- pontos, ranking, badges, recompensas e certificados;
+- eventos, auditoria e administração.
 
 ## Extensibilidade
 
-O núcleo não depende de UUID/slug fixo da OpenAI, tabelas exclusivas, enums por jornada ou condicionais dispersas. Conteúdo comum deve ser administrável sem migration.
+O núcleo não depende de UUID/slug fixo, tabelas exclusivas, enums por jornada ou condicionais dispersas. Conteúdo comum deve ser administrável sem migration. Uma capacidade realmente nova deve ser adicionada de forma genérica, com contrato, teste e documentação próprios.
 
 ## Integrações
 
-Integração externa não é dependência síncrona da jornada. PostgreSQL preserva estado e fatos; outbox fornece a fronteira de exportação. Se HubSpot for adotado como destino, os dados permitidos seguem `DEC-070`, mas indisponibilidade do CRM não bloqueia uma escrita de negócio.
+PostgreSQL confirma o estado do domínio. Eventos e outbox fornecem a fronteira para consumidores externos, que permanecem assíncronos, idempotentes e substituíveis.
 
-## Prontidão
-
-Prontidão da Jornada OpenAI é avaliada pelos gates do SHA, pela presença dos materiais editoriais aprovados e pelas validações de ambiente. Este documento não congela um booleano estático de readiness.
-
-Consulte [`../journeys/JOURNEY_LIFECYCLE.md`](../journeys/JOURNEY_LIFECYCLE.md) e [`../implementation/APPLICATION_FOUNDATION.md`](../implementation/APPLICATION_FOUNDATION.md).
+Consulte [`../journeys/JOURNEY_LIFECYCLE.md`](../journeys/JOURNEY_LIFECYCLE.md) e [`../domain/DOMAIN_MODEL.md`](../domain/DOMAIN_MODEL.md).

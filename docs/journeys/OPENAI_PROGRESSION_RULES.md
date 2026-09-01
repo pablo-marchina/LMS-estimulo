@@ -1,49 +1,37 @@
-# Regras propostas de progressão — Jornada OpenAI
+# Progressão — Jornada OpenAI
 
-**Revisado em:** 2026-09-01  
-**Status:** proposta editorial; não representa regra oficial ativa
+Este documento define o modelo de progressão que a configuração da Jornada OpenAI pode expressar. Valores editoriais concretos são dados publicados, não constantes deste documento.
 
 ## Princípios
 
-- regras executáveis são dados estruturados;
 - conteúdo consumido, quick check, prática, avaliação e conclusão são fatos distintos;
-- edição de jornada segue o registro operacional único `draft ↔ published`;
-- mudanças editoriais não fabricam/regravam fatos históricos já registrados;
-- parâmetros de progressão só são oficiais quando publicados/aprovados no ambiente correspondente.
+- pré-requisitos e gates são regras estruturadas;
+- mudanças editoriais não regravam fatos históricos;
+- a progressão não depende de UUID/slug hardcoded;
+- requisito não satisfeito gera estado bloqueado explicável, não erro genérico.
 
-## Grafo proposto
-
-| Origem | Condição | Destino |
-|---|---|---|
-| Entrada | participação disponível | Boas-vindas |
-| Boas-vindas | conclusão válida | Hub |
-| Hub | escolha | Base opcional, Marketing ou Gestão |
-| Marketing | avaliação aprovada | Selo Marketing |
-| Gestão | avaliação aprovada | Selo Gestão |
-| Dois selos | regra aprovada | Prova final base |
-| Prova base | critérios satisfeitos | Certificado Base |
-| Certificado Base | regra aprovada | Codex |
-| Codex/prova | critérios satisfeitos | Certificado Avançado |
-
-## Estados possíveis
+## Grafo conceitual
 
 ```text
-available
-started
-content_progressed
-content_consumed
-quick_check_submitted
-quick_check_satisfied
-practice_started
-practice_completed
-feedback_submitted
-completed
+entrada
+→ boas-vindas
+→ hub de trilhas
+→ trilhas elegíveis
+→ avaliações/práticas configuradas
+→ reconhecimentos configurados
+→ conclusão da jornada
 ```
+
+Trilhas opcionais ou avançadas podem usar pré-requisitos explícitos. O runtime não presume ordem ou nota mínima que não esteja na configuração.
+
+## Estados
+
+Uma atividade pode produzir estados como disponível, iniciada, em progresso, submetida, concluída ou bloqueada conforme seu tipo. O lifecycle detalhado está em [`../domain/LIFECYCLES_AND_STATE_MACHINES.md`](../domain/LIFECYCLES_AND_STATE_MACHINES.md).
 
 ## Avaliações
 
-O runtime suporta tentativa, nota mínima, feedback, retomada e revisão conforme configuração. Para quick check `multiple_choice`, todas e somente as alternativas corretas devem estar selecionadas.
+Tentativas, nota mínima, limite de tentativas, retomada e feedback são configuráveis. Para `multiple_choice`, todas e somente as alternativas corretas precisam estar selecionadas.
 
-## Pendências editoriais
+## Conclusão
 
-Percentuais mínimos de mídia, gates obrigatórios, notas/tentativas, prazo, certificados, retorno após reprovação e equivalências acessíveis continuam dependentes de decisão editorial. Não existe “migração entre versões da jornada” como requisito do lifecycle atual; mudanças são edição ao vivo ou despublicação/edição do mesmo registro, enquanto fatos históricos permanecem em seus stores próprios.
+A conclusão da jornada deriva dos requisitos publicados. Credencial, badge ou recompensa só é emitida quando a regra correspondente for satisfeita de forma idempotente.

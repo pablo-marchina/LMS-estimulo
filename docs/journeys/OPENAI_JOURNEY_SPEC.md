@@ -1,11 +1,6 @@
 # Especificação da Jornada OpenAI
 
-**Revisado em:** 2026-09-01  
-**Status:** capacidade técnica implementada; aprovação editorial para produção institucional continua separada
-
-## Fonte editorial
-
-Materiais institucionais aprovados permanecem fora do Git quando aplicável. Código, migrations e conteúdo de desenvolvimento não substituem aprovação editorial.
+A Jornada OpenAI é uma configuração da plataforma destinada à capacitação de pequenos negócios em uso de IA. As regras abaixo descrevem sua intenção editorial e como ela se apoia nas capacidades genéricas do LMS.
 
 ## Identidade
 
@@ -16,52 +11,49 @@ Materiais institucionais aprovados permanecem fora do Git quando aplicável. Có
 | Público | MEIs e microempresas |
 | Idioma | Português do Brasil |
 | Modalidade | assíncrona, prática e modular |
-| Ferramentas | ChatGPT e Codex quando a trilha avançada for aprovada |
+| Ferramentas | ChatGPT e ferramentas de desenvolvimento quando previstas no conteúdo aprovado |
 
 ## Lifecycle
 
-A jornada segue o contrato único `draft ↔ published`. O registro publicado pode ser editado ao vivo; publicação não cria versão editorial paralela. Configurações de diagnóstico, avaliação, documentos ou credenciais preservam seus próprios snapshots quando exigido.
+A jornada segue o mesmo contrato de qualquer jornada da plataforma: `draft ↔ published` sobre um registro operacional único. Configurações de diagnóstico, avaliação, documentos e credenciais preservam seus próprios históricos quando necessário.
 
-## Estrutura editorial esperada
+## Estrutura editorial
+
+A configuração pode organizar:
 
 ```text
 boas-vindas
 → hub de trilhas
-   ├─ base opcional
+   ├─ fundamentos
    ├─ Marketing e Vendas com IA
    ├─ Gestão com IA
-   └─ Codex avançado, conforme regra aprovada
+   └─ conteúdo avançado quando aplicável
 ```
 
-Ordem, gates, avaliações e credenciais são configuração administrada; não dependem de UUID/slug hardcoded no núcleo.
+Ordem, pré-requisitos, avaliações e credenciais são dados administráveis e não dependem de UUID ou slug hardcoded no núcleo.
 
-## Capacidades técnicas
+## Capacidades utilizadas
 
-- jornada/trilhas/aulas/conteúdos;
+- trilhas, aulas e conteúdos;
 - vídeo, texto, link e arquivo;
-- quick checks e avaliações;
-- práticas/uploads/comentários/revisão;
-- progressão/conclusão;
+- quick checks, avaliações e práticas;
+- uploads, comentários e revisão;
+- progressão e conclusão;
 - pontos, ranking, badges, recompensas e certificados;
-- administração, eventos e outbox.
+- eventos e administração.
 
-`multiple_choice` exige conjunto exato. Ranking mascara identificação. Popup de badge só anuncia award novo.
+## Diagnóstico
 
-## Personalização
+Quando a jornada usar o diagnóstico principal, a personalização segue a configuração publicada do motor. A jornada não define metodologia ou cutoff no código. Resultado ausente ou inconclusivo deve produzir comportamento seguro e explícito.
 
-O diagnóstico principal pode personalizar a experiência conforme configuração aprovada. O runtime corrige a execução de thresholds, mas não cria metodologia oficial. Participante sem resultado aplicável recebe caminho seguro/geral. Nenhum sinal educacional decide crédito.
+## Avaliação
 
-## Integração
+Perguntas, alternativas, respostas, justificativas, rubricas, tentativas e critérios de aprovação pertencem à configuração editorial. Múltipla escolha segue a semântica geral de conjunto exato do motor de avaliação.
 
-Eventos/outbox são a fronteira para qualquer destino externo. Conteúdo de prática, binários e URLs assinadas não são projetados para CRM por padrão.
+## Editorial e acessibilidade
 
-## Bloqueadores editoriais possíveis
+Conteúdo destinado a publicação real deve possuir, conforme aplicável, materiais autorizados, direitos de uso, durações coerentes, transcrições/legendas, equivalências acessíveis, critérios de conclusão e regras de credencial aprovadas.
 
-- pacote final de mídias/materiais;
-- durações/ordem;
-- avaliações/respostas/rubricas;
-- critérios oficiais de conclusão;
-- regras finais de pontos/badges/certificados;
-- direitos, acessibilidade e aprovações institucionais.
+## Integração e dados
 
-A existência do runtime ou de uma jornada publicada em desenvolvimento não prova aprovação editorial para produção.
+A jornada produz os mesmos eventos canônicos do restante do produto. Práticas, arquivos e URLs assinadas não são enviados a integrações externas por padrão. Nenhum sinal da jornada decide crédito sem governança específica.

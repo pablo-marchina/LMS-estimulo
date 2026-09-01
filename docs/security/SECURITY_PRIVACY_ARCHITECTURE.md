@@ -1,63 +1,62 @@
 # Arquitetura de segurança, privacidade e governança
 
-**Revisado em:** 2026-07-30  
-**Estado:** guardrails de software versionados; conformidade e produção pendentes de decisões e evidências
-
 ## Objetivo
 
-Transformar segurança e LGPD em regras verificáveis do produto, do banco e da operação. O repositório não declara conformidade jurídica nem substitui decisões institucionais; ele mantém contratos, registros e gates para que essas decisões sejam aplicadas com evidência.
+Transformar segurança e proteção de dados em regras verificáveis do produto, banco e operação. O repositório não declara conformidade jurídica; ele fornece mecanismos e contratos para que decisões institucionais sejam aplicadas com evidência.
 
 ## Princípios
 
-1. **Finalidade e necessidade antes da coleta.** Todo dado possui finalidade, ativo, proprietário e justificativa.
-2. **Base legal não é inferida pelo código.** Catálogos e drafts não autorizam tratamento real.
-3. **Rascunho não autoriza produção.** Política, conteúdo ou formulário sem aprovação permanece inativo ou bloqueado.
-4. **Dados educacionais não decidem crédito.** Qualquer uso futuro exige metodologia, base legal, revisão de vieses, governança humana e aprovação explícita.
-5. **Backend por contrato.** Navegador não recebe acesso privilegiado ao banco, storage ou integrações.
-6. **Segredo não é dado de aplicação.** Somente referências e metadados governados podem ser persistidos.
-7. **Defesa em profundidade.** Autorização server-side, RLS, RBAC, constraints, idempotência e auditoria se complementam.
-8. **Evidência append-only.** Consentimentos, solicitações, incidentes e ações administrativas preservam histórico.
-9. **Redaction antes da saída.** Logs e eventos removem tokens, cookies, CPF e payload proibido antes de persistir.
-10. **Produção falha fechada.** Ausência de arquitetura ou prova mantém readiness e deploy bloqueados.
+1. finalidade e necessidade antecedem coleta;
+2. base legal não é inferida pelo código;
+3. rascunho não autoriza tratamento real;
+4. dados educacionais não decidem crédito por padrão;
+5. navegador não recebe acesso privilegiado ao banco, storage ou integrações;
+6. segredos são configuração de ambiente, não dados de aplicação;
+7. autorização server-side, RLS, RBAC, constraints e auditoria formam defesa em profundidade;
+8. consentimentos, solicitações e ações administrativas preservam evidência;
+9. logs e eventos aplicam redaction/minimização antes da persistência;
+10. produção falha fechada quando uma dependência ou controle obrigatório não está apto.
 
-## Camadas lógicas
+## Camadas
 
 | Camada | Responsabilidade |
 |---|---|
-| catálogo jurídico | bases legais, classificações, políticas e responsáveis |
+| governança jurídica | bases legais, classificações, políticas e responsáveis |
 | ROPA | atividades, ativos, operações, titulares, destinatários e transferências |
-| direitos dos titulares | intake, verificação, escopo, evidência, prazo e resolução |
-| retenção | políticas versionadas, legal hold, anonimização e exclusão |
+| direitos dos titulares | intake, verificação, escopo, evidência e resolução |
+| retenção | políticas, legal hold, anonimização e exclusão |
 | identidade e autorização | vínculo externo–interno, sessão, RLS, RBAC e auditoria |
 | proteção de dados | criptografia, chaves, minimização e segregação |
 | observabilidade segura | logs, métricas e tracing com redaction e acesso governado |
 | incidentes e continuidade | detecção, resposta, backup, restore, rollback e comunicação |
 | gate de produção | controles técnicos, jurídicos, operacionais, editoriais e de acessibilidade |
 
-## Estado atual do software
+## Identidade
 
-O código e as migrations incluem estruturas para classificação, consentimento, direitos, retenção, legal hold, incidentes, RLS, RBAC, auditoria e proteção do CPF. A conformidade de cada SHA é comprovada pelos workflows e testes, não por números copiados neste documento.
+Identidade externa é vinculada a uma conta interna por identificadores estáveis e fluxo auditável. E-mail ou domínio isolado não substituem prova de identidade e membership. Operações administrativas verificam capabilities no servidor.
 
-O runtime atual não possui proteção antimalware de produção, plataforma operacional AWS ou integração externa aprovada. Estruturas históricas ou fixtures não constituem capacidade ativa.
+## Dados sensíveis
 
-## Limites e bloqueadores
+CPF e demais identificadores protegidos são minimizados, criptografados conforme seu contrato e excluídos de URLs, eventos e logs não necessários. Identidade analítica deve permanecer separável da identidade pessoal.
 
-- controlador, operadores, encarregado ou dispensa e canais públicos ainda exigem decisão institucional;
-- bases legais, avisos, consentimentos e prazos finais precisam de aprovação;
-- fornecedores, contratos, subprocessadores e transferências precisam de avaliação;
-- custódia e rotação das chaves do CPF precisam de operação institucional;
-- integração externa precisa de inventário, escopo e sandbox;
-- proteção distribuída contra abuso depende da futura arquitetura;
-- observabilidade, incidente, backup, restore e rollback precisam ser exercitados no ambiente AWS aprovado;
-- conteúdo, diagnóstico, metodologia e acessibilidade precisam de homologação;
-- nenhum sinal comportamental pode produzir efeito em crédito sem governança específica.
+## Eventos e logs
+
+Eventos representam fatos necessários ao domínio ou à análise aprovada. Logs técnicos não são automaticamente tratados como comportamento. Payloads aplicam schemas, minimização e redaction; segredos e URLs assinadas não são persistidos.
+
+## Arquivos
+
+Objetos são privados por padrão. Upload, download, associação, retenção e exclusão exigem autorização. A necessidade de inspeção de conteúdo é determinada pelo threat model do ambiente e da capacidade.
+
+## Integrações
+
+Consumidores externos recebem apenas dados necessários à finalidade aprovada e usam outbox, idempotência e reconciliação. Um destino externo não recebe acesso implícito ao estado central.
+
+## Governança
+
+Ativação de tratamentos depende dos requisitos em [`../product/EXTERNAL_GOVERNANCE_REQUIREMENTS.md`](../product/EXTERNAL_GOVERNANCE_REQUIREMENTS.md). ROPA, base legal, retenção, fornecedores, direitos dos titulares e resposta a incidentes possuem documentos especializados neste diretório.
 
 ## Evidência
 
-A evidência técnica pertence aos workflows e artefatos do SHA avaliado. A evidência operacional pertence ao staging e à produção aprovados. Documentos permanentes não mantêm contagens de tabelas, policies, RPCs, controles, testes ou resultados `passed`.
+Evidência técnica pertence aos workflows e artifacts do SHA avaliado; evidência operacional pertence ao ambiente correspondente. Documentos permanentes definem requisitos e procedimentos, não resultados históricos.
 
-Consulte:
-
-- [`PRODUCTION_READINESS_GATE.md`](PRODUCTION_READINESS_GATE.md);
-- [`DELIVERY_BLOCKERS.md`](../implementation/DELIVERY_BLOCKERS.md);
-- [`FINAL_RELEASE_RUNBOOK.md`](../operations/FINAL_RELEASE_RUNBOOK.md).
+Consulte [`PRODUCTION_READINESS_GATE.md`](PRODUCTION_READINESS_GATE.md) e [`../operations/RELEASE_RUNBOOK.md`](../operations/RELEASE_RUNBOOK.md).
