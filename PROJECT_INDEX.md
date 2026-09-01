@@ -1,19 +1,11 @@
 # Plataforma Estímulo — índice canônico
 
-Este índice referencia a documentação permanente da plataforma. Os documentos descrevem contratos, modelos, requisitos e procedimentos duráveis; não funcionam como changelog, registro de correções, backlog de uma entrega ou relatório de um SHA.
+Este índice referencia a documentação permanente da plataforma. Código, migrations, contratos legíveis por máquina e testes definem o comportamento executável; a documentação explica arquitetura, domínio, produto, operação e governança.
 
-## Fontes de verdade
+## Entrada
 
-1. código, configuração e migrations executáveis definem o comportamento físico do SHA avaliado;
-2. contratos legíveis por máquina e testes protegem as fronteiras executáveis;
-3. documentação de domínio, arquitetura, implementação e operação explica o comportamento vigente;
-4. especificações de produto e pesquisa definem intenção, limites e requisitos;
-5. decisões ativas registram invariantes que não são óbvias apenas pelo código.
-
-Resultados de releases, incidentes, deploys, auditorias pontuais e CI ficam no GitHub e nos artifacts correspondentes.
-
-## Entrada e manutenção
-
+- [README](README.md).
+- [Visão geral da arquitetura](docs/architecture/ARCHITECTURE_OVERVIEW.md).
 - [Manutenção do repositório](docs/REPOSITORY_MAINTENANCE.md).
 
 ## Produto
@@ -69,6 +61,7 @@ Resultados de releases, incidentes, deploys, auditorias pontuais e CI ficam no G
 
 ## Arquitetura e ambientes
 
+- [Visão geral e diagramas](docs/architecture/ARCHITECTURE_OVERVIEW.md).
 - [Fronteira da arquitetura AWS](docs/architecture/AWS_ARCHITECTURE_STATUS.md).
 - [Estratégia de ambientes e cloud](docs/architecture/ENVIRONMENT_AND_CLOUD_STRATEGY.md).
 - [Ports e adapters de providers](docs/architecture/PROVIDER_PORTS_AND_ADAPTERS.md).
@@ -100,8 +93,6 @@ Resultados de releases, incidentes, deploys, auditorias pontuais e CI ficam no G
 
 - [Fronteira externa de crédito](docs/integrations/CREDIT_EXTERNAL_BOUNDARY.md).
 
-Integrações externas do LMS consomem eventos/outbox e não fazem parte da transação síncrona do domínio.
-
 ## Pesquisa e diagnóstico
 
 - [Finalidade e guardrails do diagnóstico](docs/research/DIAGNOSTIC_PURPOSE_AND_GUARDRAILS.md).
@@ -129,6 +120,7 @@ Integrações externas do LMS consomem eventos/outbox e não fazem parte da tran
 
 - [Matriz de acesso](docs/operations/ACCESS_MATRIX.md).
 - [Domínio e autenticação](docs/operations/DOMAIN_AND_AUTH_CONFIGURATION.md).
+- [Portabilidade](docs/operations/PORTABILITY.md).
 - [Baseline de qualidade](docs/operations/PRODUCTION_QUALITY_BASELINE.md).
 - [Runbook de releases](docs/operations/RELEASE_RUNBOOK.md).
 - [Orientação para advisors do banco](docs/operations/DATABASE_ADVISOR_GUIDANCE.md).

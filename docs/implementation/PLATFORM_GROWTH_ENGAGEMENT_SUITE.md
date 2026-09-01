@@ -8,7 +8,8 @@ Este documento descreve as capacidades transversais de aquisição, conteúdo, p
 - integrações externas consomem outbox genérica;
 - saldo, estoque, publicação, aceite e acesso são transacionais e idempotentes;
 - diagnósticos opcionais não alteram o diagnóstico principal;
-- score comportamental é analítico e não controla a experiência do participante;
+- o score comportamental é exclusivamente analítico e não controla a experiência do participante;
+- não existe reconstrução de eventos antigos que não tenham sido capturados na origem;
 - preview administrativo não registra progresso, pontos, respostas ou entregas;
 - estruturas internas como UUID, hash, bytes ou JSON não são a linguagem de edição da interface administrativa.
 

@@ -22,6 +22,9 @@ playwright-report/
 blob-report/
 .tmp/
 **/.tmp/
+.vercel/
+supabase/.temp/
+supabase/.branches/
 *.log
 **/*.local.json
 **/*.local.jsonl
