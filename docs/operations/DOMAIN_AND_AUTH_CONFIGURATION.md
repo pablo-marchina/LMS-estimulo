@@ -1,105 +1,51 @@
 # Domínio e autenticação por ambiente
 
-**Revisado em:** 2026-07-29  
-**Status:** Supabase configurado para teste; domínio e identidade AWS pendentes de arquitetura
+## Superfícies de autenticação
 
-## Domínio público
+No adapter Supabase, as rotas de autenticação incluem:
 
-O domínio oficial ainda precisa ser confirmado institucionalmente. Nenhuma escolha de DNS, certificado, entrada pública, edge ou proteção de borda está aprovada.
+- `/entrar` — participante;
+- `/entrar/administracao` — entrada administrativa;
+- `/auth/admin/start` — início do OAuth administrativo;
+- `/auth/admin/callback` — callback e resolução de acesso;
+- `/confirm` — confirmação de e-mail;
+- `/auth/confirm` — compatibilidade de confirmação.
 
-A origem de staging e produção deverá ser HTTPS, explícita e não poderá fazer fallback para Vercel ou localhost. O domínio e sua topologia serão definidos por ADR conforme [`AWS_ARCHITECTURE_STATUS.md`](../architecture/AWS_ARCHITECTURE_STATUS.md).
+## Participante
 
-## Desenvolvimento e preview
-
-Supabase Auth e Vercel podem ser usados somente para desenvolvimento, teste e previews controlados.
-
-Redirects versionados no `supabase/config.toml`:
-
-```text
-http://localhost:3000/**
-http://127.0.0.1:3000/**
-https://lms-estimulo-web.vercel.app/**
-https://*-pablo-marchinas-projects.vercel.app/**
-```
-
-O futuro domínio AWS não pode ser callback Supabase. Isso impede que a configuração de teste seja promovida ou confundida com identidade de produção.
-
-Rotas atuais do adapter Supabase:
-
-- `/auth/admin/start` — inicia OAuth administrativo por navegação GET;
-- `/auth/admin/callback` — callback administrativo;
-- `/confirm` — confirmação canônica de e-mail;
-- `/auth/confirm` — compatibilidade;
-- `/` — fallback de códigos OAuth administrativos.
-
-O callback de desenvolvimento usa o projeto Supabase ativo:
-
-```text
-https://<project-ref>.supabase.co/auth/v1/callback
-```
-
-A resolução de origem preserva o host e a porta da requisição local, usa a URL do preview Vercel em preview e exige origem HTTPS configurada em staging/produção.
-
-## Produção AWS
-
-A única decisão de runtime é o empacotamento da aplicação por `Dockerfile.lambda`. Permanecem abertas:
-
-- origem e domínio oficiais;
-- identidade, federação e sessão;
-- confirmação, recuperação, logout e revogação;
-- vínculo de identidades externas com contas internas;
-- cookies, CSRF e CORS;
-- MFA e políticas de credenciais;
-- proteção de borda e abuso;
-- disponibilidade, observabilidade e resposta a incidentes.
-
-Enquanto essas decisões estiverem abertas:
-
-- o proxy protegido retorna `503 aws_identity_architecture_pending`;
-- a resolução de identidade retorna `AWS_IDENTITY_ARCHITECTURE_PENDING`;
-- `/api/health/ready` retorna `503 aws_architecture_pending`;
-- nenhum provider de teste é usado como fallback.
+Cadastro e login usam o provider público autorizado. Dados protegidos de perfil são persistidos apenas no fluxo autenticado correspondente. Recuperação e confirmação preservam as regras do provider sem introduzir credenciais privilegiadas no browser.
 
 ## Administração
 
-O modelo lógico mantém verificações independentes, qualquer que seja o provider futuro:
+O fluxo administrativo exige:
 
-1. credencial externa válida e verificada;
-2. identidade vinculada à conta interna correta;
-3. política institucional de domínio ou IdP, quando aprovada;
-4. membership organizacional e capacidades RBAC ativas;
-5. auditoria da concessão, uso, revogação e expiração.
+1. sessão válida obtida pelo provider federado aprovado;
+2. usuário e e-mail verificados conforme o contrato do provider;
+3. identidade externa compatível com o mecanismo administrativo;
+4. resolução da identidade interna;
+5. membership ativa na organização Estímulo;
+6. capabilities verificadas por RBAC.
 
-O domínio de e-mail ou um parâmetro de OAuth nunca concede acesso sozinho.
+Domínio de e-mail pode classificar uma conta corporativa, mas não substitui identidade, membership ou permissão.
 
-## Requisitos da futura decisão de identidade
+## Confirmação de e-mail no Supabase
 
-O ADR deve avaliar e registrar:
+O template versionado é `supabase/templates/confirmation.html`. O fluxo usa token hash e redirect controlado para a rota de confirmação da aplicação.
 
-- requisitos de participantes e administradores;
-- provedores, protocolos e integração corporativa;
-- fluxo de cadastro, confirmação, recuperação e exclusão;
-- linking, deduplicação e migração dos usuários de teste;
-- MFA, risco adaptativo e proteção de credenciais;
-- sessão, refresh, revogação e logout global;
-- callbacks específicos por ambiente, sem wildcards de produção;
-- cookies `Secure`, `HttpOnly` e `SameSite` adequados;
-- host/protocolo encaminhados de forma confiável;
-- proteção contra open redirect, CSRF e CORS excessivo;
-- logs sem tokens, cookies, CPF ou claims proibidos;
-- capacidade, disponibilidade, limites e custo;
-- operação, suporte e resposta a incidente.
-
-## Ambiente local
+A configuração hospedada pode ser sincronizada por:
 
 ```bash
-cp .env.example .env
+SUPABASE_ACCESS_TOKEN=... \
+SUPABASE_PROJECT_REF=... \
+npm run sync:supabase-confirmation-email
 ```
 
-```text
-APP_ENV=development
-PLATFORM_RUNTIME_PROVIDER=supabase
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
+Credenciais e identificadores de projeto pertencem ao ambiente e não ao Git.
 
-Não registrar client secrets, tokens, cookies ou identificadores sensíveis neste documento.
+## Redirects e origens
+
+Cada ambiente deve declarar explicitamente suas origens e redirects autorizados. Localhost e previews não são usados como fallback de um ambiente institucional.
+
+## Fronteira de provider
+
+Identidade de produção é definida pela estratégia de cloud e pelos ADRs aplicáveis. Enquanto um adapter de produção não satisfizer seu contrato, ele deve falhar fechado em vez de reutilizar silenciosamente credenciais ou endpoints de desenvolvimento.

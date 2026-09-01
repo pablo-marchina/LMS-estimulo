@@ -1,58 +1,30 @@
 # Contenção de helpers e aliases opacos
 
-**Revisado em:** 2026-07-30  
-**Status:** dívida técnica inventariada e impedida de crescer
+**Revisado em:** 2026-09-01  
+**Status:** dívida inventariada e impedida de crescer
 
-## Objetivo
+## Fontes de verdade
 
-Preservar contratos existentes e impedir crescimento do legado de banco sem transformar sua substituição integral em requisito de entrega.
+- [`opaque-helper-baseline-v1.json`](opaque-helper-baseline-v1.json): inventário/fingerprint congelado;
+- [`opaque-helper-semantic-replacements-v1.json`](opaque-helper-semantic-replacements-v1.json): substituições semânticas aprovadas de helpers existentes.
 
-## Fonte de verdade
+Contagens e hashes não são copiados para este texto.
 
-O inventário legível por máquina é [`opaque-helper-baseline-v1.json`](opaque-helper-baseline-v1.json). Ele registra a superfície legada aprovada, assinaturas e fingerprint. Contagens e hashes não são duplicados neste documento.
+## Política
 
-O gate `validate:legacy-rpc-containment` compara o histórico reconstruído e a fronteira da aplicação com esse baseline. Alterar somente o baseline para aceitar crescimento não revisado é proibido.
+Novo helper opaco é proibido. Quando um requisito exige corrigir comportamento em um helper já inventariado, existem dois caminhos seguros:
 
-## Fronteira da aplicação
+1. substituir o helper por uma API semântica e migrar todos os consumidores, quando o custo/risco permite; ou
+2. fazer **substituição semântica in-place** do helper existente, preservando assinatura/inventário, registrando explicitamente o replacement e cobrindo-o por teste/replay.
 
-RPCs com argumentos opacos são isoladas em:
-
-```text
-apps/web/lib/journey-runtime/legacy-rpc-arguments.ts
-```
-
-O restante da aplicação usa nomes semânticos. Nenhum novo componente deve construir argumentos opacos diretamente.
-
-## Política vigente
-
-Não haverá campanha de renomeação ou substituição em massa. Um helper ou RPC legado será alterado somente quando:
-
-1. bloquear requisito obrigatório do produto;
-2. impedir portabilidade ou execução no ambiente aprovado;
-3. representar risco de segurança, dados ou confiabilidade;
-4. impedir manutenção da capacidade alterada;
-5. possuir consumidor conhecido e cobertura suficiente para mudança segura.
-
-Quando a alteração for necessária:
-
-```text
-identificar consumidor e efeito
-→ provar comportamento atual
-→ criar substituto semântico
-→ redirecionar consumidores
-→ remover somente sem dependências
-→ executar contratos e E2E
-→ aplicar ao ambiente de teste por migration autorizada
-```
+O segundo caminho foi usado em `app_private.e14_context_g(...)` para suportar `multiple_choice` como conjunto exato sem criar outra facade pública ou helper opaco.
 
 ## Invariantes
 
-- a superfície legada permanece inventariada;
-- novos helpers opacos são proibidos;
-- aliases legados ficam isolados na fronteira compatível;
-- módulos de domínio não constroem argumentos opacos;
-- mudanças exigem migration, consumidor, teste e replay;
-- substituição física integral não é requisito automático de release.
+- aplicação comum não constrói argumentos opacos fora da fronteira de compatibilidade;
+- substituição não amplia grants públicos;
+- baseline só muda por mudança intencional revisada, nunca para silenciar CI;
+- toda mudança executa contenção, contrato público, equivalência e teste de banco.
 
 ## Validação
 
@@ -61,5 +33,3 @@ npm run validate:legacy-rpc-containment
 npm run validate:public-rpc-contracts
 npm run test:database
 ```
-
-O resultado da validação pertence ao workflow do SHA avaliado, não a este documento.

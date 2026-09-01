@@ -35,7 +35,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
             Esqueci minha senha
           </Link>
         </div>
-        <PendingSubmitButton pendingLabel="Entrando…" size="lg">
+        <PendingSubmitButton pendingLabel="Entrando…" size="lg" className="w-full bg-[#00008d] !text-white hover:bg-[#1a1aa4] active:bg-[#000071]">
           Entrar
         </PendingSubmitButton>
       </form>
@@ -47,13 +47,6 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
             Criar minha conta
           </Link>
         </p>
-
-        <div className="border-t border-border/70 pt-3 text-xs leading-5 text-muted">
-          <Link href="/entrar/administracao" className="font-medium text-muted underline-offset-4 transition-colors hover:text-primary hover:underline">
-            Sou da equipe Estímulo
-          </Link>
-          <p className="mt-1">Contas da equipe Estímulo entram exclusivamente pela área administrativa.</p>
-        </div>
       </AuthFooter>
     </AuthLayout>
   );

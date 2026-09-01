@@ -69,6 +69,7 @@ const suites = [
   ["public signup", ["scripts/database/public-signup/test-public-signup.sql"]],
   ["business maturity draft", ["scripts/database/business-maturity-draft/test-business-maturity-draft.sql"]],
   ["business maturity preview", ["scripts/database/business-maturity-preview/test-business-maturity-preview.sql"]],
+  ["priority platform corrections", ["scripts/database/priority-platform-corrections/test-priority-platform-corrections.sql"]],
   ["activity utility ratings", ["scripts/database/activity-utility-ratings/test-activity-utility-ratings.sql"]],
   ["application readiness", ["scripts/database/application-readiness/test-application-readiness.sql"]],
   ["foreign-key covering indexes", ["scripts/database/fk-covering-indexes/test-fk-covering-indexes.sql"]],

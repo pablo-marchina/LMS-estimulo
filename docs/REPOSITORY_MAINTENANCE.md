@@ -1,18 +1,18 @@
 # Manutenção do repositório
 
-Este documento define como manter o repositório organizado sem apagar evidência histórica necessária, enfraquecer gates ou separar documentação do comportamento executável.
+Este documento define como manter o repositório organizado, reproduzível e coerente com o comportamento executável.
 
 ## Fontes de verdade
 
-Quando duas fontes divergirem, use esta ordem para decidir o estado vigente:
+Quando duas fontes divergirem, use esta ordem:
 
 1. código e configuração executados no SHA avaliado;
 2. migrations, contratos e schemas versionados;
-3. gates automatizados e testes que validam esses contratos;
+3. gates automatizados e testes;
 4. documentação de implementação e operação;
-5. documentação de produto, pesquisa e propostas ainda não materializadas.
+5. documentação de produto e pesquisa.
 
-`main` representa o estado integrado do repositório. Uma branch ou PR só representa o estado candidato do próprio head. Resultados de outro SHA não podem ser reutilizados como aprovação.
+A documentação explica o sistema; ela não substitui a prova executável.
 
 ## O que pertence ao Git
 
@@ -21,83 +21,81 @@ Devem permanecer versionados:
 - código-fonte e configuração reproduzível;
 - migrations e manifests canônicos;
 - testes e validadores permanentes;
-- documentação necessária para compreender, operar e evoluir o sistema;
-- decisões arquiteturais e registros históricos que ainda expliquem o estado atual.
+- documentação necessária para compreender, operar e evoluir a plataforma;
+- decisões arquiteturais ainda vigentes.
 
-Não devem ser versionados:
+Não devem ser versionados como documentação canônica:
 
-- builds, coverage, screenshots, traces e relatórios gerados por teste;
-- `artifacts/`, `.artifacts/`, `test-results/`, `playwright-report/` e `blob-report/`;
-- estados temporários, arquivos `.local.*`, logs e pacotes locais;
-- cookies, sessões, payloads reais, dumps com dados reais ou qualquer segredo;
-- gatilhos one-off de deploy e arquivos criados apenas para forçar uma execução externa.
+- changelogs de PR ou listas de bugs corrigidos;
+- release notes datadas;
+- relatórios de auditoria pontual;
+- listas de bloqueadores de um candidato específico;
+- handoffs de uma entrega;
+- backlogs derivados de uma execução de advisor;
+- registros de rotação de credencial ou incidente;
+- resultados de build, coverage, screenshots, traces, métricas ou CI;
+- estado temporário, logs, cookies, sessões, dumps ou segredos.
 
-Evidências transitórias devem ser publicadas como artifacts do CI/deploy e vinculadas ao SHA que as produziu.
-
-## Regra para remover ou consolidar arquivos
-
-Antes de remover um arquivo, confirme que ele não é:
-
-- importado ou executado pelo runtime;
-- chamado por `package.json`, workflow, script ou runbook;
-- usado por teste, migration, replay ou validação de contrato;
-- a única documentação de uma decisão ainda vigente;
-- necessário para reproduzir um release ou compreender uma compatibilidade intencional.
-
-Compatibilidade legada não é sinônimo de código morto. Uma camada antiga só pode ser removida depois que seus consumidores, contratos e migrations forem identificados e substituídos.
-
-Migrations já aplicadas são imutáveis e nunca entram em uma limpeza destrutiva. Correções de banco são aditivas.
+O histórico Git, PRs, GitHub Releases, issues, Actions e os sistemas operacionais apropriados preservam esses registros quando necessários.
 
 ## Ciclo de vida da documentação
 
-`PROJECT_INDEX.md` é o índice canônico da documentação permanente. Todo Markdown em `docs/` deve estar indexado e usar a nomenclatura aceita pelos gates do repositório.
+`PROJECT_INDEX.md` é o índice da documentação permanente. Todo Markdown em `docs/` deve estar indexado.
 
-Ao alterar comportamento, estrutura, ambiente, integração, contrato ou operação:
+Ao alterar comportamento, arquitetura, contrato ou operação:
 
-1. atualize a documentação permanente afetada no mesmo PR;
-2. remova afirmações que deixaram de ser verdadeiras em vez de acumular notas contraditórias;
-3. diferencie claramente estado implementado, proposta e bloqueador;
-4. mantenha métricas de CI, SHAs e resultados transitórios fora da documentação permanente;
-5. atualize `PROJECT_INDEX.md` ao adicionar, renomear ou remover documentos.
+1. atualize o documento canônico que já descreve o assunto;
+2. escreva o comportamento como regra vigente, sem narrar a correção que o originou;
+3. remova afirmações superadas em vez de empilhar notas temporais;
+4. mantenha estado de execução, SHAs, métricas e evidências fora dos documentos permanentes;
+5. crie novo documento apenas quando houver uma responsabilidade conceitual durável que não pertença a outro documento;
+6. atualize `PROJECT_INDEX.md` quando a estrutura documental mudar.
 
-Documentos datados só devem permanecer quando registram uma decisão, operação ou contexto histórico ainda necessário. Caso contrário, o conteúdo deve ser absorvido pelo documento canônico correspondente e o arquivo antigo removido.
+Um arquivo não permanece em `docs/` apenas para preservar um link histórico. O Git conserva versões anteriores; a documentação canônica precisa ser inequívoca para quem chega sem contexto.
+
+## Nomenclatura documental
+
+Documentos canônicos usam nomes que descrevem o assunto, não o episódio que os criou. São inadequados nomes baseados em:
+
+- data de uma entrega;
+- “corrections” ou “fixes”;
+- “blockers” de um candidato;
+- “handoff”;
+- “backlog”;
+- “rebaseline” de uma fase;
+- lacunas temporárias de conteúdo.
+
+O gate de higiene aplica parte dessas regras automaticamente.
+
+## Migrations e compatibilidade
+
+Migrations aplicadas são imutáveis. Correções de banco são aditivas e passam pelos mesmos gates de replay e equivalência.
+
+Compatibilidade legada não é sinônimo de código morto. Uma superfície só pode ser removida depois que consumidores, contratos e migrations forem identificados e substituídos.
 
 ## Toolchain e dependências
 
-As versões suportadas devem ser lidas dos arquivos versionados, não copiadas manualmente para vários lugares:
+Versões suportadas são lidas dos arquivos versionados:
 
 - Node: `.node-version`, `.nvmrc` e `engines`;
 - npm: `packageManager` em `package.json`;
-- dependências JavaScript: `package.json` + `package-lock.json`;
-- Actions: versões ou SHAs definidos nos workflows.
+- dependências: `package.json` e `package-lock.json`;
+- Actions: versões ou SHAs dos workflows.
 
-Atualizações de dependências devem preservar reprodutibilidade do lockfile e passar pelos mesmos gates da aplicação.
+## Branches e PRs
 
-## Branches e PRs empilhados
+Mudanças usam branch + pull request. PRs empilhados devem declarar dependências, evitar duplicar commits e ser revalidados depois da reconciliação da base.
 
-O fluxo preferido é um PR coeso contra a branch que realmente contém suas dependências.
-
-Para PR empilhado:
-
-- declare explicitamente a branch-base;
-- não replique commits já presentes na dependência;
-- após o PR-base ser integrado, reconcilie a branch dependente antes do merge;
-- execute novamente os gates no SHA final reconciliado.
-
-Não retargete um PR apenas para fazê-lo parecer independente quando ele contém mudanças que dependem de outra branch.
+`main` representa o estado integrado. Resultados de outro SHA não podem ser reutilizados como aprovação.
 
 ## Checklist de manutenção
 
-Uma limpeza de repositório está concluída somente quando:
+Uma mudança estrutural está concluída quando:
 
-- não remove comportamento ou contrato necessário;
-- não deixa arquivo temporário ou evidência gerada versionada;
-- não deixa documentação canônica órfã ou link local quebrado;
-- não deixa script permanente sem referência;
-- mantém migrations e histórico executável íntegros;
-- mantém lockfile e toolchain reproduzíveis;
-- preserva secret scanning e demais gates;
-- atualiza o índice e as regras de contribuição quando a estrutura muda;
-- valida o SHA final, e não um antecessor.
-
-O gate `npm run validate:repository` automatiza parte dessas garantias e deve evoluir junto com novas classes de resíduos identificadas no projeto.
+- comportamento e contratos necessários permanecem íntegros;
+- documentação canônica não contém relato transitório de desenvolvimento;
+- links locais e índice estão íntegros;
+- scripts permanentes têm consumidor conhecido;
+- migrations e lockfile continuam reproduzíveis;
+- secret scanning e demais gates permanecem ativos;
+- o SHA final, e não um antecessor, foi validado.

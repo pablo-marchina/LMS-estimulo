@@ -1,11 +1,6 @@
 # Especificação da Jornada OpenAI
 
-**Revisado em:** 2026-07-29  
-**Status:** capacidade técnica e configuração de desenvolvimento presentes; release editorial bloqueada
-
-## Fonte editorial
-
-Os materiais editoriais institucionais aprovados permanecem fora do Git e são a fonte para conteúdo final. Este documento registra apenas a especificação vigente necessária para implementar e liberar a jornada. Código, migrations, fixtures e seeds não substituem aprovação editorial.
+A Jornada OpenAI é uma configuração da plataforma destinada à capacitação de pequenos negócios em uso de IA. As regras abaixo descrevem sua intenção editorial e como ela se apoia nas capacidades genéricas do LMS.
 
 ## Identidade
 
@@ -16,84 +11,49 @@ Os materiais editoriais institucionais aprovados permanecem fora do Git e são a
 | Público | MEIs e microempresas |
 | Idioma | Português do Brasil |
 | Modalidade | assíncrona, prática e modular |
-| Ferramentas | ChatGPT e, na trilha avançada, Codex |
-| Estado oficial | não aprovado para produção |
+| Ferramentas | ChatGPT e ferramentas de desenvolvimento quando previstas no conteúdo aprovado |
 
-Pode existir uma versão publicada no ambiente de desenvolvimento/teste para validar o runtime. Ela não deve ser apresentada como conteúdo oficial.
+## Lifecycle
 
-## Estrutura esperada
+A jornada segue o mesmo contrato de qualquer jornada da plataforma: `draft ↔ published` sobre um registro operacional único. Configurações de diagnóstico, avaliação, documentos e credenciais preservam seus próprios históricos quando necessário.
+
+## Estrutura editorial
+
+A configuração pode organizar:
 
 ```text
-boas-vindas e potencial da IA
+boas-vindas
 → hub de trilhas
-   ├── bloco base opcional
-   ├── Marketing e Vendas com IA
-   ├── Gestão com IA
-   └── desenvolvimento avançado com Codex, conforme regra aprovada
+   ├─ fundamentos
+   ├─ Marketing e Vendas com IA
+   ├─ Gestão com IA
+   └─ conteúdo avançado quando aplicável
 ```
 
-A ordem, os gates e as credenciais são dados versionados. Não podem depender de UUIDs ou nomes hardcoded.
+Ordem, pré-requisitos, avaliações e credenciais são dados administráveis e não dependem de UUID ou slug hardcoded no núcleo.
 
-## Capacidades implementadas
+## Capacidades utilizadas
 
-- jornada, versão, trilhas, atividades e conteúdos;
+- trilhas, aulas e conteúdos;
 - vídeo, texto, link e arquivo;
-- quick checks, avaliações e tentativas;
-- práticas, uploads, comentários e revisão;
-- progresso e conclusão;
-- pontos, conquistas, ranking, selos e certificados;
-- administração;
-- eventos e outbox.
+- quick checks, avaliações e práticas;
+- uploads, comentários e revisão;
+- progressão e conclusão;
+- pontos, ranking, badges, recompensas e certificados;
+- eventos e administração.
 
-Essas capacidades não comprovam que o pacote editorial ou as regras finais estão corretos.
+## Diagnóstico
 
-## Padrão pedagógico
+Quando a jornada usar o diagnóstico principal, a personalização segue a configuração publicada do motor. A jornada não define metodologia ou cutoff no código. Resultado ausente ou inconclusivo deve produzir comportamento seguro e explícito.
 
-1. problema real;
-2. exemplo guiado;
-3. demonstração;
-4. prática;
-5. verificação rápida;
-6. material complementar;
-7. avaliação de utilidade.
+## Avaliação
 
-Consumo de conteúdo, compreensão, aplicação e resultado de negócio são fatos distintos.
+Perguntas, alternativas, respostas, justificativas, rubricas, tentativas e critérios de aprovação pertencem à configuração editorial. Múltipla escolha segue a semântica geral de conjunto exato do motor de avaliação.
 
-## Práticas e arquivos
+## Editorial e acessibilidade
 
-Submissões registram participante, atividade e versões, tipo de entrega, metadados, autorização, estado de revisão e eventos. Arquivos são privados e validados por autorização, MIME, extensão, tamanho e SHA-256.
+Conteúdo destinado a publicação real deve possuir, conforme aplicável, materiais autorizados, direitos de uso, durações coerentes, transcrições/legendas, equivalências acessíveis, critérios de conclusão e regras de credencial aprovadas.
 
-O scanner de malware não faz parte do produto atual.
+## Integração e dados
 
-Binários, URLs assinadas e textos abertos não são enviados ao HubSpot por padrão.
-
-## Personalização
-
-Arquétipo e contexto autorizado podem personalizar recomendações quando a metodologia estiver aprovada. Participantes sem diagnóstico veem conteúdo geral. Nenhum sinal educacional altera crédito automaticamente.
-
-## Bloqueadores editoriais
-
-- pacote de mídias e materiais;
-- durações e ordem;
-- avaliações, respostas e rubricas;
-- progressão e critérios de conclusão;
-- regras de pontos, selos e certificados;
-- termos de upload e uso institucional;
-- legendas, transcrições e equivalências;
-- revisão de finanças, contratos, segurança e privacidade;
-- acesso e instruções oficiais de ChatGPT/Codex.
-
-## Gate de release
-
-```text
-editorial_sources_registered = pending
-official_content_assets = pending
-progression_approved = false
-assessments_approved = false
-practice_rules_approved = false
-gamification_approved = false
-credential_rules_approved = false
-accessibility_assets_ready = false
-real_participant_e2e_passed = false
-aws_staging_passed = false
-```
+A jornada produz os mesmos eventos canônicos do restante do produto. Práticas, arquivos e URLs assinadas não são enviados a integrações externas por padrão. Nenhum sinal da jornada decide crédito sem governança específica.

@@ -1,81 +1,45 @@
 # Motor configurável de diagnóstico
 
-**Revisado em:** 2026-07-31  
-**Status:** implementado no runtime PostgreSQL e nas interfaces administrativa/participante
-
 ## Escopo
 
-O diagnóstico principal suporta:
+O diagnóstico principal suporta instrumentos versionados, perguntas, opções, dimensões, perfis, pesos e thresholds configuráveis, além de sessões, respostas e resultados auditáveis. Diagnósticos opcionais possuem execução própria e não alteram automaticamente o arquétipo principal ou a elegibilidade de jornada.
 
-- definições e versões em rascunho, publicadas ou retiradas;
-- quantidade dinâmica de perguntas, opções, dimensões e perfis;
-- inclusão, exclusão e reordenação no rascunho;
-- pesos e limites configuráveis por perfil e dimensão;
-- sessões e respostas ligadas à versão utilizada;
-- resultado e atribuição de arquétipo auditáveis;
-- publicação transacional com mapeamento completo entre arquétipos antigos e novos;
-- atualização das atribuições existentes e da elegibilidade das jornadas na mesma transação;
-- preservação de respostas e resultados históricos;
-- editor administrativo e fluxo guiado do participante.
+## Semântica de cálculo
 
-A implementação ativa usa páginas em `apps/web/app/admin/diagnostico`, fluxos participantes e RPCs PostgreSQL versionadas. Não existe um motor paralelo dependente de CRM.
+Para uma configuração publicada válida:
 
-## Diagnóstico principal
+1. o score de cada dimensão é a média dos `score` das respostas aplicáveis à dimensão;
+2. thresholds de perfil são interpretados como limites superiores inclusivos;
+3. as faixas são avaliadas em ordem crescente do limite superior, evitando que uma faixa ampla capture um score pertencente a uma faixa inferior;
+4. configuração incompleta ou inconsistente segue as regras de validação/abstenção do instrumento, em vez de receber defaults metodológicos silenciosos.
 
-Somente uma versão principal fica ativa. Ela é a única funcionalidade autorizada a:
+A semântica acima executa a configuração; ela não define por si só quais perguntas, contribuições, pesos ou cortes são metodologicamente corretos.
 
-- definir o arquétipo principal;
-- recalcular ou migrar atribuições;
-- alterar os códigos de arquétipo elegíveis nas jornadas.
+## Publicação e histórico
 
-Ao publicar uma nova versão, todo arquétipo da versão anterior precisa ser mapeado para um perfil da nova versão. A transação valida a completude antes de retirar a versão antiga.
-
-## Diagnósticos opcionais
-
-Diagnósticos opcionais podem ser publicados no Perfil por público, período, tentativas, intervalo e visibilidade do resultado. Eles usam sessões e resultados próprios e nunca escrevem em atribuições de arquétipo ou elegibilidade de jornadas.
-
-## Versionamento e histórico
+O diagnóstico usa definição–versão–instância:
 
 ```text
-definição estável
+definição
 → versão em rascunho
 → validação estrutural
-→ versão publicada e imutável
-→ sessões, respostas e resultados históricos
+→ versão publicada
+→ sessões, respostas e resultados ligados à versão utilizada
 ```
 
-Editar um diagnóstico publicado cria ou atualiza um rascunho. Não existe alteração retroativa das perguntas respondidas.
+Publicação preserva a capacidade de reproduzir resultados anteriores. Mudanças incompatíveis de perfis exigem a política de mapeamento definida pelo domínio.
 
-## Score e abstenção
+## Idempotência e auditoria
 
-A configuração não pressupõe quantidade ou nomes fixos de perfis e dimensões. Limites, pesos e critérios pertencem à versão. Quando a evidência não satisfaz as regras, o resultado pode abster-se em vez de fabricar confiança.
+Início, resposta, conclusão e atribuição usam identificadores estáveis/idempotentes. A execução registra informação suficiente para explicar qual instrumento e configuração produziram o resultado.
 
-## Persistência
+## Limites
 
-O fluxo principal grava de forma transacional:
-
-```text
-sessão e respostas
-→ resultado
-→ atribuição principal
-→ migração de referências quando houver nova publicação
-→ evento, auditoria e outbox
-```
-
-Idempotency keys impedem duplicação; a mesma chave com payload divergente é recusada.
-
-## Integração externa
-
-Resultados permanecem no PostgreSQL. Exportações futuras usam eventos e outbox genérica. A classificação não conhece nem exige destino externo específico.
+- metodologia oficial precisa de fonte e aprovação próprias;
+- diagnóstico e arquétipo não decidem crédito por padrão;
+- diagnóstico opcional não substitui o principal;
+- resultado inconclusivo não deve ser convertido silenciosamente em um perfil arbitrário.
 
 ## Validação
 
-```bash
-npm run test:product
-npm run test:database
-npm run test:application
-npm run typecheck:web
-npm run build:web
-```
-
-A aprovação técnica não substitui validação metodológica, editorial, jurídica ou de acessibilidade das perguntas e textos publicados.
+A semântica e os invariantes são protegidos por testes de produto, aplicação e banco executados pelos gates canônicos do repositório.

@@ -1,53 +1,40 @@
-# Visual capture workflow
+# Captura visual reproduzível
 
-The repository includes a Playwright-based visual capture workflow for reviewing the real Estímulo interface in deterministic desktop and mobile viewports.
+**Revisado em:** 2026-09-01
 
-## What it captures
+O workflow `Production visual capture` usa Playwright para registrar evidência desktop/mobile das superfícies públicas, participante e administração.
 
-- Optional external visual reference landing page.
-- Public Estímulo routes: `/`, `/entrar`, and `/cadastro`.
-- Authenticated participant routes under `/empreendedor`.
-- Authenticated administrator routes under `/admin`.
-- Internal participant/admin links discovered during the crawl, up to the configured page cap.
-- One representative instance of each known dynamic participant template (journey, module, trail, lesson, diagnostic, activity, competency, and validation) instead of redundant screenshots for every data instance.
-- Full-page PNG screenshots at 1440x1000 (desktop) and 390x844 (mobile).
-- A `visual-manifest.json` containing the requested/final URLs, status codes, titles, headings, rendered dimensions, horizontal-overflow warnings, failures, and screenshot paths.
+## Pull requests
 
-The workflow never writes credentials into the artifact.
-
-## Running it
-
-Open **Actions → Production visual capture → Run workflow**.
-
-`target_url` is optional. When omitted, the workflow uses the `E2E_PRODUCTION_URL` repository secret. This lets the same workflow audit production or a specific preview deployment without changing source code.
-
-`reference_url` is optional and defaults to the Estímulo Lovable reference landing page. Set it to an empty value to skip the external reference.
-
-The existing E2E participant/admin credentials are read from GitHub Actions secrets.
-
-## Artifact
-
-Every run uploads an artifact named `production-visual-capture-<run id>` for 14 days. Its directory structure is:
+Em evento `pull_request`, o workflow **não usa silenciosamente produção nem um preview arbitrário**. Ele consulta GitHub Deployments do SHA exato do head e procura um status `success` com `environment_url`.
 
 ```text
-artifacts/e2e-visual/
-  reference/
-    desktop/landing.png
-    mobile/landing.png
-  public/
-    desktop/*.png
-    mobile/*.png
-  participant/
-    desktop/*.png
-    mobile/*.png
-  admin/
-    desktop/*.png
-    mobile/*.png
-  visual-manifest.json
+PR head SHA
+→ GitHub Deployment para o mesmo SHA
+→ status success + environment_url
+→ E2E_TARGET_URL
+→ captura
 ```
 
-Because screenshots are generated evidence, they stay out of Git through the repository's existing `artifacts/` ignore rule.
+Se nenhum deployment desse SHA for publicado dentro da janela de resolução, o passo `Resolve pull-request preview deployment` falha. Isso é uma ausência de alvo de preview, não uma razão para auditar código diferente.
 
-## Review principle
+A etapa `Validate visual capture tooling` é separada e pode passar mesmo sem deployment.
 
-This workflow is evidence generation, not a pixel-diff gate. A visual reviewer should inspect the artifact and compare the product against the intended reference/design. Functional CI remains responsible for application correctness; visual evidence complements it by exposing layout, responsive, rendering, overflow, and hierarchy regressions that source-level checks cannot prove.
+## Execução manual
+
+**Actions → Production visual capture → Run workflow** aceita `target_url`. Sem input, usa `E2E_PRODUCTION_URL` se configurado para a execução manual autorizada. Credenciais E2E vêm de secrets.
+
+## Evidências
+
+O artifact `production-visual-capture-<run id>` contém screenshots e manifestos/proveniência. O workflow registra SHA alvo, ambiente e URL de origem; credenciais não são escritas no artifact.
+
+## Cobertura
+
+- `/`, `/entrar`, `/cadastro`;
+- superfícies participantes autenticadas;
+- superfícies admin autenticadas;
+- templates dinâmicos representativos;
+- desktop e mobile;
+- overflow, headings, URLs finais, status e falhas.
+
+Captura visual complementa CI funcional. Não transforma um preview Supabase/Vercel em produção institucional.

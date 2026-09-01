@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Portable runtime contract for repository, Supabase development/test/preview, Vercel preview, and GitHub Actions configuration.",
+  "repository": {
+    "buildFromRepositoryRoot": true,
+    "defaultBranch": "main",
+    "nodeVersionFile": ".node-version",
+    "ciNodeVersion": "22.23.1"
+  },
+  "github": {
+    "actionsRequiredSecrets": [
+      "E2E_ADMIN_EMAIL",
+      "E2E_ADMIN_PASSWORD",
+      "E2E_PARTICIPANT_EMAIL",
+      "E2E_PARTICIPANT_PASSWORD",
+      "E2E_PRODUCTION_URL",
+      "VERCEL_AUTOMATION_BYPASS_SECRET"
+    ],
+    "actionsRequiredVariables": [],
+    "targetSpecificSettings": [
+      "default branch",
+      "branch protection and rulesets",
+      "Actions secrets, variables, and environments",
+      "collaborator and team permissions",
+      "GitHub Apps and deployment integration",
+      "webhooks",
+      "deploy keys"
+    ]
+  },
+  "vercel": {
+    "framework": "nextjs",
+    "nodeEngine": ">=22.0.0",
+    "rootDirectory": ".",
+    "nodeProjectSettingMustBeExplicitlyVerified": true
+  },
+  "environment": {
+    "requiredForSupabaseRuntime": [
+      { "name": "APP_ENV", "visibility": "server", "secret": false },
+      { "name": "PLATFORM_RUNTIME_PROVIDER", "visibility": "server", "secret": false },
+      { "name": "NEXT_PUBLIC_APP_URL", "visibility": "public", "secret": false },
+      { "name": "NEXT_PUBLIC_SUPABASE_URL", "visibility": "public", "secret": false },
+      { "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "visibility": "public", "secret": false },
+      { "name": "SUPABASE_SERVICE_ROLE_KEY", "visibility": "server", "secret": true },
+      { "name": "CPF_ENCRYPTION_KEY", "visibility": "server", "secret": true },
+      { "name": "CPF_LOOKUP_HMAC_KEY", "visibility": "server", "secret": true }
+    ]
+  },
+  "supabase": {
+    "edgeFunctions": [
+      { "slug": "authenticated-rpc", "verifyJwt": true, "source": "supabase/functions/authenticated-rpc" },
+      { "slug": "authenticated-media-rpc", "verifyJwt": true, "source": "supabase/functions/authenticated-media-rpc" },
+      { "slug": "platform-extensions-rpc", "verifyJwt": true, "source": "supabase/functions/platform-extensions-rpc" },
+      { "slug": "ai-grade-submission", "verifyJwt": true, "source": "supabase/functions/ai-grade-submission" },
+      { "slug": "public-landing-journey", "verifyJwt": false, "source": "supabase/functions/public-landing-journey" }
+    ],
+    "storageBuckets": [
+      { "environment": "CREDENTIAL_FILES_BUCKET", "default": "credential-files" },
+      { "environment": "CERTIFICATE_TEMPLATE_BUCKET", "default": "certificate-templates" },
+      { "environment": "DELIVERY_FILES_BUCKET", "default": "delivery-submissions" },
+      { "environment": "ANNOUNCEMENT_BANNER_BUCKET", "default": "announcement-banners" },
+      { "environment": "REWARD_IMAGE_BUCKET", "default": "reward-images" }
+    ]
+  }
+}

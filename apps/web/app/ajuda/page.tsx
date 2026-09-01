@@ -35,7 +35,7 @@ export default async function HelpPage() {
   const whatsAppUrl = whatsappValue(settings.support_whatsapp);
   const communityUrl = safeHttps(settings.community_whatsapp_url);
 
-  return <main className="mx-auto grid min-h-dvh max-w-5xl gap-8 px-5 py-10 lg:px-9 lg:py-14">
+  return <div className="mx-auto grid min-h-dvh max-w-5xl gap-8 px-5 py-10 lg:px-9 lg:py-14">
     <PageHeader eyebrow="Suporte" title="Como podemos ajudar?" description="Encontre o próximo passo para os problemas mais comuns, entre na comunidade ou fale com a equipe Estímulo." />
 
     <section className="grid gap-4" aria-labelledby="falar-com-equipe">
@@ -55,5 +55,5 @@ export default async function HelpPage() {
     <section className="grid gap-4 sm:grid-cols-2" aria-label="Dúvidas frequentes">{topics.map((topic) => <Card key={topic.title} className="flex flex-col"><h2 className="text-lg font-black text-secondary">{topic.title}</h2><p className="mt-2 text-sm leading-6 text-muted">{topic.body}</p><Link href={topic.href} className="mt-auto pt-5 text-sm font-bold text-primary hover:underline">{topic.link}</Link></Card>)}</section>
 
     <p className="text-xs leading-5 text-muted">Ao relatar um erro, informe a página, o horário aproximado e o que você tentou fazer. A equipe pode pedir dados adicionais apenas pelo fluxo autorizado de atendimento.</p>
-  </main>;
+  </div>;
 }

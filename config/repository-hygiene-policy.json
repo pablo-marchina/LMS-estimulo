@@ -1,81 +1,17 @@
 {
-  "ignoredDirectories": [
-    ".git",
-    ".next",
-    ".artifacts",
-    "node_modules"
-  ],
-  "textExtensions": [
-    ".md",
-    ".json",
-    ".yaml",
-    ".yml",
-    ".csv",
-    ".sql",
-    ".mjs",
-    ".js",
-    ".ts",
-    ".tsx",
-    ".py",
-    ".ps1",
-    ".toml",
-    ".txt"
-  ],
-  "forbiddenPrefixes": [
-    ".claude/",
-    ".deployment-triggers/",
-    ".github/hooks/",
-    ".github/skills/",
-    ".superpowers/",
-    "apps/web/lib/browser-e2e/",
-    "docs/superpowers/",
-    "scripts/browser-e2e/"
-  ],
-  "forbiddenExactFiles": [
-    ".github/workflows/browser-e2e.yml",
-    ".github/workflows/experience-validation.yml",
-    "apps/web/.env.example",
-    "apps/web/app/api/e2e/session/route.ts",
-    "docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
-    "docs/implementation/RUNTIME_GAP.md",
-    "docs/implementation/SCHEMA_DELTA.md",
-    "docs/product/SOURCE_AUTHORITY_HIERARCHY.md",
-    "premissas-desenvolvimento.md"
-  ],
-  "allowedEnvironmentExamples": [
-    ".env.example",
-    "config/supabase-test/.env.example"
-  ],
-  "forbiddenReferences": [
-    "premissas-desenvolvimento.md",
-    "SOURCE_AUTHORITY_HIERARCHY.md",
-    "ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md",
-    "RUNTIME_GAP.md",
-    "SCHEMA_DELTA.md",
-    "BROWSER_E2E_MODE",
-    "@/lib/browser-e2e/",
-    "scripts/browser-e2e/",
-    "run-synthetic-vertical.mjs",
-    "test:browser-e2e"
-  ],
-  "requiredFiles": [
-    "README.md",
-    "PROJECT_INDEX.md",
-    "CONTRIBUTING.md",
-    ".env.example",
-    "config/module-boundaries.json",
-    "config/repository-hygiene-policy.json",
-    "docs/architecture/AWS_ARCHITECTURE_STATUS.md",
-    "docs/implementation/APPLICATION_FOUNDATION.md",
-    "docs/implementation/DELIVERY_BLOCKERS.md",
-    "docs/operations/FINAL_RELEASE_RUNBOOK.md",
-    "scripts/database/run-gates.mjs",
-    "scripts/repository/validate-module-boundaries.mjs",
-    "scripts/verification/verify-deployment.mjs"
-  ],
+  "ignoredDirectories": [".git", ".next", ".artifacts", "node_modules"],
+  "textExtensions": [".md", ".json", ".yaml", ".yml", ".csv", ".sql", ".mjs", ".js", ".ts", ".tsx", ".py", ".ps1", ".toml", ".txt"],
+  "forbiddenPrefixes": [".claude/", ".deployment-triggers/", ".github/hooks/", ".github/skills/", ".superpowers/", "apps/web/lib/browser-e2e/", "docs/audits/", "docs/superpowers/", "scripts/browser-e2e/"],
+  "forbiddenExactFiles": [".github/workflows/browser-e2e.yml", ".github/workflows/experience-validation.yml", ".github/workflows/pr-269-visual-approval.yml", "apps/web/.env.example", "apps/web/app/api/e2e/session/route.ts", "docs/ADMIN_EDITOR_RELEASE_20260730.md", "docs/audits/DOCUMENT_CORRECTIONS_MATRIX.md", "docs/decisions/ADR-002-REBASELINE-NEW-PREMISES.md", "docs/decisions/ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md", "docs/deployments/SUPABASE_SERVICE_ROLE_ROTATION_2026_07_27.md", "docs/implementation/CURRENT_PLATFORM_BEHAVIOR.md", "docs/implementation/DEFINITIVE_CORRECTIONS_AUDIT.md", "docs/implementation/DELIVERY_BLOCKERS.md", "docs/implementation/RUNTIME_GAP.md", "docs/implementation/SCHEMA_DELTA.md", "docs/journeys/OPENAI_CONTENT_GAPS.md", "docs/journeys/OPENAI_EDITORIAL_VERSIONING.md", "docs/operations/DATABASE_ADVISOR_BACKLOG.md", "docs/operations/FINAL_RELEASE_RUNBOOK.md", "docs/product/INFORMATION_INVENTORY.md", "docs/product/INFORMATION_REQUESTS.md", "docs/product/INITIAL_PRODUCTION_RELEASE_PRINCIPLES.md", "docs/product/OPENAI_JOURNEY_INVENTORY.md", "docs/product/SOURCE_AUTHORITY_HIERARCHY.md", "premissas-desenvolvimento.md"],
+  "allowedEnvironmentExamples": [".env.example", "config/supabase-test/.env.example"],
+  "forbiddenReferences": ["premissas-desenvolvimento.md", "SOURCE_AUTHORITY_HIERARCHY.md", "ADR-003-HUBSPOT-AUTHORITATIVE-DATA-SOURCE.md", "RUNTIME_GAP.md", "SCHEMA_DELTA.md", "ADMIN_EDITOR_RELEASE_20260730.md", "DOCUMENT_CORRECTIONS_MATRIX.md", "ADR-002-REBASELINE-NEW-PREMISES.md", "SUPABASE_SERVICE_ROLE_ROTATION_2026_07_27.md", "CURRENT_PLATFORM_BEHAVIOR.md", "DEFINITIVE_CORRECTIONS_AUDIT.md", "DELIVERY_BLOCKERS.md", "OPENAI_CONTENT_GAPS.md", "OPENAI_EDITORIAL_VERSIONING.md", "DATABASE_ADVISOR_BACKLOG.md", "FINAL_RELEASE_RUNBOOK.md", "INFORMATION_INVENTORY.md", "INFORMATION_REQUESTS.md", "INITIAL_PRODUCTION_RELEASE_PRINCIPLES.md", "OPENAI_JOURNEY_INVENTORY.md", "SUPABASE_VERCEL_HANDOFF.md", "BROWSER_E2E_MODE", "@/lib/browser-e2e/", "scripts/browser-e2e/", "run-synthetic-vertical.mjs", "test:browser-e2e"],
+  "forbiddenCanonicalDocumentNamePatterns": ["(?:^|_)(?:CORRECTION|CORRECTIONS|BLOCKER|BLOCKERS|HANDOFF|BACKLOG|REBASELINE)(?:_|\\.)", "(?:^|_)CONTENT_GAPS(?:_|\\.)", "(?:^|_)(?:20[0-9]{6}|20[0-9]{2}_[0-9]{2}_[0-9]{2})(?:_|\\.)"],
+  "forbiddenCanonicalDocumentPhrases": ["correções prioritárias", "auditoria das correções", "runtime corrigido", "correção de 31/08", "documento histórico de descoberta", "última migration auditada", "este PR", "neste PR"],
+  "requiredFiles": ["README.md", "PROJECT_INDEX.md", "CONTRIBUTING.md", ".env.example", "config/module-boundaries.json", "config/repository-hygiene-policy.json", "config/platform/portable-runtime.json", "docs/REPOSITORY_MAINTENANCE.md", "docs/architecture/ARCHITECTURE_OVERVIEW.md", "docs/architecture/AWS_ARCHITECTURE_STATUS.md", "docs/implementation/APPLICATION_FOUNDATION.md", "docs/product/PRODUCT_PRINCIPLES.md", "docs/product/EXTERNAL_GOVERNANCE_REQUIREMENTS.md", "docs/security/PRODUCTION_READINESS_GATE.md", "docs/operations/PORTABILITY.md", "docs/operations/RELEASE_RUNBOOK.md", "scripts/database/run-gates.mjs", "scripts/repository/validate-module-boundaries.mjs", "scripts/repository/validate-portability.mjs", "scripts/verification/verify-deployment.mjs"],
   "expectedScripts": {
-    "validate:repository": "node scripts/repository/validate-hygiene.mjs && npm run validate:module-boundaries",
+    "validate:repository": "node scripts/repository/validate-hygiene.mjs && npm run validate:module-boundaries && npm run validate:portability",
     "validate:module-boundaries": "node scripts/repository/validate-module-boundaries.mjs",
+    "validate:portability": "node scripts/repository/validate-portability.mjs",
     "test:application": "node --test scripts/application/*.test.mjs",
     "test:database": "node scripts/database/run-gates.mjs",
     "verify:deployment": "node scripts/verification/verify-deployment.mjs"

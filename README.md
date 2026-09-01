@@ -1,147 +1,74 @@
 # Plataforma Estímulo
 
-LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdos e atividades e produzir dados educacionais e operacionais com governança.
+LMS para operar jornadas de desenvolvimento empreendedor, administrar conteúdo e atividades e produzir evidências educacionais e operacionais com governança.
 
-> **Ambientes:** o runtime Supabase/Vercel está ativo para desenvolvimento, demonstração e validação controlada. A AWS continua sendo o destino institucional planejado para produção definitiva, mas sua arquitetura ainda depende de decisão e implementação. O único artefato AWS aprovado é [`Dockerfile.lambda`](Dockerfile.lambda), e esse runtime permanece *fail-closed*.
-
-[Índice da documentação](PROJECT_INDEX.md) · [Guia de contribuição](CONTRIBUTING.md) · [Fundação atual](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Preview e carregamento](docs/implementation/INTERFACE_PREVIEW_AND_LOADING.md) · [Handoff Supabase/Vercel](docs/deployments/SUPABASE_VERCEL_HANDOFF.md)
+[Índice da documentação](PROJECT_INDEX.md) · [Visão de arquitetura](docs/architecture/ARCHITECTURE_OVERVIEW.md) · [Fundação da aplicação](docs/implementation/APPLICATION_FOUNDATION.md) · [Ciclo das jornadas](docs/journeys/JOURNEY_LIFECYCLE.md) · [Princípios de produto](docs/product/PRODUCT_PRINCIPLES.md)
 
 ## Produto
 
-A plataforma reúne a experiência dos participantes e as ferramentas administrativas necessárias para criar, publicar e operar jornadas. Cada jornada é única e possui apenas dois estados visíveis: `draft` e `published`. Uma jornada publicada pode ser editada diretamente; conteúdo removido deixa de aparecer e os dados operacionais já registrados seguem suas próprias regras de retenção.
+A plataforma reúne experiência participante e ferramentas administrativas sobre o mesmo domínio. **Cada jornada é única** e possui os estados visíveis `draft` e `published`; publicar ou despublicar altera o mesmo registro operacional. Uma jornada publicada pode ser editada conforme as regras de autorização e integridade, enquanto fatos históricos de execução permanecem preservados em seus próprios registros.
 
-### Participantes
+### Participante
 
-- cadastro, confirmação, login e recuperação de senha;
-- aceite de Termos de Uso e Política de Privacidade, inclusive nova aceitação obrigatória;
-- home, jornadas, aulas, biblioteca, perfil, diagnóstico principal e diagnósticos opcionais;
-- aula responsiva em toda a largura disponível do layout participante;
-- barra global de progresso em navegações e carregamentos, sem skeletons de página;
-- perguntas rápidas, atividades práticas, entregas, comentários e arquivos;
-- pontos de engajamento, recompensas, selos e certificados;
-- páginas B2B visíveis somente a públicos autorizados;
-- ajuda e suporte configuráveis.
+A experiência participante cobre cadastro, confirmação, login, recuperação, documentos legais, home, jornadas, aulas, biblioteca, perfil, diagnóstico, ajuda, quick checks, avaliações, práticas, entregas, comentários, arquivos, pontos, ranking com identificação protegida, recompensas, badges e certificados.
 
 ### Administração
 
-- entrada administrativa separada por OAuth corporativo e RBAC;
-- edição ao vivo de jornadas publicadas, trilhas, aulas e conteúdos;
-- publicação e despublicação da mesma jornada, sem criar versões editoriais paralelas;
-- exclusão permitida somente para jornadas em rascunho;
-- CMS da interface com prévia administrativa isolada para telas de participante e administrador;
-- prévia sem matrícula, progresso, analytics, eventos comportamentais, entregas ou score;
-- biblioteca, diagnóstico, campanhas, B2B, recompensas, certificados, usuários, permissões e auditoria;
-- score comportamental configurável com validação no cliente e no banco;
-- correção de entregas por IA com fallback obrigatório para revisão humana.
+A administração cobre identidade federada e autorização organizacional, jornadas, trilhas, aulas, conteúdos, biblioteca, temas, diagnóstico, campanhas, B2B, recompensas, certificados, usuários, permissões, preview isolado e auditoria.
 
-### Dados e integrações
-
-- PostgreSQL é a fonte operacional e histórica;
-- eventos brutos, ledgers e trilhas de auditoria preservam fatos e movimentações;
-- score comportamental registra configuração, valores intermediários, snapshots e histórico para ETL;
-- o score é exclusivamente analítico e não altera acesso, recomendações, pontos, recompensas ou crédito;
-- integrações futuras consomem outbox genérica e incremental;
-- nenhum CRM ou destino externo é dependência do produto.
+A autenticação administrativa combina identidade externa validada, identidade interna, membership da organização Estímulo e RBAC. Domínio de e-mail, isoladamente, não concede acesso.
 
 ## Fundação técnica
 
-- monólito modular Next.js 16, React 19 e TypeScript;
-- PostgreSQL reproduzível por migrations;
-- Supabase Auth, Storage, PostgreSQL e Edge Functions no runtime ativo;
-- Vercel para build e implantação do frontend atual;
-- RLS, RBAC, idempotência, auditoria, eventos e outbox;
-- RPCs privilegiadas com `search_path` fechado e gateway autenticado;
-- contratos e gates de qualidade, segurança, integridade, arquitetura e reprodutibilidade.
+- monorepo npm com Next.js/React/TypeScript;
+- PostgreSQL reconstruível por migrations como fonte operacional;
+- Supabase como provider de desenvolvimento, teste e preview;
+- Vercel para preview web;
+- ports e adapters para desacoplamento de provider;
+- RLS, RBAC, idempotência, auditoria, eventos e outbox transacional;
+- integração externa assíncrona e destination-neutral;
+- contratos automatizados de arquitetura, banco, segurança, portabilidade e reprodutibilidade.
 
-As rotas em `apps/web/app/` funcionam como adapters e composition roots. Regras e montagem de modelos ficam nos módulos de `apps/web/lib/`; componentes compartilhados ficam em `apps/web/components/`. As dependências permitidas entre essas camadas são verificadas automaticamente por [`config/module-boundaries.json`](config/module-boundaries.json).
-
-A existência de uma tela, fluxo ou artefato não equivale à aprovação institucional de conteúdo, metodologia, segurança, privacidade, acessibilidade ou arquitetura AWS.
-
-## Ambientes
-
-| Ambiente | Provider | Estado |
-|---|---|---|
-| `development` | Supabase | ativo para desenvolvimento local |
-| `test` | Supabase | ativo para CI e testes automatizados |
-| `preview` | Supabase + Vercel | ativo para revisão controlada |
-| implantação web atual | Supabase + Vercel | operacional para demonstração e validação |
-| `staging` institucional | AWS | bloqueado até definição da arquitetura |
-| `production` institucional | AWS | bloqueado até conclusão dos gates finais |
-
-A URL da implantação web atual é configuração do ambiente, não um contrato do repositório. Para recriar a implantação em outra conta/projeto, siga [`SUPABASE_VERCEL_HANDOFF.md`](docs/deployments/SUPABASE_VERCEL_HANDOFF.md).
-
-Consulte [`AWS_ARCHITECTURE_STATUS.md`](docs/architecture/AWS_ARCHITECTURE_STATUS.md) para a distinção entre implantação operacional atual e arquitetura institucional definitiva.
+Consulte [`ARCHITECTURE_OVERVIEW.md`](docs/architecture/ARCHITECTURE_OVERVIEW.md) para os diagramas completos e [`PORTABILITY.md`](docs/operations/PORTABILITY.md) para reconstrução em outros ambientes.
 
 ## Desenvolvimento local
-
-### Pré-requisitos
-
-- Git;
-- Node.js `22.23.1`;
-- npm `10.9.8`;
-- projeto Supabase autorizado para teste;
-- Google OAuth configurado para administração;
-- duas chaves independentes de 32 bytes, em Base64, para proteção do CPF.
-
-### Instalação
 
 ```bash
 npm ci --ignore-scripts --no-audit --no-fund
 cp .env.example .env
-```
-
-No PowerShell:
-
-```powershell
-npm ci --ignore-scripts --no-audit --no-fund
-Copy-Item .env.example .env
-```
-
-Configuração mínima:
-
-```dotenv
-APP_ENV=development
-PLATFORM_RUNTIME_PROVIDER=supabase
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-ETL_EXPORT_ENABLED=false
-```
-
-Nunca coloque segredos no browser ou em variáveis `NEXT_PUBLIC_*`.
-
-### Execução
-
-```bash
 npm run validate:release-candidate
 npm run dev:web
 ```
 
-A aplicação ficará disponível em `http://localhost:3000`.
+PowerShell:
 
-### Verificação do Supabase
-
-```bash
-npm run verify:supabase
+```powershell
+npm ci --ignore-scripts --no-audit --no-fund
+Copy-Item .env.example .env
+npm run validate:release-candidate
+npm run dev:web
 ```
+
+Configuração e segredos pertencem ao ambiente. Nunca coloque segredo em `NEXT_PUBLIC_*`, no Git ou na documentação.
 
 ## Superfícies principais
 
 | Público/participante | Administração |
 |---|---|
-| `/` | `/admin` |
-| `/empreendedor/jornadas` | `/admin/produto` |
-| `/empreendedor/atividade/...` | `/admin/biblioteca` |
-| `/empreendedor/biblioteca` | `/admin/diagnostico` |
-| `/empreendedor/entregas` | `/admin/comportamento` |
-| `/empreendedor/recompensas` | `/admin/experiencia` |
+| `/` | `/entrar/administracao` |
+| `/entrar` | `/admin` |
+| `/cadastro` | `/admin/produto` |
+| `/empreendedor` | `/admin/diagnostico` |
+| `/empreendedor/jornadas` | `/admin/biblioteca` |
+| `/empreendedor/biblioteca` | `/admin/experiencia` |
+| `/empreendedor/recompensas` | `/admin/usuarios` |
 | `/empreendedor/perfil` | `/admin/configuracoes` |
+| `/ajuda` | |
 
-A rota `/interface-preview/participant` é interna, exige administrador autenticado e existe apenas para o preview isolado do CMS.
-
-## Gates do software
+## Qualidade
 
 ```bash
 npm run validate:release-candidate
-npm run validate:module-boundaries
 npm run test:repository-tooling
 npm run test:application
 npm run test:product
@@ -150,31 +77,25 @@ npm run test:database
 npm run typecheck:web
 npm run build:web
 npm run scan:secrets
-npm run test:secret-scanning
 ```
 
-`validate:repository` executa a política de higiene e o gate de dependências entre módulos. O banco deve ser reconstruível desde zero. Nenhum passo obrigatório pode estar ausente, cancelado, ignorado ou vermelho no SHA avaliado.
+O banco deve ser reconstruível desde zero. Baselines legíveis por máquina só mudam quando a alteração executável correspondente é comprovada.
 
 ## Estrutura
 
 ```text
-apps/web/app/                   rotas, adapters e composition roots do Next.js
+apps/web/app/                   rotas e composition roots
 apps/web/components/            UI compartilhada
-apps/web/lib/                   módulos de produto, aplicação e infraestrutura
-apps/web/lib/extensions/        gateway e runtime das extensões
-apps/web/lib/platform/          contratos e seleção do provider
-apps/web/lib/supabase/          adapter Supabase
-config/module-boundaries.json   dependências permitidas entre módulos
-config/repository-hygiene-policy.json política declarativa de limpeza do repo
-config/platform/                fronteira legível por máquina
-docs/                           documentação canônica
-scripts/                        validação, testes, segurança e operação
+apps/web/lib/                   módulos, casos de uso e adapters
+config/                         políticas e contratos legíveis por máquina
 supabase/migrations/            histórico PostgreSQL executável
+supabase/templates/             templates Auth versionados
 supabase/functions/             Edge Functions
-docs/journeys/JOURNEY_LIFECYCLE.md
-Dockerfile.lambda               artefato AWS aprovado
+scripts/                        validação, testes e operação
+docs/                           documentação canônica permanente
+Dockerfile.lambda               empacotamento web para a fronteira AWS
 ```
 
-## Contribuição
+## Documentação
 
-O fluxo padrão continua sendo branch e pull request, com código, migrations, testes e documentação sincronizados. Alterações diretas em `main` são excepcionais e exigem autorização explícita do proprietário, seguida dos mesmos gates de validação e implantação.
+`docs/` contém documentação permanente da plataforma. Releases, incidentes, evidências de um SHA e resultados operacionais pertencem ao histórico do GitHub ou aos sistemas apropriados. Consulte [`PROJECT_INDEX.md`](PROJECT_INDEX.md).

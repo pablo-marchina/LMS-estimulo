@@ -1,26 +1,32 @@
 # Matriz de linhagem de dados
 
-**Versão:** 0.1  
-**Status:** Modelo lógico E09; campos e retenções finais dependem do E10/E13.
+**Revisado em:** 2026-09-01  
+**Status:** referência vigente de origem/store/destino permitido
 
-| Objeto de informação | Origem autorizada | Store primário | Representação em evento | Transformações | Destinos permitidos | Proibido por padrão |
-|---|---|---|---|---|---|---|
-| Conta de acesso | Cadastro/provedor de identidade | Identity store | `user_account_id` opaco | status e auditoria | autorização, suporte | senha, token, e-mail no event store |
-| Empreendedor | Cadastro/HubSpot reconciliado | Identity store | `entrepreneur_id` opaco | identidade resolvida | jornadas, CRM aprovado | PII direta em eventos |
-| Negócio beneficiário | Cadastro/CRM/fonte oficial | Business store | `business_id` opaco | vínculos e atributos aprovados | jornada, CRM, análise autorizada | documentos societários em eventos |
-| Jornada publicada | Administração autorizada | Catalog store | IDs e versão | snapshot imutável | orquestração, cache | edição in-place da versão publicada |
-| Participação | Orquestração | Journey store | enrollment/journey IDs | progresso e marcos | UI, operação, CRM agregado | usar nome da jornada como chave |
-| Resposta diagnóstica | Participante | Diagnostic store restrito | IDs de pergunta/opção/versão | dimensão e recomendação | personalização, pesquisa governada | texto livre e demografia no evento |
-| Resultado de diagnóstico | Engine versionada | Diagnostic/result store | IDs, versão e incerteza | segmentos operacionais | orquestração e UI | score de crédito ou rótulo permanente |
-| Observação de conteúdo | Browser validado | Event store | metadados mínimos | consolidação de progresso | projeções e pesquisa | tratar como conclusão automática |
-| Tentativa de avaliação | Participante/backend | Assessment store | attempt/question IDs e resultado | scoring versionado | jornada, feedback | resposta integral no evento |
-| Evidência prática | Participante | Object storage + Practice store | `evidence_id`, hash/metadados | scan, revisão, validação | reviewer autorizado | URL assinada ou arquivo no evento |
-| Pontos e selos | Gamification engine | Ledger/award store | evento derivado | saldo/projeção | UI | feature comportamental bruta |
-| Certificado | Credential engine | Credential store | ID, versão e snapshot ref | documento verificável | participante/verificação | alegação além da evidência satisfeita |
-| Intervenção | Orchestrator | Intervention store | IDs, gatilho e resultado | prioridade/cooldown | canal e operação | conteúdo pessoal desnecessário |
-| Evento canônico | Backend/conector verificado | Event store | envelope + payload mínimo | roteamento/projeções | consumidores aprovados | alteração ou exclusão arbitrária |
-| Feature comportamental | Pipeline versionado | Feature store | evento de cálculo opcional | janela, qualidade, fórmula | pesquisa/score experimental | substituir evento de origem |
-| Score experimental | Pipeline aprovado | Score store | ID, versão e explicação | calibração/validação | pesquisa restrita | HubSpot/crédito sem gate posterior |
-| Propriedade HubSpot | Plataforma ou CRM conforme ownership | Integration/CRM | sync IDs e resultado | mapping e reconciliação | HubSpot | cada clique, resposta ou arquivo |
-| Estágio de crédito | Sistema oficial futuro | External integration store | código/versionamento aprovado | projeção autorizada | intervenções/estudos aprovados | inferir ou inventar estados |
-| Logs e traces | Runtime | Observability store | não é evento de negócio | agregação técnica | operação/segurança | payload pessoal ou resposta de usuário |
+| Objeto | Origem autorizada | Store primário | Evento/projeção | Destino permitido | Proibido por padrão |
+|---|---|---|---|---|---|
+| Conta | Auth/cadastro | identidade | `user_account_id` opaco | autorização/suporte | senha/token no event store |
+| Empreendedor | cadastro + identidade resolvida | `core` | `entrepreneur_id` | jornadas/operação | PII direta em eventos |
+| Negócio | cadastro/fonte autorizada | `core` | `business_id` | operação/análise autorizada | documento bruto em evento |
+| Jornada | administração | `catalog` | ID operacional + eventos de lifecycle | orquestração/UI | tratar `journey_version*` como snapshots editoriais atuais |
+| Matrícula/instância | orquestração | `orchestration` | IDs e marcos | UI/operação | usar slug/nome como chave |
+| Resposta diagnóstica | participante | `diagnostics` | IDs mínimos | cálculo/pesquisa governada | texto/PII desnecessários no evento |
+| Resultado diagnóstico | engine configurada | `diagnostics` | resultado/versão do instrumento | personalização autorizada/UI | score de crédito/rótulo permanente |
+| Quick check | participante/backend | `assessment` | tentativa/resultado | feedback/progresso | confiar em correção declarada pelo browser |
+| Entrega/arquivo | participante | `assessment` + storage | ID/hash/metadados | reviewer autorizado | URL assinada/binário no evento |
+| Pontos | engine/ledger | `engagement` | lançamento/projeção | UI/ranking | número hardcoded sem fato causal |
+| Ranking | ledger/projeção | `engagement` | posição + identificação mascarada | participantes | e-mail completo de terceiro |
+| Badge | regra de conquista | `engagement` | `award_id` | UI | inferir award de primeira visita/browser |
+| Certificado | engine de credencial | `engagement` | emissão/revogação | participante/verificação | alegação além da evidência |
+| Evento | backend/conector verificado | `eventing` | envelope/payload mínimo | consumidores aprovados | alteração arbitrária |
+| Outbox | transação de domínio | `eventing` | rota/checkpoint | consumidor externo aprovado | chamada síncrona obrigatória a CRM |
+| Feature/score | pipeline analítico | `behavior/reporting` | snapshot/versionamento | análise governada | alterar acesso/recompensa/crédito |
+| Logs/traces | runtime | observabilidade | não é evento de negócio | operação/segurança | resposta do usuário/PII desnecessária |
+
+## Integrações
+
+PostgreSQL é a fonte do LMS. Um destino externo recebe apenas projeções explicitamente permitidas e por consumidor desacoplado. Se o destino for HubSpot, aplicar também `DEC-070`; isso não transforma o CRM em fonte de credencial ou dependência transacional.
+
+## Jornada
+
+Edição ao vivo muda o estado editorial atual da jornada, enquanto respostas, tentativas, entregas, ledgers, eventos e auditoria preservam seus fatos próprios. Não fabricar um “snapshot histórico da jornada” que o runtime não mantém como produto.

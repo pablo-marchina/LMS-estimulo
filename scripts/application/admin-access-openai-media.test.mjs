@@ -6,6 +6,7 @@ const adminStart = await readFile("apps/web/app/auth/admin/start/route.ts", "utf
 const adminCallback = await readFile("apps/web/app/auth/admin/callback/route.ts", "utf8");
 const adminPage = await readFile("apps/web/app/entrar/administracao/page.tsx", "utf8");
 const participantLogin = await readFile("apps/web/app/entrar/page.tsx", "utf8");
+const participantHome = await readFile("apps/web/app/empreendedor/page.tsx", "utf8");
 const mediaViewer = await readFile("apps/web/components/content-asset-viewer.tsx", "utf8");
 const nextConfig = await readFile("apps/web/next.config.ts", "utf8");
 const migration = await readFile("supabase/migrations/20260730150000_openai_official_drive_videos.sql", "utf8");
@@ -18,9 +19,11 @@ test("administrative Google login starts in one click and validates Estimulo mem
   assert.doesNotMatch(adminStart, /client\.auth\.signOut/u);
   assert.doesNotMatch(adminStart, /requestedEmail/u);
   assert.doesNotMatch(adminStart, /login_hint/u);
-  assert.match(adminCallback, /isGoogleAuthProvider/u);
+  assert.match(adminCallback, /auth\.getUser\(\)/u);
+  assert.match(adminCallback, /function hasGoogleIdentity/u);
+  assert.match(adminCallback, /identity\.provider\?\.trim\(\)\.toLowerCase\(\) === "google"/u);
   assert.match(adminCallback, /administrativeOrganization\(identity\)/u);
-  assert.doesNotMatch(adminCallback, /isEstimuloAdministrativeEmail/u);
+  assert.doesNotMatch(adminCallback, /auth\.getClaims\(\)|isGoogleAuthProvider|isEstimuloAdministrativeEmail/u);
   assert.match(adminPage, /href="\/auth\/admin\/start"/u);
   assert.match(adminPage, /ButtonLink/u);
   assert.match(adminPage, /Continuar com Google/u);
@@ -31,16 +34,22 @@ test("administrative Google login starts in one click and validates Estimulo mem
   assert.doesNotMatch(adminPage, /name="email"/u);
 });
 
-test("participant login keeps signup visible and team access discreet in the footer", () => {
+test("participant login keeps signup visible without advertising administrative access", () => {
   assert.match(participantLogin, /Não tem conta\?/u);
   assert.match(participantLogin, /Criar minha conta/u);
-  assert.match(participantLogin, /Sou da equipe Estímulo/u);
-  assert.match(participantLogin, /Contas da equipe Estímulo entram exclusivamente pela área administrativa\./u);
-  assert.match(participantLogin, /text-xs/u);
-  assert.match(participantLogin, /border-t border-border\/70/u);
-  assert.doesNotMatch(participantLogin, /sm:grid-cols-2/u);
+  assert.doesNotMatch(participantLogin, /Sou da equipe Estímulo/u);
+  assert.doesNotMatch(participantLogin, /href="\/entrar\/administracao"/u);
   assert.doesNotMatch(participantLogin, /Acessar área administrativa/u);
+  assert.doesNotMatch(participantLogin, /sm:grid-cols-2/u);
   assert.doesNotMatch(participantLogin, /bg-primary-soft\/55/u);
+});
+
+test("participant home can surface an eligible featured journey without treating that optional lookup as core data", () => {
+  assert.match(participantHome, /journeyRuntime\.listEligibleJourneys/u);
+  assert.match(participantHome, /const eligibleJourneys = fulfilled\(results\[1\]\) \?\? \[\]/u);
+  assert.match(participantHome, /featuredEligible/u);
+  assert.match(participantHome, /const coreDataUnavailable = results\[0\]\.status === "rejected" \|\| results\[3\]\.status === "rejected"/u);
+  assert.doesNotMatch(participantHome, /coreDataUnavailable =[^\n]*results\[1\]/u);
 });
 
 test("official OpenAI Drive videos are embedded safely and complete through timed progress", () => {

@@ -1,138 +1,61 @@
-# Fundação atual da aplicação
-
-**Revisado em:** 2026-08-20  
-**Status:** implementação atual documentada; arquitetura AWS institucional ainda pendente
+# Fundação da aplicação
 
 ## Forma do sistema
 
-O repositório contém um monorepo npm com o workspace `apps/web/`. A aplicação é um monólito modular Next.js 16 com App Router, React 19 e TypeScript. Server Components, route handlers, server actions e módulos server-only compõem os casos de uso.
+O repositório é um monorepo npm. A aplicação web é um monólito modular Next.js/React/TypeScript:
 
-A organização é orientada por capacidades, sem uma divisão horizontal global em `domain/application/infrastructure`. As fronteiras são aplicadas onde agregam clareza:
+- `apps/web/app/`: rotas, layouts e composition roots;
+- `apps/web/components/`: UI compartilhada;
+- `apps/web/lib/`: domínio de aplicação, modelos, casos de uso e adapters;
+- `config/`: contratos e políticas legíveis por máquina;
+- `supabase/`: migrations, functions, templates e configuração do provider de desenvolvimento/teste;
+- `scripts/`: validação, operação e testes.
 
-- `apps/web/app/` é a camada de entrada e composição: rotas, páginas, route handlers e server actions;
-- `apps/web/components/` contém UI compartilhada;
-- `apps/web/lib/<feature>/` concentra modelos, regras e orquestração da capacidade;
-- `apps/web/lib/platform/`, `supabase/`, `rpc/` e `storage/` representam contratos e adapters de infraestrutura;
-- fluxos de tela com transformação relevante usam modelos próprios em `lib/`, deixando `page.tsx` responsável por autenticação, composição e renderização;
-- dependências proibidas entre módulos são descritas em `config/module-boundaries.json` e verificadas por `npm run validate:module-boundaries`.
+`config/module-boundaries.json` protege as dependências entre módulos.
 
-O editor administrativo de jornadas segue esse padrão: a rota compõe a tela, `product-page-model.ts` prepara o modelo da página, regras puras ficam em `product-page-core.mjs` e cada etapa visual possui um componente dedicado. Esse padrão deve ser replicado quando outras páginas ultrapassarem a responsabilidade de composição.
+## Persistência
 
-## Runtime ativo
+PostgreSQL é a fonte operacional. O schema é reproduzido exclusivamente pelas migrations versionadas. Dados históricos que precisam de auditabilidade usam stores próprios, como tentativas, submissões, ledgers, eventos e auditoria.
 
-O caminho funcional atual usa:
+## Providers
 
-- Supabase Auth e cookies SSR;
-- Supabase PostgreSQL, Storage e Edge Functions;
-- gateway autenticado para RPCs;
-- Vercel para build e implantação web;
-- PostgreSQL como estado operacional, event store, auditoria e outbox.
+Supabase fornece Auth, PostgreSQL, Storage e Edge Functions no ambiente autorizado de desenvolvimento, teste e preview. Vercel fornece build e preview web. O domínio permanece desacoplado por ports/adapters para permitir a fronteira institucional definida pela estratégia de cloud.
 
-O gateway valida sessão, identidade interna, allowlist, tamanho, timeout e sanitização de erros. Erros de domínio seguros, como validações do score, são preservados como códigos sem expor detalhes internos.
+Integrações externas não participam da transação síncrona do domínio; efeitos de borda são derivados de eventos/outbox.
 
-## Jornadas
+## Identidade e autorização
 
-Cada jornada possui um único registro operacional e dois estados visíveis, `draft` e `published`.
+Participante e administração têm entradas separadas. A administração exige identidade federada válida, resolução da identidade interna, membership Estímulo e RBAC. A autorização é verificada no servidor e, quando aplicável, reforçada por RLS e grants de banco.
 
-- publicação não clona conteúdo;
-- jornada publicada pode ser editada diretamente;
-- despublicação retorna a mesma jornada a rascunho e encerra acessos ativos conforme o contrato;
-- somente rascunhos podem ser excluídos;
-- nomes internos legados são mantidos apenas onde a compatibilidade relacional exige.
+## Catálogo e jornada
 
-Consulte [`JOURNEY_LIFECYCLE.md`](../journeys/JOURNEY_LIFECYCLE.md).
+Cada jornada é uma entidade operacional única `draft ↔ published`. Nomes físicos legados `journey_version*` existem por compatibilidade de schema e não representam snapshots editoriais navegáveis.
 
-## Experiência web
+Trilhas, aulas, atividades, avaliações, credenciais e outros subdomínios mantêm seu próprio modelo de histórico quando necessário para reproduzir uma tentativa, regra ou emissão.
 
-- a tela de aula usa toda a largura disponível do layout participante, preservando a estrutura de conteúdo e índice lateral;
-- a navegação de toda a plataforma usa uma barra global de progresso;
-- skeletons de página foram removidos do carregamento inicial e das transições;
-- a área de Interface possui preview administrativo dedicado das páginas participantes;
-- o preview não depende de uma identidade participante e não grava dados;
-- a resolução da identidade de preview pertence ao módulo `interface-preview`, evitando que o contexto de autenticação conheça diretamente a implementação de outras capacidades.
+## Diagnóstico
 
-Consulte [`INTERFACE_PREVIEW_AND_LOADING.md`](INTERFACE_PREVIEW_AND_LOADING.md).
+O motor de diagnóstico é configurável e versionado. Perguntas, opções, dimensões, perfis, thresholds, sessões, respostas e resultados permanecem auditáveis. O runtime executa apenas a configuração publicada; não cria metodologia, pesos ou cortes ausentes.
 
-## Testes e contratos
+## Avaliação e prática
 
-Regras puras com resultado observável são testadas diretamente. Testes baseados em leitura de source permanecem somente para invariantes estáticos que não têm uma superfície comportamental mais apropriada, como wiring de segurança, ausência de exposição e contratos de migration.
+Quick checks, avaliações e entregas passam por validação server-side e mantêm idempotência. Múltipla escolha usa igualdade entre o conjunto selecionado e o conjunto configurado como correto, independentemente da ordem de seleção.
 
-Essa separação reduz falsos positivos durante refactors sem remover os gates que protegem invariantes arquiteturais e de segurança.
+## Gamificação
 
-## Score comportamental
+Pontos derivam de ledger idempotente. Ranking, saldo e demais projeções derivam de fatos persistidos. Badges são awards identificáveis e certificados preservam critérios e evidência de emissão. Identificação exibida a outros participantes deve respeitar minimização e privacidade.
 
-O score é configurável por organização e aceita somente métricas e operações permitidas. A configuração controla fórmula, normalização, confiança, dimensões, pesos e classificações.
+## Segurança
 
-Validação ocorre no editor, no gateway e no PostgreSQL. O banco impede:
+- browser não recebe service role;
+- funções privilegiadas validam ator, organização e permissão;
+- facades server-only não são concedidas a browser roles;
+- arquivos permanecem privados e URLs assinadas são temporárias;
+- segredos pertencem ao ambiente;
+- logging e eventos aplicam minimização/redaction.
 
-- peso total igual a zero;
-- códigos duplicados;
-- normalização invertida;
-- classificações fora de 0–100;
-- lacunas ou sobreposição entre faixas.
+## Reprodutibilidade
 
-Eventos brutos, configuração, valores intermediários, snapshots e histórico são preservados para análise e ETL. O score não interfere na experiência ou em crédito.
+O gate da aplicação valida dependências, arquitetura, testes, build, banco, contratos e secret scanning. Baselines de schema ou compatibilidade só mudam com alteração executável comprovada por replay.
 
-## Superfícies funcionais
-
-### Participante
-
-- cadastro, autenticação, termos e perfil;
-- home, jornadas, aula, diagnóstico, resultado, biblioteca, entregas, recompensas e conquistas;
-- progresso, avaliações, práticas, comentários e arquivos;
-- pontos, selos, certificados e páginas B2B.
-
-### Administração
-
-- OAuth corporativo e RBAC;
-- jornadas, trilhas, aulas e conteúdos;
-- diagnóstico, CMS, biblioteca, campanhas, B2B, recompensas, certificados, usuários e relatórios;
-- editor do score comportamental;
-- preview isolado da interface;
-- auditoria e operações protegidas.
-
-## Banco e integridade
-
-- `supabase/migrations/` é o histórico executável;
-- migrations aplicadas não são editadas; correções são aditivas;
-- RLS, grants, idempotência e autorização são parte do contrato;
-- Edge Functions usam service role somente no servidor;
-- views analíticas não são expostas a `anon` ou `authenticated`;
-- replay e contratos do banco fazem parte do gate de release.
-
-## Higiene e arquitetura do repositório
-
-A higiene do repositório é declarativa em `config/repository-hygiene-policy.json`. O script `validate-hygiene.mjs` executa essas regras, mas não mantém listas históricas embutidas no código. A estrutura de dependências da aplicação é declarada separadamente em `config/module-boundaries.json`.
-
-`npm run validate:repository` executa ambos os gates. Assim, limpeza e arquitetura permanecem verificáveis sem concentrar toda a política em um único script crescente.
-
-## AWS
-
-AWS continua sendo o destino institucional planejado. `Dockerfile.lambda` é o único artefato aprovado, mas não define entrada pública, identidade, banco, armazenamento, rede, segredos, observabilidade ou continuidade. O provider AWS permanece *fail-closed* até essas decisões.
-
-## Validações permanentes
-
-```bash
-npm run validate:release-candidate
-npm run validate:module-boundaries
-npm run test:repository-tooling
-npm run test:application
-npm run test:product
-npm run test:integrations
-npm run test:database
-npm run typecheck:web
-npm run build:web
-npm run scan:secrets
-npm run test:secret-scanning
-npm run verify:supabase
-```
-
-## Limites atuais
-
-Ainda dependem de decisão ou evidência adicional:
-
-- arquitetura AWS completa;
-- E2E transacional no ambiente AWS definitivo;
-- capacidade, SLOs, observabilidade e recuperação no ambiente final;
-- operação institucional de chaves e segredos;
-- aprovações formais de conteúdo, segurança, privacidade e acessibilidade.
+Consulte os documentos especializados no [`PROJECT_INDEX.md`](../../PROJECT_INDEX.md).

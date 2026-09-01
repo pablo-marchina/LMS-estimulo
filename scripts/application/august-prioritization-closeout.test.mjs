@@ -63,11 +63,11 @@ test("critical participant visual validation can enter through a real eligible j
   assert.match(participantCriticalVisual, /embedded verification still renders a nested quick-check card/u);
 });
 
-test("final participant login copy and recovery affordance remain in place", () => {
+test("final participant login copy and recovery affordance remain in place without administrative promotion", () => {
   assert.match(signInPage, /title="Entrar"/u);
   assert.match(signInPage, /Use o e-mail e a senha que você cadastrou\./u);
   assert.match(signInPage, /Criar minha conta/u);
-  assert.match(signInPage, /Sou da equipe Estímulo/u);
+  assert.doesNotMatch(signInPage, /Sou da equipe Estímulo|href="\/entrar\/administracao"/u);
   assert.match(signInPage, /Esqueci minha senha/u);
 });
 

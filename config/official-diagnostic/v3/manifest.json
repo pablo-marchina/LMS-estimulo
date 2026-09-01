@@ -8,26 +8,10 @@
     "authority": "official_reference_first"
   },
   "sources": [
-    {
-      "id": "diagnostic_item_bank",
-      "path": "docs/research/DIAGNOSTIC_ITEM_BANK_V0_1.md",
-      "role": "reconciled_structure"
-    },
-    {
-      "id": "diagnostic_dimension_model",
-      "path": "docs/research/DIAGNOSTIC_DIMENSION_MODEL.md",
-      "role": "reconciled_dimensions"
-    },
-    {
-      "id": "information_request_ir008",
-      "path": "docs/product/INFORMATION_REQUESTS.md",
-      "role": "missing_official_artifacts"
-    },
-    {
-      "id": "configurable_product_engine",
-      "path": "docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md",
-      "role": "runtime_contract"
-    }
+    {"id":"diagnostic_item_bank","path":"docs/research/DIAGNOSTIC_ITEM_BANK_V0_1.md","role":"reconciled_structure"},
+    {"id":"diagnostic_dimension_model","path":"docs/research/DIAGNOSTIC_DIMENSION_MODEL.md","role":"reconciled_dimensions"},
+    {"id":"external_governance_requirements","path":"docs/product/EXTERNAL_GOVERNANCE_REQUIREMENTS.md","role":"missing_official_artifacts"},
+    {"id":"configurable_product_engine","path":"docs/implementation/CONFIGURABLE_PRODUCT_ENGINE.md","role":"runtime_contract"}
   ],
   "confirmed_structure": {
     "question_count": 12,
@@ -40,362 +24,56 @@
     "confidence_policy": "null_until_methodology_approved"
   },
   "dimensions": [
-    {
-      "code": "D1",
-      "name": "Gestão financeira",
-      "status": "confirmed"
-    },
-    {
-      "code": "D2",
-      "name": "Disciplina e hábito",
-      "status": "confirmed"
-    },
-    {
-      "code": "D3",
-      "name": "Visão e planejamento",
-      "status": "confirmed"
-    },
-    {
-      "code": "D4",
-      "name": "Perfil empreendedor",
-      "status": "confirmed"
-    },
-    {
-      "code": "D5",
-      "name": "Relação com crédito e risco",
-      "status": "confirmed"
-    }
+    {"code":"D1","name":"Gestão financeira","status":"confirmed"},
+    {"code":"D2","name":"Disciplina e hábito","status":"confirmed"},
+    {"code":"D3","name":"Visão e planejamento","status":"confirmed"},
+    {"code":"D4","name":"Perfil empreendedor","status":"confirmed"},
+    {"code":"D5","name":"Relação com crédito e risco","status":"confirmed"}
   ],
   "archetypes": [
-    {
-      "code": "fazedor",
-      "name": "Fazedor",
-      "status": "confirmed",
-      "narrative_summary": "Alta centralidade da execução e lacunas de gestão.",
-      "narrative_is_scoring_rule": false,
-      "official_result_copy": null,
-      "activation_rules": []
-    },
-    {
-      "code": "batalhador",
-      "name": "Batalhador",
-      "status": "confirmed",
-      "narrative_summary": "Resiliência combinada a instabilidade de caixa e atuação sob pressão.",
-      "narrative_is_scoring_rule": false,
-      "official_result_copy": null,
-      "activation_rules": []
-    },
-    {
-      "code": "construtor",
-      "name": "Construtor",
-      "status": "confirmed",
-      "narrative_summary": "Base organizada e necessidade de direção de crescimento.",
-      "narrative_is_scoring_rule": false,
-      "official_result_copy": null,
-      "activation_rules": []
-    },
-    {
-      "code": "navegador",
-      "name": "Navegador",
-      "status": "confirmed",
-      "narrative_summary": "Planejamento, informação e uso produtivo de recursos em nível mais avançado.",
-      "narrative_is_scoring_rule": false,
-      "official_result_copy": null,
-      "activation_rules": []
-    }
+    {"code":"fazedor","name":"Fazedor","status":"confirmed","narrative_summary":"Alta centralidade da execução e lacunas de gestão.","narrative_is_scoring_rule":false,"official_result_copy":null,"activation_rules":[]},
+    {"code":"batalhador","name":"Batalhador","status":"confirmed","narrative_summary":"Resiliência combinada a instabilidade de caixa e atuação sob pressão.","narrative_is_scoring_rule":false,"official_result_copy":null,"activation_rules":[]},
+    {"code":"construtor","name":"Construtor","status":"confirmed","narrative_summary":"Base organizada e necessidade de direção de crescimento.","narrative_is_scoring_rule":false,"official_result_copy":null,"activation_rules":[]},
+    {"code":"navegador","name":"Navegador","status":"confirmed","narrative_summary":"Planejamento, informação e uso produtivo de recursos em nível mais avançado.","narrative_is_scoring_rule":false,"official_result_copy":null,"activation_rules":[]}
   ],
   "questions": [
-    {
-      "code": "Q1",
-      "response_type": "scale_1_4",
-      "dimensions": ["D1"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q2",
-      "response_type": "single_choice",
-      "dimensions": ["D1"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "conflicting",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q3",
-      "response_type": "single_choice",
-      "dimensions": ["D1", "D5"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q4",
-      "response_type": "scale_1_4",
-      "dimensions": ["D2"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q5",
-      "response_type": "single_choice",
-      "dimensions": ["D2"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "conflicting",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q6",
-      "response_type": "scale_1_4",
-      "dimensions": ["D3"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q7",
-      "response_type": "single_choice",
-      "dimensions": ["D3", "D5"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q8",
-      "response_type": "single_choice",
-      "dimensions": ["D4"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q9",
-      "response_type": "single_choice",
-      "dimensions": ["D4"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q10",
-      "response_type": "single_choice",
-      "dimensions": ["D5"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q11",
-      "response_type": "boolean_with_conditional_reason",
-      "dimensions": ["D2", "D5"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "missing",
-      "conditional_presence_status": "confirmed",
-      "conditional_rule_status": "missing",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    },
-    {
-      "code": "Q12",
-      "response_type": "visual_scale_1_5",
-      "dimensions": ["D1", "D5"],
-      "structure_status": "confirmed",
-      "exact_wording_status": "conflicting",
-      "exact_wording": null,
-      "options": [],
-      "scoring": []
-    }
+    {"code":"Q1","response_type":"scale_1_4","dimensions":["D1"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q2","response_type":"single_choice","dimensions":["D1"],"structure_status":"confirmed","exact_wording_status":"conflicting","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q3","response_type":"single_choice","dimensions":["D1","D5"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q4","response_type":"scale_1_4","dimensions":["D2"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q5","response_type":"single_choice","dimensions":["D2"],"structure_status":"confirmed","exact_wording_status":"conflicting","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q6","response_type":"scale_1_4","dimensions":["D3"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q7","response_type":"single_choice","dimensions":["D3","D5"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q8","response_type":"single_choice","dimensions":["D4"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q9","response_type":"single_choice","dimensions":["D4"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q10","response_type":"single_choice","dimensions":["D5"],"structure_status":"confirmed","exact_wording_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q11","response_type":"boolean_with_conditional_reason","dimensions":["D2","D5"],"structure_status":"confirmed","exact_wording_status":"missing","conditional_presence_status":"confirmed","conditional_rule_status":"missing","exact_wording":null,"options":[],"scoring":[]},
+    {"code":"Q12","response_type":"visual_scale_1_5","dimensions":["D1","D5"],"structure_status":"confirmed","exact_wording_status":"conflicting","exact_wording":null,"options":[],"scoring":[]}
   ],
   "evidence_matrix": [
-    {
-      "id": "instrument_version",
-      "status": "confirmed",
-      "runtime_blocking": false,
-      "value": "3",
-      "sources": ["diagnostic_item_bank"]
-    },
-    {
-      "id": "question_count",
-      "status": "confirmed",
-      "runtime_blocking": false,
-      "value": 12,
-      "sources": ["diagnostic_item_bank", "information_request_ir008"]
-    },
-    {
-      "id": "dimension_count",
-      "status": "confirmed",
-      "runtime_blocking": false,
-      "value": 5,
-      "sources": ["diagnostic_dimension_model", "information_request_ir008"]
-    },
-    {
-      "id": "archetype_count",
-      "status": "confirmed",
-      "runtime_blocking": false,
-      "value": 4,
-      "sources": ["diagnostic_dimension_model", "information_request_ir008"]
-    },
-    {
-      "id": "maturity_axis_separate",
-      "status": "confirmed",
-      "runtime_blocking": false,
-      "value": true,
-      "sources": ["diagnostic_dimension_model"]
-    },
-    {
-      "id": "journey_readiness_axis_separate",
-      "status": "confirmed",
-      "runtime_blocking": false,
-      "value": true,
-      "sources": ["diagnostic_dimension_model"]
-    },
-    {
-      "id": "q13_excluded_from_official_archetype_form",
-      "status": "confirmed",
-      "runtime_blocking": false,
-      "value": true,
-      "sources": ["diagnostic_item_bank", "diagnostic_dimension_model"]
-    },
-    {
-      "id": "exact_question_wording",
-      "status": "conflicting",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "information_request_ir008"]
-    },
-    {
-      "id": "exact_options_and_keys",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "information_request_ir008"]
-    },
-    {
-      "id": "conditional_rules",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "information_request_ir008"]
-    },
-    {
-      "id": "item_randomization_scope",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "information_request_ir008"]
-    },
-    {
-      "id": "scoring_contributions",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "diagnostic_dimension_model", "information_request_ir008"]
-    },
-    {
-      "id": "normalization_and_cutoffs",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "diagnostic_dimension_model", "information_request_ir008"]
-    },
-    {
-      "id": "tie_or_inconclusive_policy",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "diagnostic_dimension_model", "information_request_ir008"]
-    },
-    {
-      "id": "missing_response_policy",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "diagnostic_dimension_model", "information_request_ir008"]
-    },
-    {
-      "id": "official_reference_cases",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "information_request_ir008"]
-    },
-    {
-      "id": "official_result_copy",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["information_request_ir008"]
-    },
-    {
-      "id": "official_activation_matrix",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["information_request_ir008", "configurable_product_engine"]
-    },
-    {
-      "id": "methodology_version_and_authorship",
-      "status": "missing",
-      "runtime_blocking": true,
-      "value": null,
-      "sources": ["diagnostic_item_bank", "information_request_ir008"]
-    },
-    {
-      "id": "methodological_validation_evidence",
-      "status": "missing",
-      "runtime_blocking": false,
-      "value": null,
-      "sources": ["diagnostic_dimension_model", "information_request_ir008"]
-    },
-    {
-      "id": "descriptive_population_figures",
-      "status": "non_runtime",
-      "runtime_blocking": false,
-      "value": null,
-      "sources": ["information_request_ir008"]
-    }
+    {"id":"instrument_version","status":"confirmed","runtime_blocking":false,"value":"3","sources":["diagnostic_item_bank"]},
+    {"id":"question_count","status":"confirmed","runtime_blocking":false,"value":12,"sources":["diagnostic_item_bank","external_governance_requirements"]},
+    {"id":"dimension_count","status":"confirmed","runtime_blocking":false,"value":5,"sources":["diagnostic_dimension_model","external_governance_requirements"]},
+    {"id":"archetype_count","status":"confirmed","runtime_blocking":false,"value":4,"sources":["diagnostic_dimension_model","external_governance_requirements"]},
+    {"id":"maturity_axis_separate","status":"confirmed","runtime_blocking":false,"value":true,"sources":["diagnostic_dimension_model"]},
+    {"id":"journey_readiness_axis_separate","status":"confirmed","runtime_blocking":false,"value":true,"sources":["diagnostic_dimension_model"]},
+    {"id":"q13_excluded_from_official_archetype_form","status":"confirmed","runtime_blocking":false,"value":true,"sources":["diagnostic_item_bank","diagnostic_dimension_model"]},
+    {"id":"exact_question_wording","status":"conflicting","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","external_governance_requirements"]},
+    {"id":"exact_options_and_keys","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","external_governance_requirements"]},
+    {"id":"conditional_rules","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","external_governance_requirements"]},
+    {"id":"item_randomization_scope","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","external_governance_requirements"]},
+    {"id":"scoring_contributions","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","diagnostic_dimension_model","external_governance_requirements"]},
+    {"id":"normalization_and_cutoffs","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","diagnostic_dimension_model","external_governance_requirements"]},
+    {"id":"tie_or_inconclusive_policy","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","diagnostic_dimension_model","external_governance_requirements"]},
+    {"id":"missing_response_policy","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","diagnostic_dimension_model","external_governance_requirements"]},
+    {"id":"official_reference_cases","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","external_governance_requirements"]},
+    {"id":"official_result_copy","status":"missing","runtime_blocking":true,"value":null,"sources":["external_governance_requirements"]},
+    {"id":"official_activation_matrix","status":"missing","runtime_blocking":true,"value":null,"sources":["external_governance_requirements","configurable_product_engine"]},
+    {"id":"methodology_version_and_authorship","status":"missing","runtime_blocking":true,"value":null,"sources":["diagnostic_item_bank","external_governance_requirements"]},
+    {"id":"methodological_validation_evidence","status":"missing","runtime_blocking":false,"value":null,"sources":["diagnostic_dimension_model","external_governance_requirements"]},
+    {"id":"descriptive_population_figures","status":"non_runtime","runtime_blocking":false,"value":null,"sources":["external_governance_requirements"]}
   ],
-  "runtime_blockers": [
-    "exact_question_wording",
-    "exact_options_and_keys",
-    "conditional_rules",
-    "item_randomization_scope",
-    "scoring_contributions",
-    "normalization_and_cutoffs",
-    "tie_or_inconclusive_policy",
-    "missing_response_policy",
-    "official_reference_cases",
-    "official_result_copy",
-    "official_activation_matrix",
-    "methodology_version_and_authorship"
-  ],
+  "runtime_blockers": ["exact_question_wording","exact_options_and_keys","conditional_rules","item_randomization_scope","scoring_contributions","normalization_and_cutoffs","tie_or_inconclusive_policy","missing_response_policy","official_reference_cases","official_result_copy","official_activation_matrix","methodology_version_and_authorship"],
   "classification_policy": null,
-  "publication": {
-    "draft_allowed": true,
-    "preview_allowed": false,
-    "publish_allowed": false,
-    "reason": "runtime-blocking official artifacts are missing or conflicting"
-  }
+  "publication": {"draft_allowed":true,"preview_allowed":false,"publish_allowed":false,"reason":"runtime-blocking official artifacts are missing or conflicting"}
 }

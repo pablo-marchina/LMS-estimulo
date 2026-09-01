@@ -1,34 +1,26 @@
 # Preview de interface e feedback de carregamento
 
-**Revisado em:** 2026-08-01  
+**Revisado em:** 2026-09-01  
 **Status:** implementação vigente
 
 ## Preview administrativo
 
-A área `/admin/experiencia` permite selecionar telas de administrador e participante.
+`/admin/experiencia` permite revisar telas administrativas e participantes. A rota `/interface-preview/participant` existe porque a experiência participante normal não deve ser executada como se um administrador fosse um participante real.
 
-Telas administrativas podem ser abertas diretamente no iframe com `interface_preview=1`. Telas de participante usam `/interface-preview/participant`, porque a autenticação participante normal redireciona identidades administrativas e impediria a prévia.
+A prévia exige **sessão administrativa válida e escopo autorizado da Estímulo**. Não usar `@estimulo.org` isoladamente como sinônimo de autorização: a política atual depende de identidade Google validada, identidade interna/membership e RBAC.
 
-A rota de preview participante:
+A prévia:
 
-- exige sessão administrativa `@estimulo.org`;
-- renderiza estados representativos das páginas selecionadas;
-- não cria matrícula ou instância de jornada;
-- não monta o rastreador de eventos comportamentais;
-- não grava progresso, score, respostas, entregas ou analytics;
-- usa `InterfacePreviewBridge` para selecionar elementos editáveis;
-- usa iframe com sandbox e bloqueio de escritas.
+- não cria matrícula/instância;
+- não registra progresso, score, resposta, entrega ou analytics;
+- não monta tracking participante;
+- usa bridge/sandbox para selecionar elementos editáveis;
+- não substitui E2E autenticado real.
 
-O preview valida estrutura, textos e composição visual. Ele não substitui teste E2E autenticado da experiência real.
+## Carregamento e shell
 
-## Carregamento
+A plataforma usa barra global de progresso e evita skeletons de página concorrentes. Rotas participantes como `/ajuda` devem permanecer sob o shell/header participante correspondente; overflow/conteúdo não pode deslocar o header para fora da composição.
 
-A plataforma usa uma barra global no topo:
+## Interação
 
-- inicia em links internos, formulários e navegação de histórico;
-- progride de forma indeterminada até a mudança de rota;
-- conclui em 100% quando a nova rota é resolvida;
-- possui timeout de segurança;
-- respeita preferência de redução de movimento.
-
-`app/loading.tsx` mostra somente a barra no carregamento inicial. Skeletons de página e o antigo indicador exclusivo do participante foram removidos para evitar duas experiências concorrentes.
+Quando cards são feitos clicáveis, o alvo de card não deve aninhar link/form dentro de outro controle. Ações explícitas permanecem em camada própria e título/thumbnail podem compartilhar o caso de uso de abertura da aula.

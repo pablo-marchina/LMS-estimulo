@@ -193,22 +193,32 @@ export default async function JourneyOutlinePage({
                             : interfaceText(interfaceContent, "participant.journey.action_locked", participantContentCopy.locked);
                       return (
                         <li key={activity.step_instance_id} className="grid gap-4 p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center">
-                          <span className={`grid size-9 place-items-center rounded-full text-sm font-black ${completed ? "bg-success-soft text-success" : "bg-surface-muted text-secondary"}`}>{completed ? <CheckCircle2 size={18} aria-hidden="true" /> : activityIndex + 1}</span>
-                          <div className="min-w-0"><h3 className="font-semibold text-secondary">{activity.activity_title}</h3>{activity.activity_description ? <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">{activity.activity_description}</p> : null}<ActivityMetadata activity={activity} /></div>
-                          <form action={openJourneyActivityAction} className={typeof activity.metadata.continue_thumbnail_file_object_id === "string" ? "w-full sm:w-56" : undefined}>
+                          <form action={openJourneyActivityAction} className="contents">
                             <input type="hidden" name="journey_instance_id" value={outline.journey_instance_id} />
                             <input type="hidden" name="step_instance_id" value={activity.step_instance_id} />
                             <input type="hidden" name="step_aggregate_version" value={activity.step_aggregate_version} />
                             <input type="hidden" name="step_status" value={activity.step_status} />
                             <input type="hidden" name="idempotency_key" value={randomUUID()} />
-                            {typeof activity.metadata.continue_thumbnail_file_object_id === "string" ? (
-                              <button type="submit" disabled={!canOpen} className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface-muted text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50">
-                                <img src={`/api/activity-thumbnails/${activity.step_instance_id}`} alt={typeof activity.metadata.continue_thumbnail_alt === "string" ? activity.metadata.continue_thumbnail_alt : activity.activity_title} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
-                                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">{actionLabel}</span>
-                              </button>
-                            ) : (
-                              <PendingSubmitButton pendingLabel="Abrindo…" variant={completed ? "secondary" : "primary"} size="sm" type="submit" disabled={!canOpen} className="w-full sm:w-auto">{actionLabel}</PendingSubmitButton>
-                            )}
+                            <span className={`grid size-9 place-items-center rounded-full text-sm font-black ${completed ? "bg-success-soft text-success" : "bg-surface-muted text-secondary"}`}>{completed ? <CheckCircle2 size={18} aria-hidden="true" /> : activityIndex + 1}</span>
+                            <div className="min-w-0">
+                              {canOpen ? (
+                                <button type="submit" className="group/title block max-w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">
+                                  <h3 className="font-semibold text-secondary underline-offset-4 transition-colors group-hover/title:text-primary group-hover/title:underline">{activity.activity_title}</h3>
+                                </button>
+                              ) : <h3 className="font-semibold text-secondary">{activity.activity_title}</h3>}
+                              {activity.activity_description ? <p className="mt-1 line-clamp-2 text-sm leading-6 text-muted">{activity.activity_description}</p> : null}
+                              <ActivityMetadata activity={activity} />
+                            </div>
+                            <div className={typeof activity.metadata.continue_thumbnail_file_object_id === "string" ? "w-full sm:w-56" : undefined}>
+                              {typeof activity.metadata.continue_thumbnail_file_object_id === "string" ? (
+                                <button type="submit" disabled={!canOpen} className="group relative block aspect-video w-full overflow-hidden rounded-xl border border-border bg-surface-muted text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50">
+                                  <img src={`/api/activity-thumbnails/${activity.step_instance_id}`} alt={typeof activity.metadata.continue_thumbnail_alt === "string" ? activity.metadata.continue_thumbnail_alt : activity.activity_title} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
+                                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-3 pb-2 pt-8 text-sm font-bold text-white">{actionLabel}</span>
+                                </button>
+                              ) : (
+                                <PendingSubmitButton pendingLabel="Abrindo…" variant={completed ? "secondary" : "primary"} size="sm" type="submit" disabled={!canOpen} className="w-full sm:w-auto">{actionLabel}</PendingSubmitButton>
+                              )}
+                            </div>
                           </form>
                         </li>
                       );

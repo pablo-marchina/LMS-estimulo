@@ -1,138 +1,49 @@
-# Risk Register
+# Riscos da Plataforma Estímulo
 
-| ID | Risco | Prob. | Impacto | Mitigação inicial | Indicador/condição |
-|---|---|---:|---:|---|---|
-| RSK-001 | Modelar o banco a partir dos mockups atuais. | Alta | Crítico | Definir domínio, eventos e score antes do schema definitivo. | Tabelas nomeadas por telas ou componentes. |
-| RSK-002 | Confundir conclusão de conteúdo com aprendizagem ou menor risco. | Alta | Crítico | Separar exposição, compreensão, aplicação e resultados posteriores. | Métrica única de conclusão usada como score. |
-| RSK-003 | Criar quatro arquétipos sem evidência e sem ações distintas. | Alta | Alto | Pesquisa com empreendedores e critérios de acionabilidade. | Arquétipos apenas descritivos. |
-| RSK-004 | Usar score experimental em decisões de crédito cedo demais. | Média | Crítico | Proibir uso decisório até validação, governança e análise de vieses. | Score exposto como aprovação/reprovação. |
-| RSK-005 | Acoplar o sistema à Jornada OpenAI. | Alta | Alto | Modelo configurável e teste com uma segunda jornada hipotética. | Condições `if openai` no núcleo. |
-| RSK-006 | Perder contexto e ordem dos eventos. | Média | Crítico | Envelope canônico, timestamps, correlation/causation IDs e idempotência. | Eventos agregados sem fatos brutos. |
-| RSK-007 | Sincronização HubSpot gerar conflito ou duplicidade. | Alta | Alto | Fonte da verdade por campo, idempotência, fila e reconciliação. | Objetos duplicados ou sobrescrita circular. |
-| RSK-008 | Fundação atual não executar de forma reproduzível. | Média | Alto | Receber ZIP, executar em ambiente limpo e documentar. | Setup depende de passos não documentados. |
-| RSK-009 | Dados históricos não permitirem validação do score. | Alta | Alto | Inventário precoce e plano prospectivo de coleta. | Ausência de IDs compartilhados/desfechos. |
-| RSK-010 | Dados pessoais excessivos em eventos. | Média | Crítico | Minimização, classificação, retenção e separação de identidade. | CPF, telefone ou conteúdo livre em payloads. |
-| RSK-011 | Escopo de quatro semanas ultrapassar capacidade. | Alta | Alto | Vertical slice e congelamento da release inicial de produção. | Muitas jornadas, canais ou públicos na release inicial de produção. |
-| RSK-012 | Credenciais compartilhadas por canais inseguros. | Média | Crítico | Secret manager e arquivos locais ignorados pelo Git. | Chaves em chat, commit ou documentação. |
-| RSK-013 | Rotas administrativas e de aluno ficarem acessíveis sem autorização real. | Alta | Crítico | Guards no servidor, RBAC e RLS antes de dados reais. | `/admin` acessível sem papel válido. |
-| RSK-014 | Cadastro criar `auth.users` sem perfil de domínio correspondente. | Alta | Alto | Provisioning idempotente e testes de signup/confirm. | Falha de FK ao iniciar jornada. |
-| RSK-015 | Conteúdo de rascunho ser exposto por policies públicas amplas. | Média | Alto | Policies subordinadas ao status/versionamento dos pais. | Tracks/modules/assets acessíveis de curso não publicado. |
-| RSK-016 | Métricas simuladas serem interpretadas como dados reais. | Média | Alto | Remover dados fictícios do runtime não demonstrativo. | Percentuais fixos em staging/produção. |
-| RSK-017 | Regras específicas da OpenAI impedirem novas jornadas. | Alta | Alto | Definições configuráveis e teste com segunda jornada hipotética. | Novos enums/unions para cada jornada. |
-| RSK-018 | Confundir organização operadora com empresa beneficiária. | Média | Alto | Entidades e vínculos separados no modelo de domínio. | Parceiro ou Estímulo registrado na mesma entidade de MPE. |
-| RSK-019 | Versionamento excessivamente granular tornar edição e publicação inviáveis. | Média | Médio | Publicar snapshots agregados e validar granularidade no modelo lógico. | Toda pequena alteração exige cadeia manual complexa. |
-| RSK-020 | Regras executáveis virarem texto livre ou código arbitrário armazenado no banco. | Alta | Crítico | DSL/predicados estruturados, schema e operadores permitidos. | `unlock_rule` sem validação ou execução de código dinâmico. |
-| RSK-021 | Modelo genérico demais esconder regras de negócio e gerar tabelas universais. | Média | Alto | Contextos delimitados, tipos de atividade suportados e invariantes explícitas. | Tabelas `entities`, `items` ou JSON sem integridade para todo o domínio. |
-| RSK-022 | Papéis globais concederem acesso excessivo a dados pessoais, submissões ou score. | Alta | Crítico | Capabilities, escopo, finalidade, RLS e testes negativos. | Papel `admin` usado como solução para todas as autorizações. |
-| RSK-023 | Atualização de jornada alterar experiência de participantes existentes. | Alta | Alto | Fixar participação à versão e exigir migração explícita. | Conteúdo/regra publicada editada no lugar. |
+Este registro reúne classes de risco duráveis. Probabilidade e exposição operacional variam por ambiente e release; por isso ficam nas avaliações de risco correspondentes, não neste catálogo permanente.
 
-| RSK-024 | Durações manuais divergirem das atividades e produzirem expectativa incorreta. | Alta | Médio | Calcular duração a partir das atividades e bloquear publicação com divergência. | Total declarado diferente da soma das unidades. |
-| RSK-025 | Publicar avaliações sem banco de questões, respostas, justificativas e política de tentativas. | Alta | Alto | Checklist editorial e versionamento de instrumentos. | Provas representadas apenas por nome/arquivo. |
-| RSK-026 | Envio prático opcional limitar a capacidade de medir aplicação real. | Alta | Alto | Separar prática sugerida, envio e validação; avaliar obrigatoriedade na coorte inicial de produção. | Certificado emitido sem evidência prática. |
-| RSK-027 | Pontos incentivarem ações artificiais e contaminarem futuras features comportamentais. | Média | Alto | Ledger, limites, idempotência e exclusão padrão do score. | Repetição de ações apenas para pontuação. |
-| RSK-028 | Conteúdo financeiro ou contratual ser interpretado como aconselhamento profissional. | Média | Crítico | Revisão especializada, avisos, exemplos fictícios e foco em verificação humana. | Participante envia documento real ou toma decisão conclusiva pela IA. |
-| RSK-029 | Mudanças na interface/capacidade das ferramentas tornarem aulas rapidamente desatualizadas. | Alta | Alto | Data de revisão técnica, ativos versionados e política de descontinuação. | Passo a passo não corresponde à ferramenta acessível. |
-| RSK-030 | Codex ou funcionalidades avançadas não serem acessíveis ao público-alvo nas condições assumidas. | Média | Alto | Validar acesso real e manter bônus desacoplado da conclusão base. | Participante desbloqueia módulo que não consegue utilizar. |
-| RSK-031 | Uploads práticos exporem dados pessoais, financeiros ou contratuais. | Alta | Crítico | Orientação, minimização, validação, acesso restrito e consentimentos separados. | Arquivos reais sensíveis enviados sem controle. |
-| RSK-032 | Credencial comprovar mais do que as evidências realmente demonstram. | Média | Alto | Texto preciso, snapshot de requisitos e separação entre conhecimento/aplicação/impacto. | Certificado afirma impacto no negócio ou proficiência não avaliada. |
-| RSK-033 | Entrevistas pequenas ou enviesadas produzirem arquétipos que não representam o público. | Alta | Alto | Amostragem intencional diversa, escopo de validade e replicação. | Perfis definidos com poucos casos semelhantes. |
-| RSK-034 | Respostas socialmente desejáveis não refletirem comportamento real. | Alta | Alto | Perguntas sobre episódios concretos, cenários, eventos observados e validação longitudinal. | Respostas concentradas no extremo positivo. |
-| RSK-035 | Diagnóstico longo causar abandono ou respostas sem atenção. | Média | Alto | Entrevistas cognitivas, medição de duração e redução de itens. | Abandono ou tempo anormal por seção. |
-| RSK-036 | Misturar maturidade, contexto e perfil produzir personalização incorreta. | Alta | Alto | Instrumentos e entidades separados. | Arquétipo muda apenas por etapa de crédito ou acesso digital. |
-| RSK-037 | Rótulos dos arquétipos estigmatizarem ou se tornarem permanentes. | Média | Crítico | Linguagem neutra, probabilidades, validade temporal e possibilidade de resultado incerto. | Perfil exibido como identidade fixa. |
-| RSK-038 | Forçar quatro perfis apesar de evidência contrária. | Alta | Alto | Comparar soluções e permitir não classificar. | Número de perfis fixo no schema ou algoritmo. |
-| RSK-039 | Itens funcionarem de modo diferente entre grupos e gerarem desigualdade. | Média | Crítico | Testes de compreensão, equidade e funcionamento diferencial. | Taxas de classificação incerta muito diferentes. |
-| RSK-040 | Intervenções excessivas causarem fadiga, reclamação ou abandono. | Média | Alto | Cooldown, prioridade, supressão, opt-out e métricas de proteção. | Muitas mensagens por participante. |
-| RSK-041 | Personalização parecer eficaz por usar o mesmo comportamento para classificar e medir resultado. | Média | Alto | Separar inputs e outcomes, usar validação prospectiva e comparação. | Circularidade entre item e métrica de sucesso. |
-| RSK-042 | Autorrelato de aplicação ser tratado como aplicação comprovada. | Alta | Alto | Separar relato, evidência, validação e resultado posterior. | `applied=true` baseado apenas em resposta genérica. |
-| RSK-043 | Ausência de entrevistas levar o projeto a inventar arquétipos ou interromper a release inicial de produção. | Alta | Alto | Usar dimensões provisórias, segmentos operacionais e coleta prospectiva; manter arquétipos desabilitados. | Rótulos definidos sem evidência ou diagnóstico bloqueando o lançamento. |
-| RSK-044 | Tratar a release inicial como protótipo e acumular dívida incompatível com produção. | Alta | Crítico | Aplicar gate de produção, Definition of Done produtiva e proibir mocks/dados fictícios em ambiente real. | Funcionalidade marcada como concluída sem testes, monitoramento, segurança ou recuperação. |
-| RSK-045 | Rollout inicial controlado ser confundido com ambiente descartável. | Média | Alto | Usar ambiente produtivo, suporte, feature flags, monitoramento e critérios explícitos de expansão/rollback. | Decisões manuais sem rastreabilidade ou ausência de operação após liberação. |
-| RSK-046 | Cliente emitir conclusão ou aprovação sem validação do servidor. | Alta | Crítico | Cliente envia comandos/observações; backend emite fatos canônicos. | Eventos críticos originados diretamente no navegador. |
-| RSK-047 | Retries produzirem pontos, mensagens ou sincronizações duplicadas. | Alta | Crítico | Outbox/inbox, idempotency keys e constraints únicas por efeito. | Dois efeitos para o mesmo event_id/source_event_id. |
-| RSK-048 | Eventos fora de ordem corromperem progresso ou intervenção. | Média | Alto | aggregateversion, partitionkey, gap detection e reconciliação. | Consumidor aplica versão N+1 sem N. |
-| RSK-049 | Mudança de schema quebrar consumidores silenciosamente. | Alta | Alto | JSON Schema, SemVer, compatibilidade em CI e majors explícitos. | Payload inválido ou campo reinterpretado. |
-| RSK-050 | PII ou conteúdo sensível vazar em eventos, logs ou dead letters. | Alta | Crítico | UUIDs opacos, payload minimizado, schemas estritos e sanitização de erro. | E-mail, CPF, texto de submissão ou URL com token no event store. |
-| RSK-051 | Volume de eventos de progresso gerar custo e ruído sem valor. | Alta | Alto | Sampling/consolidação, limitação por frequência e catálogo restrito. | Múltiplos eventos por segundo sem consumidor justificado. |
-| RSK-052 | Eventos derivados contaminarem features comportamentais. | Alta | Alto | Marcar feature_input e exigir eventos de origem. | Pontos, badge ou certificado usados como sinal bruto. |
-| RSK-053 | Falha silenciosa de consumidor produzir projeções divergentes. | Média | Crítico | Checkpoints, métricas de lag, DLQ, alertas e reconciliação. | Event log avançado e projeção estagnada. |
-| RSK-054 | Replay repetir notificações ou efeitos externos destrutivos. | Média | Crítico | Modos de replay separados e efeitos externos bloqueados por padrão. | Reenvio de mensagem/certificado durante reconstrução. |
-| RSK-055 | Horário do cliente gerar sequência ou feature temporal incorreta. | Alta | Alto | Server time como referência, client_time não confiável e análise de clock skew. | Duração negativa ou eventos futuros. |
-| RSK-056 | Retenção indefinida ampliar risco e custo. | Alta | Alto | Classe de retenção por evento e política institucional antes do gate. | Eventos sem retention_class ou job de expurgo. |
-| RSK-057 | Telemetria técnica ser confundida com comportamento de negócio. | Média | Alto | Separar logs/traces de eventos canônicos e exigir significado/consumidor. | Clique/erro técnico vira feature sem contrato. |
-| RSK-058 | Estado operacional ser confirmado sem evento/outbox correspondente. | Baixa/Crítica | Crítico | Unidade atômica, constraint e reconciliação. | Agregado atualizado sem event_id associado. |
-| RSK-059 | Resposta ao usuário depender de sistema externo e gerar falhas parciais. | Média | Alto | Desacoplar integrações e usar status assíncrono. | Timeout HubSpot impede conclusão interna. |
-| RSK-060 | Webhook externo alterar domínio antes de validação de assinatura, replay e mapping. | Média | Crítico | Receipt isolado, verificação e normalização. | Escrita direta a partir do payload recebido. |
-| RSK-061 | Replay reconstruir projeções e reenviar efeitos externos. | Média | Crítico | External effects off por padrão e inbox/idempotência. | Mensagens, pontos ou certificados duplicados. |
-| RSK-062 | Last-write-wins entre HubSpot e plataforma sobrescrever campo correto. | Alta | Alto | Ownership por campo e reconciliação explícita. | Valor alterna ou perde significado entre sistemas. |
-| RSK-063 | Falha de linhagem impedir reprodução de feature ou score histórico. | Média | Crítico | Persistir versões, janelas, inputs e execução. | Score sem eventos/fórmula rastreáveis. |
-| RSK-064 | Upload de evidência ser associado antes de scan e confirmação de integridade. | Média | Crítico | Upload direto isolado, hash, scanner e promoção posterior. | Arquivo malicioso ou incompleto acessível. |
-| RSK-065 | Observações de progresso gerarem alto volume e inconsistência. | Alta | Alto | Consolidação, thresholds, client_event_id e server completion. | Eventos por segundo ou conclusão baseada só no cliente. |
-| RSK-066 | Modelo de 122 tabelas elevar custo cognitivo e de migrations se implementado de uma vez. | Média | Alto | Implementar em ondas M00–M10, ownership por schema e geração automática de documentação. | Alterações cruzadas frequentes ou migrations longas. |
-| RSK-067 | DDL preliminar conter incompatibilidade ainda não detectada por não ter sido executado em PostgreSQL real. | Alta | Alto | Aplicar em banco descartável e testar migrations antes de aprovação. | Falha de parsing, constraint ou ordem de criação. |
-| RSK-068 | Adapter de identidade/RLS divergir do provedor escolhido. | Alta | Crítico | Manter helper neutro e fechar claims/policies no E12 antes de grants produtivos. | RLS retorna sujeito incorreto ou acesso amplo. |
-| RSK-069 | Prazos de retenção e anonimização permanecerem indefinidos antes do deploy. | Alta | Crítico | Bloquear jobs automáticos e obter política institucional no gate de produção. | Dados sem prazo ou exclusão inconsistente. |
-| RSK-070 | Mapeamento genérico de IDs externos aceitar tipo interno inválido. | Média | Alto | Allowlist, validação por trigger/serviço e reconciliação. | Mapping órfão ou apontando para entidade errada. |
-| RSK-071 | Diferenças entre Supabase e AWS só aparecerem após o deploy produtivo. | Alta | Crítico | AWS staging obrigatório, suíte de paridade e mesmas migrations. | Release tenta ir diretamente de Supabase para produção. |
-| RSK-072 | Policies acopladas a `auth.uid()` impedirem migração para Cognito/RDS. | Alta | Crítico | Contexto interno neutro por transação e adapter OIDC. | SQL de domínio depende de claims Supabase. |
-| RSK-073 | Uso de Edge Functions, Realtime ou PostgREST criar lock-in oculto. | Média | Alto | Proibir dependência única e exigir adapters/alternativa AWS. | Regra central só funciona no Supabase. |
-| RSK-074 | Migrations funcionarem no Supabase e falharem no RDS por versão/extensão. | Alta | Alto | Fixar versões, allowlist de extensões e executar CI nos dois provedores. | DDL usa extensão/recurso não disponível. |
-| RSK-075 | Adapter de storage produzir semântica diferente entre Supabase Storage e S3. | Média | Alto | Contrato único, hashes, signed URLs, scan e testes cruzados. | URLs persistidas ou permissões divergentes. |
-| RSK-076 | Custos e complexidade crescerem por manter dois provedores. | Média | Médio | Limitar Supabase a local/test, automatizar ambientes e revisar custo trimestralmente. | Manutenção duplicada ou muitos componentes proprietários. |
-| RSK-077 | Vínculo automático por e-mail unir contas de pessoas diferentes ou e-mail reciclado. | Média | Crítico | Identidade única por issuer/subject; colisão exige fluxo explícito e auditado. | Conta existente recebe identidade externa sem confirmação. |
-| RSK-078 | Contexto de usuário vazar entre requests por reutilização da conexão do pool. | Média | Crítico | `SET LOCAL`, transação obrigatória, rollback no erro e teste de conexão reutilizada. | Usuário B lê dados com contexto de A. |
-| RSK-079 | Role do backend possuir BYPASSRLS ou ser dona das tabelas. | Média | Crítico | Roles NOBYPASSRLS, ownership separado e verificação no gate. | Testes passam com RLS que não é realmente aplicada. |
-| RSK-080 | Migration parcialmente aplicada divergir Supabase e RDS. | Média | Alto | Arquivos imutáveis, manifest, CI desde banco vazio, backup e relatório por migration. | Histórico registra versão sem todos os objetos esperados. |
-| RSK-081 | Worker perder lease ou executar efeito após outro worker recuperar a linha. | Média | Crítico | Idempotency key no destino, ownership do claim, inbox e reconciliação. | Efeito externo duplicado apesar de `SKIP LOCKED`. |
-
-| RSK-082 | Histórico remoto fragmentado divergir dos dez arquivos canônicos locais. | Média | Alto | Manter mapa de equivalência e executar baseline/squash controlado antes de automatizar `db push`; nunca reaplicar M08 consolidado sobre o remoto atual. | CLI detecta versões inesperadas ou tenta duplicar objetos. |
-| RSK-083 | Remover índices por `unused_index` em banco vazio e degradar o sistema quando houver carga. | Alta | Alto | Decidir com tráfego, `pg_stat_user_indexes`, seletividade e planos reais. | Índice removido antes de benchmark. |
-| RSK-084 | Configuração administrativa do ambiente de teste ser copiada para produção. | Média | Crítico | Isolar bootstrap de teste e provisionar AWS por IaC com menor privilégio. | `postgres` ou papel proprietário assume runtime/worker em produção. |
-| RSK-085 | URL assinada ou token de upload vazar em log, analytics ou erro. | Média | Crítico | Redaction, TTL curto, chave imutável e proibição de persistência. | URL/token aparece em log ou evento. |
-| RSK-086 | Arquivo ser associado ou baixado antes do scan limpo. | Média | Crítico | Estado inicial `quarantined`, download somente `clean` e associação posterior. | Evidência aponta para arquivo não liberado. |
-| RSK-087 | MIME declarado divergir dos bytes armazenados. | Alta | Alto | Inspeção server-side, allowlist e scanner; ampliar para magic bytes antes do piloto. | Extensão/MIME aceito sem inspeção. |
-| RSK-088 | Worker mover objeto, mas falhar antes de concluir o estado no banco. | Média | Alto | Operação idempotente, estado `release_pending` e reconciliação. | Objeto em `protected/` com DB ainda pendente. |
-| RSK-089 | Segredo compartilhado de worker tornar-se credencial permanente. | Média | Crítico | Manter rota desativada agora e substituir por identidade de workload na etapa de fila/AWS. | `FILE_STORAGE_WORKER_KEY` usado fora do teste. |
-| RSK-090 | Perfil técnico de 5 MiB ser adotado como regra de produto sem validação. | Alta | Alto | Marcação explícita, perfil separado e gate de aprovação. | UI usa `e12_storage_proof` no piloto. |
-
-| RSK-091 | SQS Standard ou o adapter entregar a mesma mensagem mais de uma vez. | Alta | Crítico | `job_id`, dedup key, efeitos únicos por job e ack idempotente. | Duas tentativas aplicam o mesmo efeito. |
-| RSK-092 | Visibility timeout vencer enquanto o scan ainda está em execução. | Média | Crítico | Heartbeat, p99 de duração, batch limitado e idempotência após reentrega. | `visibility_expired` cresce ou dois workers processam o mesmo job. |
-| RSK-093 | Redrive repetir poison message sem corrigir a causa. | Média | Alto | Runbook, aprovação, limite de lote e motivo obrigatório. | Job retorna rapidamente à DLQ. |
-| RSK-094 | Segredo HMAC do ambiente de teste vazar ou ser reutilizado como credencial permanente. | Baixa | Crítico | Segredo apenas no runtime, assinatura curta, redaction e substituição por IAM na AWS. | Assinaturas aparecem em logs ou mecanismo é copiado para produção. |
-| RSK-095 | Ausência de scheduler deixar jobs acumulando apesar do worker estar implantado. | Alta | Alto | Implementar dispatcher, alarme de age/depth e health check. | Queue age cresce e nenhum invocation é observado. |
-| RSK-096 | Scanner técnico ser confundido com proteção antimalware real. | Alta | Crítico | Nome explícito, perfil técnico isolado e falha fechada para outros perfis. | Perfil de produto referencia `e12-proof-integrity-scanner`. |
-| RSK-097 | Diferenças PGMQ/SQS aparecerem apenas em produção. | Média | Crítico | AWS staging obrigatório e suíte de paridade com duplicata, visibility, DLQ e redrive. | Adapter SQS diverge no receipt/ack/retry. |
-| RSK-098 | Worker mover o arquivo e falhar antes do ack, causando reentrega após efeito. | Média | Alto | Move/conclusão idempotentes e scan único por `queue_job_id`. | Target já existe e job reaparece. |
-| RSK-099 | Concorrência de múltiplos workers revelar race não vista nos testes sequenciais. | Média | Crítico | Teste multiconexão, fault injection e invariantes de receipt ownership. | Receipts ativos duplicados ou ack incorreto. |
-| RSK-100 | Arquivos ou jobs permanecerem presos em `scan_pending`/`release_pending`. | Média | Alto | Reconciliação periódica, alarmes por idade e replay controlado. | Estado envelhece sem receipt ativo. |
-| RSK-101 | Crescimento de histórico PGMQ/attempts/dead letters degradar custo e consultas. | Média | Médio | Retenção, particionamento/arquivamento e métricas de volume. | Tabelas de archive/attempts crescem sem política. |
-| RSK-102 | Comprometimento de uma Edge Function com service role permitir chamar RPCs internas. | Baixa | Crítico | Menor privilégio, funções separadas, HMAC, rotação e migração para IAM. | RPC de fila é chamada fora do worker autorizado. |
-| RSK-103 | Alteração de API/comportamento de pg_net afetar dispatches do ambiente de teste. | Média | Alto | Adapter isolado, resposta reconciliada e AWS sem pg_net. | Dispatch failures crescem após upgrade. |
-| RSK-104 | Drift entre Vault, Edge Function e configuração do cron interromper consumo. | Média | Crítico | Secrets por ambiente, health check, alerta de backlog/dispatch e runbook. | Token não é reivindicado ou HTTP falha. |
-| RSK-105 | Token de dispatch expirar antes do worker iniciar. | Média | Médio | TTL curto porém superior à latência observada, reconciliação e nova invocação. | Tokens `expired` aumentam. |
-| RSK-106 | Thresholds provisórios gerarem ruído ou silêncio operacional. | Alta | Alto | Calibração por histórico, revisão periódica e níveis warning/critical. | Muitos falsos positivos ou incidentes sem alerta. |
-| RSK-107 | Histórico de cron, snapshots e dispatch tokens crescer indefinidamente. | Média | Médio | Limpeza diária e retenção explícita. | Tabelas operacionais crescem além do esperado. |
-| RSK-108 | Chave publicável ser interpretada como autorização suficiente do worker. | Média | Crítico | Token de uso único, claim service-role e testes de replay/wrong-worker. | Chamada sem token consegue consumir fila. |
-| RSK-109 | Reconciliador republicar enquanto ainda existe processamento válido. | Baixa | Crítico | Advisory lock, active receipt check e visibility deadline. | Dois provider messages ativos para o mesmo job. |
-| RSK-110 | CloudWatch e projeção interna divergirem após migração AWS. | Média | Alto | Métricas de origem + snapshot canônico + teste de reconciliação. | Alarmes discordam sobre backlog/DLQ. |
-
-| RSK-111 | Escolher base legal genérica para toda a plataforma. | Alta | Crítico | Aprovação por atividade e finalidade; ativação bloqueada sem base específica. | Atividades diferentes compartilham justificativa sem análise. |
-| RSK-112 | Usar consentimento como solução universal ou obter consentimento agrupado. | Alta | Crítico | Finalidades separadas, evidência versionada e revogação append-only. | Uma caixa autoriza pesquisa, marketing, personalização e crédito. |
-| RSK-113 | Ativar perfilamento comportamental sem RIPD e explicabilidade. | Média | Crítico | Guard de ativação, classe `behavioral_profile` e gate `BEHAVIORAL_RIPD_EFFECTIVE`. | Features/scores usados fora de pesquisa controlada. |
-| RSK-114 | Sinais educacionais produzirem efeito adverso em crédito antes da validação. | Média | Crítico | `credit_decision_support` draft e bloqueio no banco. | Score aparece em aprovação, limite, preço ou cobrança. |
-| RSK-115 | Prazos de retenção arbitrários causarem eliminação ilegal ou conservação excessiva. | Alta | Alto | Políticas draft, aprovação explícita e dry run. | Rotina destrutiva executada sem prazo aprovado. |
-| RSK-116 | Legal hold não ser considerado em solicitações de eliminação. | Média | Crítico | Tabelas de hold, alvo explícito e trigger de bloqueio. | Alvo em disputa é apagado ou anonimizado. |
-| RSK-117 | Segredos ou URLs assinadas vazarem em logs estruturados. | Média | Crítico | Redaction recursiva, schemas e revisão de logs. | Chaves como `authorization`, `token` ou `signed_url` persistem. |
-| RSK-118 | Redaction alterar payload sem atualizar hash. | Baixa | Alto | Redigir antes de calcular hash e trigger específico de integridade. | `payload_hash` diverge do conteúdo persistido. |
-| RSK-119 | Texto livre carregar PII/segredo sob nome de chave não reconhecido. | Média | Alto | Minimização, allowlists e proibição de body completo; redaction é defesa secundária. | Prompt, documento ou mensagem aparece em log. |
-| RSK-120 | Tabela nova ser exposta por grant padrão ou ausência de RLS. | Média | Crítico | Default privileges deny, RLS em todas as tabelas e teste automático. | `anon`/`authenticated` consegue SELECT direto. |
-| RSK-121 | Solicitação de titular ser respondida sem verificação proporcional. | Média | Alto | Estados de verificação, canal controlado e evidência. | Dados são entregues a solicitante não autenticado. |
-| RSK-122 | Processo de direitos ignorar dados no CRM, arquivos, backups ou sistemas de crédito. | Alta | Alto | Inventário de sistemas e playbook ponta a ponta. | Resposta cobre apenas o banco principal. |
-| RSK-123 | Incidente com dados pessoais não ser escalado/comunicado corretamente. | Média | Crítico | Registro, timeline, avaliação de comunicação e playbook institucional. | Incidente fecha sem avaliação documentada. |
-| RSK-124 | Backup de banco ser confundido com backup de objetos. | Alta | Alto | Estratégia separada e teste conjunto de restore. | Banco restaura, mas arquivos permanecem perdidos. |
-| RSK-125 | Marcar controles AWS como aprovados com evidência do Supabase de teste. | Média | Crítico | Gate por ambiente e staging AWS obrigatório. | KMS/PITR/TLS recebem `passed` sem prova AWS. |
-| RSK-126 | Fornecedor processar dados em região/subprocessador não avaliado. | Média | Crítico | Cadastro de partes, DPA e avaliação de transferência. | Contrato, região ou subprocessador desconhecido. |
-| RSK-127 | Inventário de segredos armazenar o próprio valor. | Baixa | Crítico | Constraint, secret scan e política de metadata-only. | Token aparece em `secret_inventory` ou documentação. |
-| RSK-128 | Gate ser contornado por `accepted_risk` sem decisão formal e prazo. | Média | Alto | Exigir referência, escopo, aprovação e revisão. | Controle crítico muda de status sem evidência. |
-| RSK-129 | ROPA técnico ser interpretado como aprovação jurídica. | Alta | Alto | Estado draft e avisos explícitos nos documentos/tabelas. | Atividade inicia porque está cadastrada. |
-| RSK-130 | Ausência de encarregado/canal público impedir atendimento e escalonamento. | Média | Alto | Controle bloqueante `DPO_DESIGNATION`. | Solicitações e incidentes sem responsável público. |
+| ID | Risco | Controles permanentes | Indicadores |
+|---|---|---|---|
+| RSK-001 | Modelo de dados acoplado a telas ou a uma jornada específica. | Contextos delimitados, modelo multi-jornada e module boundaries. | Tabelas/condições nomeadas por uma única experiência. |
+| RSK-002 | Exposição de conteúdo ser confundida com aprendizagem. | Fatos separados para consumo, avaliação, prática e conclusão. | Uma métrica única alimenta todas as interpretações. |
+| RSK-003 | Diagnóstico usar metodologia não validada. | Configuração versionada, abstenção e requisitos externos de metodologia. | Pesos/cortes hardcoded sem fonte. |
+| RSK-004 | Sinais educacionais influenciarem crédito sem governança. | Separação técnica, finalidade, revisão de vieses e gates jurídicos. | Score aparece em aprovação, limite, preço ou cobrança. |
+| RSK-005 | Integração externa criar conflito, duplicidade ou indisponibilidade no domínio. | Outbox, idempotência, ownership, retry e reconciliação. | Escrita central depende de resposta externa ou alterna valores. |
+| RSK-006 | Setup deixar de ser reproduzível. | Toolchain versionada, lockfile, migrations e validação em ambiente limpo. | Execução depende de passo manual não documentado. |
+| RSK-007 | Dados pessoais excessivos em eventos/logs. | Minimização, schemas, redaction, classificação e retenção. | CPF, token, arquivo ou texto livre sem finalidade aparece na telemetria. |
+| RSK-008 | Escopo funcional crescer sem preservar coerência arquitetural. | Princípios de produto, priorização e Definition of Done. | Capacidades paralelas ou atalhos específicos surgem no núcleo. |
+| RSK-009 | Autorização administrativa ou participante ser apenas visual. | Guards server-side, RBAC, RLS/grants e testes negativos. | Rota/RPC acessível sem identidade e escopo válidos. |
+| RSK-010 | Identidade Auth não possuir perfil/vínculo de domínio consistente. | Provisioning idempotente e linking explícito. | Usuário autenticado sem participante/membership correspondente. |
+| RSK-011 | Conteúdo rascunho ser exposto. | Estado de publicação verificado no servidor e no banco. | Conteúdo não publicado aparece em leitura participante. |
+| RSK-012 | Dados simulados serem interpretados como reais. | Estados vazios/erro honestos e proibição de mock operacional. | Métricas estáticas em ambiente real. |
+| RSK-013 | Edição ao vivo de jornada surpreender participantes ativos. | Governança editorial, auditoria, compatibilidade e despublicação para mudanças disruptivas. | Regra essencial muda sem rastreabilidade ou análise de impacto. |
+| RSK-014 | Regras executáveis virarem texto livre/código arbitrário. | DSL/predicados estruturados e allowlists. | `eval`, expressão não validada ou JSON sem schema controla autorização. |
+| RSK-015 | Papéis globais concederem acesso excessivo. | Capabilities, escopo, validade, finalidade e RLS. | Papel genérico acessa PII/submissões sem necessidade. |
+| RSK-016 | Avaliação ou prática ser publicada sem instrumento suficiente. | Versionamento de instrumento, validação editorial e critérios explícitos. | Prova sem respostas/rubrica/política de tentativa. |
+| RSK-017 | Pontos incentivarem abuso ou contaminarem análise comportamental. | Ledger idempotente, limites e separação de features derivadas. | Repetição artificial para pontuação. |
+| RSK-018 | Conteúdo financeiro/jurídico ser interpretado como aconselhamento conclusivo. | Linguagem de limites, revisão especializada e verificação humana. | Participante toma decisão material somente pela saída da IA. |
+| RSK-019 | Ferramentas externas mudarem e desatualizarem aulas. | Metadata de revisão, conteúdo administrável e política de manutenção. | Passo a passo não corresponde à ferramenta disponível. |
+| RSK-020 | Upload expor dado sensível ou conteúdo perigoso. | Minimização, autorização, isolamento, validação e controles definidos pelo threat model. | Arquivo acessível antes dos controles exigidos. |
+| RSK-021 | Credencial comprovar mais do que a evidência sustenta. | Critérios explícitos e separação entre competência, aplicação e impacto. | Certificado afirma resultado não avaliado. |
+| RSK-022 | Diagnóstico introduzir viés, estigma ou classificação forçada. | Pesquisa, equidade, resultado inconclusivo e linguagem neutra. | Perfis rígidos ou taxas de erro desiguais sem análise. |
+| RSK-023 | Personalização usar o mesmo sinal como input e outcome. | Separação de features/outcomes e validação prospectiva. | Métrica circular sustenta eficácia aparente. |
+| RSK-024 | Cliente emitir fato crítico sem validação do servidor. | Comandos no cliente; fatos canônicos no backend. | Pontos, conclusão ou aprovação originam diretamente do browser. |
+| RSK-025 | Retry/replay duplicar efeitos. | Idempotency keys, inbox/outbox e modos de replay sem efeitos externos. | Duplicação de pontos, mensagem, certificado ou integração. |
+| RSK-026 | Eventos fora de ordem ou schema incompatível corromperem projeções. | Versionamento, ordering, gap detection e compatibilidade em CI. | Consumidor aplica evento incompatível/fora de sequência. |
+| RSK-027 | Projeções divergirem silenciosamente dos fatos. | Checkpoints, lag, reconciliação e alertas. | Event log avança e projeção não. |
+| RSK-028 | Retenção indefinida ampliar risco e custo. | Políticas por classe, legal hold e revisão de tratamento. | Dados sem `retention_class` ou política aplicável. |
+| RSK-029 | Contexto de usuário vazar entre requests. | Transação, contexto local, rollback e testes de reutilização de conexão. | Usuário B observa dados sob contexto de A. |
+| RSK-030 | Backend contornar RLS por ownership/BYPASSRLS indevido. | Ownership separado, NOBYPASSRLS e verificação automática. | Teste passa apenas com privilégio excessivo. |
+| RSK-031 | Drift entre providers aparecer somente na produção. | Ports/adapters, contratos comuns, staging e testes de paridade. | Regra funciona em um provider e falha em outro. |
+| RSK-032 | Migration parcial criar drift de schema. | Arquivos imutáveis, replay desde zero e histórico validado. | Versão registrada sem todos os objetos esperados. |
+| RSK-033 | Índices serem criados/removidos sem workload representativo. | Planos reais, estatísticas, benchmarks e migrations aditivas. | Mudança motivada somente por advisor em banco vazio. |
+| RSK-034 | URL assinada ou secret vazar em log/analytics. | Redaction, TTL curto e proibição de persistência. | Token aparece em evento ou log. |
+| RSK-035 | Worker/fila produzir corrida, duplicação ou job preso. | Lease, ownership, heartbeat, idempotência, DLQ e reconciliação. | Dois workers aplicam o mesmo efeito ou estado envelhece. |
+| RSK-036 | Observabilidade divergir do estado real. | Métricas de origem, snapshots canônicos e reconciliação. | Dashboards discordam sobre backlog/readiness. |
+| RSK-037 | Base legal/consentimento ser aplicado de forma genérica. | Finalidade separada, aprovação por tratamento e evidência versionada. | Uma autorização cobre usos materialmente diferentes. |
+| RSK-038 | Direito do titular ignorar sistemas ou legal hold. | Inventário de sistemas, verificação, workflow ponta a ponta e holds. | Resposta cobre apenas o banco principal. |
+| RSK-039 | Incidente não receber escalonamento adequado. | Registro, severidade, timeline, responsável e playbook. | Incidente encerra sem avaliação/documentação. |
+| RSK-040 | Backup de banco ser confundido com recuperação completa. | Estratégia conjunta para banco, objetos, configuração e restore testado. | Banco volta, mas arquivos/configuração não. |
+| RSK-041 | Controle de ambiente de teste ser considerado evidência de produção. | Gate por ambiente e evidência do provider definitivo. | Controle é marcado aprovado sem prova no ambiente real. |
+| RSK-042 | Fornecedor/região/subprocessador operar sem avaliação. | Inventário, contrato, DPA e governança de transferência. | Parte processadora ou região desconhecida. |
+| RSK-043 | Risco crítico ser aceito sem decisão formal. | Registro de exceção com escopo, proprietário, prazo e revisão. | Gate muda de estado sem referência governada. |

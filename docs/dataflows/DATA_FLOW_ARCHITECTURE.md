@@ -1,247 +1,80 @@
 # Arquitetura de fluxos de dados ponta a ponta
 
-**Revisado em:** 2026-07-31  
-**Status:** contrato lógico implementado em desenvolvimento, teste e preview; operação AWS pendente
+## Princípios
 
-## 1. Objetivo
+1. estado operacional, ledger, evento e outbox do mesmo fato são confirmados de forma transacional quando pertencem ao mesmo comando;
+2. navegador envia comandos e observações, mas o servidor decide fatos críticos como conclusão, nota, pontos e autorização;
+3. consumidores são idempotentes e replay não repete efeito externo por padrão;
+4. PostgreSQL é a fonte operacional; destinos externos são assíncronos e substituíveis;
+5. PII e arquivos permanecem em stores protegidos; eventos usam IDs e metadados mínimos;
+6. features analíticas permanecem separadas dos fatos de origem;
+7. cada subdomínio preserva o histórico necessário para reproduzir decisões e resultados.
 
-Definir como comandos, observações, eventos, projeções, arquivos, avaliações por IA e exportações percorrem a Plataforma Estímulo, preservando atomicidade, idempotência, autorização, linhagem e recuperação.
-
-## 2. Princípios
-
-1. Estado operacional, ledger, evento e outbox pertencentes ao mesmo fato são confirmados na mesma transação.
-2. O cliente não declara conclusão, nota final, pontuação, acesso ou entrega concluída.
-3. Eventos podem ser entregues pelo menos uma vez; consumidores são idempotentes.
-4. PostgreSQL é a fonte operacional. Destinos ETL são assíncronos, substituíveis e reconciliáveis.
-5. Replay reconstrói projeções internas, mas não repete efeitos externos automaticamente.
-6. Dados pessoais e arquivos permanecem em stores protegidos; eventos usam IDs e metadados mínimos.
-7. Score comportamental é derivado e exclusivamente analítico.
-8. Diagnóstico opcional não altera arquétipo nem elegibilidade de jornadas.
-
-## 3. Componentes
+## Fluxo-base
 
 ```text
-Browser / Admin UI / link rastreável
-                ↓
-Route / Server Action / API autenticada
-                ↓
-Autenticação + autorização + validação + idempotência
-                ↓
-RPC / serviço de domínio / transação PostgreSQL
-  ├── estado operacional
-  ├── ledger ou histórico versionado
-  ├── evento canônico
-  ├── auditoria
-  └── outbox transacional
-                ↓ commit
-Leitores e consumidores
-  ├── projeções da aplicação
-  ├── orquestração de jornadas
-  ├── recompensas e certificados
-  ├── avaliação por IA
-  ├── features e score analítico
-  └── consumidor ETL futuro
-                ↓
-Reconciliação + métricas + auditoria
+Browser/Admin
+→ Route/Server Action/API
+→ autenticação + autorização + validação + idempotência
+→ caso de uso/RPC transacional
+   ├─ estado
+   ├─ ledger/histórico quando aplicável
+   ├─ evento
+   ├─ auditoria
+   └─ outbox
+→ commit
+→ projeções e consumidores
 ```
 
-## 4. Stores lógicos
+## Stores principais
 
-| Store | Responsabilidade |
-|---|---|
-| Identidade | conta, empreendedor, negócio e vínculos organizacionais |
-| Catálogo | jornadas, atividades, biblioteca, temas e versões editoriais |
-| Operacional | inscrições, passos, entregas, diagnósticos, páginas B2B e resgates |
-| Ledgers | pontos de engajamento, carteira de recompensa e compensações |
-| Event store | fatos canônicos imutáveis |
-| Outbox | distribuição pendente por rota e cursor |
-| Inbox | deduplicação e checkpoint de consumidores |
-| Storage | templates, arquivos de biblioteca e evidências de entrega |
-| Inteligência | avaliações de IA, features e snapshots de score |
-| Governança | documentos legais, aceites, auditoria, retenção e linhagem |
+- identidade: contas, participantes, negócios, organizações e memberships;
+- catálogo: programas, jornadas, trilhas, atividades, biblioteca e temas;
+- orquestração: matrícula, instância, etapas e progressão;
+- diagnóstico/assessment: instrumentos, respostas, resultados, tentativas e entregas;
+- engagement: ledgers, ranking, rewards, badges e certificados;
+- eventing: eventos, outbox e inbox;
+- storage: objetos privados e metadados;
+- behavior/reporting: features, scores e projeções;
+- governance: documentos legais, aceites e auditoria.
 
-## 5. Fluxos implementados
-
-### 5.1 Comando transacional
-
-```mermaid
-sequenceDiagram
-    participant U as Usuário/Admin
-    participant A as Aplicação
-    participant R as RPC
-    participant D as PostgreSQL
-    participant O as Evento/Outbox
-
-    U->>A: comando + idempotency key
-    A->>A: autenticar, autorizar e validar
-    A->>R: payload tipado
-    R->>D: lock + invariantes + alteração
-    R->>O: evento, auditoria e rota de outbox
-    D-->>A: commit
-    A-->>U: resultado confirmado
-```
-
-Usos: publicação, aceite legal, conversão de pontos, resgate/cancelamento, entrega, diagnóstico e concessão B2B.
-
-### 5.2 Observação comportamental
-
-O browser envia `event_id`, `interaction_type`, entidade, sessão, horário e propriedades para `/api/behavior-events`. O servidor valida origem, tamanho e identidade e grava o evento por RPC idempotente. A observação não altera acesso ou estado crítico.
-
-### 5.3 Link UTM
+## Jornada
 
 ```text
-/r/<slug>
-  → valida campanha, público, período e limite
-  → registra visita anônima e token com hash
-  → preserva UTMs, parâmetros, referenciador e dispositivo
-  → autenticação/cadastro
-  → associa visita ao usuário
-  → registra first touch, last touch, signup e conversion
-  → resolve destino pós-login
-  → aplica autorização normal da rota
+draft → editar → publicar
+published → editar
+published → despublicar → draft
 ```
 
-### 5.4 Entrega e IA
+O mesmo registro operacional representa a jornada. Fatos de execução não são regravados por uma alteração editorial.
+
+## Diagnóstico e avaliações
+
+Instrumentos versionados preservam a configuração usada por cada sessão/tentativa. Cálculo, correção e progressão acontecem no servidor com dados estruturados e idempotência.
+
+## Gamificação
+
+Pontos são lançamentos de ledger. Ranking e saldos são projeções. Badges e certificados mantêm identidade e regra de emissão suficientes para auditoria.
+
+## Integração externa
 
 ```text
-formulário participante
-  → validação de origem e arquivos
-  → storage privado
-  → delivery_submit transacional
-  → processamento de extração/análise
-  → avaliador por IA
-  → automática ou aguardando revisão humana
-  → aprovação/ajuste administrativo
-  → nota, feedback, auditoria e pontos configurados
+transação de domínio
+→ evento/outbox
+→ consumidor
+→ destino externo
+→ checkpoint/reconciliação
 ```
 
-Arquivos executáveis não são executados. Falha no upload remove objetos criados naquela tentativa. Falha da IA preserva a entrega e solicita revisão humana.
+A indisponibilidade do destino não reabre nem invalida uma transação de negócio já confirmada. Falhas permanecem na camada de entrega, com retry, dead letter e reconciliação.
 
-### 5.5 Efeito externo por ETL
+## Falhas e replay
 
-```mermaid
-sequenceDiagram
-    participant E as Evento/Outbox
-    participant W as Consumidor ETL
-    participant X as Destino configurado
-    participant H as Histórico
+Falha antes do commit não produz estado parcial. Replay de projeções reconstrói estado derivado sem repetir efeitos externos destrutivos. Divergências são tratadas por reconciliação explícita.
 
-    W->>E: claim por cursor e lease
-    W->>W: validar schema e deduplicar
-    W->>X: enviar com idempotency key
-    alt sucesso
-        X-->>W: confirmação
-        W->>H: completed + checkpoint
-    else falha transitória
-        W->>H: tentativa + backoff
-    else falha permanente
-        W->>H: dead letter
-    end
-```
+## Fontes de verdade
 
-O destino não aparece no código do produtor. `ETL_EXPORT_ENABLED=false` mantém o consumo externo desligado por padrão.
-
-## 6. Unidades atômicas relevantes
-
-### Recompensas
-
-- lock da carteira e da recompensa;
-- validação de saldo, estoque, período e limite;
-- débito no ledger e redução de estoque;
-- criação do resgate;
-- cancelamento compensatório com devolução de saldo e estoque.
-
-### Publicação
-
-- validação da versão rascunho;
-- retirada da versão publicada anterior;
-- publicação da nova versão;
-- atualização das referências dependentes quando aplicável;
-- evento e auditoria.
-
-### B2B
-
-- versão publicada e dentro do período;
-- concessão direta ou associação a grupo;
-- filtro no servidor antes de devolver a página;
-- nenhuma confiança em ocultação apenas visual.
-
-## 7. Estados intermediários
-
-### Outbox
-
-```text
-pending → claimed → completed
-              ↘ retry_wait → claimed
-              ↘ dead_letter
-```
-
-### Entrega
-
-```text
-not_started → submitted → processing → graded
-                          ↘ awaiting_human_review → graded
-                          ↘ returned_for_revision
-```
-
-### Resgate
-
-```text
-pending → approved → preparing → sent/available → delivered
-       ↘ cancelled → refunded
-```
-
-### Diagnóstico opcional
-
-```text
-available → in_progress → completed
-                     ↘ expired/abandoned
-```
-
-## 8. Consistência
-
-| Relação | Modelo |
-|---|---|
-| estado + ledger + evento/outbox | forte na transação |
-| outbox → projeção/consumidor | eventual e monitorada |
-| plataforma → destino ETL | eventual, idempotente e reconciliável |
-| entrega → avaliação de IA | eventual, com estado visível |
-| eventos → score | derivado, versionado e recalculável |
-| UTM anônimo → usuário | eventual após autenticação, preservando histórico |
-
-## 9. Correlação e linhagem
-
-- `event_id`: fato único;
-- `idempotency_key`: repetição segura do comando;
-- `correlation_id`: fluxo técnico completo;
-- `causation_id`: comando ou evento causal;
-- `aggregate_id` e `aggregate_version`: ordem local;
-- hash de payload/input: integridade e recalculabilidade;
-- cursor/checkpoint: posição do consumidor ETL.
-
-## 10. Privacidade e segurança
-
-- URLs assinadas, segredos e conteúdo binário não entram no event store.
-- Payloads comportamentais têm tamanho limitado e propriedades estruturadas.
-- Evidências ficam em buckets privados.
-- CPF possui criptografia e lookup HMAC independentes.
-- RPCs públicas de comando não são executáveis por `anon` ou `authenticated`; o gateway autenticado usa identidade validada.
-- Logs e dead letters guardam códigos e contexto sanitizado, não conteúdo pessoal indiscriminado.
-
-## 11. Observabilidade
-
-Métricas mínimas:
-
-- comandos por caso de uso e resultado;
-- falhas de autenticação, autorização e validação;
-- idade e volume do outbox;
-- tentativas, retries e dead letters;
-- latência de avaliação por IA e taxa de revisão humana;
-- conversões e resgates sem expor dados pessoais;
-- eventos aceitos, rejeitados e duplicados;
-- cobertura e confiança do score;
-- divergências encontradas pela reconciliação ETL.
-
-## 12. Limites
-
-A camada lógica e o runtime Supabase de desenvolvimento/teste estão implementados. Worker ETL, filas, armazenamento, identidade de workload, observabilidade e continuidade definitivos de produção dependem da arquitetura AWS aprovada.
+- schema e transações: `supabase/migrations/`;
+- outbox: [`../architecture/TRANSACTIONAL_OUTBOX.md`](../architecture/TRANSACTIONAL_OUTBOX.md);
+- domínio: [`../domain/DOMAIN_MODEL.md`](../domain/DOMAIN_MODEL.md);
+- runtime: [`../implementation/APPLICATION_FOUNDATION.md`](../implementation/APPLICATION_FOUNDATION.md).

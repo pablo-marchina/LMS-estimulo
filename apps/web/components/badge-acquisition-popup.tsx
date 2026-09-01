@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { Award, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { BadgeAward } from "@/lib/credentials/contracts";
 
 const STORAGE_KEY = "estimulo:seen-badge-awards:v2";
 
 type BadgeAcquisitionPopupProps = {
   badges: BadgeAward[];
+  snapshotAvailable?: boolean;
 };
 
 function readSeenAwards(): Set<string> | null {
@@ -16,10 +17,10 @@ function readSeenAwards(): Set<string> | null {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return new Set<string>();
+    if (!Array.isArray(parsed)) return null;
     return new Set(parsed.filter((value): value is string => typeof value === "string"));
   } catch {
-    return new Set<string>();
+    return null;
   }
 }
 
@@ -27,11 +28,11 @@ function persistSeenAwards(seen: Set<string>) {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...seen]));
   } catch {
-    // The celebration remains usable even when browser storage is unavailable.
+    // In-memory tracking below keeps the current session safe from false repeats.
   }
 }
 
-export function BadgeAcquisitionPopup({ badges }: BadgeAcquisitionPopupProps) {
+export function BadgeAcquisitionPopup({ badges, snapshotAvailable = true }: BadgeAcquisitionPopupProps) {
   const orderedBadges = useMemo(
     () => badges
       .filter((badge) => badge.status === "active")
@@ -40,33 +41,38 @@ export function BadgeAcquisitionPopup({ badges }: BadgeAcquisitionPopupProps) {
     [badges],
   );
   const [queue, setQueue] = useState<BadgeAward[]>([]);
+  const baselineReadyRef = useRef(false);
+  const seenAwardsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!orderedBadges.length) return;
+    if (!snapshotAvailable) return;
 
-    const seen = readSeenAwards();
-    if (seen === null) {
-      // Do not flood an established participant with every historical award on the
-      // first browser visit. Celebrate the most recent active award and establish
-      // the remaining history as the baseline.
-      const latest = orderedBadges.at(-1);
-      const historical = new Set(orderedBadges.slice(0, -1).map((badge) => badge.award_id));
-      persistSeenAwards(historical);
-      if (latest) setQueue([latest]);
+    if (!baselineReadyRef.current) {
+      const stored = readSeenAwards();
+      const baseline = stored ?? new Set(orderedBadges.map((badge) => badge.award_id));
+      seenAwardsRef.current = baseline;
+      baselineReadyRef.current = true;
+      if (stored === null) persistSeenAwards(baseline);
+      setQueue([]);
       return;
     }
 
-    const unseen = orderedBadges.filter((badge) => !seen.has(badge.award_id));
-    if (unseen.length) setQueue(unseen);
-  }, [orderedBadges]);
+    const unseen = orderedBadges.filter((badge) => !seenAwardsRef.current.has(badge.award_id));
+    if (!unseen.length) return;
+
+    setQueue((currentQueue) => {
+      const queuedIds = new Set(currentQueue.map((badge) => badge.award_id));
+      const newlyQueued = unseen.filter((badge) => !queuedIds.has(badge.award_id));
+      return newlyQueued.length ? [...currentQueue, ...newlyQueued] : currentQueue;
+    });
+  }, [orderedBadges, snapshotAvailable]);
 
   const current = queue[0] ?? null;
   if (!current) return null;
 
   function dismissCurrent() {
-    const seen = readSeenAwards() ?? new Set<string>();
-    seen.add(current.award_id);
-    persistSeenAwards(seen);
+    seenAwardsRef.current.add(current.award_id);
+    persistSeenAwards(seenAwardsRef.current);
     setQueue((value) => value.slice(1));
   }
 

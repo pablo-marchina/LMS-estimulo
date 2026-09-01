@@ -61,7 +61,7 @@ test("administration has a separate Google-only GET entrypoint and validates Est
     read("apps/web/lib/auth/administrative-access.ts"),
   ]);
 
-  assert.match(participantPage, /href="\/entrar\/administracao"/u);
+  assert.doesNotMatch(participantPage, /href="\/entrar\/administracao"/u);
   assert.match(adminPage, /ButtonLink href="\/auth\/admin\/start"/u);
   assert.match(adminPage, /Continuar com Google/u);
   assert.doesNotMatch(adminPage, /<form action="\/auth\/admin\/start"|type="password"|signInWithPassword/u);
@@ -69,9 +69,12 @@ test("administration has a separate Google-only GET entrypoint and validates Est
   assert.doesNotMatch(startRoute, /hd:\s*"estimulo\.org"/u);
   assert.match(startRoute, /skipBrowserRedirect:\s*true/u);
   assert.match(callback, /exchangeCodeForSession/u);
-  assert.match(callback, /auth\.getClaims\(\)/u);
-  assert.match(callback, /isGoogleAuthProvider/u);
-  assert.doesNotMatch(callback, /isEstimuloAdministrativeEmail/u);
+  assert.match(callback, /auth\.getUser\(\)/u);
+  assert.match(callback, /function hasGoogleIdentity/u);
+  assert.match(callback, /identity\.provider\?\.trim\(\)\.toLowerCase\(\) === "google"/u);
+  assert.match(callback, /user\.app_metadata\?\.provider/u);
+  assert.match(callback, /user\.app_metadata\?\.providers/u);
+  assert.doesNotMatch(callback, /auth\.getClaims\(\)|isGoogleAuthProvider|isEstimuloAdministrativeEmail/u);
   assert.match(callback, /administrativeOrganization/u);
   assert.match(callback, /vinculo_estimulo_necessario/u);
   assert.match(callback, /client\.auth\.signOut/u);

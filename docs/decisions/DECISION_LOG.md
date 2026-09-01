@@ -1,39 +1,37 @@
-# Registro de decisões ativas
+# Decisões ativas da plataforma
 
-Este arquivo contém somente decisões vigentes do produto e da arquitetura. Histórico de análise, cobertura ou comparação de materiais externos não é mantido no repositório.
+Este registro contém apenas decisões vigentes que orientam o produto e a arquitetura. Histórico de decisões superadas permanece no Git.
 
-| ID | Data | Decisão | Estado | Consequência operacional |
-|---|---|---|---|---|
-| DEC-011 | 2026-07-08 | A aplicação começa como monólito modular com contextos delimitados. | Aprovada | Módulos possuem fronteiras e dependências explícitas; microserviços exigem necessidade comprovada. |
-| DEC-012 | 2026-07-08 | Programa, jornada, trilha, curso, módulo e atividade são conceitos distintos. | Aprovada | O modelo e a UI preservam essas separações. |
-| DEC-013 | 2026-07-08 | Definições usam definição–versão–instância e versões publicadas são imutáveis. | Aprovada | Mudanças editoriais criam novas versões e não alteram silenciosamente históricos. |
-| DEC-014 | 2026-07-08 | Conta, empreendedor, negócio e organização operadora são entidades distintas. | Aprovada | Identidade, CRM e operação não são acoplados como relação permanente 1:1. |
-| DEC-015 | 2026-07-08 | Participações ficam fixadas à versão da jornada usada. | Aprovada | Migração de participantes exige política explícita e evidência. |
-| DEC-017 | 2026-07-08 | Administração compõe casos de uso dos domínios, sem acesso paralelo ao banco. | Aprovada | Telas administrativas usam contratos autorizados e auditáveis. |
-| DEC-018 | 2026-07-08 | Autorização usa capacidades, escopo, validade e finalidade. | Aprovada | Papéis são agrupamentos RBAC revogáveis e temporais. |
-| DEC-025 | 2026-07-08 | Conteúdo consumido, quick check, prática, feedback e conclusão são fatos separados. | Aprovada | Exposição não é tratada automaticamente como aprendizagem. |
-| DEC-026 | 2026-07-08 | Pontos são derivados de ledger versionado e idempotente. | Aprovada | Ranking e recompensas usam fatos auditáveis, não números hardcoded. |
-| DEC-027 | 2026-07-08 | Avaliações, regras de pontos, selos e certificados são versionados. | Aprovada | Tentativas e credenciais preservam o snapshot dos requisitos usados. |
-| DEC-035 | 2026-07-08 | Diagnóstico e arquétipos são usados para personalização e pesquisa, não para crédito. | Aprovada | Uso em crédito permanece tecnicamente bloqueado sem governança específica. |
-| DEC-043 | 2026-07-08 | Base legal não é atribuída automaticamente pelo código. | Aprovada | Tratamentos reais exigem aprovação jurídica e de privacidade. |
-| DEC-047 | 2026-07-08 | Retenção não é inventada e políticas destrutivas começam desativadas. | Aprovada | Prazos e deleções dependem de aprovação e legal hold. |
-| DEC-049 | 2026-07-08 | Logs e eventos são redigidos antes de persistência e hashing. | Aprovada | Segredos e dados brutos proibidos não entram na evidência física. |
-| DEC-050 | 2026-07-08 | Tabelas de aplicação mantêm RLS, inclusive quando server-only. | Aprovada | Novas migrations precisam preservar defesa em profundidade. |
-| DEC-051 | 2026-07-08 | Repositório e banco armazenam referências de secrets, nunca valores. | Aprovada | Valores ficam no mecanismo institucional que vier a ser aprovado. |
-| DEC-052 | 2026-07-08 | Produção depende de gates verificáveis, não apenas de código compilado. | Aprovada | Release permanece bloqueada enquanto requisitos de produto, operação ou segurança estiverem abertos. |
-| DEC-055 | 2026-07-09 | A operação inicial usa quatro arquétipos configuráveis e versionados. | Aprovada | Perguntas, scoring, textos e ativações não podem ser hardcoded. |
-| DEC-056 | 2026-07-09 | Formulários usam definição–versão–instância. | Aprovada | Drafts são editáveis e versões publicadas preservam histórico. |
-| DEC-057 | 2026-07-09 | Conteúdo próprio e externo usa modelo unificado e adapters. | Aprovada | Direitos, disponibilidade, tracking, formato e fallback são metadados obrigatórios. |
-| DEC-058 | 2026-07-09 | Toda ação relevante da interface gera evento estruturado. | Aprovada | Ações sem contrato, finalidade e teste não são consideradas concluídas. |
-| DEC-059 | 2026-07-09 | Supabase e Vercel são restritos a desenvolvimento, teste e preview; AWS é o ambiente definitivo de produção. | Aprovada | Nenhuma evidência do ambiente de teste autoriza produção e não existe fallback de produção para Supabase. |
-| DEC-060 | 2026-07-09 | Código, testes, migrations e documentação operacional mudam juntos. | Aprovada | Manutenibilidade e CI fazem parte do aceite. |
-| DEC-064 | 2026-07-14 | Sinais educacionais não decidem crédito sem validação e governança. | Aprovada | Integrações e interfaces mantêm a separação explícita. |
-| DEC-067 | 2026-07-16 | Jornada OpenAI é a primeira jornada oficial; o núcleo continua extensível. | Aprovada | Segunda jornada produtiva não bloqueia a primeira release. |
-| DEC-068 | 2026-07-16 | O LMS é desenvolvido e mantido internamente. | Aprovada | Serviços de infraestrutura e integração não substituem o produto. |
-| DEC-069 | 2026-07-16 | Credenciais expostas são tratadas como comprometidas e rotacionadas externamente. | Aprovada | Valores literais não entram em Git, docs, issues ou logs. |
-| DEC-070 | 2026-07-16 | HubSpot recebe somente `linking_identifier`, `engagement_signal` e `calculation_input_or_result`. | Aprovada | Todo o restante é `not_synced`; PostgreSQL preserva o detalhe operacional. |
-| DEC-071 | 2026-07-21 | A entrada administrativa exige e-mail confirmado no domínio exato `@estimulo.org` e RBAC ativo. | Aprovada | O domínio habilita a área administrativa, mas não concede permissões sozinho. |
-| DEC-072 | 2026-07-21 | CPF é obrigatório no cadastro e protegido por AES-256-GCM e HMAC independente. | Aprovada | CPF bruto não aparece em metadata, URL, logs ou eventos; mudança exige revisão de identidade. |
-| DEC-073 | 2026-07-21 | Experiências existentes devem ser adaptadas sobre o runtime real antes de reconstruções parciais. | Aprovada | Painel, perfil, anúncios, recompensas, ranking e administração reutilizam capacidades já existentes no domínio. |
-| DEC-074 | 2026-07-21 | Auditorias e cobertura de materiais externos permanecem fora do repositório. | Aprovada | O Git contém requisitos diretos, decisões ativas, implementação, testes e documentação operacional. |
-| DEC-075 | 2026-07-29 | A AWS será o ambiente definitivo de produção e a aplicação será empacotada por `Dockerfile.lambda`; todas as demais decisões AWS permanecem abertas. | Parcialmente definida | Produção permanece `not_ready` até ADRs aprovarem identidade, dados, storage, rede, edge, assíncrono, observabilidade, deploy e continuidade. |
+| ID | Decisão | Consequência |
+|---|---|---|
+| DEC-011 | A aplicação é um monólito modular com contextos delimitados. | Módulos mantêm fronteiras explícitas; distribuição exige necessidade comprovada. |
+| DEC-012 | Programa, jornada, trilha, etapa e atividade são conceitos distintos. | Modelo e UI preservam suas responsabilidades. |
+| DEC-017 | Administração compõe os mesmos casos de uso do domínio. | Não existe backend paralelo de edição direta. |
+| DEC-018 | Autorização usa capacidade, escopo, validade e finalidade. | Papéis são agrupamentos RBAC, não autorização universal. |
+| DEC-025 | Exposição, compreensão, prática, feedback e conclusão são fatos distintos. | Uma métrica não substitui as demais. |
+| DEC-026 | Pontos derivam de ledger idempotente. | Ranking, saldo e recompensas usam fatos auditáveis. |
+| DEC-027 | Avaliações e credenciais preservam a regra aplicável. | Tentativas e emissões permanecem reproduzíveis quando a configuração muda. |
+| DEC-035 | Diagnóstico/arquétipo servem a aprendizagem e pesquisa, não crédito por padrão. | Uso decisório exige governança específica. |
+| DEC-043 | Base legal não é atribuída automaticamente pelo código. | Tratamento real depende de aprovação adequada. |
+| DEC-047 | Retenção não é inventada pelo runtime. | Política destrutiva depende de regra aprovada e legal hold. |
+| DEC-049 | Logs e eventos aplicam minimização/redaction antes de persistir dados proibidos. | Segredos e PII desnecessária não entram na evidência. |
+| DEC-050 | Tabelas de aplicação mantêm defesa em profundidade com RLS/grants apropriados. | Novas migrations preservam o modelo de acesso. |
+| DEC-051 | O repositório guarda referências de secrets, nunca valores. | Valores pertencem ao mecanismo do ambiente. |
+| DEC-052 | Produção depende de gates verificáveis. | Build compilado não é sinônimo de prontidão operacional. |
+| DEC-055 | O diagnóstico principal é configurável e auditável. | Perguntas, scoring, textos e ativações não são metodologia hardcoded. |
+| DEC-056 | Instrumentos diagnósticos usam definição–versão–instância. | Sessões preservam a versão utilizada. |
+| DEC-057 | Conteúdo próprio e externo usa modelo unificado e adapters. | Provider é detalhe de borda. |
+| DEC-058 | Eventos estruturados só existem quando há finalidade e contrato. | Captura indiscriminada não é requisito. |
+| DEC-059 | Supabase/Vercel são providers de desenvolvimento, teste e preview; a produção institucional segue a estratégia AWS. | Não existe fallback silencioso de produção para providers de teste. |
+| DEC-060 | Código, migrations, testes e documentação canônica mudam juntos. | Manutenibilidade participa do aceite. |
+| DEC-064 | Sinais educacionais não produzem efeito de crédito sem validação e governança. | Fronteiras mantêm separação explícita. |
+| DEC-068 | O LMS é um produto mantido internamente; serviços externos são dependências de infraestrutura/borda. | Provider não substitui o domínio do produto. |
+| DEC-069 | Credencial exposta é tratada como comprometida. | Rotação ocorre fora do Git; valores não entram em documentação. |
+| DEC-070 | Integrações externas consomem projeções minimizadas por outbox e nunca são dependência síncrona do domínio. | Destino é substituível, idempotente e reconciliável. |
+| DEC-072 | CPF usa proteção criptográfica e lookup independente conforme contrato de identidade. | Valor bruto não entra em metadata, URL, logs ou eventos. |
+| DEC-073 | Experiências reutilizam o runtime real antes de criar implementações paralelas. | Painel, perfil, ranking e administração compartilham capacidades do domínio. |
+| DEC-074 | Documentação canônica descreve contratos permanentes, não resultados pontuais de auditoria ou release. | Evidência histórica fica no GitHub/artifacts. |
+| DEC-075 | O empacotamento web para a fronteira AWS usa `Dockerfile.lambda`; demais decisões dependem de contratos explícitos. | Provider de produção falha fechado quando a fronteira necessária não está implementada. |
+| DEC-076 | Jornada é um registro operacional único `draft ↔ published`. | `journey_version*` é compatibilidade física, não versionamento editorial navegável. |
+| DEC-077 | Administração exige identidade federada válida, identidade interna, membership Estímulo e RBAC. | Domínio de e-mail isolado não concede acesso. |
+| DEC-078 | Superfícies legadas congeladas só evoluem por substituição semântica governada, sem ampliar desnecessariamente a superfície pública/opaca. | Compatibilidade é preservada e qualquer mudança é provada por replay e contrato. |

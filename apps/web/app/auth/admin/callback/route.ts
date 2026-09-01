@@ -1,11 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { administrativeOrganization } from "@/lib/auth/administrative-access";
 import { CurrentIdentityError, resolveCurrentIdentity } from "@/lib/auth/current-identity";
-import { isGoogleAuthProvider } from "@/lib/auth/provider";
 import { createSessionClient } from "@/lib/supabase/server";
 
 function redirectTo(request: NextRequest, path: string) {
   return NextResponse.redirect(new URL(path, request.nextUrl.origin));
+}
+
+function hasGoogleIdentity(user: {
+  identities?: Array<{ provider?: string | null }> | null;
+  app_metadata?: Record<string, unknown> | null;
+}) {
+  if (user.identities?.some((identity) => identity.provider?.trim().toLowerCase() === "google")) return true;
+
+  const primaryProvider = user.app_metadata?.provider;
+  if (typeof primaryProvider === "string" && primaryProvider.trim().toLowerCase() === "google") return true;
+
+  const providers = user.app_metadata?.providers;
+  return Array.isArray(providers)
+    && providers.some((provider) => typeof provider === "string" && provider.trim().toLowerCase() === "google");
 }
 
 export async function GET(request: NextRequest) {
@@ -17,19 +30,14 @@ export async function GET(request: NextRequest) {
   const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
   if (exchangeError) return redirectTo(request, "/entrar/administracao?erro=oauth_invalido");
 
-  const [{ data, error: userError }, { data: claimsData, error: claimsError }] = await Promise.all([
-    client.auth.getUser(),
-    client.auth.getClaims(),
-  ]);
+  const { data, error: userError } = await client.auth.getUser();
   const user = data.user;
   if (
     userError
-    || claimsError
     || !user
-    || !claimsData?.claims
     || !user.email
     || !user.email_confirmed_at
-    || !isGoogleAuthProvider(user, claimsData.claims.amr)
+    || !hasGoogleIdentity(user)
   ) {
     await client.auth.signOut();
     return redirectTo(request, "/entrar/administracao?erro=conta_google_necessaria");
