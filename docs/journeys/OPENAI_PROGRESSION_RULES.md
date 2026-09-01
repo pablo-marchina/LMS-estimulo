@@ -1,17 +1,15 @@
 # Regras propostas de progressão — Jornada OpenAI
 
-**Revisado em:** 2026-07-29  
+**Revisado em:** 2026-09-01  
 **Status:** proposta editorial; não representa regra oficial ativa
-
-O runtime suporta progressão versionada e configurável. Este documento organiza uma proposta derivada das fontes disponíveis; os registros ativos no banco de desenvolvimento não tornam os parâmetros abaixo oficiais.
 
 ## Princípios
 
-- regras são dados estruturados e versionados;
-- texto descritivo não é regra executável;
-- decisões registram versão e evidências;
-- conteúdo consumido, unidade concluída, avaliação aprovada e prática aplicada são estados distintos;
-- participantes não migram automaticamente entre versões.
+- regras executáveis são dados estruturados;
+- conteúdo consumido, quick check, prática, avaliação e conclusão são fatos distintos;
+- edição de jornada segue o registro operacional único `draft ↔ published`;
+- mudanças editoriais não fabricam/regravam fatos históricos já registrados;
+- parâmetros de progressão só são oficiais quando publicados/aprovados no ambiente correspondente.
 
 ## Grafo proposto
 
@@ -23,13 +21,11 @@ O runtime suporta progressão versionada e configurável. Este documento organiz
 | Marketing | avaliação aprovada | Selo Marketing |
 | Gestão | avaliação aprovada | Selo Gestão |
 | Dois selos | regra aprovada | Prova final base |
-| Prova base aprovada | critérios satisfeitos | Certificado Base |
+| Prova base | critérios satisfeitos | Certificado Base |
 | Certificado Base | regra aprovada | Codex |
-| Codex e prova aprovados | critérios satisfeitos | Certificado Avançado |
+| Codex/prova | critérios satisfeitos | Certificado Avançado |
 
-## Conclusão de atividade
-
-O runtime pode separar:
+## Estados possíveis
 
 ```text
 available
@@ -44,39 +40,10 @@ feedback_submitted
 completed
 ```
 
-Percentual de vídeo, possibilidade de pular, quick check como gate e obrigatoriedade de prática permanecem pendentes.
-
-## Trilhas
-
-Marketing e Gestão são paralelas na proposta. O bloco base é opcional e não deve virar gate silenciosamente. Codex depende de regra editorial aprovada.
-
 ## Avaliações
 
-O sistema suporta:
+O runtime suporta tentativa, nota mínima, feedback, retomada e revisão conforme configuração. Para quick check `multiple_choice`, todas e somente as alternativas corretas devem estar selecionadas.
 
-- nota mínima;
-- limite e intervalo entre tentativas;
-- randomização;
-- políticas de feedback;
-- retomada;
-- revisão manual;
-- histórico de tentativas.
+## Pendências editoriais
 
-Nenhum valor final está aprovado.
-
-## Práticas
-
-As fontes indicam entregas opcionais e revisão humana. Aceitação pedagógica e autorização para divulgação são decisões separadas.
-
-## Pendências
-
-- critérios de conclusão por tipo de mídia;
-- gates de quick check e prática;
-- notas e tentativas;
-- prazo e expiração;
-- requisitos de selos e certificados;
-- retorno após reprovação;
-- migração de versão;
-- equivalências acessíveis.
-
-A regra oficial deve ser publicada pelo editor administrativo e validada por E2E real.
+Percentuais mínimos de mídia, gates obrigatórios, notas/tentativas, prazo, certificados, retorno após reprovação e equivalências acessíveis continuam dependentes de decisão editorial. Não existe “migração entre versões da jornada” como requisito do lifecycle atual; mudanças são edição ao vivo ou despublicação/edição do mesmo registro, enquanto fatos históricos permanecem em seus stores próprios.

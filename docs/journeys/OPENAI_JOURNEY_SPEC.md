@@ -1,11 +1,11 @@
 # Especificação da Jornada OpenAI
 
-**Revisado em:** 2026-07-29  
-**Status:** capacidade técnica e configuração de desenvolvimento presentes; release editorial bloqueada
+**Revisado em:** 2026-09-01  
+**Status:** capacidade técnica implementada; aprovação editorial para produção institucional continua separada
 
 ## Fonte editorial
 
-Os materiais editoriais institucionais aprovados permanecem fora do Git e são a fonte para conteúdo final. Este documento registra apenas a especificação vigente necessária para implementar e liberar a jornada. Código, migrations, fixtures e seeds não substituem aprovação editorial.
+Materiais institucionais aprovados permanecem fora do Git quando aplicável. Código, migrations e conteúdo de desenvolvimento não substituem aprovação editorial.
 
 ## Identidade
 
@@ -16,84 +16,52 @@ Os materiais editoriais institucionais aprovados permanecem fora do Git e são a
 | Público | MEIs e microempresas |
 | Idioma | Português do Brasil |
 | Modalidade | assíncrona, prática e modular |
-| Ferramentas | ChatGPT e, na trilha avançada, Codex |
-| Estado oficial | não aprovado para produção |
+| Ferramentas | ChatGPT e Codex quando a trilha avançada for aprovada |
 
-Pode existir uma versão publicada no ambiente de desenvolvimento/teste para validar o runtime. Ela não deve ser apresentada como conteúdo oficial.
+## Lifecycle
 
-## Estrutura esperada
+A jornada segue o contrato único `draft ↔ published`. O registro publicado pode ser editado ao vivo; publicação não cria versão editorial paralela. Configurações de diagnóstico, avaliação, documentos ou credenciais preservam seus próprios snapshots quando exigido.
+
+## Estrutura editorial esperada
 
 ```text
-boas-vindas e potencial da IA
+boas-vindas
 → hub de trilhas
-   ├── bloco base opcional
-   ├── Marketing e Vendas com IA
-   ├── Gestão com IA
-   └── desenvolvimento avançado com Codex, conforme regra aprovada
+   ├─ base opcional
+   ├─ Marketing e Vendas com IA
+   ├─ Gestão com IA
+   └─ Codex avançado, conforme regra aprovada
 ```
 
-A ordem, os gates e as credenciais são dados versionados. Não podem depender de UUIDs ou nomes hardcoded.
+Ordem, gates, avaliações e credenciais são configuração administrada; não dependem de UUID/slug hardcoded no núcleo.
 
-## Capacidades implementadas
+## Capacidades técnicas
 
-- jornada, versão, trilhas, atividades e conteúdos;
+- jornada/trilhas/aulas/conteúdos;
 - vídeo, texto, link e arquivo;
-- quick checks, avaliações e tentativas;
-- práticas, uploads, comentários e revisão;
-- progresso e conclusão;
-- pontos, conquistas, ranking, selos e certificados;
-- administração;
-- eventos e outbox.
+- quick checks e avaliações;
+- práticas/uploads/comentários/revisão;
+- progressão/conclusão;
+- pontos, ranking, badges, recompensas e certificados;
+- administração, eventos e outbox.
 
-Essas capacidades não comprovam que o pacote editorial ou as regras finais estão corretos.
-
-## Padrão pedagógico
-
-1. problema real;
-2. exemplo guiado;
-3. demonstração;
-4. prática;
-5. verificação rápida;
-6. material complementar;
-7. avaliação de utilidade.
-
-Consumo de conteúdo, compreensão, aplicação e resultado de negócio são fatos distintos.
-
-## Práticas e arquivos
-
-Submissões registram participante, atividade e versões, tipo de entrega, metadados, autorização, estado de revisão e eventos. Arquivos são privados e validados por autorização, MIME, extensão, tamanho e SHA-256.
-
-O scanner de malware não faz parte do produto atual.
-
-Binários, URLs assinadas e textos abertos não são enviados ao HubSpot por padrão.
+`multiple_choice` exige conjunto exato. Ranking mascara identificação. Popup de badge só anuncia award novo.
 
 ## Personalização
 
-Arquétipo e contexto autorizado podem personalizar recomendações quando a metodologia estiver aprovada. Participantes sem diagnóstico veem conteúdo geral. Nenhum sinal educacional altera crédito automaticamente.
+O diagnóstico principal pode personalizar a experiência conforme configuração aprovada. O runtime corrige a execução de thresholds, mas não cria metodologia oficial. Participante sem resultado aplicável recebe caminho seguro/geral. Nenhum sinal educacional decide crédito.
 
-## Bloqueadores editoriais
+## Integração
 
-- pacote de mídias e materiais;
-- durações e ordem;
-- avaliações, respostas e rubricas;
-- progressão e critérios de conclusão;
-- regras de pontos, selos e certificados;
-- termos de upload e uso institucional;
-- legendas, transcrições e equivalências;
-- revisão de finanças, contratos, segurança e privacidade;
-- acesso e instruções oficiais de ChatGPT/Codex.
+Eventos/outbox são a fronteira para qualquer destino externo. Conteúdo de prática, binários e URLs assinadas não são projetados para CRM por padrão.
 
-## Gate de release
+## Bloqueadores editoriais possíveis
 
-```text
-editorial_sources_registered = pending
-official_content_assets = pending
-progression_approved = false
-assessments_approved = false
-practice_rules_approved = false
-gamification_approved = false
-credential_rules_approved = false
-accessibility_assets_ready = false
-real_participant_e2e_passed = false
-aws_staging_passed = false
-```
+- pacote final de mídias/materiais;
+- durações/ordem;
+- avaliações/respostas/rubricas;
+- critérios oficiais de conclusão;
+- regras finais de pontos/badges/certificados;
+- direitos, acessibilidade e aprovações institucionais.
+
+A existência do runtime ou de uma jornada publicada em desenvolvimento não prova aprovação editorial para produção.
