@@ -11,3 +11,4 @@ export type PublicApplicationOriginInput = {
 };
 
 export function resolvePublicApplicationOrigin(input?: PublicApplicationOriginInput): string;
+export function resolveParticipantApplicationOrigin(input?: PublicApplicationOriginInput): string;
