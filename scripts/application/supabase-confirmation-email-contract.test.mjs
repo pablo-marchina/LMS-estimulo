@@ -2,20 +2,24 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [template, syncScript, signupAction, confirmationAction] = await Promise.all([
+const [template, syncScript, signupAction, confirmationAction, routedConfirmationAction] = await Promise.all([
   readFile("supabase/templates/confirmation.html", "utf8"),
   readFile("scripts/operations/sync-supabase-confirmation-email.mjs", "utf8"),
   readFile("apps/web/app/cadastro/actions.ts", "utf8"),
   readFile("apps/web/app/confirm/actions.ts", "utf8"),
+  readFile("apps/web/app/auth/confirm/actions.ts", "utf8"),
 ]);
 
-test("confirmation email uses the server-side token-hash flow already configured by signup", () => {
+test("confirmation email uses the participant-host token-hash flow configured by signup", () => {
   assert.match(template, /\{\{ \.RedirectTo \}\}\?token_hash=\{\{ \.TokenHash \}\}&type=email/u);
   assert.match(template, /Confirme seu e-mail/u);
   assert.match(template, /Confirmar meu e-mail/u);
-  assert.match(signupAction, /new URL\("\/confirm", publicApplicationOrigin\(\)\)/u);
+  assert.match(signupAction, /new URL\("\/confirm", await participantApplicationOrigin\(\)\)/u);
   assert.match(signupAction, /emailRedirectTo:\s*callback/u);
   assert.match(confirmationAction, /verifyOtp\(\{ token_hash: tokenHash, type: typeValue \}\)/u);
+  assert.match(confirmationAction, /new URL\("\/confirm", await participantApplicationOrigin\(\)\)/u);
+  assert.match(routedConfirmationAction, /new URL\("\/confirm", await participantApplicationOrigin\(\)\)/u);
+  assert.doesNotMatch(signupAction, /new URL\("\/confirm", publicApplicationOrigin\(\)\)/u);
 });
 
 test("confirmation template sync validates inputs and verifies the hosted configuration after PATCH", () => {
