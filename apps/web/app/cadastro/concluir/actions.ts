@@ -5,7 +5,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getAuthContext } from "@/lib/auth/context";
-import { decodeFirstTouch, FIRST_TOUCH_COOKIE } from "@/lib/auth/first-touch";
+import {
+  decodeFirstTouch,
+  FIRST_TOUCH_COOKIE,
+  firstTouchFromUnknown,
+} from "@/lib/auth/first-touch";
 import {
   getSignupLegalSnapshotByIds,
   legalDocumentPublishedDate,
@@ -158,8 +162,15 @@ export async function completePublicSignupAction(formData: FormData) {
   const phoneE164 = toE164Br(parsed.data.telefone);
   const cnpj = parsed.data.cnpj ? normalizeCnpj(parsed.data.cnpj) : null;
   const cookieStore = await cookies();
-  const attribution = decodeFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value) ?? {
-    utm_source: null, utm_medium: null, utm_campaign: null, utm_content: null, utm_term: null, landing_path: "/cadastro",
+  const storedAttribution = firstTouchFromUnknown(metadata.signup_first_touch_attribution);
+  const cookieAttribution = decodeFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value);
+  const attribution = storedAttribution ?? cookieAttribution ?? {
+    utm_source: null,
+    utm_medium: null,
+    utm_campaign: null,
+    utm_content: null,
+    utm_term: null,
+    landing_path: "/cadastro",
   };
   const openAiCampaign = isOpenAiCampaign(attribution);
 
@@ -194,6 +205,7 @@ export async function completePublicSignupAction(formData: FormData) {
         signup_phone_e164: null,
         signup_cnpj: null,
         signup_cpf_encrypted: null,
+        signup_first_touch_attribution: null,
         signup_legal_snapshot_token: null,
       },
     });

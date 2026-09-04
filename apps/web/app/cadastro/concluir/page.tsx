@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AuthLayout, FormMessage } from "@/components/auth-layout";
 import { PendingSubmitButton } from "@/components/pending-submit-button";
 import { PhoneField } from "@/components/phone-field";
+import { CnpjField, CpfField } from "@/components/tax-id-field";
 import { Input, Label } from "@/components/ui/input";
 import { getAuthContext } from "@/lib/auth/context";
 import { getCurrentSignupLegalSnapshot, type SignupLegalSnapshot } from "@/lib/auth/public-signup-provisioning";
@@ -81,11 +82,11 @@ export default async function CompleteSignupPage({ searchParams }: { searchParam
         {hasProtectedCpf ? (
           <div className="flex items-start gap-3 rounded-xl border border-success/25 bg-success-soft p-4"><CheckCircle2 className="mt-0.5 shrink-0 text-success" size={20} /><div><p className="font-semibold text-ink">{participantCopy.cpf.protectedTitle}</p><p className="mt-1 text-xs leading-5 text-muted">{participantCopy.cpf.protectedDescription}</p></div></div>
         ) : (
-          <div className="grid gap-1.5"><Label>CPF<Input name="cpf" inputMode="numeric" autoComplete="off" placeholder="000.000.000-00" minLength={11} maxLength={14} pattern="[0-9.\-]{11,14}" required /></Label><p className="text-xs leading-5 text-muted">CPF é obrigatório. {participantCopy.cpf.inputDescription}</p></div>
+          <div className="grid gap-1.5"><CpfField /><p className="text-xs leading-5 text-muted">CPF é obrigatório. {participantCopy.cpf.inputDescription}</p></div>
         )}
         <PhoneField defaultValue={phone} />
         <Label>Nome do negócio <span className="font-normal text-muted">(opcional)</span><Input name="business_name" defaultValue={businessName} maxLength={160} autoComplete="organization" /></Label>
-        <Label>CNPJ <span className="font-normal text-muted">(opcional)</span><Input name="cnpj" inputMode="numeric" autoComplete="off" placeholder="00.000.000/0000-00" maxLength={18} defaultValue={cnpj} /></Label>
+        <CnpjField defaultValue={cnpj} />
 
         {legalSnapshot ? (
           <section className="grid gap-3 rounded-xl border border-primary/20 bg-primary-soft/45 p-4">

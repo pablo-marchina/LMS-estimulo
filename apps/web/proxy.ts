@@ -4,7 +4,12 @@ import {
   ADMIN_LOCAL_OAUTH_RETURN_COOKIE,
   decodeLocalAdminCallback,
 } from "@/lib/auth/admin-oauth-bridge-core.mjs";
-import { encodeFirstTouch, FIRST_TOUCH_COOKIE, firstTouchFromUrl } from "@/lib/auth/first-touch";
+import {
+  encodeFirstTouch,
+  FIRST_TOUCH_COOKIE,
+  firstTouchFromUrl,
+  hasUtmParameters,
+} from "@/lib/auth/first-touch";
 import { INTERFACE_PREVIEW_REQUEST_HEADER } from "@/lib/interface-preview/constants";
 import { assertPlatformRuntimePolicy } from "@/lib/platform/runtime-provider";
 
@@ -72,8 +77,17 @@ function adminOAuthFallback(request: NextRequest): NextResponse | null {
 }
 
 function shouldCaptureFirstTouch(request: NextRequest): boolean {
-  return ["/cadastro", "/entrar"].includes(request.nextUrl.pathname)
-    && !request.cookies.has(FIRST_TOUCH_COOKIE);
+  if (request.cookies.has(FIRST_TOUCH_COOKIE)) return false;
+
+  const pathname = request.nextUrl.pathname;
+  const administrativeEntry = pathname.startsWith("/admin")
+    || pathname.startsWith("/auth/admin")
+    || pathname.startsWith("/entrar/administracao");
+  if (administrativeEntry) return false;
+
+  return pathname === "/cadastro"
+    || pathname === "/entrar"
+    || hasUtmParameters(request.nextUrl);
 }
 
 function withFirstTouch(response: NextResponse, request: NextRequest): NextResponse {

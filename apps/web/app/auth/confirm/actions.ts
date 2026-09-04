@@ -3,7 +3,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { publicApplicationOrigin } from "@/lib/http-public-origin";
+import { participantApplicationOrigin } from "@/lib/http-public-origin";
 import { createSessionClient } from "@/lib/supabase/server";
 
 const otpTypes = new Set<EmailOtpType>(["signup", "email", "magiclink", "recovery", "invite", "email_change"]);
@@ -77,7 +77,7 @@ export async function resendConfirmationAction(formData: FormData) {
   if (!parsed.success) redirect("/confirm?erro=email_invalido");
 
   const client = await createSessionClient();
-  const callback = new URL("/confirm", publicApplicationOrigin()).toString();
+  const callback = new URL("/confirm", await participantApplicationOrigin()).toString();
   const { error } = await client.auth.resend({
     type: "signup",
     email: parsed.data,

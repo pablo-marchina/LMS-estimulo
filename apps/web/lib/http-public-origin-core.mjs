@@ -58,3 +58,18 @@ export function resolvePublicApplicationOrigin(input = {}) {
   const port = String(input.port ?? "3000").trim() || "3000";
   return `http://localhost:${port}`;
 }
+
+export function resolveParticipantApplicationOrigin(input = {}) {
+  const environment = String(input.environment ?? "development").trim().toLowerCase() || "development";
+  const requestOrigin = normalizeOrigin(input.requestOrigin);
+
+  // Participant-facing auth callbacks must return to the host where the public
+  // signup was actually initiated. This intentionally takes precedence over a
+  // generic configured application URL, which can belong to an admin deployment.
+  if (requestOrigin) {
+    if (environment === "development" || environment === "test") return requestOrigin;
+    if (!isLocalOrigin(requestOrigin)) return requestOrigin;
+  }
+
+  return resolvePublicApplicationOrigin(input);
+}

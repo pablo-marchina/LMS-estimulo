@@ -1,14 +1,16 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { decodeFirstTouch, FIRST_TOUCH_COOKIE } from "@/lib/auth/first-touch";
 import {
   getSignupLegalSnapshotByIds,
   legalDocumentPublishedDate,
   stagePublicSignupLegalSnapshot,
 } from "@/lib/auth/public-signup-provisioning";
-import { publicApplicationOrigin } from "@/lib/http-public-origin";
+import { participantApplicationOrigin } from "@/lib/http-public-origin";
 import { createPrivilegedClient } from "@/lib/supabase/admin";
 import { createSessionClient } from "@/lib/supabase/server";
 
@@ -75,7 +77,9 @@ export async function createPublicAccountAction(formData: FormData) {
     redirect("/cadastro?erro=aceite_legal_invalido");
   }
 
-  const callback = new URL("/confirm", publicApplicationOrigin()).toString();
+  const cookieStore = await cookies();
+  const firstTouchAttribution = decodeFirstTouch(cookieStore.get(FIRST_TOUCH_COOKIE)?.value);
+  const callback = new URL("/confirm", await participantApplicationOrigin()).toString();
   const acceptedAt = new Date().toISOString();
   const legalSnapshotToken = randomUUID();
   try {
@@ -99,6 +103,7 @@ export async function createPublicAccountAction(formData: FormData) {
       data: {
         preferred_name: parsed.data.preferredName,
         signup_profile_version: 5,
+        signup_first_touch_attribution: firstTouchAttribution,
         signup_legal_snapshot_token: legalSnapshotToken,
         terms_accepted_at: acceptedAt,
         terms_version: legalDocumentPublishedDate(legalSnapshot.terms),
