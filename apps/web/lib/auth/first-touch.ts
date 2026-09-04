@@ -24,7 +24,8 @@ function landingPath(value: string | null): string {
 }
 
 function stringProperty(value: Record<string, unknown>, key: string): string | null {
-  return typeof value[key] === "string" ? value[key] : null;
+  const candidate = value[key];
+  return typeof candidate === "string" ? candidate : null;
 }
 
 export function hasUtmParameters(url: URL): boolean {
