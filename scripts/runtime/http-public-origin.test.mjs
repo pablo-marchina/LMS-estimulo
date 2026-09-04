@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { resolvePublicApplicationOrigin } from "../../apps/web/lib/http-public-origin-core.mjs";
+import {
+  resolveParticipantApplicationOrigin,
+  resolvePublicApplicationOrigin,
+} from "../../apps/web/lib/http-public-origin-core.mjs";
 
 const administrativeLoginPage = await readFile(
   new URL("../../apps/web/app/entrar/administracao/page.tsx", import.meta.url),
@@ -54,6 +57,28 @@ test("production rejects a local configured origin", () => {
   assert.throws(
     () => resolvePublicApplicationOrigin({ environment: "production", appUrl: "http://localhost:3000" }),
     /DEPLOYED_PUBLIC_APPLICATION_ORIGIN_REQUIRED/,
+  );
+});
+
+test("participant signup callback prefers the actual public request host over an admin app URL", () => {
+  assert.equal(
+    resolveParticipantApplicationOrigin({
+      environment: "production",
+      requestOrigin: "https://plataforma.estimulo.org.br/cadastro",
+      appUrl: "https://admin.estimulo.org.br",
+    }),
+    "https://plataforma.estimulo.org.br",
+  );
+});
+
+test("participant signup callback never accepts localhost as the deployed public host", () => {
+  assert.equal(
+    resolveParticipantApplicationOrigin({
+      environment: "production",
+      requestOrigin: "http://localhost:3000",
+      appUrl: "https://plataforma.estimulo.org.br",
+    }),
+    "https://plataforma.estimulo.org.br",
   );
 });
 
